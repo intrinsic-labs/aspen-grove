@@ -6,19 +6,25 @@
 
 ## Core Concepts
 
-### Loom or Loom Tree
+### Loom Tree
 
-The central data structure and interaction paradigm of Aspen Grove. A **Loom** is a hypergraph-backed tree that represents a branching exploration of dialogue or text. Unlike linear chat, a Loom preserves all paths taken and not taken, allowing navigation through possibility space.
+The central data structure of Aspen Grove. A **Loom Tree** is a hypergraph-backed tree that represents a branching exploration of dialogue or text. Unlike linear chat, a Loom Tree preserves all paths taken and not taken, allowing navigation through possibility space.
 
 The name references the **Loom of Time** — a representation of the universe as a tapestry where choices weave potentials into realities.
 
-A Loom is the atomic unit of LLM interaction in Aspen Grove. Every conversation, every text buffer session, every exploration is a Loom.
+A Loom Tree is the atomic unit of LLM interaction in Aspen Grove. Every conversation, every text buffer session, every exploration is a Loom Tree.
+
+#### Related Terminology
+
+- **Loom Tree** — the hypergraph data structure (the thing)
+- **Looming** or **Weaving** — the act of exploring and creating within a Loom Tree (the activity)
+- **Loom** — a category of LLM interface that enables branching, tree-based interaction (the tool type). Aspen Grove is a Loom.
 
 ---
 
 ### Node
 
-A single unit of content within a Loom. Nodes are the vertices of the hypergraph.
+A single unit of content within a Loom Tree. Nodes are the vertices of the hypergraph.
 
 A Node contains:
 
@@ -56,7 +62,7 @@ We can't solve this problem completely, but we can make fabrication difficult, t
 
 ### Tier 1: Hash Chains (Default)
 
-Each node stores a **content hash** computed from:
+Each Node stores a **content hash** computed from:
 - The node's content
 - The hashes of all parent nodes (via incoming edges)
 - The creation timestamp
@@ -120,7 +126,7 @@ This doesn't exist yet. As Aspen Grove gains traction in the research community,
 
 ### Edge
 
-A directed hyperedge connecting one or more source Nodes to a target Node. Edges represent relationships between nodes in the Loom.
+A directed hyperedge connecting one or more source Nodes to a target Node. Edges represent relationships between nodes in the Loom Tree.
 
 In a hypergraph, edges can connect **multiple sources** to a target. This is important for representing complex generation relationships (e.g., an image + text prompt together producing a new node).
 
@@ -151,7 +157,7 @@ When an edge has multiple sources, each source has a **role** describing its con
 
 ### Path
 
-A linear sequence of Nodes connected by Continuation edges, representing one possible traversal through the Loom. When you "read" a conversation, you're reading a Path.
+A linear sequence of Nodes connected by Continuation edges, representing one possible traversal through the Loom Tree. When you "read" a conversation, you're reading a Path.
 
 The **Active Path** is the currently selected traversal — what the user sees as the "current conversation."
 
@@ -167,7 +173,7 @@ A Node that has multiple outgoing Continuation edges — meaning the exploration
 
 ### Root
 
-The first Node in a Loom. Every Loom has exactly one Root. The Root may be empty (representing a blank starting point) or may contain initial context/system instructions.
+The first Node in a Loom Tree. Every Loom Tree has exactly one Root. The Root may be empty (representing a blank starting point) or may contain initial context/system instructions.
 
 ---
 
@@ -195,7 +201,7 @@ Nodes that share the same parent Node (i.e., they are alternative continuations 
 
 ### Dialogue Mode
 
-A Loom interaction style where content is organized as discrete messages with clear author attribution. The familiar back-and-forth of conversation, but with branching.
+A Loom Tree interaction style where content is organized as discrete messages with clear author attribution. The familiar back-and-forth of conversation, but with branching.
 
 The term "dialogue" is chosen deliberately over "chat" to encourage a more thoughtful, deliberate approach to interaction.
 
@@ -203,7 +209,7 @@ The term "dialogue" is chosen deliberately over "chat" to encourage a more thoug
 
 ### Buffer Mode
 
-A Loom interaction style where there are no message boundaries — just continuous text. The model's completions stream directly into the document. Think "collaborative text editor" rather than "conversation."
+A Loom Tree interaction style where there are no message boundaries — just continuous text. The model's completions stream directly into the document. Think "collaborative text editor" rather than "conversation."
 
 **Branching is fully supported in Buffer Mode.** You can generate N continuations from any point in the buffer. User text and model text are distinguished via color or other UI treatment, not structural separation.
 
@@ -213,7 +219,7 @@ Inspired by Zed's text threads and base-model interactions.
 
 ### Voice Mode
 
-An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied.
+An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied. Voice Mode supports the looming/weaving activity through speech rather than text input.
 
 #### Core Behavior
 
@@ -232,7 +238,7 @@ When Voice Mode is **OFF**:
 
 #### Interactions
 
-- **Toggle**: Accessible from menu bar (any Loom) or Settings screen
+- **Toggle**: Accessible from menu bar (any Loom Tree) or Settings screen
 - **Double-tap any node**: Hear it read aloud (works regardless of Voice Mode state)
 - **Single-tap during speech**: Stop playback immediately; does NOT start listening
 - **Explicit listen trigger**: App only listens when directed (after speech completes in Voice Mode, or via explicit action)
@@ -253,7 +259,7 @@ When Voice Mode is **OFF**:
 
 ### Loom-Aware
 
-An Agent-level toggle that determines whether the agent has access to Loom navigation and manipulation tools.
+An Agent-level toggle that determines whether the agent has access to Loom Tree navigation and manipulation tools.
 
 A **Loom-Aware** agent can:
 - See metadata about the tree structure (branch points, sibling counts, path history)
@@ -273,9 +279,9 @@ This enables the **two-role pattern**: one agent as the "subject" (not Loom-Awar
 
 ### Agent
 
-The core abstraction for any entity that can participate in or operate on a Loom. **Both humans and models are agents.**
+The core abstraction for any entity that can participate in or operate on a Loom Tree. **Both humans and models are agents.**
 
-The Loom and its operations treat all Agents uniformly — the tree doesn't care what's behind the agent.
+The Loom Tree and its operations treat all Agents uniformly — the tree doesn't care what's behind the agent.
 
 An Agent has:
 
@@ -322,7 +328,7 @@ The backend type for an LLM agent. A Model stores **only what's needed to call t
 
 ## Tree Operations
 
-These are the core operations for manipulating a Loom. They are available to any Agent with appropriate permissions. The API is agent-agnostic.
+These are the core operations for manipulating a Loom Tree. They are available to any Agent with appropriate permissions. The API is agent-agnostic.
 
 ### Generate Continuation
 
@@ -373,7 +379,7 @@ Mark a branch as "pruned" — not deleted, but hidden from default views. Pruned
 
 ### Export Path
 
-Serialize a specific Path (or the entire Loom) to an external format (Markdown, JSON, etc.).
+Serialize a specific Path (or the entire Loom Tree) to an external format (Markdown, JSON, etc.).
 
 ---
 
@@ -387,27 +393,27 @@ Combine insights from multiple Paths into a new Node. This is a creative/editori
 
 ### Grove
 
-The top-level container for all user data. A Grove contains Looms, Documents, and organizational structures. One user has one Grove.
+The top-level container for all user data. A Grove contains Loom Trees, Documents, and organizational structures. One user has one Grove.
 
-(The name completes the metaphor: individual Looms are trees; together they form a Grove.)
+(The name completes the metaphor: individual Loom Trees form a Grove.)
 
 ---
 
 ### Document
 
-A file that is not a Loom — plain notes, markdown files, reference material. Documents can link to Looms and vice versa.
+A file that is not a Loom Tree — plain notes, markdown files, reference material. Documents can link to Loom Trees and vice versa.
 
 ---
 
 ### Link
 
-A bidirectional reference between any two items (Nodes, Looms, Documents). Links create the knowledge graph that connects everything.
+A bidirectional reference between any two items (Nodes, Loom Trees, Documents). Links create the knowledge graph that connects everything.
 
 ---
 
 ### Tag
 
-A label that can be applied to Nodes, Looms, or Documents for organization and filtering.
+A label that can be applied to Nodes, Loom Trees, or Documents for organization and filtering.
 
 ---
 
@@ -423,7 +429,7 @@ For multi-source edges, context may include content from all source nodes accord
 
 ### System Context
 
-Persistent instructions included at the start of every Context Window for a given Loom or Agent. Similar to a system prompt.
+Persistent instructions included at the start of every Context Window for a given Loom Tree or Agent. Similar to a system prompt.
 
 ---
 
@@ -471,8 +477,8 @@ Schema should be designed with future sync in mind.
 ### Permissions Model
 
 Simple for now:
-- **Read** — can view the Loom and its contents
-- **Write** — can create nodes, edges, and perform tree operations
+- **Read** — can view the Loom Tree and its contents
+- **Write** — can create Nodes, Edges, and perform tree operations
 
 Can be expanded later if needed.
 
@@ -522,7 +528,7 @@ When implementing, use these terms consistently:
 
 | Concept | Variable/Type Name |
 |---------|-------------------|
-| Loom | `Loom` |
+| Loom Tree | `LoomTree` |
 | Node | `Node` |
 | Edge | `Edge` |
 | Path | `Path` |

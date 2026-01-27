@@ -1,6 +1,6 @@
 # Aspen Grove — Use Cases
 
-> This document describes how users interact with Aspen Grove to accomplish their goals. Use cases are organized by primary intent and reference the domain language defined in `domain-language.md`.
+> This document describes how users interact with Aspen Grove to accomplish their goals. Use cases are organized by primary intent and reference the domain language defined in `domain-language.md`. The activity of working within Loom Trees is called **looming** or **weaving**.
 
 ---
 
@@ -25,7 +25,7 @@ These use cases center on understanding models — their capabilities, quirks, b
 **Goal**: Explore how a model responds differently to the same prompt.
 
 **Flow**:
-1. User creates a new Loom in Dialogue Mode
+1. User creates a new Loom Tree in Dialogue Mode
 2. User writes a prompt and requests multiple Continuations (e.g., 5)
 3. System generates 5 sibling Nodes from the same Branch Point
 4. User reviews siblings, comparing tone, content, reasoning
@@ -44,7 +44,7 @@ These use cases center on understanding models — their capabilities, quirks, b
 **Goal**: Compare how different models respond to the same prompt.
 
 **Flow**:
-1. User creates a Loom with an initial prompt Node
+1. User creates a Loom Tree with an initial prompt Node
 2. User configures multiple Agents backed by different Models (e.g., Claude, GPT-4, Llama)
 3. User generates Continuations from the same Node using each Agent
 4. System creates sibling Nodes, each tagged with its generating Agent
@@ -63,7 +63,7 @@ These use cases center on understanding models — their capabilities, quirks, b
 **Goal**: Understand how small prompt changes affect model output.
 
 **Flow**:
-1. User creates a Loom with a base prompt
+1. User creates a Loom Tree with a base prompt
 2. User generates a Continuation
 3. User Forks from the Root, creating a variant prompt (slightly reworded)
 4. User generates a Continuation from the variant
@@ -95,7 +95,7 @@ These use cases center on understanding models — their capabilities, quirks, b
 
 ### 1.5 Assisted Exploration (Two-Role Pattern)
 
-**Goal**: Use a Loom-Aware model to help analyze a non-Loom-Aware model.
+**Goal**: Use a Loom-Aware model to help analyze a non-Loom-Aware model within a Loom Tree.
 
 **Flow**:
 1. User creates a Loom with two Agents:
@@ -150,10 +150,10 @@ These use cases center on producing output — writing, thinking, problem-solvin
 
 ### 2.1 Buffer Mode Writing
 
-**Goal**: Write and explore with seamless human-model co-authorship.
+**Goal**: Write collaboratively with a model in a non-conversational format.
 
 **Flow**:
-1. User creates a Loom in Buffer Mode
+1. User creates a new Loom Tree in Buffer Mode
 2. User writes text (opening paragraph, story fragment, article intro, etc.)
 3. User requests Continuation — model completes the text directly, streaming into the document
 4. User edits inline, mixing their writing with model completions
@@ -175,6 +175,7 @@ These use cases center on producing output — writing, thinking, problem-solvin
 **Goal**: Work through a complex problem with model assistance.
 
 **Flow**:
+1. User creates a Loom Tree describing the problem
 1. User toggles Voice Mode ON (from menu bar or settings)
 2. User creates a Loom in Dialogue Mode
 3. User describes the problem via speech — app transcribes and sends after 4-second pause
@@ -259,9 +260,10 @@ These use cases center on organizing, connecting, and preserving what emerges fr
 
 ### 3.2 Linking Insights to Evidence
 
-**Goal**: Connect conclusions to the interactions that generated them.
+**Goal**: Connect conclusions to the explorations that produced them.
 
 **Flow**:
+1. User finds a valuable insight in a Loom Tree
 1. User explores a topic across multiple Loom Trees
 2. User synthesizes findings in a Document
 3. User Links specific claims in the Document to specific Nodes that support them
@@ -276,9 +278,10 @@ These use cases center on organizing, connecting, and preserving what emerges fr
 
 ### 3.3 Exporting and Sharing
 
-**Goal**: Share discoveries with others outside Aspen Grove.
+**Goal**: Share findings with others outside Aspen Grove.
 
 **Flow**:
+1. User selects a Path in a Loom Tree
 1. User selects a Path, Loom, or Document to export
 2. User chooses export format (Markdown, JSON, PDF)
 3. System serializes content with appropriate structure
