@@ -1,6 +1,6 @@
 # Aspen Grove
 
-*A watered idea blooms.*
+*A watered idea blooms*
 
 A mobile application for branching, tree-based interactions with large language models.
 
