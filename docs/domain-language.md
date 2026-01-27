@@ -6,7 +6,7 @@
 
 ## Core Concepts
 
-### Loom
+### Loom or Loom Tree
 
 The central data structure and interaction paradigm of Aspen Grove. A **Loom** is a hypergraph-backed tree that represents a branching exploration of dialogue or text. Unlike linear chat, a Loom preserves all paths taken and not taken, allowing navigation through possibility space.
 
@@ -208,6 +208,46 @@ A Loom interaction style where there are no message boundaries — just continuo
 **Branching is fully supported in Buffer Mode.** You can generate N continuations from any point in the buffer. User text and model text are distinguished via color or other UI treatment, not structural separation.
 
 Inspired by Zed's text threads and base-model interactions.
+
+---
+
+### Voice Mode
+
+An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied.
+
+#### Core Behavior
+
+When Voice Mode is **ON**:
+1. User sends prompt (text or speech-to-text via native platform API)
+2. Model generates response → Node created
+3. Response fully received → text-to-speech reads the node aloud
+4. Node text changes color during speech (visual feedback)
+5. Speech finishes → app listens for next voice input
+6. If speech detected, auto-sends after 4-second pause of silence
+7. If no speech detected within 4 seconds, app stops listening
+
+When Voice Mode is **OFF**:
+- Standard text-based interaction
+- No automatic speech output or input
+
+#### Interactions
+
+- **Toggle**: Accessible from menu bar (any Loom) or Settings screen
+- **Double-tap any node**: Hear it read aloud (works regardless of Voice Mode state)
+- **Single-tap during speech**: Stop playback immediately; does NOT start listening
+- **Explicit listen trigger**: App only listens when directed (after speech completes in Voice Mode, or via explicit action)
+
+#### Technical Implementation (MVP)
+
+- **Speech-to-text**: Native platform APIs (iOS Speech framework, Android SpeechRecognizer)
+- **Text-to-speech**: Native platform APIs (AVSpeechSynthesizer on iOS, TextToSpeech on Android)
+- **Future**: Higher-quality TTS & transcription services as optional upgrade
+
+#### Limitations (MVP)
+
+- Requires app to be in foreground (background audio is post-MVP)
+- Voice commands for Loom operations (e.g., "go back," "generate three more") are post-MVP
+- Voice input is for prompt content only, not navigation
 
 ---
 
