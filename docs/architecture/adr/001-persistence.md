@@ -17,7 +17,7 @@ Use **WatermelonDB** as the persistence layer for Aspen Grove.
 Aspen Grove requires a local-first database that can:
 
 - Run on iOS and Android via React Native
-- Handle complex relational data (Loom Trees are graphs with many relationships)
+- Handle complex relational data (Loom Trees are hypergraphs with many relationships)
 - Support lazy loading for large trees without loading everything into memory
 - Provide reactive/observable queries for UI updates
 - Enable future sync capabilities for multi-device support
