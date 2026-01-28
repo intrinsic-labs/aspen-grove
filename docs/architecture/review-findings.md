@@ -24,7 +24,7 @@
 
 **Status**: ✅ Resolved
 
-**Location**: [domain-language.md](../../domain-language.md#buffer-mode), [core-entities.md](./model/core-entities.md)
+**Location**: [domain-language](../../domain-language/interaction-modes.md#buffer-mode), [core-entities.md](./model/core-entities.md)
 
 **Problem**: Buffer Mode is described philosophically but not structurally. The Node model looks identical for both Dialogue and Buffer modes, but Buffer Mode has fundamentally different semantics:
 
@@ -51,7 +51,7 @@
 
 **Status**: 🔴 Needs Work
 
-**Location**: [domain-language.md](../../domain-language.md#context-window), [llm-provider.md](./contracts/llm-provider.md)
+**Location**: [domain-language](../../domain-language/context-memory.md#context-window), [llm-provider.md](./contracts/llm-provider.md)
 
 **Problem**: The algorithm for assembling context sent to models is referenced but never defined:
 
@@ -125,7 +125,7 @@ media/
 
 **Status**: 🟡 Needs Work
 
-**Location**: [domain-language.md](../../domain-language.md#loom-aware), [llm-provider.md](./contracts/llm-provider.md)
+**Location**: [domain-language](../../domain-language/interaction-modes.md#loom-aware), [llm-provider.md](./contracts/llm-provider.md)
 
 **Problem**: Loom-Aware agents can "perform tree operations via tool calls" but no tool definitions provided.
 
@@ -139,7 +139,7 @@ media/
 
 **Status**: 🟡 Needs Work
 
-**Location**: [use-cases.md](../../use-cases.md) (§2.2 Collaborative Problem-Solving)
+**Location**: [use-cases](../../use-cases/creation-collaboration.md#22-collaborative-problem-solving)
 
 **Problem**: Web search listed as "Required Tool" but no contract specification exists.
 
@@ -153,7 +153,7 @@ media/
 
 **Status**: ✅ Resolved
 
-**Location**: [domain-language.md](../../domain-language.md#node), [use-cases.md](../../use-cases.md) (§2.1 Buffer Mode Writing)
+**Location**: [domain-language](../../domain-language/core-concepts.md#node), [use-cases](../../use-cases/creation-collaboration.md#21-buffer-mode-writing)
 
 **Problem**: Nodes are declared immutable, but Buffer Mode describes "inline editing."
 
@@ -173,7 +173,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: 🔵 Deferred
 
-**Location**: [use-cases.md](../../use-cases.md) (§1.5 Assisted Exploration)
+**Location**: [use-cases](../../use-cases/exploration-study.md#15-assisted-exploration-two-role-pattern)
 
 **Problem**: The Subject + Collaborator pattern is compelling but UI/UX is undefined.
 
@@ -190,7 +190,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: 🟡 Needs Work
 
-**Location**: [domain-language.md](../../domain-language.md#voice-mode)
+**Location**: [domain-language](../../domain-language/interaction-modes.md#voice-mode)
 
 **Problem**: Several edge cases undefined:
 - What if user takes >4 seconds to think?
@@ -205,7 +205,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: ✅ Resolved
 
-**Location**: [use-cases.md](../../use-cases.md) (§1.6 Provenance Verification)
+**Location**: [use-cases](../../use-cases/exploration-study.md#16-provenance-verification)
 
 **Problem**: QR code feature implied a web verification service.
 
@@ -245,11 +245,11 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: 🟡 Needs Work
 
-**Location**: [organization.md](./model/organization.md#tag), [repositories.md](./contracts/repositories.md#tagrepository)
+**Location**: [organization.md](./model/organization.md#tag), [repositories](./contracts/repositories/tag-repository.md)
 
 **Problem**: Tags are case-insensitive unique, but no implementation guidance for SQLite.
 
-**Resolution**: Add implementation note to repositories.md: use `COLLATE NOCASE` or normalize to lowercase on insert.
+**Resolution**: Add implementation note to tag-repository.md: use `COLLATE NOCASE` or normalize to lowercase on insert.
 
 ---
 
@@ -280,7 +280,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: 🔵 Deferred
 
-**Location**: [use-cases.md](../../use-cases.md) (§3.3 Exporting and Sharing)
+**Location**: [use-cases](../../use-cases/knowledge-management.md#33-exporting-and-sharing)
 
 **Problem**: Markdown, JSON, PDF exports mentioned but contents not specified.
 
@@ -292,7 +292,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Status**: ✅ Resolved
 
-**Location**: [domain-language.md](../../domain-language.md#field-guide)
+**Location**: [domain-language](../../domain-language/field-guide.md)
 
 **Problem**: Field Guide content storage not specified.
 
@@ -315,25 +315,24 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ### Before Related Features
 
-6. [ ] Create [contracts/loom-tools.md](./contracts/loom-tools.md) — resolve I3
-7. [ ] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4
+7. [ ] Create [contracts/loom-tools.md](./contracts/loom-tools.md) — resolve I3
+8. [ ] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4
 8. [ ] Add streaming clarification to [provenance.md](./model/provenance.md) — resolve I2
 9. [ ] Add Voice Mode edge cases to [domain-language.md](../../domain-language.md) — resolve M2
-10. [ ] Add tag implementation note to [repositories.md](./contracts/repositories.md) — resolve m2
+10. [ ] Add tag implementation note to [repositories](./contracts/repositories/tag-repository.md) — resolve m2
 
 ### Documentation Updates
 
-11. [ ] Clarify Provenance QR scope in [use-cases.md](../../use-cases.md) — resolve M3
-12. [ ] Add Field Guide CMS note to [domain-language.md](../../domain-language.md) — resolve m5
+11. [ ] Clarify Provenance QR scope in [use-cases](../../use-cases/exploration-study.md#16-provenance-verification) — resolve M3
+12. [x] Add Field Guide CMS note to [domain-language](../../domain-language/field-guide.md) — resolve m5 ✓
 
 ---
 
 ## File Organization Notes
 
-Several existing files are long and monolithic. Consider breaking up during resolution:
+Several files have been reorganized into directory structures:
 
-- `domain-language.md` — could split Voice Mode into separate spec
-- `agents.md` — could split provider adapters into separate files
-- `repositories.md` — could split into one file per repository
-
-Apply incrementally as files are touched for other changes.
+- ✅ `domain-language.md` → `domain-language/` directory with focused documents
+- ✅ `use-cases.md` → `use-cases/` directory with focused documents
+- ✅ `repositories.md` → `contracts/repositories/` directory with one file per repository
+- `agents.md` — could split provider adapters into separate files (deferred)

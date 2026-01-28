@@ -33,7 +33,7 @@ Entity definitions, relationships, and constraints.
 | Document | Covers |
 |----------|--------|
 | [Core Entities](./model/core-entities.md) | LoomTree, Node, Edge, Content Types |
-| [Agents](./model/agents.md) | Agent, Human, Model |
+| [Agents](./model/agents.md) | Agent, Model, UserPreferences |
 | [Organization](./model/organization.md) | Grove, Document, Link, Tag |
 | [Provenance](./model/provenance.md) | RawApiResponse, TimestampCertificate, Hash Chain Computation |
 
@@ -45,7 +45,7 @@ Abstract interfaces that define layer boundaries.
 
 | Document | Covers |
 |----------|--------|
-| [Repositories](./contracts/repositories.md) | Data access contracts for all entities |
+| [Repositories](./contracts/repositories/README.md) | Data access contracts for all entities |
 | [LLM Provider](./contracts/llm-provider.md) | Model API abstraction |
 | [Media Storage](./contracts/media-storage.md) | Binary content storage |
 
@@ -80,6 +80,7 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 | Document | Description |
 |----------|-------------|
 | [Review Findings](./review-findings.md) | Pre-development review issues and resolutions |
+| [Buffer Mode Spec](./specs/buffer-mode.md) | Buffer Mode specification |
 | [Buffer Mode Questions](./specs/buffer-mode-questions.md) | Open questions for Buffer Mode specification |
 
 *Additional specs will be added to `./specs/` as issues are resolved.*
@@ -88,8 +89,8 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 
 ## Related Documents
 
-- [Domain Language](../domain-language.md) — Core concepts and terminology
-- [Use Cases](../use-cases.md) — User interactions and flows
+- [Domain Language](../domain-language/README.md) — Core concepts and terminology
+- [Use Cases](../use-cases/README.md) — User interactions and flows
 
 ---
 

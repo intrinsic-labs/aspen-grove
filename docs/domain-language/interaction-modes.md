@@ -1,0 +1,90 @@
+# Interaction Modes
+
+> How users interact with Loom Trees: Dialogue Mode, Buffer Mode, Voice Mode, and Loom-Aware settings.
+
+---
+
+## Dialogue Mode
+
+A Loom Tree interaction style where content is organized as discrete messages with clear author attribution. The familiar back-and-forth of conversation, but with branching.
+
+The term "dialogue" is chosen deliberately over "chat" to encourage a more thoughtful, deliberate approach to interaction.
+
+---
+
+## Buffer Mode
+
+A Loom Tree interaction style where there are no message boundaries — just continuous text. The model's completions stream directly into the document. Think "collaborative text editor" rather than "conversation."
+
+**Branching is fully supported in Buffer Mode.** You can generate N continuations from any point in the buffer. User text and model text are distinguished via color or other UI treatment, not structural separation.
+
+Inspired by Zed's text threads and base-model interactions.
+
+> For full specification, see [Buffer Mode Spec](../architecture/specs/buffer-mode.md).
+
+---
+
+## Voice Mode
+
+An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied. Voice Mode supports the looming/weaving activity through speech rather than text input.
+
+### Core Behavior
+
+When Voice Mode is **ON**:
+1. User sends prompt (text or speech-to-text via native platform API)
+2. Model generates response → Node created
+3. Response fully received → text-to-speech reads the node aloud
+4. Node text changes color during speech (visual feedback)
+5. Speech finishes → app listens for next voice input
+6. If speech detected, auto-sends after 4-second pause of silence
+7. If no speech detected within 4 seconds, app stops listening
+
+When Voice Mode is **OFF**:
+- Standard text-based interaction
+- No automatic speech output or input
+
+### Interactions
+
+- **Toggle**: Accessible from menu bar (any Loom Tree) or Settings screen
+- **Double-tap any node**: Hear it read aloud (works regardless of Voice Mode state)
+- **Single-tap during speech**: Stop playback immediately; does NOT start listening
+- **Explicit listen trigger**: App only listens when directed (after speech completes in Voice Mode, or via explicit action)
+
+### Technical Implementation (MVP)
+
+- **Speech-to-text**: Native platform APIs (iOS Speech framework, Android SpeechRecognizer)
+- **Text-to-speech**: Native platform APIs (AVSpeechSynthesizer on iOS, TextToSpeech on Android)
+- **Future**: Higher-quality TTS & transcription services as optional upgrade
+
+### Limitations (MVP)
+
+- Requires app to be in foreground (background audio is post-MVP)
+- Voice commands for Loom operations (e.g., "go back," "generate three more") are post-MVP
+- Voice input is for prompt content only, not navigation
+
+---
+
+## Loom-Aware
+
+An Agent-level toggle that determines whether the agent has access to Loom Tree navigation and manipulation tools.
+
+A **Loom-Aware** agent can:
+- See metadata about the tree structure (branch points, sibling counts, path history)
+- Navigate to other branches
+- Request summaries of alternative paths
+- Perform tree operations via tool calls
+
+An agent that is **not Loom-Aware** sees only the Active Path — they experience the interaction as linear.
+
+**Important**: This is an Agent-level setting. Humans are agents too. A human can toggle Loom-Aware off for themselves. Conversely, a model can be Loom-Aware even when the human is not.
+
+This enables the **two-role pattern**: one agent as the "subject" (not Loom-Aware, being studied), another as the "collaborator" (Loom-Aware, helping navigate and analyze).
+
+---
+
+## Related Documentation
+
+- [Core Concepts](./core-concepts.md) — Loom Tree, Node, Edge, Path
+- [Agents](./agents.md) — Agent abstraction for humans and models
+- [Buffer Mode Spec](../architecture/specs/buffer-mode.md) — Detailed Buffer Mode specification
+- [Use Cases: Creation & Collaboration](../use-cases/creation-collaboration.md) — Voice Mode and Buffer Mode workflows

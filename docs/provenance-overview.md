@@ -114,6 +114,8 @@ This doesn't exist yet. As Aspen Grove gains traction in the research community,
 
 - [Architecture: Provenance Entities](./architecture/model/provenance.md) — Technical specification for RawApiResponse, TimestampCertificate, and hash chain computation (authoritative source)
 - [Architecture: Core Entities](./architecture/model/core-entities.md) — Node entity definition with contentHash field
+- [Provenance Repositories](./architecture/contracts/repositories/provenance-repositories.md) — Persistence operations for provenance data
+- [Domain Language: Context & Memory](./domain-language/context-memory.md#raw-api-response) — Conceptual overview
 
 ---
 

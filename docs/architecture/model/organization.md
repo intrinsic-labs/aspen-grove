@@ -161,8 +161,8 @@ A bidirectional reference between any two items.
 
 - Links are bidirectional — querying from either end returns the link
 - Source and target can be different types (e.g., Document → Node)
-- Links within the same Loom Tree use Edge with type `link`, not this entity
 - This Link entity is for cross-tree and cross-document references
+- Connections *within* a single Loom Tree use Edges (type `continuation` or `annotation`), not Links
 
 ### Indexes
 

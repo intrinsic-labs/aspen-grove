@@ -122,7 +122,7 @@ Example: If Node 5 is edited to create Node 5':
 
 See [buffer-mode.md](../specs/buffer-mode.md) for the complete specification.
 
-*Note: Cross-references between Loom Trees, Documents, and Nodes use the [Link entity](./organization.md#link), not Edges.*
+*Note: Cross-references between Loom Trees, Documents, and Nodes use the [Link entity](./organization.md#link), not Edges. See also [Link Repository](../contracts/repositories/link-repository.md) for persistence operations.*
 
 ### Indexes
 
