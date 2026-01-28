@@ -12,6 +12,7 @@ The top-level container for a branching exploration.
 
 - **id** — ULID, primary identifier
 - **title** — string, user-editable display name
+- **description** — optional string, user-editable tree description
 - **rootNodeId** — ULID, reference to the single root Node
 - **mode** — enum: `dialogue` | `buffer`
 - **systemContext** — optional string, persistent instructions prepended to every context window
@@ -22,7 +23,8 @@ The top-level container for a branching exploration.
 ### Constraints
 
 - Every LoomTree has exactly one root Node
-- Title defaults to first few words of root content or "Untitled"
+- Title defaults to first few words of root content or "Loom Tree <index>"
+- Description defaults to nil
 - Mode is set at creation and cannot change (different modes have different rendering logic)
 
 ### Indexes
@@ -58,7 +60,7 @@ A single unit of content within a Loom Tree.
 ### Constraints
 
 - Nodes are **immutable** once created — edits create new Nodes
-- contentHash is computed from: content + parent hashes + createdAt + authorAgentId
+- contentHash computation differs by author type (see Hash Chain Computation below)
 - A Node with no incoming Continuation edges is the root (exactly one per LoomTree)
 
 ### Indexes
@@ -176,14 +178,37 @@ These are derived from the stored entities:
 
 ## Hash Chain Computation
 
-The contentHash provides tamper evidence.
+The contentHash provides tamper evidence. The computation differs for human-authored vs model-generated nodes to maximize provenance integrity.
 
-### Inputs to Hash
+*Note: the model proposed below does not provide origin evidence. This is an area of active research and Aspen Grove aims to implement origin evidence in the future. Read more in the [provenance document.](../../provenance.md)*
 
+### Human-Authored Nodes
+
+Inputs to hash:
 1. Serialized content (deterministic JSON serialization)
 2. Array of parent node contentHashes (via incoming Continuation edges), sorted
 3. createdAt timestamp (ISO 8601)
 4. authorAgentId
+
+Human nodes are self-contained — all inputs are stored on the Node itself.
+
+### Model-Generated Nodes
+
+Inputs to hash:
+1. Serialized content (deterministic JSON serialization)
+2. Array of parent node contentHashes (via incoming Continuation edges), sorted
+3. createdAt timestamp (ISO 8601)
+4. SHA-256 hash of the complete RawApiResponse (headers + body, pre-compression)
+
+Model nodes tie their hash to the full API response evidence. This means:
+- RawApiResponse must be stored *before* the Node hash can be computed
+- Verification requires loading the linked RawApiResponse
+- Any tampering with the raw response invalidates the Node hash
+
+### Why Different Approaches?
+
+- **Human nodes** — The Agent abstraction is meaningful; it represents a real person's identity within the app
+- **Model nodes** — The Agent abstraction is application-level; provenance should tie to actual API evidence, not our internal configuration
 
 ### Algorithm
 
@@ -196,3 +221,4 @@ The contentHash provides tamper evidence.
 - Any modification to content or ancestry invalidates the hash
 - Root nodes have no parent hashes (empty array)
 - Hash verification traverses from root to validate entire chain
+- Model node verification requires joining with RawApiResponse data

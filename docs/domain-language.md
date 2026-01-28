@@ -26,101 +26,19 @@ A Loom Tree is the atomic unit of LLM interaction in Aspen Grove. Every conversa
 
 A single unit of content within a Loom Tree. Nodes are the vertices of the hypergraph.
 
-A Node contains:
+Nodes are **immutable** once created. Edits create new nodes rather than modifying existing ones. Each node carries a content hash for tamper-evidence as part of the [provenance system](./provenance.md).
 
-- **ID** — a ULID (Universally Unique Lexicographically Sortable Identifier)
-- **Content** — the actual payload (see Content Types below)
-- **Author** — reference to the Agent that created this node
-- **Timestamp** — when the node was created
-- **Metadata** — additional information (bookmarks, tags, etc.)
-- **Content Hash** — hash of (content + parent hashes + timestamp) for tamper-evidence
+Nodes are **multimodal by design** — they can contain text, images, audio, or combinations thereof.
 
-Nodes are **immutable** once created. Edits create new nodes rather than modifying existing ones.
-
-#### Content Types
-
-Nodes are multimodal by design. The content field is typed and extensible:
-
-- **Text** — the primary type; markdown-compatible string content
-- **Image** — reference to image data (stored separately)
-- **Audio** — reference to audio data
-- **Mixed** — structured combination of multiple content types
-
-Design for extension: new content types can be added without changing the core node structure.
+> For full property list and technical constraints, see [Architecture: Core Entities](./architecture/model/core-entities.md).
 
 ---
 
 ## Provenance & Verification
 
-Aspen Grove takes provenance seriously. For researchers and anyone who needs to demonstrate that model outputs are authentic, we provide a tiered verification strategy.
+Aspen Grove takes provenance seriously. For researchers and anyone who needs to demonstrate that model outputs are authentic, we provide a tiered verification strategy including hash chains, RFC 3161 timestamps, and raw API response storage.
 
-### The Core Challenge
-
-Without API providers cryptographically signing their responses, true *proof* of origin is impossible. You control the client — any response passes through your code before storage. HTTPS proves you talked to the real API endpoint, but that proof is ephemeral.
-
-We can't solve this problem completely, but we can make fabrication difficult, tampering detectable, and evidence comprehensive.
-
-### Tier 1: Hash Chains (Default)
-
-Each Node stores a **content hash** computed from:
-- The node's content
-- The hashes of all parent nodes (via incoming edges)
-- The creation timestamp
-- The author agent ID
-
-This creates a hash chain similar to git. Any modification to any node in the chain is detectable — the hashes won't validate. This proves **integrity** (nothing was altered after creation), even though it can't prove **origin**.
-
-### Tier 2: Trusted Timestamps (Default)
-
-Upon node creation, we submit the content hash to an **RFC 3161 timestamp authority**. This provides a cryptographic proof that "this hash existed at time T," signed by a trusted third party.
-
-This proves you didn't fabricate the content *after the fact*. Combined with the hash chain and raw API response metadata, it becomes increasingly implausible to fake a response that:
-- Has internally consistent timestamps
-- Matches a valid RFC 3161 timestamp certificate
-- Contains coherent API metadata (request IDs, rate limit headers, model versions)
-
-Free RFC 3161 services (e.g., FreeTSA) make this practical for all users.
-
-### Tier 3: Raw API Response Storage (Default)
-
-The complete, unmodified API response is stored for every model-generated node:
-- Full response body
-- HTTP headers (including request IDs, timestamps, rate limit state)
-- Client-side timing information
-
-Raw responses are:
-- **Compressed** (gzip) to minimize storage impact
-- **Stored separately** from the node content (not on the hot path)
-- **Linked by Node ID** for on-demand access
-- **Retained for the lifetime of the node**
-
-This is evidence, not proof — but it's comprehensive evidence that would be difficult to fabricate consistently.
-
-### Tier 4: TLS Notary (Future)
-
-[TLS Notary](https://tlsnotary.org/) is a protocol that enables cryptographic proof that specific data came from a specific server, without requiring server cooperation. It uses secure multi-party computation during the TLS handshake to create a portable proof of origin.
-
-This is the closest thing to true verification without API provider support.
-
-**Current limitation**: TLS Notary adds significant latency (~10-15 seconds per request depending on network conditions). This is unacceptable for most users but valuable for researchers who need maximum assurance and can tolerate the delay.
-
-**Plan**: Offer TLS Notary as an opt-in "high assurance mode" once the protocol matures and performance improves. Users who need provable provenance can enable it per-Loom or per-session.
-
-### Tier 5: Provider Signatures (Aspirational)
-
-The cleanest solution: API providers sign their responses with a private key. Anyone can verify with the public key. This solves the problem completely.
-
-This doesn't exist yet. As Aspen Grove gains traction in the research community, we'll advocate for this feature with major providers.
-
-### Summary
-
-| Tier | What It Proves | Default | Latency Impact |
-|------|----------------|---------|----------------|
-| Hash Chains | Integrity (no tampering after creation) | ✓ | None |
-| RFC 3161 Timestamps | Existence at specific time | ✓ | Minimal |
-| Raw API Storage | Comprehensive evidence of origin | ✓ | None (async) |
-| TLS Notary | Cryptographic proof of origin | Future | +10-15s |
-| Provider Signatures | Complete proof | Requires provider support | None |
+See [Provenance & Verification](./provenance.md) for full details.
 
 ---
 
@@ -130,28 +48,14 @@ A directed hyperedge connecting one or more source Nodes to a target Node. Edges
 
 In a hypergraph, edges can connect **multiple sources** to a target. This is important for representing complex generation relationships (e.g., an image + text prompt together producing a new node).
 
-Edges carry:
+There are three edge types:
+- **Continuation** — the target node continues from the source(s); the primary edge type for traversal
+- **Annotation** — a comment or note attached to a node (excluded from model context by default)
+- **Link** — a cross-reference to another node (possibly in a different Loom Tree)
 
-- **ID** — a ULID
-- **Sources** — array of source Node references, each with a Role
-- **Target** — the Node this edge points to
-- **Edge Type** — the nature of the connection (see Edge Types below)
+> **Note on Branches**: "Branch" is not an edge type. A branch is simply the situation where multiple continuation edges originate from the same node.
 
-#### Source Roles
-
-When an edge has multiple sources, each source has a **role** describing its contribution:
-
-- **Primary** — the main content being continued
-- **Context** — additional context influencing generation (e.g., an image, a reference document)
-- **Instruction** — a prompt or directive guiding the generation
-
-#### Edge Types
-
-- **Continuation** — the target node is a continuation from the source(s). This is the primary edge type for Loom traversal.
-- **Annotation** — the target node is a comment or note attached to the source (not part of the main flow, excluded from model context by default)
-- **Link** — a reference connection to another node (possibly in a different Loom). Used for cross-referencing and knowledge graph construction.
-
-> **Note on Branches**: "Branch" is not an edge type. A branch is simply the situation where multiple continuation edges originate from the same node. The structure captures branching inherently.
+> For full property list including source roles, see [Architecture: Core Entities](./architecture/model/core-entities.md).
 
 ---
 
@@ -281,48 +185,27 @@ This enables the **two-role pattern**: one agent as the "subject" (not Loom-Awar
 
 The core abstraction for any entity that can participate in or operate on a Loom Tree. **Both humans and models are agents.**
 
-The Loom Tree and its operations treat all Agents uniformly — the tree doesn't care what's behind the agent.
+The Loom Tree and its operations treat all Agents uniformly — the tree doesn't care what's behind the agent. This enables:
 
-An Agent has:
-
-- **ID** — a ULID
-- **Name** — display name
-- **Type** — `human` or `model`
-- **Backend** — reference to the underlying Human profile or Model configuration
-- **Configuration** — agent-specific parameters (temperature, system prompts, etc.)
-- **Permissions** — what operations this agent can perform (`read`, `write`)
-- **Loom-Aware** — whether this agent has access to tree navigation tools
-
-#### Why This Abstraction?
-
-- **Modularity**: Tree operations accept an Agent ID, not model-specific parameters
-- **Flexibility**: You can have N agents backed by the same model with different configurations
-- **Consistency**: Humans and models are treated identically at the API level
-- **Extensibility**: User profiles, teams, and future agent types fit naturally
+- **Modularity** — Tree operations accept an Agent, not model-specific parameters
+- **Flexibility** — Multiple agents can be backed by the same model with different configurations
+- **Consistency** — Humans and models are treated identically at the API level
 
 ---
 
 ### Human
 
-The backend type for a human agent. Stores user profile information.
-
-One human user may have multiple Agent configurations (e.g., different "modes" of working).
+The backend type for a human agent. One human user may have multiple Agent configurations (e.g., different "modes" of working).
 
 ---
 
 ### Model
 
-The backend type for an LLM agent. A Model stores **only what's needed to call the API**:
+The backend type for an LLM agent. Stores only what's needed to call the API (identifier, provider, endpoint, credentials reference).
 
-- **Identifier** — the model name/version (e.g., `claude-sonnet-4-20250514`, `gpt-4o`)
-- **Provider** — the API provider (`anthropic`, `openai`, `local`, etc.)
-- **Endpoint** — API URL (for custom/local deployments)
-- **Credentials Reference** — pointer to stored API key (never stored directly)
+**Configuration lives at the Agent level, not the Model level** — one model can back multiple differently-configured agents.
 
-**Configuration lives at the Agent level, not the Model level.** This separation means:
-- One model can back multiple differently-configured agents
-- Switching models for an agent is a simple backend swap
-- Model definitions stay simple and reusable
+> For full property lists, see [Architecture: Agents](./architecture/model/agents.md).
 
 ---
 
@@ -415,6 +298,8 @@ A bidirectional reference between any two items (Nodes, Loom Trees, Documents). 
 
 A label that can be applied to Nodes, Loom Trees, or Documents for organization and filtering.
 
+> For full property lists, see [Architecture: Organization](./architecture/model/organization.md).
+
 ---
 
 ## Context & Memory
@@ -454,33 +339,13 @@ Nodes or Annotations marked to be excluded from the Context Window. Useful for h
 
 ## Technical Decisions
 
-### IDs: ULIDs
+Key technical decisions are documented in Architecture Decision Records:
 
-All entities use **ULIDs** (Universally Unique Lexicographically Sortable Identifiers):
+- **IDs** — ULIDs for all entities (sortable, unique, compatible with WatermelonDB)
+- **Persistence** — WatermelonDB for local-first, offline-capable storage
+- **Permissions** — Simple read/write model for MVP
 
-- Sortable by creation time (useful for ordering without extra queries)
-- Same 128-bit space as UUIDs (no collision concerns)
-- Well-supported in JavaScript (`ulid` package)
-- Compatible with WatermelonDB
-
-### Persistence: WatermelonDB
-
-Local-first storage using **WatermelonDB**:
-
-- Built for React Native
-- Offline-first with sync primitives
-- SQLite under the hood
-- Fits the local-first philosophy
-
-Schema should be designed with future sync in mind.
-
-### Permissions Model
-
-Simple for now:
-- **Read** — can view the Loom Tree and its contents
-- **Write** — can create Nodes, Edges, and perform tree operations
-
-Can be expanded later if needed.
+> See [Architecture Decision Records](./architecture/adr/) for full context and rationale.
 
 ---
 
