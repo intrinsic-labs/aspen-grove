@@ -37,7 +37,7 @@ The unified abstraction for any entity that can participate in a Loom Tree.
 ### Constraints
 
 - One Human or Model can back multiple Agents (different configurations)
-- Agent is the identity used for Node authorship, not the underlying Human/Model
+- Agent is the identity used for Node authorship, not the underlying Human/Model (with the exception of the contentHash field - read more in [core entities](./core-entities.md))
 - Permissions default to read: true, write: true for new Agents
 - loomAware defaults to false for Model agents, true for Human agents
 
@@ -69,7 +69,11 @@ Backend type for human participants.
 - **defaultVoiceModeEnabled** — boolean, default false
 - **defaultTemperature** — optional number, preferred temperature for new agents
 - **theme** — optional string, UI theme preference
-- **fontSize** — optional number, UI text size preference
+- **fontSize** — number, UI text size preference, default 16
+- **fontFace** — string, UI font selection
+- **nodeViewStyle** — enum: `filled` | `outlined`
+- **nodeViewCornerRadius** — number, in range 0 to 28
+- **verboseErrorAlerts** — boolean, defaults to false
 
 ### Constraints
 
@@ -91,7 +95,7 @@ Backend type for LLM agents. Stores only what's needed to call the API.
 
 - **id** — ULID, primary identifier
 - **identifier** — string, the model name/version (e.g., `claude-sonnet-4-20250514`, `gpt-4o`)
-- **provider** — enum: `anthropic` | `openai` | `google` | `local` | `custom`
+- **provider** — enum: `openrouter` `hyperbolic` | `anthropic` | `openai` | `google` | `local` | `custom`
 - **displayName** — string, human-friendly name for UI
 - **endpoint** — optional string, API URL (required for `local` and `custom` providers)
 - **credentialsRef** — string, reference to secure credential storage (never the key itself)
@@ -114,7 +118,7 @@ Backend type for LLM agents. Stores only what's needed to call the API.
 - Configuration (temperature, system prompt, etc.) lives on Agent, not Model
 - This allows one Model to back multiple differently-configured Agents
 - credentialsRef points to secure storage — API keys are never stored in the database
-- Provider-specific validation applies (e.g., Anthropic models must use Anthropic provider)
+- Provider-specific validation applies (e.g., OpenAI models cannot be called via the Anthropic API)
 
 ### Indexes
 
@@ -149,7 +153,7 @@ Backend type for LLM agents. Stores only what's needed to call the API.
 
 ## Loom-Aware Capabilities
 
-When an Agent has loomAware = true, they can access additional context and tools:
+When an Agent has `loomAware = true`, they can access additional context and tools:
 
 ### Additional Context Provided
 
@@ -167,7 +171,7 @@ When an Agent has loomAware = true, they can access additional context and tools
 
 ### Design Notes
 
-- Loom-awareness enables the "two-role pattern" (analyst + subject)
+- Loom-awareness enables a "two-role pattern" (analyst + subject)
 - Human agents are loom-aware by default (they see the UI)
 - Model agents default to not loom-aware (they see linear conversation)
 - This can be toggled per-Agent for flexible experimentation
@@ -180,7 +184,7 @@ On first launch, create these default Agents:
 
 ### Default Human Agent
 
-- name: "You" (editable)
+- name: Human (editable)
 - type: human
 - loomAware: true
 - permissions: read + write
