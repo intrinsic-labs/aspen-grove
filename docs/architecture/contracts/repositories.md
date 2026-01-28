@@ -51,10 +51,12 @@ Manages LoomTree persistence.
 ### Operations
 
 **create**
-- Input: title, mode, systemContext (optional)
+- Input: groveId, mode, title (optional), description (optional), systemContext (optional), initialContent (optional), authorAgentId (required if initialContent provided)
 - Creates LoomTree with generated id and timestamps
-- Creates root Node (empty content) and links to LoomTree
-- Returns: created LoomTree
+- Creates root Node with initialContent (or empty content if not provided)
+- If initialContent provided, authorAgentId must be provided for the root Node
+- If title not provided, derives from initialContent (first ~50 chars) or defaults to "Loom Tree ${timestamp}"
+- Returns: created LoomTree with rootNodeId populated
 
 **findById**
 - Input: id
@@ -66,7 +68,7 @@ Manages LoomTree persistence.
 - Returns: array of LoomTrees, total count
 
 **update**
-- Input: id, changes (title, systemContext)
+- Input: id, changes (title, description, systemContext)
 - Updates updatedAt timestamp
 - Returns: updated LoomTree
 
@@ -95,11 +97,11 @@ Manages Node persistence.
 ### Operations
 
 **create**
-- Input: loomTreeId, content, authorAgentId, parentNodeIds (optional)
-- Computes contentHash from content + parent hashes + timestamp + author
-- Creates Node with generated id
+- Input: loomTreeId, content, authorAgentId, authorType, contentHash, parentNodeIds (optional)
+- contentHash is pre-computed by use case layer (see [Provenance](../model/provenance.md#hash-chain-computation))
+- Creates Node with generated id and provided contentHash
 - Creates Continuation edges from parents if provided
-- Returns: created Node with computed hash
+- Returns: created Node
 
 **findById**
 - Input: id
@@ -128,19 +130,25 @@ Manages Node persistence.
 - Returns: ordered array of Nodes from root to given node
 
 **updateMetadata**
-- Input: id, metadata changes (bookmarked, bookmarkLabel, pruned, excluded, tags)
+- Input: id, metadata changes (bookmarked, bookmarkLabel, pruned, excluded)
 - Does not modify content or contentHash
 - Returns: updated Node
 
+*Note: Tags are managed separately via [TagRepository](#tagrepository). Use `assignTag` and `unassignTag` for Node tagging.*
+
 **verifyHash**
 - Input: id
-- Recomputes expected hash and compares to stored hash
-- Returns: verification result (valid | invalid | error)
+- Retrieves Node and required verification data
+- Delegates to hash verification service for recomputation
+- Returns: verification result (valid | invalid | incomplete)
 
 **verifyPathHashes**
 - Input: nodeId
-- Verifies hash chain from root to given node
+- Retrieves path from root to given node
+- Delegates to hash verification service for chain verification
 - Returns: array of verification results per node
+
+*Note: Hash verification requires different algorithms for human vs model nodes, and model node verification requires joining with RawApiResponse data. The repository coordinates data retrieval but delegates actual verification logic to a domain service.*
 
 ---
 
@@ -238,36 +246,78 @@ Manages Human persistence.
 
 ---
 
-## ModelRepository
+## LocalModelRepository
 
-Manages Model persistence.
+Manages persistence for user-defined local and custom models only.
+
+Remote provider models (OpenRouter, Anthropic, OpenAI, Google, Hyperbolic) are fetched dynamically via `ModelCatalogService` — see [LLM Provider Contracts](./llm-provider.md). Local models (Ollama, LM Studio, llama.cpp, custom endpoints) have no remote catalog and require user-defined persistence.
+
+*Note: User customization of models (display names, default parameters, etc.) is handled at the Agent level, not the Model level. See [AgentRepository](#agentrepository).*
 
 ### Operations
 
 **create**
-- Input: identifier, provider, displayName, endpoint (optional), credentialsRef, capabilities
-- Returns: created Model
+- Input: identifier, provider (`local` | `custom`), endpoint, authConfig (optional), capabilities (user-specified)
+- Returns: created LocalModel
 
 **findById**
 - Input: id
-- Returns: Model or null
+- Returns: LocalModel or null
 
-**findByProvider**
-- Input: provider, filters (optional)
-- Filters: archived, hasCredentials
-- Returns: array of Models
+**findAll**
+- Input: filters (optional)
+- Filters: provider (`local` | `custom`)
+- Returns: array of LocalModels
 
 **findByIdentifier**
-- Input: identifier (e.g., "claude-sonnet-4-20250514")
-- Returns: Model or null
+- Input: identifier
+- Returns: LocalModel or null
 
 **update**
-- Input: id, changes (displayName, endpoint, credentialsRef, capabilities)
-- Returns: updated Model
+- Input: id, changes (identifier, endpoint, authConfig, capabilities)
+- Returns: updated LocalModel
 
-**archive**
+**delete**
 - Input: id
 - Returns: boolean success
+
+### LocalModel Properties
+
+- **id** — ULID, primary identifier
+- **identifier** — string, user-defined model name (e.g., "llama3:70b", "my-fine-tune")
+- **provider** — enum: `local` | `custom`
+- **endpoint** — string, full URL to the model endpoint
+- **authConfig** — optional object (type: `none` | `bearer` | `basic`, credentials reference)
+- **capabilities** — user-specified ModelCapabilities (context window, multimodal support, etc.)
+- **createdAt** — timestamp
+- **updatedAt** — timestamp
+
+*Note: Unlike remote models, local model capabilities cannot be introspected automatically. Users must configure these manually or accept defaults.*
+
+---
+
+## GroveRepository
+
+Manages Grove persistence.
+
+### Operations
+
+**create**
+- Input: name (optional, defaults to "My Grove"), ownerId
+- Returns: created Grove
+
+**findById**
+- Input: id
+- Returns: Grove or null
+
+**findByOwner**
+- Input: ownerId
+- Returns: Grove or null (one Grove per user in MVP)
+
+**update**
+- Input: id, changes (name)
+- Updates updatedAt timestamp
+- Returns: updated Grove
 
 ---
 
@@ -278,7 +328,7 @@ Manages Document persistence.
 ### Operations
 
 **create**
-- Input: groveId, title, content
+- Input: groveId, title, blocks (array of DocumentBlock, can be empty)
 - Returns: created Document
 
 **findById**
@@ -287,16 +337,22 @@ Manages Document persistence.
 
 **findByGrove**
 - Input: groveId, filters (optional), pagination (optional)
-- Filters: archived, search (full-text on title + content)
+- Filters: archived, search (full-text on title + text block content)
 - Returns: array of Documents, total count
 
 **update**
-- Input: id, changes (title, content)
+- Input: id, changes (title, blocks)
 - Updates updatedAt timestamp
 - Returns: updated Document
 
 **archive**
 - Input: id
+- Sets archivedAt to current timestamp
+- Returns: boolean success
+
+**restore**
+- Input: id
+- Clears archivedAt
 - Returns: boolean success
 
 **delete**
@@ -401,7 +457,7 @@ Manages provenance API response storage.
 ### Operations
 
 **create**
-- Input: nodeId, provider, requestId, modelIdentifier, responseBody, responseHeaders, timestamps, tokenUsage
+- Input: nodeId, provider, requestId, modelIdentifier, responseBody, responseHeaders, requestTimestamp, responseTimestamp, latencyMs, tokenUsage (optional)
 - Compresses responseBody and responseHeaders
 - Returns: created RawApiResponse
 

@@ -11,6 +11,7 @@ The top-level container for a branching exploration.
 ### Properties
 
 - **id** — ULID, primary identifier
+- **groveId** — ULID, reference to parent Grove
 - **title** — string, user-editable display name
 - **description** — optional string, user-editable tree description
 - **rootNodeId** — ULID, reference to the single root Node
@@ -30,7 +31,8 @@ The top-level container for a branching exploration.
 ### Indexes
 
 - Primary: id
-- By createdAt (for listing/sorting)
+- By groveId (for listing trees in a Grove)
+- By groveId + createdAt (for listing/sorting within Grove)
 - By archivedAt null (for active trees only)
 
 ---
@@ -56,7 +58,8 @@ A single unit of content within a Loom Tree.
 - **bookmarkLabel** — optional string
 - **pruned** — boolean, default false (soft delete for branches)
 - **excluded** — boolean, default false (excluded from context window)
-- **tags** — array of strings
+
+*Note: Tags are managed via TagAssignment, not stored on the Node. See [Organization](./organization.md#tagassignment) for the tagging system.*
 
 ### Constraints
 

@@ -89,20 +89,43 @@ Backend type for human participants.
 
 ## Model
 
-Backend type for LLM agents. Stores only what's needed to call the API.
+Backend type for LLM agents.
 
-### Properties
+### Persistence Strategy
+
+Models have a **hybrid persistence strategy** based on provider type:
+
+- **Remote providers** (OpenRouter, Anthropic, OpenAI, Google, Hyperbolic): Models are fetched dynamically from provider catalogs via [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice). These are ephemeral — cached with TTL, refreshed on app launch. No persisted Model records.
+
+- **Local/Custom providers**: Models are user-defined and persisted via [LocalModelRepository](../contracts/repositories.md#localmodelrepository). There's no remote catalog to query.
+
+When an Agent references a remote model, `backendId` stores the `provider:identifier` composite key (e.g., `openrouter:claude-sonnet-4-20250514`), not a ULID. The catalog service resolves this to model metadata at runtime.
+
+When an Agent references a local model, `backendId` stores the LocalModel's ULID.
+
+### Properties (Remote Models — from Catalog)
+
+- **identifier** — string, the model name/version (e.g., `claude-sonnet-4-20250514`, `gpt-4o`)
+- **provider** — enum: `openrouter` | `hyperbolic` | `anthropic` | `openai` | `google`
+- **displayName** — string, human-friendly name from provider
+- **description** — optional string, provider's description
+- **capabilities** — ModelCapabilities object
+- **pricing** — optional PricingInfo (input/output cost per million tokens)
+
+*These properties come from the catalog and are not persisted locally.*
+
+### Properties (Local Models — Persisted)
 
 - **id** — ULID, primary identifier
-- **identifier** — string, the model name/version (e.g., `claude-sonnet-4-20250514`, `gpt-4o`)
-- **provider** — enum: `openrouter` `hyperbolic` | `anthropic` | `openai` | `google` | `local` | `custom`
-- **displayName** — string, human-friendly name for UI
-- **endpoint** — optional string, API URL (required for `local` and `custom` providers)
-- **credentialsRef** — string, reference to secure credential storage (never the key itself)
-- **capabilities** — ModelCapabilities object
+- **identifier** — string, user-defined model name (e.g., `llama3:70b`, `my-fine-tune`)
+- **provider** — enum: `local` | `custom`
+- **endpoint** — string, full URL to the model endpoint
+- **authConfig** — optional object (type: `none` | `bearer` | `basic`, credentials reference)
+- **capabilities** — ModelCapabilities object (user-specified)
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
-- **archivedAt** — optional timestamp, soft delete marker
+
+*See [LocalModelRepository](../contracts/repositories.md#localmodelrepository) for persistence operations.*
 
 ### ModelCapabilities Properties
 
@@ -118,15 +141,14 @@ These are **model-specific** capabilities that vary between models from the same
 
 - Configuration (temperature, system prompt, etc.) lives on Agent, not Model
 - This allows one Model to back multiple differently-configured Agents
-- credentialsRef points to secure storage — API keys are never stored in the database
+- API credentials are stored per-provider in secure storage, not per-model
 - Provider-specific validation applies (e.g., OpenAI models cannot be called via the Anthropic API)
 
-### Indexes
+### Indexes (Local Models Only)
 
 - Primary: id
-- By provider (for listing models by provider)
+- By provider (for filtering `local` vs `custom`)
 - By identifier (for finding by model name)
-- By archivedAt null (for active models only)
 
 ---
 
@@ -141,8 +163,11 @@ These are **model-specific** capabilities that vary between models from the same
 ### Agent → Model (for model agents)
 
 - Agent.type = `model`
-- Agent.backendId references Model.id
+- Agent.backendId references either:
+  - `provider:identifier` composite key for remote models (e.g., `openrouter:claude-sonnet-4-20250514`)
+  - LocalModel.id (ULID) for local/custom models
 - One Model can have many Agents (different temperature, prompts, etc.)
+- The Agent layer is where users customize their relationship with a model (name, defaults, etc.)
 
 ### Node → Agent
 
@@ -203,7 +228,7 @@ On first launch, create these default Agents:
 ### Credential Storage
 
 - API keys stored in platform secure storage (Keychain on iOS, Keystore on Android)
-- credentialsRef is an opaque identifier, not the key
+- Credentials are stored per-provider, not per-model (one API key unlocks all models from that provider)
 - Keys never logged, never in database, never in state
 
 ### Agent Isolation

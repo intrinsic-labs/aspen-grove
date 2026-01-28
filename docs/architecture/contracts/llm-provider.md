@@ -299,6 +299,70 @@ Returned alongside CompletionResponse:
 
 ---
 
+## ModelCatalogService
+
+Fetches and caches available models from remote providers. Local/custom models are persisted separately — see [LocalModelRepository](./repositories.md#localmodelrepository).
+
+### Design Rationale
+
+Models change frequently in the current landscape. Rather than persist a stale catalog, we fetch dynamically from providers:
+
+- Users get access to new models immediately without app updates
+- Pricing, context windows, and capabilities stay current
+- Reduces maintenance burden
+
+### Operations
+
+**getAvailableModels**
+- Input: provider
+- Returns cached models if fresh, otherwise fetches from provider
+- Returns: array of CatalogModel objects
+
+**refreshCatalog**
+- Input: provider (optional — refreshes all if omitted)
+- Forces fresh fetch from provider(s), updates cache
+- Returns: array of CatalogModel objects
+
+**getModelInfo**
+- Input: provider, modelIdentifier
+- Returns: CatalogModel or null
+
+**getCacheStatus**
+- Input: provider (optional)
+- Returns: cache age, staleness indicator per provider
+
+### CatalogModel Properties
+
+- **identifier** — string, the model ID used in API requests (e.g., "claude-sonnet-4-20250514")
+- **provider** — enum: provider this model is available through
+- **displayName** — string, human-readable name from provider
+- **description** — optional string, provider's description
+- **contextWindow** — number, max tokens
+- **capabilities** — ModelCapabilities object (see [agents.md](../model/agents.md#modelcapabilities-properties))
+- **pricing** — optional PricingInfo object (input/output per million tokens)
+
+### Caching Strategy
+
+- **TTL**: 24 hours default, configurable
+- **Storage**: in-memory + lightweight file cache for offline fallback
+- **Refresh triggers**: app launch, manual refresh, TTL expiration
+- **Offline behavior**: serve stale cache with indicator, don't block app usage
+
+### Provider-Specific Notes
+
+| Provider | Catalog Endpoint | Notes |
+|----------|------------------|-------|
+| OpenRouter | `GET /api/v1/models` | Comprehensive, includes pricing |
+| Anthropic | Hardcoded list | No public catalog API; update with SDK releases |
+| OpenAI | `GET /v1/models` | Returns all models, filter to chat-capable |
+| Google | Hardcoded list | Vertex AI model garden requires auth |
+| Hyperbolic | `GET /v1/models` | OpenAI-compatible endpoint |
+| Local/Custom | N/A | User-defined, see LocalModelRepository |
+
+*Note: Some providers don't expose a catalog API. For these, we maintain a hardcoded list updated with app releases, supplemented by user's ability to manually specify model identifiers.*
+
+---
+
 ## Testing Support
 
 ### MockLlmProvider
