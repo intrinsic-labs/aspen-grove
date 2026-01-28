@@ -4,6 +4,81 @@
 
 ---
 
+## Content Block Primitives
+
+Aspen Grove uses a shared set of content block primitives across both Nodes and Documents. This ensures consistency in how multimodal content is handled throughout the system.
+
+### Shared Primitives (from Core Entities)
+
+These block types are defined in [core-entities.md](./core-entities.md) and reused here:
+
+- **TextBlock** — `{ type: 'text', text: string }` — markdown-compatible text
+- **ImageBlock** — `{ type: 'image', ref, mimeType, width, height, thumbnailRef?, altText? }`
+- **AudioBlock** — `{ type: 'audio', ref, mimeType, durationMs, transcriptRef? }`
+
+Nodes use these primitives directly (or as a `mixed` array). Documents extend them with additional block types suited for structured prose.
+
+### Document-Specific Block Types
+
+#### Heading Block
+
+- **type** — literal `heading`
+- **level** — number: `1 | 2 | 3 | 4 | 5 | 6`
+- **text** — string, the heading content
+
+#### Code Block
+
+- **type** — literal `code`
+- **language** — optional string (e.g., `typescript`, `python`)
+- **code** — string, the code content
+
+#### Callout Block
+
+- **type** — literal `callout`
+- **variant** — enum: `info` | `warning` | `tip` | `note`
+- **content** — array of TextBlock | ImageBlock (nested content)
+
+#### Node Embed Block
+
+- **type** — literal `node-embed`
+- **nodeId** — ULID, reference to the embedded Node
+- **loomTreeId** — ULID, reference to the Node's parent LoomTree
+- **displayMode** — enum: `inline` | `card` | `full`
+
+#### Tree Embed Block
+
+- **type** — literal `tree-embed`
+- **loomTreeId** — ULID, reference to the embedded LoomTree
+- **pathToNode** — optional ULID, specific node to highlight
+- **displayMode** — enum: `card` | `preview`
+
+#### Divider Block
+
+- **type** — literal `divider`
+
+### DocumentBlock Union
+
+A DocumentBlock is one of:
+- TextBlock (shared)
+- ImageBlock (shared)
+- AudioBlock (shared)
+- HeadingBlock
+- CodeBlock
+- CalloutBlock
+- NodeEmbedBlock
+- TreeEmbedBlock
+- DividerBlock
+
+### Design Notes
+
+- Shared primitives ensure consistent rendering components across Nodes and Documents
+- Document-specific blocks enable richer authoring experiences
+- Embed blocks create semantic links (also stored as Link entities for querying)
+- New block types can be added without changing the Document schema
+- Block order is significant — documents render blocks in array order
+
+---
+
 ## Grove
 
 The top-level container for all user data.
@@ -31,14 +106,14 @@ The top-level container for all user data.
 
 ## Document
 
-A file that is not a Loom Tree — plain notes, markdown files, reference material.
+A rich, mutable document for notes, reference material, and composed artifacts.
 
 ### Properties
 
 - **id** — ULID, primary identifier
 - **groveId** — ULID, reference to parent Grove
 - **title** — string, display name
-- **content** — string, markdown content
+- **blocks** — array of DocumentBlock objects (see Content Block Primitives above)
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
 - **archivedAt** — optional timestamp, soft delete marker
@@ -46,8 +121,9 @@ A file that is not a Loom Tree — plain notes, markdown files, reference materi
 ### Constraints
 
 - Documents are mutable (unlike Nodes)
-- Content is plain markdown text (no multimodal content in Documents)
-- Documents can link to Loom Trees and Nodes via Link entities
+- Blocks array can be empty (blank document)
+- Embed blocks (node-embed, tree-embed) should have corresponding Link entities for bidirectional querying
+- Documents support all shared multimodal primitives plus document-specific block types
 
 ### Indexes
 
@@ -55,7 +131,14 @@ A file that is not a Loom Tree — plain notes, markdown files, reference materi
 - By groveId (for listing all documents)
 - By groveId + updatedAt (for recent documents)
 - By archivedAt null (for active documents only)
-- Full-text search on title + content
+- Full-text search on title + text block content
+
+### Rendering Considerations
+
+- Shared blocks (Text, Image, Audio) use the same rendering components as Node content
+- Document-specific blocks have dedicated renderers
+- Embed blocks fetch and display referenced content inline
+- Invalid embed references (deleted nodes/trees) display gracefully with "content unavailable" state
 
 ---
 
@@ -178,7 +261,7 @@ Junction entity connecting Tags to items.
 
 ### Full-Text Search Targets
 
-- Document: title, content
+- Document: title, text blocks content, heading blocks content
 - LoomTree: title, systemContext
 - Node: text content (when type is text or mixed)
 - Tag: name
@@ -220,3 +303,5 @@ Junction entity connecting Tags to items.
 - Links to deleted items: remove Link or mark as broken
 - TagAssignments to deleted items: remove automatically
 - Media files for deleted Nodes: cleanup job removes orphaned files
+- Media files for deleted Documents: same cleanup job handles document media
+- Embed blocks in Documents pointing to deleted content: render as "unavailable" until document is edited

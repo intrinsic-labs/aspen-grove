@@ -147,6 +147,12 @@ Node content uses a discriminated union pattern for extensibility.
 - Thumbnails enable fast rendering without loading full images
 - Transcript references allow linking audio to searchable text
 
+### Shared Primitives
+
+The TextBlock, ImageBlock, and AudioBlock types defined here are **shared primitives** used across the system. Documents extend these with additional block types suited for structured prose (headings, code blocks, callouts, embeds, etc.).
+
+See [organization.md](./organization.md#content-block-primitives) for the complete DocumentBlock type system that builds on these primitives.
+
 ---
 
 ## Computed Concepts (Not Stored)
