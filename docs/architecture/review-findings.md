@@ -11,10 +11,10 @@
 
 | Severity | Total | Resolved | Needs Work | Deferred |
 |----------|-------|----------|------------|----------|
-| Critical | 3 | 2 | 1 | 0 |
-| Important | 5 | 3 | 2 | 0 |
-| Medium | 4 | 1 | 1 | 2 |
-| Minor | 5 | 2 | 1 | 2 |
+| Critical | 3 | 3 | 0 | 0 |
+| Important | 5 | 4 | 1 | 0 |
+| Medium | 4 | 3 | 0 | 2 |
+| Minor | 5 | 3 | 0 | 2 |
 
 ---
 
@@ -49,7 +49,7 @@
 
 ### C2. Context Window Construction Not Specified
 
-**Status**: 🔴 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [domain-language](../../domain-language/context-memory.md#context-window), [llm-provider.md](./contracts/llm-provider.md)
 
@@ -62,7 +62,15 @@
 
 **Impact**: Cannot implement continuation generation without this specification.
 
-**Resolution**: Create [context-assembly.md](./specs/context-assembly.md).
+**Resolution**: Created [context-assembly.md](./specs/context-assembly.md) specification.
+
+**Completed**: Full specification covering:
+- **System context combination**: Agent-level first, then Tree-level (more specific context closer to messages)
+- **Multi-source edge roles**: Instruction (appended to system context), Context (before primary), Primary (main message)
+- **Three truncation strategies**: `truncateMiddle` (preserve start + end), `rollingWindow` (recent only), `stopAtLimit` (fail if exceeded)
+- **User-configurable options**: Truncation strategy, minimum recent nodes to preserve, token buffer for response
+- **Exclusion filtering**: Nodes with `excluded`/`pruned` metadata, annotation edges filtered by default
+- **Mode-specific assembly**: Dialogue Mode (messages array) vs Buffer Mode (concatenated document, no system context by default)
 
 ---
 
@@ -109,7 +117,7 @@ media/
 
 ### I2. Streaming Provenance Hash Overstates Guarantee
 
-**Status**: 🟡 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [provenance.md](./model/provenance.md#hash-chain-computation), [llm-provider.md](./contracts/llm-provider.md#raw-response-capture)
 
@@ -117,7 +125,7 @@ media/
 
 **Impact**: Doesn't invalidate provenance, but overstates the guarantee for streaming responses.
 
-**Resolution**: Add clarifying note to [provenance.md](./model/provenance.md) acknowledging streaming responses are assembled. Hash is over assembled content, which is still strong evidence but not byte-identical to wire format.
+**Resolution**: Added clarifying note to [provenance.md](./model/provenance.md) acknowledging streaming responses are assembled from SSE events. Hash is computed over the fully assembled response content after stream completes — still strong evidence but not wire-identical bytes.
 
 ---
 
@@ -188,7 +196,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ### M2. Voice Mode Edge Cases
 
-**Status**: 🟡 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [domain-language](../../domain-language/interaction-modes.md#voice-mode)
 
@@ -197,7 +205,12 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 - How to recover from connection drops?
 - How to indicate "I'm still thinking, don't stop listening"?
 
-**Resolution**: Add "Edge Cases & Recovery" subsection to Voice Mode spec.
+**Resolution**: Added comprehensive Voice Mode specification including:
+- **Think mode**: Pause button suspends timeout, user can think as long as needed, resume when ready
+- **Connection drops**: Interrupt TTS, speak error aloud, user retries manually
+- **Silence timeout**: 4 seconds of silence sends (if spoke) or ends voice chat (if nothing said)
+- **Button states**: Dictation/Pause/Resume button next to send, context-dependent behavior
+- **Voice chat ending**: Voice Mode stays ON, user re-engages via dictation button
 
 ---
 
@@ -211,7 +224,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 **Resolution**: QR code is for **local verification between Aspen Grove instances**. Data encoded in QR, scanned by another Aspen Grove app which verifies locally. No web service required.
 
-**Action**: Clarify in use-cases.md. Mark as post-MVP.
+**Completed**: Updated use-cases/exploration-study.md to clarify QR encodes data directly, verification is device-to-device, no web service required. Marked as post-MVP feature.
 
 ---
 
@@ -241,15 +254,17 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ---
 
-### m2. Tag Case-Insensitivity Implementation
+### m2. Tag Case Sensitivity
 
-**Status**: 🟡 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [organization.md](./model/organization.md#tag), [repositories](./contracts/repositories/tag-repository.md)
 
-**Problem**: Tags are case-insensitive unique, but no implementation guidance for SQLite.
+**Problem**: Original spec stated tags are case-insensitive unique, but this adds implementation complexity.
 
-**Resolution**: Add implementation note to tag-repository.md: use `COLLATE NOCASE` or normalize to lowercase on insert.
+**Resolution**: Tags are now **case-sensitive**. `#Claude` and `#claude` are different tags. This is simpler to implement, respects user intent, and is consistent with most tagging systems.
+
+**Completed**: Updated tag-repository.md to specify case-sensitive uniqueness and exact matching.
 
 ---
 
@@ -307,7 +322,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 ### Immediate (Before Development)
 
 1. [x] Create [specs/buffer-mode.md](./specs/buffer-mode.md) — resolve C1 ✓
-2. [ ] Create [specs/context-assembly.md](./specs/context-assembly.md) — resolve C2
+2. [x] Create [specs/context-assembly.md](./specs/context-assembly.md) — resolve C2 ✓
 3. [x] Update [media-storage.md](./contracts/media-storage.md) with Document paths — resolve C3 ✓
 4. [x] Update [core-entities.md](./model/core-entities.md) to remove `link` edge type — resolve I1 ✓
 5. [x] Update [agents.md](./model/agents.md) to simplify Human/Agent model — resolve m3 ✓
@@ -317,13 +332,13 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 7. [ ] Create [contracts/loom-tools.md](./contracts/loom-tools.md) — resolve I3
 8. [ ] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4
-8. [ ] Add streaming clarification to [provenance.md](./model/provenance.md) — resolve I2
-9. [ ] Add Voice Mode edge cases to [domain-language.md](../../domain-language.md) — resolve M2
-10. [ ] Add tag implementation note to [repositories](./contracts/repositories/tag-repository.md) — resolve m2
+8. [x] Add streaming clarification to [provenance.md](./model/provenance.md) — resolve I2 ✓
+9. [x] Add Voice Mode edge cases to [interaction-modes.md](../../domain-language/interaction-modes.md) — resolve M2 ✓
+10. [x] Update tag case sensitivity in [repositories](./contracts/repositories/tag-repository.md) — resolve m2 ✓
 
 ### Documentation Updates
 
-11. [ ] Clarify Provenance QR scope in [use-cases](../../use-cases/exploration-study.md#16-provenance-verification) — resolve M3
+11. [x] Clarify Provenance QR scope in [use-cases](../../use-cases/exploration-study.md#16-provenance-verification) — resolve M3 ✓
 12. [x] Add Field Guide CMS note to [domain-language](../../domain-language/field-guide.md) — resolve m5 ✓
 
 ---

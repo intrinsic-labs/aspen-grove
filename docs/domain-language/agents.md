@@ -37,7 +37,7 @@ A single Claude model might back multiple agents:
 - "Claude (Creative)" — temperature 1.0, higher variance
 - "Claude (Precise)" — temperature 0.3, lower variance
 
-Each is a different Agent with different configurations, all backed by the same Model.
+Each is a different Agent with unique configurations, all backed by the same Model.
 
 ---
 

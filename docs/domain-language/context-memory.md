@@ -24,7 +24,7 @@ For edges with multiple sources (hyperedges), context may include content from a
 - **Context** — supplementary information included for reference
 - **Instruction** — directives that shape the response
 
-> For full context assembly specification, see [Architecture: Context Assembly](../architecture/specs/context-assembly.md) (when created).
+> For full context assembly specification, see [Architecture: Context Assembly](../architecture/specs/context-assembly.md).
 
 ---
 

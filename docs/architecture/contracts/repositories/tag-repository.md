@@ -17,8 +17,7 @@ Creates a new Tag.
 
 **Behavior:**
 - Generates id and timestamp
-- Enforces unique name within Grove (case-insensitive)
-- Use `COLLATE NOCASE` in SQLite or normalize to lowercase on insert
+- Enforces unique name within Grove (case-sensitive)
 
 **Returns:** Created Tag
 
@@ -43,7 +42,7 @@ Finds a Tag by name within a Grove.
 
 **Input:**
 - `groveId` — ULID
-- `name` — string (case-insensitive match)
+- `name` — string (exact match)
 
 **Returns:** Tag or null
 
@@ -171,15 +170,6 @@ Finds all items that have a specific Tag.
 ---
 
 ## Implementation Notes
-
-### Case-Insensitive Uniqueness
-
-Tags are case-insensitive unique within a Grove. Implementation options:
-
-1. **SQLite COLLATE NOCASE**: Define the unique constraint with `COLLATE NOCASE`
-2. **Normalize on insert**: Convert to lowercase before storing, store original for display
-
-Recommended: Option 1 for simplicity, or store both normalized and display versions.
 
 ### Cascade Behavior
 

@@ -31,24 +31,53 @@ An app-wide toggle that enables hands-free interaction with Loom Trees. Designed
 ### Core Behavior
 
 When Voice Mode is **ON**:
-1. User sends prompt (text or speech-to-text via native platform API)
+1. User sends prompt (typed + send button, OR dictation button for voice)
 2. Model generates response → Node created
-3. Response fully received → text-to-speech reads the node aloud
-4. Node text changes color during speech (visual feedback)
-5. Speech finishes → app listens for next voice input
-6. If speech detected, auto-sends after 4-second pause of silence
-7. If no speech detected within 4 seconds, app stops listening
+3. Response received → TTS reads it aloud
+4. TTS finishes → app auto-listens with 4-second silence timeout
+5. User speaks → transcribed → sent as prompt after 4-second pause of silence
+6. Loop back to step 2
 
 When Voice Mode is **OFF**:
 - Standard text-based interaction
-- No automatic speech output or input
+- No automatic speech output
+- Dictation button still available for voice input (but no auto-listen after response)
+
+### Silence Timeout Behavior
+
+The 4-second timeout applies to *silence*, not speech duration. Users can speak for as long as they want.
+
+- **After 4 seconds of silence**: If user said something → send as prompt. If user said nothing → voice chat ends (app stops listening, Voice Mode stays ON).
+- **No maximum speech duration**: User can talk continuously without timeout.
+
+### Button States
+
+The dictation button appears next to the send button and changes based on state:
+
+| State | Button | Tap Action |
+|-------|--------|------------|
+| Idle | 🎤 Dictation | Start listening |
+| Listening | ⏸️ Pause | Pause listening (think mode) |
+| Paused while listening | ▶️ Resume | Resume listening |
+| TTS playing | ⏸️ Pause | Pause TTS playback |
+| TTS paused | ▶️ Resume | Resume TTS playback |
+
+### Think Mode (Pause While Dictating)
+
+If user needs time to think mid-dictation:
+1. Tap pause → listening stops, timeout suspended
+2. Think as long as needed
+3. Tap resume → 4-second timeout starts
+4. If user speaks → continue transcribing
+5. If 4 seconds of silence and user had already said something → send
+6. If 4 seconds of silence and user said nothing → voice chat ends
 
 ### Interactions
 
-- **Toggle**: Accessible from menu bar (any Loom Tree) or Settings screen
+- **Voice Mode Toggle**: Accessible from menu bar (any Loom Tree) or Settings screen
+- **Dictation button**: Start voice input (always available, next to send button)
 - **Double-tap any node**: Hear it read aloud (works regardless of Voice Mode state)
-- **Single-tap during speech**: Stop playback immediately; does NOT start listening
-- **Explicit listen trigger**: App only listens when directed (after speech completes in Voice Mode, or via explicit action)
+- **Single-tap during TTS**: Stops playback immediately; does NOT start listening
 
 ### Technical Implementation (MVP)
 
@@ -56,11 +85,24 @@ When Voice Mode is **OFF**:
 - **Text-to-speech**: Native platform APIs (AVSpeechSynthesizer on iOS, TextToSpeech on Android)
 - **Future**: Higher-quality TTS & transcription services as optional upgrade
 
+### Edge Cases & Recovery
+
+**Connection drop during generation:**
+- Interrupt any current TTS
+- Speak the error aloud (e.g., "Connection lost. Please try again.")
+- User can retry via dictation button or typed input
+
+**Voice chat ending:**
+- Occurs when 4-second silence timeout expires with nothing said
+- Voice Mode stays ON — user can re-engage via dictation button
+- No automatic retry or prompt
+
 ### Limitations (MVP)
 
 - Requires app to be in foreground (background audio is post-MVP)
 - Voice commands for Loom operations (e.g., "go back," "generate three more") are post-MVP
 - Voice input is for prompt content only, not navigation
+- Speech-to-text happens locally — no connection drop concerns for transcription
 
 ---
 

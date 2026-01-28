@@ -119,10 +119,11 @@
    - Raw API response with metadata (request ID, headers, timestamps)
 6. User exports provenance data for external verification if needed
 7. User can generate a **Provenance QR Code** for sharing:
-   - QR encodes a URL pointing to a verification endpoint
-   - When scanned, displays: content hash, timestamp certificate, provenance summary
-   - Enables low-friction verification without requiring Aspen Grove installation
-   - Useful for publications, presentations, or sharing research findings
+   - QR encodes provenance data directly (hash, timestamp certificate, summary)
+   - Scanned by another Aspen Grove instance, which verifies locally
+   - No web service required — verification is device-to-device
+   - Useful for in-person verification, presentations, or sharing research findings
+   - *Note: Post-MVP feature*
 
 **Value**: Research credibility. Users can demonstrate that outputs are genuine, not fabricated. QR codes make verification accessible to anyone with a phone.
 

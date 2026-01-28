@@ -193,7 +193,7 @@ A label for organization and filtering.
 
 ### Constraints
 
-- Tag names are unique within a Grove (case-insensitive)
+- Tag names are unique within a Grove (case-sensitive)
 - Tags are created on first use, or manually
 - Deleting a tag removes all TagAssignments but not the tagged items
 

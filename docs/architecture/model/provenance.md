@@ -144,7 +144,9 @@ Inputs to hash:
 3. createdAt timestamp (ISO 8601)
 4. SHA-256 hash of the raw API response bytes (headers + body as a single blob, pre-compression)
 
-**Important**: The hash is computed over the **raw HTTP response bytes** exactly as received from the wire — not over our parsed `RawApiResponse` domain object. This ensures the hash is tied to the actual provider response, not our representation of it.
+**Important**: The hash is computed over the **raw HTTP response bytes** — not over our parsed `RawApiResponse` domain object. This ensures the hash is tied to the actual provider response, not our representation of it.
+
+**Streaming Responses**: For streaming completions (SSE), there are no "raw bytes" in the traditional sense — the response is assembled from individual events. In this case, the hash is computed over the fully assembled response content after the stream completes. This is still strong provenance evidence, but the hash is over assembled content rather than wire-identical bytes.
 
 Model nodes tie their hash to the full API response evidence. This means:
 - Raw response bytes must be hashed *immediately* upon receipt, before any parsing
