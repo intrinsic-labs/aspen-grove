@@ -8,14 +8,14 @@
 
 The LLM provider abstraction enables:
 
-- Uniform interface across providers (Anthropic, OpenAI, Google, local models)
+- Uniform interface across providers (OpenRouter, Hyperbolic, Anthropic, OpenAI, Google, local models, user defined providers)
 - Easy addition of new providers without changing application logic
 - Testability with mock implementations
 - Provider-specific features exposed through capability detection
 
 ---
 
-## LlmProvider Interface
+## LLMProvider Interface
 
 The core interface that all provider implementations must satisfy.
 
@@ -32,14 +32,11 @@ The core interface that all provider implementations must satisfy.
 
 ### ProviderCapabilities Properties
 
-- **supportsStreaming** — boolean, can stream response tokens
-- **supportsImages** — boolean, can accept image inputs
-- **supportsAudio** — boolean, can accept audio inputs
-- **supportsToolUse** — boolean, can use function/tool calling
-- **supportsSystemPrompt** — boolean, has dedicated system prompt field
-- **maxContextTokens** — number, maximum context window
-- **maxOutputTokens** — number, maximum response length
-- **supportedModels** — array of model identifiers available
+These are **provider-level** capabilities that apply to the API itself, not individual models. For model-specific capabilities (image/audio support, context limits, etc.), see [Model Capabilities](../model/agents.md#modelcapabilities-properties).
+
+- **supportsStreaming** — boolean, API can stream response tokens
+- **supportsSystemPrompt** — boolean, API has dedicated system prompt field (vs. injecting into messages)
+- **supportedModels** — array of model identifiers available through this provider
 
 ---
 
@@ -182,38 +179,56 @@ Base error type for all provider errors.
 
 Each provider needs an adapter implementing the LlmProvider interface.
 
+### OpenRouterAdapter
+
+- Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+- Authentication: Bearer token (`Authorization: Bearer <key>`)
+- Models: aggregates models from multiple providers (Claude, GPT, Llama, Gemini, etc.)
+- Specific features: OpenAI-compatible API, model routing/fallback, usage-based pricing, plugins (web search, PDF parsing)
+- Optional headers: `HTTP-Referer` (app URL), `X-Title` (app name) for attribution
+
+### HyperbolicAdapter
+
+- Endpoint: `https://api.hyperbolic.xyz/v1/chat/completions`
+- Authentication: Bearer token (`Authorization: Bearer <key>`)
+- Models: Llama 3.1 70B/405B, Qwen, DeepSeek, and other open models
+- Specific features: OpenAI-compatible API, also supports image generation and audio/TTS endpoints
+
 ### AnthropicAdapter
 
-- Endpoint: https://api.anthropic.com/v1/messages
-- Authentication: x-api-key header
+- Endpoint: `https://api.anthropic.com/v1/messages`
+- Authentication: `x-api-key` header + `anthropic-version` header (e.g., `2023-06-01`)
 - Models: claude-sonnet-4-20250514, claude-3-5-haiku, etc.
-- Specific features: native system prompt, strong tool use
+- Specific features: native system prompt field, strong tool use, message batches API
 
 ### OpenAiAdapter
 
-- Endpoint: https://api.openai.com/v1/chat/completions
-- Authentication: Bearer token
-- Models: gpt-4o, gpt-4-turbo, gpt-3.5-turbo, etc.
-- Specific features: function calling, JSON mode
+- Endpoint: `https://api.openai.com/v1/chat/completions`
+- Authentication: Bearer token (`Authorization: Bearer <key>`)
+- Models: gpt-4o, gpt-4-turbo, o1, o3, etc.
+- Specific features: function calling, JSON mode, structured outputs, streaming
 
 ### GoogleAdapter
 
-- Endpoint: Vertex AI or AI Studio endpoints
-- Authentication: OAuth or API key
-- Models: gemini-pro, gemini-ultra, etc.
-- Specific features: multi-turn conversation format differences
+- Endpoint: Vertex AI (`https://[region]-aiplatform.googleapis.com`) or AI Studio (`https://generativelanguage.googleapis.com`)
+- Authentication: OAuth 2.0 (Vertex AI) or API key (AI Studio)
+- Models: gemini-1.5-pro, gemini-1.5-flash, gemini-ultra, etc.
+- Specific features: multi-turn conversation format differences, grounding with Google Search
 
 ### LocalAdapter
 
-- Endpoint: configurable (e.g., localhost:8080)
-- Authentication: none or basic auth
-- Models: whatever the local server provides (llama.cpp, ollama, etc.)
-- Specific features: may not support all capabilities
+- Endpoint: user-configured — must be network-accessible from mobile device
+  - Local network IP: `http://192.168.1.100:1234/v1` (LM Studio default port)
+  - Dynamic DNS: `http://my-home-server.duckdns.org:11434/v1` (Ollama)
+  - Tailscale/ZeroTier: `http://100.x.x.x:8080/v1` (private mesh network)
+- Authentication: none or basic auth (configurable)
+- Models: whatever the local server provides (LM Studio, Ollama, llama.cpp, etc.)
+- Specific features: typically OpenAI-compatible, may not support all capabilities
 
 ### CustomAdapter
 
 - Endpoint: user-configured
-- Authentication: user-configured
+- Authentication: user-configured (Bearer, API key, or none)
 - For self-hosted or alternative providers
 - Capability detection via introspection or manual configuration
 
@@ -221,25 +236,48 @@ Each provider needs an adapter implementing the LlmProvider interface.
 
 ## Provenance Integration
 
+The LLM provider layer is critical for provenance because it's the only place we have access to the raw HTTP response bytes before any parsing or transformation. See [Provenance Entities](../model/provenance.md) for the full provenance strategy.
+
 ### Raw Response Capture
 
-Every completion request must capture the complete HTTP response:
+Every completion request must capture the **raw HTTP response bytes** exactly as received from the wire:
 
-- Full response body (JSON)
-- Response headers (especially request IDs, timestamps)
-- Request timing (latency)
+- Full response body (raw bytes, not parsed JSON)
+- Response headers as raw text (especially request IDs, timestamps, rate limit state)
+- Request timing (latency in milliseconds)
 - Model identifier from response (may differ from request)
+
+**Critical**: The raw bytes are used to compute a SHA-256 hash for model-generated Node provenance. This hash must be computed *before* any parsing, transformation, or domain object creation. The hash ties the Node's integrity to the actual provider response.
+
+### Capture Flow
+
+1. Receive HTTP response from provider
+2. Immediately compute SHA-256 hash of raw bytes (headers + body as single blob)
+3. Store raw bytes (will be compressed later by repository)
+4. Parse response into domain objects
+5. Return both parsed response AND raw bytes + hash to caller
 
 ### Capture Points
 
-- Non-streaming: capture complete response before parsing
-- Streaming: accumulate chunks, capture final assembled response
-- Errors: capture error response body
+- **Non-streaming**: Capture complete response bytes before parsing
+- **Streaming**: Accumulate all chunks, capture final assembled response bytes after stream completes
+- **Errors**: Capture error response body (still valuable evidence)
+
+### RawResponseCapture Object
+
+Returned alongside CompletionResponse:
+
+- **rawBytes** — the complete HTTP response (headers + body) as raw bytes
+- **rawBytesHash** — SHA-256 hash of rawBytes, hex-encoded
+- **requestTimestamp** — when the request was sent
+- **responseTimestamp** — when the response was fully received
+- **latencyMs** — response time in milliseconds
 
 ### Storage Handoff
 
-- Provider returns rawResponse in CompletionResponse
-- Calling use case passes to RawApiResponseRepository
+- Provider returns `rawResponse` (RawResponseCapture) alongside CompletionResponse
+- Calling use case passes to RawApiResponseRepository for storage
+- Repository compresses and persists; hash is used in Node.contentHash computation
 - Provider doesn't handle storage directly (separation of concerns)
 
 ---

@@ -106,9 +106,10 @@ Backend type for LLM agents. Stores only what's needed to call the API.
 
 ### ModelCapabilities Properties
 
+These are **model-specific** capabilities that vary between models from the same provider. For provider-level capabilities (streaming protocol support, system prompt handling, etc.), see [LLM Provider Contracts](../contracts/llm-provider.md#providercapabilities-properties).
+
 - **supportsImages** — boolean, can process image inputs
 - **supportsAudio** — boolean, can process audio inputs
-- **supportsStreaming** — boolean, can stream responses
 - **supportsToolUse** — boolean, can use function/tool calling
 - **maxContextTokens** — number, maximum context window size
 - **maxOutputTokens** — number, maximum response length
