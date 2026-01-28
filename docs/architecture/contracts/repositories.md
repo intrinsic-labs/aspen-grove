@@ -160,7 +160,7 @@ Manages Edge persistence.
 
 **create**
 - Input: loomTreeId, sources (array of nodeId + role), targetNodeId, edgeType
-- Validates all nodes belong to same LoomTree (except link type)
+- Validates all nodes belong to same LoomTree
 - Returns: created Edge
 
 **findById**
@@ -193,7 +193,7 @@ Manages Agent persistence.
 ### Operations
 
 **create**
-- Input: name, type, backendId, configuration, permissions, loomAware
+- Input: name, type, modelRef (required if type=model, null if type=human), configuration, permissions, loomAware
 - Returns: created Agent
 
 **findById**
@@ -205,9 +205,9 @@ Manages Agent persistence.
 - Filters: archived, loomAware
 - Returns: array of Agents, total count
 
-**findByBackend**
-- Input: backendId
-- Returns: array of Agents using this Human or Model
+**findByModelRef**
+- Input: modelRef
+- Returns: array of Agents using this model reference
 
 **update**
 - Input: id, changes (name, configuration, permissions, loomAware)
@@ -221,28 +221,26 @@ Manages Agent persistence.
 - Input: id
 - Returns: boolean success
 
+**findOwner**
+- Returns: the owner (human) Agent for the app
+
 ---
 
-## HumanRepository
+## UserPreferencesRepository
 
-Manages Human persistence.
+Manages the singleton UserPreferences record.
 
 ### Operations
 
-**create**
-- Input: displayName, email (optional), preferences
-- Returns: created Human
-
-**findById**
-- Input: id
-- Returns: Human or null
-
-**findDefault**
-- Returns: the default Human for single-user app
+**get**
+- Returns: the UserPreferences record (creates with defaults if not exists)
 
 **update**
-- Input: id, changes (displayName, email, avatarRef, preferences)
-- Returns: updated Human
+- Input: changes (displayName, email, avatarRef, theme, fontSize, fontFace, nodeViewStyle, nodeViewCornerRadius, defaultVoiceModeEnabled, defaultTemperature, verboseErrorAlerts)
+- Updates updatedAt timestamp
+- Returns: updated UserPreferences
+
+*Note: There is no create or delete operation. The singleton is created automatically on first access.*
 
 ---
 
@@ -303,7 +301,7 @@ Manages Grove persistence.
 ### Operations
 
 **create**
-- Input: name (optional, defaults to "My Grove"), ownerId
+- Input: name (optional, defaults to "My Grove"), ownerAgentId
 - Returns: created Grove
 
 **findById**
@@ -311,7 +309,7 @@ Manages Grove persistence.
 - Returns: Grove or null
 
 **findByOwner**
-- Input: ownerId
+- Input: ownerAgentId
 - Returns: Grove or null (one Grove per user in MVP)
 
 **update**

@@ -87,7 +87,7 @@ The top-level container for all user data.
 
 - **id** — ULID, primary identifier
 - **name** — string, display name (default: "My Grove")
-- **ownerId** — ULID, reference to the Human who owns this Grove
+- **ownerAgentId** — ULID, reference to the owner (human) Agent
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
 

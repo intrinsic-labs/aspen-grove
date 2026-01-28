@@ -75,6 +75,17 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 
 ---
 
+## Review & Specifications
+
+| Document | Description |
+|----------|-------------|
+| [Review Findings](./review-findings.md) | Pre-development review issues and resolutions |
+| [Buffer Mode Questions](./specs/buffer-mode-questions.md) | Open questions for Buffer Mode specification |
+
+*Additional specs will be added to `./specs/` as issues are resolved.*
+
+---
+
 ## Related Documents
 
 - [Domain Language](../domain-language.md) — Core concepts and terminology

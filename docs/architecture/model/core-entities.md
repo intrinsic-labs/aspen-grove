@@ -89,7 +89,7 @@ A directed hyperedge connecting source Node(s) to a target Node.
 - **loomTreeId** — ULID, reference to parent LoomTree
 - **sources** — array of EdgeSource objects
 - **targetNodeId** — ULID, reference to the target Node
-- **edgeType** — enum: `continuation` | `annotation` | `link`
+- **edgeType** — enum: `continuation` | `annotation`
 - **createdAt** — timestamp
 
 ### EdgeSource Properties
@@ -101,9 +101,10 @@ A directed hyperedge connecting source Node(s) to a target Node.
 
 - Most edges have a single source with role `primary`
 - Multi-source edges are used for complex generation (e.g., image + text prompt)
-- An Edge's sources and target must belong to the same LoomTree (except `link` type which can cross trees)
+- All Edge sources and targets must belong to the same LoomTree
 - `annotation` edges are excluded from context window by default
-- `link` edges are for cross-referencing, not traversal
+
+*Note: Cross-references between Loom Trees, Documents, and Nodes use the [Link entity](./organization.md#link), not Edges.*
 
 ### Indexes
 

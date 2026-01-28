@@ -1,19 +1,29 @@
 # Agents Model Specification
 
-> Specification for Agent, Human, and Model entities — the participants in Loom Tree interactions.
+> Specification for Agent and Model entities — the participants in Loom Tree interactions.
+
+---
+
+## Overview
+
+Aspen Grove uses a **unified Agent abstraction** where both humans and models are represented the same way at the API level. This enables:
+
+- **Uniform tree operations** — The Loom Tree doesn't care what's behind an Agent
+- **Flexible configuration** — Multiple Agent profiles can reference the same underlying model
+- **Consistent authorship** — All Nodes have an `authorAgentId`, whether human or model
 
 ---
 
 ## Agent
 
-The unified abstraction for any entity that can participate in a Loom Tree.
+The core abstraction for any entity that can participate in or operate on a Loom Tree.
 
 ### Properties
 
 - **id** — ULID, primary identifier
 - **name** — string, display name
 - **type** — enum: `human` | `model`
-- **backendId** — ULID, reference to Human or Model record based on type
+- **modelRef** — optional string, only for `type: model` (see Model Reference below)
 - **configuration** — AgentConfiguration object
 - **permissions** — AgentPermissions object
 - **loomAware** — boolean, whether this agent can access tree navigation tools
@@ -29,6 +39,8 @@ The unified abstraction for any entity that can participate in a Loom Tree.
 - **stopSequences** — optional array of strings
 - **customParameters** — optional key-value map for provider-specific settings
 
+*Note: For human agents, these configuration options are ignored (humans don't have temperature settings). They exist on Agent for uniformity.*
+
 ### AgentPermissions Properties
 
 - **read** — boolean, can view Loom Trees and content
@@ -36,100 +48,157 @@ The unified abstraction for any entity that can participate in a Loom Tree.
 
 ### Constraints
 
-- One Human or Model can back multiple Agents (different configurations)
-- Agent is the identity used for Node authorship, not the underlying Human/Model (with the exception of the contentHash field - read more in [core entities](./core-entities.md))
-- Permissions default to read: true, write: true for new Agents
-- loomAware defaults to false for Model agents, true for Human agents
+- `type` is immutable after creation (required for stable hash verification — see [Provenance](./provenance.md))
+- `modelRef` is required when `type: model`, must be null when `type: human`
+- Permissions default to `read: true`, `write: true` for new Agents
+- `loomAware` defaults to `true` for human agents, `false` for model agents
+- One model can back multiple Agents (different configurations/personas)
+- There is exactly one human Agent marked as the **owner Agent** (see Default Agents below)
 
 ### Indexes
 
 - Primary: id
 - By type (for filtering humans vs models)
-- By backendId (for finding all agents using a given Human/Model)
+- By modelRef (for finding all agents using a given model)
 - By archivedAt null (for active agents only)
 
 ---
 
-## Human
+## Model Reference
 
-Backend type for human participants.
+The `modelRef` field on Agent stores a reference to the underlying model. The format depends on provider type:
 
-### Properties
+### Remote Models
 
-- **id** — ULID, primary identifier
-- **displayName** — string, user's chosen name
-- **email** — optional string, for future account features
-- **avatarRef** — optional string, reference to avatar image
-- **preferences** — HumanPreferences object
-- **createdAt** — timestamp
-- **updatedAt** — timestamp
+For models from remote providers (OpenRouter, Anthropic, OpenAI, Google, Hyperbolic), `modelRef` stores a composite key:
 
-### HumanPreferences Properties
+```
+{provider}:{identifier}
+```
 
-- **defaultVoiceModeEnabled** — boolean, default false
-- **defaultTemperature** — optional number, preferred temperature for new agents
-- **theme** — optional string, UI theme preference
-- **fontSize** — number, UI text size preference, default 16
-- **fontFace** — string, UI font selection
-- **nodeViewStyle** — enum: `filled` | `outlined`
-- **nodeViewCornerRadius** — number, in range 0 to 28
-- **verboseErrorAlerts** — boolean, defaults to false
+Examples:
+- `openrouter:claude-sonnet-4-20250514`
+- `anthropic:claude-3-5-haiku-20241022`
+- `openai:gpt-4o`
+- `google:gemini-1.5-pro`
 
-### Constraints
+The [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice) resolves this to full model metadata at runtime.
 
-- One Human record per app installation (MVP — single user)
-- Multiple Agent configurations can reference the same Human
-- Human represents the person; Agent represents a "mode" of interaction
+### Local Models
 
-### Indexes
+For user-defined local models, `modelRef` stores the LocalModel's ULID:
 
-- Primary: id
+```
+local:{ulid}
+```
+
+Example: `local:01HQ3K4N7Y8M2P5R6T9W0X1Z2A`
+
+See [LocalModelRepository](../contracts/repositories.md#localmodelrepository) for local model persistence.
 
 ---
 
-## Model
+## UserPreferences
 
-Backend type for LLM agents.
+App-wide user preferences stored as a singleton. Not tied to any specific Agent.
 
-### Persistence Strategy
+### Properties
 
-Models have a **hybrid persistence strategy** based on provider type:
+- **id** — ULID, primary identifier (singleton — only one record exists)
+- **displayName** — string, user's chosen name (used as default for human Agent names)
+- **email** — optional string, for future account/sync features
+- **avatarRef** — optional string, reference to avatar image in media storage
+- **defaultVoiceModeEnabled** — boolean, default false
+- **defaultTemperature** — optional number, preferred temperature for new model agents
+- **theme** — enum: `light` | `dark` | `system`, default `system`
+- **fontSize** — number, UI text size in points, default 16
+- **fontFace** — string, UI font family name
+- **nodeViewStyle** — enum: `filled` | `outlined`, default `filled`
+- **nodeViewCornerRadius** — number, 0-28, default 12
+- **verboseErrorAlerts** — boolean, show detailed error info, default false
+- **createdAt** — timestamp
+- **updatedAt** — timestamp
 
-- **Remote providers** (OpenRouter, Anthropic, OpenAI, Google, Hyperbolic): Models are fetched dynamically from provider catalogs via [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice). These are ephemeral — cached with TTL, refreshed on app launch. No persisted Model records.
+### Constraints
 
-- **Local/Custom providers**: Models are user-defined and persisted via [LocalModelRepository](../contracts/repositories.md#localmodelrepository). There's no remote catalog to query.
+- Exactly one UserPreferences record exists per app installation
+- Created automatically on first launch with sensible defaults
+- Not linked to Grove or Agent — it's truly global
 
-When an Agent references a remote model, `backendId` stores the `provider:identifier` composite key (e.g., `openrouter:claude-sonnet-4-20250514`), not a ULID. The catalog service resolves this to model metadata at runtime.
+### Design Notes
 
-When an Agent references a local model, `backendId` stores the LocalModel's ULID.
+Previous versions had a separate `Human` entity that Agents referenced. This was simplified because:
 
-### Properties (Remote Models — from Catalog)
+- MVP is single-user — no need to model multiple humans locally
+- Human-specific preferences are app-wide, not per-Agent
+- The Agent abstraction already handles identity for authorship
+- Future multi-user (collaboration) will be server-mediated, not local
 
-- **identifier** — string, the model name/version (e.g., `claude-sonnet-4-20250514`, `gpt-4o`)
+---
+
+## Model (Remote — from Catalog)
+
+Remote models are not persisted locally. They're fetched dynamically from provider catalogs via [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice).
+
+### Properties (Runtime Only)
+
+- **identifier** — string, the model ID used in API requests
 - **provider** — enum: `openrouter` | `hyperbolic` | `anthropic` | `openai` | `google`
 - **displayName** — string, human-friendly name from provider
-- **description** — optional string, provider's description
+- **description** — optional string, provider's model description
 - **capabilities** — ModelCapabilities object
 - **pricing** — optional PricingInfo (input/output cost per million tokens)
 
-*These properties come from the catalog and are not persisted locally.*
+### Why Not Persisted?
 
-### Properties (Local Models — Persisted)
+- Models change frequently (new versions, deprecations)
+- Pricing and capabilities update without app releases
+- Catalog is cached with TTL for offline access
+- Reduces maintenance burden
+
+---
+
+## LocalModel (Persisted)
+
+User-defined models for local inference servers or custom endpoints.
+
+### Properties
 
 - **id** — ULID, primary identifier
 - **identifier** — string, user-defined model name (e.g., `llama3:70b`, `my-fine-tune`)
 - **provider** — enum: `local` | `custom`
 - **endpoint** — string, full URL to the model endpoint
-- **authConfig** — optional object (type: `none` | `bearer` | `basic`, credentials reference)
+- **authConfig** — optional AuthConfig object
 - **capabilities** — ModelCapabilities object (user-specified)
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
 
+### AuthConfig Properties
+
+- **type** — enum: `none` | `bearer` | `basic`
+- **credentialRef** — optional string, reference to credential in secure storage
+
+### Constraints
+
+- `identifier` should be unique within the app (not enforced, but recommended)
+- `endpoint` must be network-accessible from the mobile device
+- `capabilities` must be manually configured (cannot be introspected)
+
+### Indexes
+
+- Primary: id
+- By provider (for filtering `local` vs `custom`)
+- By identifier (for lookup)
+
 *See [LocalModelRepository](../contracts/repositories.md#localmodelrepository) for persistence operations.*
 
-### ModelCapabilities Properties
+---
 
-These are **model-specific** capabilities that vary between models from the same provider. For provider-level capabilities (streaming protocol support, system prompt handling, etc.), see [LLM Provider Contracts](../contracts/llm-provider.md#providercapabilities-properties).
+## ModelCapabilities
+
+Capabilities that vary between models. Used for both remote and local models.
+
+### Properties
 
 - **supportsImages** — boolean, can process image inputs
 - **supportsAudio** — boolean, can process audio inputs
@@ -137,49 +206,34 @@ These are **model-specific** capabilities that vary between models from the same
 - **maxContextTokens** — number, maximum context window size
 - **maxOutputTokens** — number, maximum response length
 
-### Constraints
-
-- Configuration (temperature, system prompt, etc.) lives on Agent, not Model
-- This allows one Model to back multiple differently-configured Agents
-- API credentials are stored per-provider in secure storage, not per-model
-- Provider-specific validation applies (e.g., OpenAI models cannot be called via the Anthropic API)
-
-### Indexes (Local Models Only)
-
-- Primary: id
-- By provider (for filtering `local` vs `custom`)
-- By identifier (for finding by model name)
+*For provider-level capabilities (streaming support, system prompt handling), see [LLM Provider Contracts](../contracts/llm-provider.md#providercapabilities-properties).*
 
 ---
 
 ## Relationships
 
-### Agent → Human (for human agents)
-
-- Agent.type = `human`
-- Agent.backendId references Human.id
-- One Human can have many Agents (different interaction modes/configurations)
-
 ### Agent → Model (for model agents)
 
-- Agent.type = `model`
-- Agent.backendId references either:
-  - `provider:identifier` composite key for remote models (e.g., `openrouter:claude-sonnet-4-20250514`)
-  - LocalModel.id (ULID) for local/custom models
-- One Model can have many Agents (different temperature, prompts, etc.)
-- The Agent layer is where users customize their relationship with a model (name, defaults, etc.)
+- `Agent.type = model`
+- `Agent.modelRef` contains the model reference string
+- One model can back multiple Agents with different configurations
 
 ### Node → Agent
 
-- Node.authorAgentId references Agent.id
+- `Node.authorAgentId` references `Agent.id`
 - Every Node has exactly one author Agent
-- Query pattern: find all Nodes by a given Agent
+- `Node.authorType` is denormalized from `Agent.type` for efficient hash verification
+
+### Grove → Agent (ownership)
+
+- `Grove.ownerAgentId` references the owner (human) Agent
+- One Grove per user, owned by their primary human Agent
 
 ---
 
 ## Loom-Aware Capabilities
 
-When an Agent has `loomAware = true`, they can access additional context and tools:
+When `Agent.loomAware = true`, the agent can access additional context and tools.
 
 ### Additional Context Provided
 
@@ -188,38 +242,59 @@ When an Agent has `loomAware = true`, they can access additional context and too
 - Whether current node is a branch point
 - Path history summary (nodes visited)
 
-### Tools Available (for Model agents)
+### Tools Available (for Model Agents)
 
 - Navigate to sibling branches
 - Request summary of alternative paths
 - View branch point statistics
 - Access annotation content
 
+*Tool definitions are specified in [loom-tools.md](../contracts/loom-tools.md).*
+
 ### Design Notes
 
-- Loom-awareness enables a "two-role pattern" (analyst + subject)
+- Loom-awareness enables the "two-role pattern" (analyst + subject)
 - Human agents are loom-aware by default (they see the UI)
 - Model agents default to not loom-aware (they see linear conversation)
-- This can be toggled per-Agent for flexible experimentation
+- Can be toggled per-Agent for flexible experimentation
 
 ---
 
 ## Default Agents
 
-On first launch, create these default Agents:
+On first launch, create these default entities:
 
-### Default Human Agent
+### UserPreferences (Singleton)
 
-- name: Human (editable)
-- type: human
+- displayName: "Human" (user can edit)
+- theme: `system`
+- fontSize: 16
+- nodeViewStyle: `filled`
+- nodeViewCornerRadius: 12
+- All other fields: defaults as specified above
+
+### Owner Human Agent
+
+- name: (from UserPreferences.displayName)
+- type: `human`
+- modelRef: null
 - loomAware: true
 - permissions: read + write
+- This agent is referenced by `Grove.ownerAgentId`
 
-### Suggested Model Agents (user adds credentials)
+### Suggested Model Agent Templates
 
-- Pre-configured Agent templates for popular models
-- User provides API key to activate
-- Sensible default configurations per model
+Pre-configured templates shown when user adds API credentials:
+
+| Template | modelRef | temperature | Notes |
+|----------|----------|-------------|-------|
+| Claude (Balanced) | `anthropic:claude-sonnet-4-20250514` | 0.7 | Good all-around |
+| Claude (Creative) | `anthropic:claude-sonnet-4-20250514` | 1.0 | Higher variance |
+| Claude (Precise) | `anthropic:claude-sonnet-4-20250514` | 0.3 | Lower variance |
+| GPT-4o | `openai:gpt-4o` | 0.7 | OpenAI flagship |
+| Gemini Pro | `google:gemini-1.5-pro` | 0.7 | Google flagship |
+
+Users can create custom Agents from any available model.
 
 ---
 
@@ -228,11 +303,25 @@ On first launch, create these default Agents:
 ### Credential Storage
 
 - API keys stored in platform secure storage (Keychain on iOS, Keystore on Android)
-- Credentials are stored per-provider, not per-model (one API key unlocks all models from that provider)
-- Keys never logged, never in database, never in state
+- Credentials are stored **per-provider**, not per-model or per-agent
+- One API key unlocks all models from that provider
+- Keys never logged, never in database, never in app state
+
+### Credential Reference Pattern
+
+```
+Provider credentials:
+  anthropic → Keychain["anthropic_api_key"]
+  openai → Keychain["openai_api_key"]
+  openrouter → Keychain["openrouter_api_key"]
+  ...
+
+LocalModel.authConfig.credentialRef:
+  "local_model_{ulid}" → Keychain["local_model_{ulid}"]
+```
 
 ### Agent Isolation
 
 - Agents cannot access each other's credentials
-- Model agents only see what's in their context window
-- Loom-aware tools are carefully scoped to tree navigation, not data exfiltration
+- Model agents only see content in their context window
+- Loom-aware tools are scoped to tree navigation, not arbitrary data access
