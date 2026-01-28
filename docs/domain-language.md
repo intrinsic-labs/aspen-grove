@@ -26,7 +26,7 @@ A Loom Tree is the atomic unit of LLM interaction in Aspen Grove. Every conversa
 
 A single unit of content within a Loom Tree. Nodes are the vertices of the hypergraph.
 
-Nodes are **immutable** once created. Edits create new nodes rather than modifying existing ones. Each node carries a content hash for tamper-evidence as part of the [provenance system](./provenance.md).
+Nodes are **immutable** once created. Edits create new nodes rather than modifying existing ones. Each node carries a content hash for tamper-evidence as part of the [provenance system](./provenance-overview.md).
 
 Nodes are **multimodal by design** — they can contain text, images, audio, or combinations thereof.
 
@@ -38,7 +38,7 @@ Nodes are **multimodal by design** — they can contain text, images, audio, or 
 
 Aspen Grove takes provenance seriously. For researchers and anyone who needs to demonstrate that model outputs are authentic, we provide a tiered verification strategy including hash chains, RFC 3161 timestamps, and raw API response storage.
 
-See [Provenance & Verification](./provenance.md) for full details.
+See [Provenance & Verification](./provenance-overview.md) for full details.
 
 ---
 

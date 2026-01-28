@@ -112,8 +112,8 @@ This doesn't exist yet. As Aspen Grove gains traction in the research community,
 
 ## Related Documentation
 
-- [Architecture: Provenance Entities](./architecture/model/provenance.md) — Technical specification for RawApiResponse and TimestampCertificate
-- [Architecture: Core Entities](./architecture/model/core-entities.md) — Hash computation details in the Node specification
+- [Architecture: Provenance Entities](./architecture/model/provenance.md) — Technical specification for RawApiResponse, TimestampCertificate, and hash chain computation (authoritative source)
+- [Architecture: Core Entities](./architecture/model/core-entities.md) — Node entity definition with contentHash field
 
 ---
 

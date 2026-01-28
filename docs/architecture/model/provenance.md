@@ -1,12 +1,16 @@
 # Provenance Entities Model Specification
 
-> Specification for RawApiResponse and TimestampCertificate — the provenance and verification structures.
+> Specification for RawApiResponse, TimestampCertificate, and hash chain computation — the provenance and verification structures of Aspen Grove.
 
 ---
 
 ## Overview
 
-Provenance entities provide evidence of Node authenticity without guaranteeing proof (which would require provider cooperation). These structures support the tiered verification strategy defined in the domain language.
+Provenance entities provide evidence of Node authenticity without guaranteeing proof. These structures support the tiered verification strategy described in the [provenance Overview](../../provenance-overview.md).
+
+*Note: the model proposed here does not provide origin proof. This is an area of active research and Aspen Grove aims to implement origin proof in the future. Read more in the [provenance overview.](../../provenance-overview.md)*
+
+This document is the **authoritative source** for hash chain computation and verification algorithms.
 
 ---
 
@@ -18,7 +22,7 @@ Complete, unmodified API response stored for model-generated Nodes.
 
 - **id** — ULID, primary identifier
 - **nodeId** — ULID, reference to the Node this response generated
-- **provider** — enum: `anthropic` | `openai` | `google` | `local` | `custom`
+- **provider** — enum: `openrouter` | `hyperbolic` | `anthropic` | `openai` | `google` | `local` | `custom`
 - **requestId** — optional string, provider's request identifier from headers
 - **modelIdentifier** — string, the model name returned by the API
 - **responseBody** — string, complete JSON response body (compressed)
@@ -118,6 +122,56 @@ Not a stored entity — a computed view combining provenance data for display.
 
 ---
 
+## Hash Chain Computation
+
+The contentHash on each Node provides tamper evidence. The computation differs for human-authored vs model-generated nodes to maximize provenance integrity.
+
+### Human-Authored Nodes
+
+Inputs to hash:
+1. Serialized content (deterministic JSON serialization)
+2. Array of parent node contentHashes (via incoming Continuation edges), sorted
+3. createdAt timestamp (ISO 8601)
+4. authorAgentId
+
+Human nodes are self-contained — all inputs are stored on the Node itself.
+
+### Model-Generated Nodes
+
+Inputs to hash:
+1. Serialized content (deterministic JSON serialization)
+2. Array of parent node contentHashes (via incoming Continuation edges), sorted
+3. createdAt timestamp (ISO 8601)
+4. SHA-256 hash of the raw API response bytes (headers + body as a single blob, pre-compression)
+
+**Important**: The hash is computed over the **raw HTTP response bytes** exactly as received from the wire — not over our parsed `RawApiResponse` domain object. This ensures the hash is tied to the actual provider response, not our representation of it.
+
+Model nodes tie their hash to the full API response evidence. This means:
+- Raw response bytes must be hashed *immediately* upon receipt, before any parsing
+- The raw bytes are then stored (compressed) in the `RawApiResponse` entity
+- Verification requires access to the original raw bytes
+- Any tampering with the stored response invalidates the Node hash
+
+### Why Different Approaches?
+
+- **Human nodes** — The Agent abstraction is meaningful; it represents a real person's identity within the app
+- **Model nodes** — The Agent abstraction is application-level; provenance should tie to actual API evidence, not our internal configuration
+
+### Algorithm
+
+1. Concatenate inputs with delimiter
+2. Compute SHA-256 hash
+3. Encode as hex string
+
+### Properties
+
+- Any modification to content or ancestry invalidates the hash
+- Root nodes have no parent hashes (empty array)
+- Hash verification traverses from root to validate entire chain
+- Model node verification requires joining with RawApiResponse data
+
+---
+
 ## Hash Chain Verification
 
 Process for verifying the integrity of a Node and its ancestry.
@@ -126,13 +180,16 @@ Process for verifying the integrity of a Node and its ancestry.
 
 1. Retrieve Node and its incoming Continuation edges
 2. Retrieve parent Nodes via edge sources
-3. Recompute expected contentHash from:
-   - Node.content (deterministic serialization)
-   - Sorted array of parent contentHashes
-   - Node.createdAt (ISO 8601)
-   - Node.authorAgentId
-4. Compare computed hash to stored Node.contentHash
-5. Result: match = valid, mismatch = tampered
+3. Check `Node.authorType` to determine hash algorithm:
+   - `human` → use human-authored algorithm
+   - `model` → use model-generated algorithm
+4. Recompute expected contentHash:
+   - **For human-authored nodes**: content + parent hashes + createdAt + authorAgentId
+   - **For model-generated nodes**: content + parent hashes + createdAt + SHA-256(raw response bytes)
+5. Compare computed hash to stored Node.contentHash
+6. Result: match = valid, mismatch = tampered
+
+*Note: The `authorType` field on Node is denormalized from `Agent.type` for efficient verification. See [Core Entities](./core-entities.md) for the Node schema.*
 
 ### Full Path Verification
 
@@ -154,7 +211,7 @@ Process for verifying the integrity of a Node and its ancestry.
 
 ### Default Authority
 
-- FreeTSA (freetsa.org) — free, reliable, widely recognized
+- [FreeTSA](https://freetsa.org) — free, reliable, widely recognized
 - Fallback authorities can be configured
 
 ### Request Process
@@ -190,9 +247,17 @@ Not implemented in MVP, but schema should accommodate.
 ### Integration Notes
 
 - Optional, user-enabled per Loom Tree or session
-- Significant latency impact (10-15 seconds per request)
+- Significant latency impact (currently 10-15 seconds per request; may improve over time)
 - Provides strongest available proof without provider cooperation
 - Store proof as binary blob (not human-readable)
+
+---
+
+## Related Documentation
+
+- [Provenance Overview](../../provenance-overview.md) — High-level explanation of the tiered verification strategy
+- [Core Entities](./core-entities.md) — Node entity definition (references this document for hash computation)
+- [Agents](./agents.md) — Agent and Model entity definitions
 
 ---
 

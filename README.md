@@ -56,7 +56,7 @@ See [docs/domain-language.md](./docs/domain-language.md) for complete terminolog
 |----------|-------------|
 | [Domain Language](./docs/domain-language.md) | Core concepts and terminology |
 | [Use Cases](./docs/use-cases.md) | How users interact with the app |
-| [Provenance](./docs/provenance.md) | Verification and authenticity strategy |
+| [Provenance Overview](./docs/provenance-overview.md) | Verification and authenticity strategy |
 | [Architecture](./docs/architecture/README.md) | Technical design and specifications |
 
 ---

@@ -35,7 +35,7 @@ Entity definitions, relationships, and constraints.
 | [Core Entities](./model/core-entities.md) | LoomTree, Node, Edge, Content Types |
 | [Agents](./model/agents.md) | Agent, Human, Model |
 | [Organization](./model/organization.md) | Grove, Document, Link, Tag |
-| [Provenance](./model/provenance.md) | RawApiResponse, TimestampCertificate |
+| [Provenance](./model/provenance.md) | RawApiResponse, TimestampCertificate, Hash Chain Computation |
 
 ---
 

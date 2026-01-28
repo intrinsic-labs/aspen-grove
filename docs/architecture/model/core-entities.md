@@ -45,6 +45,7 @@ A single unit of content within a Loom Tree.
 - **loomTreeId** — ULID, reference to parent LoomTree
 - **content** — Content object (see Content Types below)
 - **authorAgentId** — ULID, reference to the Agent that created this node
+- **authorType** — enum: `human` | `model`, denormalized from Agent.type for efficient hash verification
 - **contentHash** — string, computed hash for tamper evidence
 - **createdAt** — timestamp
 - **metadata** — NodeMetadata object
@@ -60,7 +61,8 @@ A single unit of content within a Loom Tree.
 ### Constraints
 
 - Nodes are **immutable** once created — edits create new Nodes
-- contentHash computation differs by author type (see Hash Chain Computation below)
+- authorType is set at creation from the authoring Agent's type and never changes
+- contentHash computation differs by authorType (see [Provenance](./provenance.md#hash-chain-computation))
 - A Node with no incoming Continuation edges is the root (exactly one per LoomTree)
 
 ### Indexes
@@ -69,6 +71,7 @@ A single unit of content within a Loom Tree.
 - By loomTreeId (for loading all nodes of a tree)
 - By loomTreeId + createdAt (for ordered traversal)
 - By authorAgentId (for filtering by author)
+- By authorType (for filtering human vs model nodes)
 - By bookmarked = true (for quick bookmark access)
 
 ---
@@ -184,47 +187,11 @@ These are derived from the stored entities:
 
 ## Hash Chain Computation
 
-The contentHash provides tamper evidence. The computation differs for human-authored vs model-generated nodes to maximize provenance integrity.
+Each Node stores a `contentHash` field that provides tamper evidence. The hash computation algorithm differs for human-authored vs model-generated nodes to maximize provenance integrity.
 
-*Note: the model proposed below does not provide origin evidence. This is an area of active research and Aspen Grove aims to implement origin evidence in the future. Read more in the [provenance document.](../../provenance.md)*
+For the complete hash chain algorithm, verification process, and rationale, see [Provenance Entities](./provenance.md#hash-chain-computation).
 
-### Human-Authored Nodes
-
-Inputs to hash:
-1. Serialized content (deterministic JSON serialization)
-2. Array of parent node contentHashes (via incoming Continuation edges), sorted
-3. createdAt timestamp (ISO 8601)
-4. authorAgentId
-
-Human nodes are self-contained — all inputs are stored on the Node itself.
-
-### Model-Generated Nodes
-
-Inputs to hash:
-1. Serialized content (deterministic JSON serialization)
-2. Array of parent node contentHashes (via incoming Continuation edges), sorted
-3. createdAt timestamp (ISO 8601)
-4. SHA-256 hash of the complete RawApiResponse (headers + body, pre-compression)
-
-Model nodes tie their hash to the full API response evidence. This means:
-- RawApiResponse must be stored *before* the Node hash can be computed
-- Verification requires loading the linked RawApiResponse
-- Any tampering with the raw response invalidates the Node hash
-
-### Why Different Approaches?
-
-- **Human nodes** — The Agent abstraction is meaningful; it represents a real person's identity within the app
-- **Model nodes** — The Agent abstraction is application-level; provenance should tie to actual API evidence, not our internal configuration
-
-### Algorithm
-
-- Concatenate inputs with delimiter
-- Compute SHA-256 hash
-- Encode as hex string
-
-### Properties
-
-- Any modification to content or ancestry invalidates the hash
-- Root nodes have no parent hashes (empty array)
-- Hash verification traverses from root to validate entire chain
-- Model node verification requires joining with RawApiResponse data
+**Key points:**
+- Human nodes hash against `authorAgentId`
+- Model nodes hash against the SHA-256 of their `RawApiResponse`
+- Any modification to content or ancestry invalidates the hash chain
