@@ -11,8 +11,8 @@
 
 | Severity | Total | Resolved | Needs Work | Deferred |
 |----------|-------|----------|------------|----------|
-| Critical | 3 | 1 | 2 | 0 |
-| Important | 5 | 2 | 3 | 0 |
+| Critical | 3 | 2 | 1 | 0 |
+| Important | 5 | 3 | 2 | 0 |
 | Medium | 4 | 1 | 1 | 2 |
 | Minor | 5 | 2 | 1 | 2 |
 
@@ -22,7 +22,7 @@
 
 ### C1. Buffer Mode Has No Structural Model
 
-**Status**: 🔴 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [domain-language.md](../../domain-language.md#buffer-mode), [core-entities.md](./model/core-entities.md)
 
@@ -34,7 +34,16 @@
 
 **Impact**: Cannot implement Buffer Mode without this specification.
 
-**Resolution**: Create dedicated Buffer Mode specification. See [buffer-mode-questions.md](./specs/buffer-mode-questions.md) for open questions to resolve.
+**Resolution**: Created [buffer-mode.md](./specs/buffer-mode.md) specification.
+
+**Completed**: Full specification covering:
+- **Node creation**: Generation-based (working buffer commits on generate, model responses become nodes)
+- **Authorship tracking**: Node-level authorship with character-level visual distinction (model text colored, human edits shown via diff)
+- **Two distinct operations**: 
+  - **Editing** creates version nodes (`editedFrom` relationship) — downstream nodes preserved via hyperedge
+  - **Branching** creates sibling nodes — each with potentially different downstream
+- **Hypergraph support**: Edges can have multiple sources, enabling edits without downstream node duplication
+- See [buffer-mode-questions.md](./specs/buffer-mode-questions.md) for decision history
 
 ---
 
@@ -142,13 +151,19 @@ media/
 
 ### I5. Node Editing Contradicts Immutability
 
-**Status**: ✅ Resolved (pending Buffer Mode spec)
+**Status**: ✅ Resolved
 
 **Location**: [domain-language.md](../../domain-language.md#node), [use-cases.md](../../use-cases.md) (§2.1 Buffer Mode Writing)
 
 **Problem**: Nodes are declared immutable, but Buffer Mode describes "inline editing."
 
-**Resolution**: This is a Buffer Mode-specific concern. Resolution depends on Buffer Mode structural model (see C1). Likely approach: Buffer Mode has different editing semantics, possibly with mutable draft state before "commit."
+**Resolution**: Buffer Mode has specific editing semantics that preserve immutability:
+- **Working buffer**: Mutable uncommitted text at document end — not yet a node
+- **Editing committed nodes**: Creates a new *version node* with `editedFrom` relationship to original
+- **Hyperedge support**: Downstream nodes connect via hyperedge that accepts any version, so editing doesn't require duplicating downstream nodes
+- Original nodes remain immutable; edits create new nodes
+
+See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ---
 
@@ -291,11 +306,12 @@ media/
 
 ### Immediate (Before Development)
 
-1. [ ] Create [specs/buffer-mode.md](./specs/buffer-mode.md) — resolve C1
+1. [x] Create [specs/buffer-mode.md](./specs/buffer-mode.md) — resolve C1 ✓
 2. [ ] Create [specs/context-assembly.md](./specs/context-assembly.md) — resolve C2
 3. [x] Update [media-storage.md](./contracts/media-storage.md) with Document paths — resolve C3 ✓
 4. [x] Update [core-entities.md](./model/core-entities.md) to remove `link` edge type — resolve I1 ✓
 5. [x] Update [agents.md](./model/agents.md) to simplify Human/Agent model — resolve m3 ✓
+6. [x] Update [core-entities.md](./model/core-entities.md) with `editedFrom` field and hyperedge support — per buffer-mode.md ✓
 
 ### Before Related Features
 

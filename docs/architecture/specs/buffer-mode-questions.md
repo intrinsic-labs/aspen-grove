@@ -2,7 +2,7 @@
 
 > This document captures the questions that must be resolved to specify Buffer Mode's structural model. Buffer Mode is conceptually defined in [domain-language.md](../../domain-language.md#buffer-mode) but lacks implementation-level specification.
 
-**Status**: Needs Resolution  
+**Status**: ✅ Resolved — See [buffer-mode.md](./buffer-mode.md)  
 **Blocks**: Buffer Mode implementation  
 **Related**: [C1 in review-findings.md](../review-findings.md#c1-buffer-mode-has-no-structural-model)
 
@@ -34,7 +34,7 @@ C. **Character/word-based**: Nodes created at fixed intervals (e.g., every N cha
 
 D. **Semantic-based**: Nodes created at paragraph or section boundaries. Complex to implement.
 
-**Leaning toward**: A or B. Need to decide.
+**✅ RESOLVED**: Option A (Generation-based). The working buffer (uncommitted human text) becomes a node when the user hits Generate. Model responses each become their own node. See [buffer-mode.md — Working Buffer Lifecycle](./buffer-mode.md#working-buffer-lifecycle).
 
 ---
 
@@ -52,7 +52,7 @@ C. **Separate nodes, visual continuity**: Each author's contribution is still a 
 
 D. **Don't track granularly**: Node-level authorship only. Human text and model text in same node = "collaborative" authorship.
 
-**Leaning toward**: A or C. Range-based is more powerful; separate nodes is simpler.
+**✅ RESOLVED**: Option C (Separate nodes, visual continuity). Each node has one author. Visual distinction via color: model text is colored (e.g., blue), human text is default. For edited model nodes, character-level diffing shows which parts the human changed (those become human-colored). See [buffer-mode.md — Visual Color Rules](./buffer-mode.md#visual-color-rules).
 
 ---
 
@@ -66,12 +66,13 @@ User is mid-document and wants to generate 3 alternative continuations. What hap
 - Does branching create 3 complete document copies, or 3 continuation fragments?
 - How does the UI represent branches in a continuous document view?
 
-**Possible model**:
+**✅ RESOLVED**: 
+- Branch point = end of document (mid-document continuation is post-MVP)
+- Branching creates N continuation *fragments* as sibling nodes, NOT complete document copies
+- Working buffer is committed first, then N model responses become sibling children
+- Switching siblings changes the entire downstream path
 
-- Branch point = cursor position
-- Content before cursor = shared ancestry (immutable)
-- Content after cursor = branch-specific (each branch has its own continuation)
-- UI shows branch indicator at branch point, user can switch branches
+Key insight: **Branching** (generate alternatives) is distinct from **Editing** (modify existing content). See [buffer-mode.md — The Two Operations](./buffer-mode.md#the-two-operations).
 
 ---
 
@@ -89,7 +90,14 @@ C. **Buffer Mode exception**: Buffer Mode Nodes are mutable until the tree is "f
 
 D. **Operational transform**: Store edits as operations, not content. Content is derived. Complex.
 
-**Leaning toward**: A. Clearest mental model — "draft until commit."
+**✅ RESOLVED**: Hybrid of A and a refined version of B using hypergraph semantics.
+
+- **Working buffer** (uncommitted tail of document) is mutable draft state — Option A
+- **Editing committed nodes** creates a *version node* with `edited_from` relationship — NOT a traditional branch
+- **Hyperedge magic**: Downstream nodes connect via hyperedge that accepts any version as source, so editing node 5 does NOT duplicate nodes 6-18
+- Preserves immutability while enabling fluid editing feel
+
+See [buffer-mode.md — Editing (Version Creation)](./buffer-mode.md#1-editing-version-creation) and [Path Resolution Logic](./buffer-mode.md#path-resolution-logic).
 
 ---
 
@@ -111,6 +119,14 @@ Assuming we need to track authorship ranges (Q2, Option A), the content structur
 
 Or do we reuse the existing `text` type and add authorship tracking at the Node level?
 
+**✅ RESOLVED**: Reuse existing `text` type. No special Buffer Mode content structure needed.
+
+- Each node has one author (tracked at node level, not range level)
+- Buffer Mode adds one optional field: `editedFrom?: string` (NodeId of original if this is a version)
+- Character-level authorship visualization is computed by diffing original vs edited content at render time
+
+See [buffer-mode.md — Data Model Additions](./buffer-mode.md#data-model-additions).
+
 ---
 
 ### Q6. How does provenance work for Buffer Mode?
@@ -121,11 +137,15 @@ Content hash computation assumes discrete, immutable content. With mutable draft
 - What about model-generated content mixed with human edits?
 - Is `RawApiResponse` stored per-generation or per-committed-Node?
 
-**Possible approach**: 
+**✅ RESOLVED**:
 
-- Each model generation stores its `RawApiResponse` immediately
-- When draft is committed to Node(s), hash is computed over final content
-- Hash includes references to all `RawApiResponse` IDs that contributed to the Node
+- Each model generation stores its `RawApiResponse` immediately, linked to created node(s)
+- Hash is computed on commit (when node is persisted)
+- Hash covers final content only (not edit history)
+- Edit history preserved via `editedFrom` chain — original node retains its provenance
+- Version nodes have their own content hash (of the edited content)
+
+See [buffer-mode.md — Provenance in Buffer Mode](./buffer-mode.md#provenance-in-buffer-mode).
 
 ---
 
@@ -137,57 +157,49 @@ When requesting a continuation in Buffer Mode:
 - Is there any system prompt or is it raw completion?
 - How do we indicate "continue from here" vs "continue from end"?
 
+**✅ RESOLVED**:
+
+- Entire active path is concatenated + working buffer appended
+- No system prompt by default (user can configure via Agent settings)
+- MVP: continuation always appends at end (mid-document continuation is post-MVP)
+- Path resolution determines which versions to use when nodes have been edited
+
+See [buffer-mode.md — Context Assembly for Generation](./buffer-mode.md#context-assembly-for-generation).
+
 ---
 
-## Proposed Mental Model
+## Proposed Mental Model — SUPERSEDED
 
-After considering these questions, here's a candidate mental model:
+> **Note**: This section has been superseded by the full specification in [buffer-mode.md](./buffer-mode.md). The key refinement from the original proposal: **editing creates version nodes (via `editedFrom` + hyperedge) that preserve downstream, NOT traditional branches that duplicate downstream nodes.**
 
-### Buffer as "Document with Generations"
-
-1. A Buffer Mode Loom Tree has **Nodes representing checkpoints**, not messages
-2. Between checkpoints, there's a **mutable working buffer**
-3. The working buffer tracks **authorship ranges** (who wrote what)
-4. **Generating continuations** from the working buffer:
-   - Saves current state as a checkpoint Node (if not already saved)
-   - Creates N sibling Nodes representing the continuations
-   - Each continuation Node contains only the new text
-   - UI stitches checkpoint + continuation for display
-5. **Branching** = generating multiple continuations from same checkpoint
-6. **Editing past content** = creating a new branch from that point
-7. **Provenance** is tracked per-generation, linked to final Nodes at commit
-
-### Visual Metaphor
-
-```
-[Root checkpoint]
-      |
-"Human writes intro paragraph"
-      |
-[Checkpoint 1] ← includes intro
-      |
-"Human writes more, requests 3 continuations"
-      |
-├── [Continuation A]
-├── [Continuation B]  
-└── [Continuation C]
-      |
-User picks B, continues writing
-      |
-[Checkpoint 2] ← includes B + new human text
-```
+See [buffer-mode.md — Versions vs Branches diagram](./buffer-mode.md#distinguishing-versions-vs-branches) for the final model.
 
 ---
 
 ## Next Steps
 
-1. Review this document and decide on answers to Q1-Q7
-2. Validate proposed mental model or iterate
-3. Create formal [buffer-mode.md](./buffer-mode.md) specification based on decisions
-4. Update [core-entities.md](../model/core-entities.md) with Buffer Mode content type if needed
+1. ~~Review this document and decide on answers to Q1-Q7~~ ✅ Done
+2. ~~Validate proposed mental model or iterate~~ ✅ Done
+3. ~~Create formal [buffer-mode.md](./buffer-mode.md) specification based on decisions~~ ✅ Done
+4. Update [core-entities.md](../model/core-entities.md) with `editedFrom` field and hyperedge support
+5. Implement Buffer Mode per specification
 
 ---
 
 ## Discussion Notes
 
-*(Space for capturing discussion outcomes)*
+**Key insight from design discussion**: Buffer Mode has TWO fundamentally different operations:
+
+1. **Editing** — "Fix this paragraph in my current document"
+   - Creates version node with `editedFrom` relationship
+   - Downstream nodes stay attached via hyperedge (no duplication)
+   - Path auto-updates to use new version
+
+2. **Branching** — "Explore alternative continuations"  
+   - Creates sibling nodes as children
+   - Each sibling can have different downstream
+   - Switching siblings switches entire downstream path
+
+This distinction (inspired by discussion in the #loom Discord with Egr. antra) is what enables the "feels like a regular document" editing experience while preserving full branching/exploration capabilities.
+
+The hypergraph model allows downstream nodes to connect to *any version* of an upstream node, avoiding the explosion of duplicate nodes that would occur in a traditional tree when editing early nodes.
