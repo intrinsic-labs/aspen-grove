@@ -203,7 +203,7 @@ app_data/
 - Verify file is valid image (can be decoded)
 - Check dimensions (reject if either dimension > 8192px for memory safety)
 - Check file size (reject if > 20MB)
-- Supported formats: PNG, JPEG, WebP, GIF (first frame only), HEIC
+- Supported formats: PNG, JPEG, WebP, GIF (user selectable frame, defaults to first frame), HEIC
 
 ### Audio Validation
 
@@ -307,7 +307,7 @@ app_data/
 ### Audio Streaming
 
 - Stream audio playback, don't load entire file
-- Use native audio player APIs (AVPlayer, MediaPlayer)
+- Use native audio player APIs (AVPlayer, MediaPlayer or ExoPlayer)
 - Reference by file path, not data
 
 ### Batch Operations
