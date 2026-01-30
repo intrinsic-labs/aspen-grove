@@ -14,6 +14,7 @@ The top-level container for a branching exploration.
 - **groveId** — ULID, reference to parent Grove
 - **title** — string, user-editable display name
 - **description** — optional string, user-editable tree description
+- **summary** — optional string, auto-generated 1-2 sentence summary (see [Summary Generation](#summary-generation))
 - **rootNodeId** — ULID, reference to the single root Node
 - **mode** — enum: `dialogue` | `buffer`
 - **systemContext** — optional string, persistent instructions prepended to every context window
@@ -44,8 +45,10 @@ A single unit of content within a Loom Tree.
 ### Properties
 
 - **id** — ULID, primary identifier
+- **localId** — string (6-8 chars), tree-unique short identifier for loom-aware context (see [Local ID Generation](#local-id-generation))
 - **loomTreeId** — ULID, reference to parent LoomTree
 - **content** — Content object (see Content Types below)
+- **summary** — optional string, auto-generated 1-2 sentence summary (see [Summary Generation](#summary-generation))
 - **authorAgentId** — ULID, reference to the Agent that created this node
 - **authorType** — enum: `human` | `model`, denormalized from Agent.type for efficient hash verification
 - **contentHash** — string, computed hash for tamper evidence
@@ -65,6 +68,8 @@ A single unit of content within a Loom Tree.
 ### Constraints
 
 - Nodes are **immutable** once created — edits create new Nodes
+- `localId` is computed at creation and never changes
+- `localId` must be unique within the LoomTree (extend on collision)
 - authorType is set at creation from the authoring Agent's type and never changes
 - contentHash computation differs by authorType (see [Provenance](./provenance.md#hash-chain-computation))
 - A Node with no incoming Continuation edges is the root (exactly one per LoomTree)
@@ -73,6 +78,7 @@ A single unit of content within a Loom Tree.
 ### Indexes
 
 - Primary: id
+- By loomTreeId + localId (unique, for loom-aware tool lookups)
 - By loomTreeId (for loading all nodes of a tree)
 - By loomTreeId + createdAt (for ordered traversal)
 - By authorAgentId (for filtering by author)
@@ -265,3 +271,99 @@ For model-authored nodes that have been edited, character-level authorship is co
 This allows users to see exactly what they've modified in model-generated text.
 
 For complete Buffer Mode specification, see [buffer-mode.md](../specs/buffer-mode.md).
+
+---
+
+## Local ID Generation
+
+The `localId` field provides a short, human-friendly identifier for use in loom-aware model interactions. Full ULIDs are 26 characters, which wastes context space and is error-prone for models to work with.
+
+### Algorithm
+
+1. Take the first 6 characters of the Node's ULID
+2. Check for collision within the same LoomTree
+3. If collision exists, extend by 1 character and repeat
+4. Maximum length: 8 characters (collision after 8 chars is astronomically unlikely within a single tree)
+
+### Example
+
+```
+ULID: 01HQ3K4N7Y8M2P5R6T9W0X1Z2A
+localId: 01HQ3K (6 chars, no collision)
+
+ULID: 01HQ3K9B2C4D5E6F7G8H9J0K1L
+localId: 01HQ3K9 (7 chars, collision with above at 6)
+```
+
+### Design Rationale
+
+- **Why not sequential?** Sequential IDs don't encode any structural information and require maintaining a counter. ULID prefixes are naturally unique.
+- **Why not full ULID?** 26 characters is wasteful in model context and hard for models to reference accurately.
+- **Why 6 characters default?** 6 hex characters = 16^6 = 16.7 million possible values. Collision within a single tree (typically < 10,000 nodes) is extremely rare.
+
+---
+
+## Summary Generation
+
+Summaries provide condensed representations of content for efficient context management in loom-aware interactions.
+
+### Node Summaries
+
+Generated asynchronously after node creation.
+
+**Context required:**
+- Parent node content (required for meaningful summary)
+- Grandparent content if node is short (< 50 tokens)
+- Tree title for framing
+
+**Model selection:**
+- Default: Claude 3.5 Haiku or GPT-4o-mini (based on API key availability, with fallback)
+- User can override with any configured model
+- Max tokens: 50
+
+**Prompt template:**
+```
+Given this conversation context:
+---
+Tree: {tree.title}
+Previous: {parent.summary or parent.content}
+---
+
+Summarize the following message in ONE sentence (max 30 words).
+Capture the key point, action, or decision. Be specific, not generic.
+
+Message: {node.content}
+```
+
+**Lazy fallback:** If `summary` is null when accessed (migration, failed generation), generate on demand.
+
+### LoomTree Summaries
+
+Generated periodically to capture tree purpose and themes.
+
+**Trigger points:**
+- Every 10 new nodes (configurable)
+- On tree close
+- Manual user trigger
+
+**Context:**
+- Node summaries from primary path
+- Branch point node summaries
+- User-edited `description` field
+
+**Prompt template:**
+```
+This is a branching conversation tree. The user describes it as:
+"{tree.description}"
+
+Key node summaries from the main path:
+{node_summaries}
+
+Branch points explored: {branch_count}
+
+Summarize this tree's purpose and main themes in 2 sentences.
+```
+
+### Document Summaries
+
+Documents also support summaries, generated on document close after editing. See [Organization](./organization.md#document) for Document entity specification.

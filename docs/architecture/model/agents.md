@@ -244,12 +244,13 @@ When `Agent.loomAware = true`, the agent can access additional context and tools
 
 ### Tools Available (for Model Agents)
 
-- Navigate to sibling branches
-- Request summary of alternative paths
-- View branch point statistics
-- Access annotation content
+- **Navigation**: view, list, tree, switch
+- **Content**: continue (invoke subject model), respond (add own content), annotate, link, edit
+- **Documents**: read, write
+- **Memory**: pin, stash, recall, drop, memory
+- **Meta**: help, think (private scratchpad)
 
-*Tool definitions are specified in [loom-tools.md](../contracts/loom-tools.md).*
+*Full tool definitions, syntax, and examples in [loom-tools.md](../specs/loom-tools.md).*
 
 ### Design Notes
 

@@ -82,6 +82,8 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 | [Review Findings](./review-findings.md) | Pre-development review issues and resolutions |
 | [Buffer Mode Spec](./specs/buffer-mode.md) | Buffer Mode specification |
 | [Buffer Mode Questions](./specs/buffer-mode-questions.md) | Open questions for Buffer Mode specification |
+| [Loom Tools Spec](./specs/loom-tools.md) | Loom-aware model tools specification |
+| [Context Assembly Spec](./specs/context-assembly.md) | Context window construction for LLM requests |
 
 *Additional specs will be added to `./specs/` as issues are resolved.*
 

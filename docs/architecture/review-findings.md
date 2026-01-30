@@ -12,7 +12,7 @@
 | Severity | Total | Resolved | Needs Work | Deferred |
 |----------|-------|----------|------------|----------|
 | Critical | 3 | 3 | 0 | 0 |
-| Important | 5 | 4 | 1 | 0 |
+| Important | 5 | 5 | 0 | 0 |
 | Medium | 4 | 3 | 0 | 2 |
 | Minor | 5 | 3 | 0 | 2 |
 
@@ -131,7 +131,7 @@ media/
 
 ### I3. Loom-Aware Tools Not Specified
 
-**Status**: 🟡 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [domain-language](../../domain-language/interaction-modes.md#loom-aware), [llm-provider.md](./contracts/llm-provider.md)
 
@@ -139,7 +139,20 @@ media/
 
 **Impact**: Cannot implement Loom-Aware model agents without tool specifications.
 
-**Resolution**: Create [loom-tools.md](./contracts/loom-tools.md) specifying tool definitions for navigation, summarization, and tree operations.
+**Resolution**: Created [loom-tools.md](./specs/loom-tools.md) specification.
+
+**Completed**: Full specification covering:
+- **Tool syntax**: Natural language `→` prefix commands with batching support
+- **Ambient context**: Lightweight position metadata in each turn
+- **Navigation tools**: view, list, tree, switch
+- **Content tools**: continue (invoke subject), respond (add own content), annotate, link, edit
+- **Document tools**: read, write
+- **Memory tools**: pin, stash, recall, drop, memory
+- **Meta tools**: help, think (scratchpad)
+- **Permissions**: Modular capability tiers (loom_aware, loom_write, loom_generate, doc_read, doc_write)
+- **Error handling**: Structured errors with codes and hints
+- **Summary generation**: Strategy for Node, Document, and LoomTree summaries
+- **Node.localId**: Short identifier for efficient context usage (added to core-entities.md)
 
 ---
 
@@ -330,7 +343,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ### Before Related Features
 
-7. [ ] Create [contracts/loom-tools.md](./contracts/loom-tools.md) — resolve I3
+7. [x] Create [specs/loom-tools.md](./specs/loom-tools.md) — resolve I3 ✓
 8. [ ] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4
 8. [x] Add streaming clarification to [provenance.md](./model/provenance.md) — resolve I2 ✓
 9. [x] Add Voice Mode edge cases to [interaction-modes.md](../../domain-language/interaction-modes.md) — resolve M2 ✓

@@ -113,6 +113,7 @@ A rich, mutable document for notes, reference material, and composed artifacts.
 - **id** — ULID, primary identifier
 - **groveId** — ULID, reference to parent Grove
 - **title** — string, display name
+- **summary** — optional string, auto-generated 1-2 sentence summary (see [Summary Generation](./core-entities.md#summary-generation))
 - **blocks** — array of DocumentBlock objects (see Content Block Primitives above)
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
@@ -124,6 +125,7 @@ A rich, mutable document for notes, reference material, and composed artifacts.
 - Blocks array can be empty (blank document)
 - Embed blocks (node-embed, tree-embed) should have corresponding Link entities for bidirectional querying
 - Documents support all shared multimodal primitives plus document-specific block types
+- `summary` is regenerated when user closes document after editing
 
 ### Indexes
 
