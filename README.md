@@ -35,7 +35,7 @@ Most AI interfaces optimize for quick answers. Aspen Grove optimizes for **under
 | **Branch Point** | Where the tree splits into multiple possibilities |
 | **Agent** | Any participant — human or model |
 
-See [docs/domain-language.md](./docs/domain-language.md) for complete terminology.
+See [Domain Language](./docs/domain-language/README.md) for complete terminology.
 
 ---
 
@@ -54,10 +54,11 @@ See [docs/domain-language.md](./docs/domain-language.md) for complete terminolog
 
 | Document | Description |
 |----------|-------------|
-| [Domain Language](./docs/domain-language.md) | Core concepts and terminology |
-| [Use Cases](./docs/use-cases.md) | How users interact with the app |
+| [Domain Language](./docs/domain-language/README.md) | Core concepts and terminology |
+| [Use Cases](./docs/use-cases/README.md) | How users interact with the app |
 | [Provenance Overview](./docs/provenance-overview.md) | Verification and authenticity strategy |
 | [Architecture](./docs/architecture/README.md) | Technical design and specifications |
+| [Build Plan](./docs/architecture/BUILD-PLAN.md) | Implementation roadmap |
 
 ---
 
