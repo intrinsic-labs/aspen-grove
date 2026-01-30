@@ -1,7 +1,15 @@
+/**
+ * WatermelonDB Database Configuration
+ *
+ * This module initializes and exports the WatermelonDB database instance.
+ * All model classes are registered here for the ORM to function.
+ */
+
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 
 import { schema } from './schema';
+import { modelClasses } from './models';
 
 /**
  * SQLite adapter configuration for WatermelonDB
@@ -35,10 +43,7 @@ const adapter = new SQLiteAdapter({
  */
 export const database = new Database({
   adapter,
-  modelClasses: [
-    // Models will be registered here as they're implemented
-    // e.g., GroveModel, LoomTreeModel, NodeModel, etc.
-  ],
+  modelClasses,
 });
 
 /**
@@ -62,16 +67,30 @@ export async function getDatabaseStats(): Promise<{
   loomTreeCount: number;
   nodeCount: number;
   edgeCount: number;
+  agentCount: number;
+  documentCount: number;
 }> {
   const groveCount = await database.get('groves').query().fetchCount();
   const loomTreeCount = await database.get('loom_trees').query().fetchCount();
   const nodeCount = await database.get('nodes').query().fetchCount();
   const edgeCount = await database.get('edges').query().fetchCount();
+  const agentCount = await database.get('agents').query().fetchCount();
+  const documentCount = await database.get('documents').query().fetchCount();
 
   return {
     groveCount,
     loomTreeCount,
     nodeCount,
     edgeCount,
+    agentCount,
+    documentCount,
   };
+}
+
+/**
+ * Check if the database has been initialized (Grove exists)
+ */
+export async function isDatabaseInitialized(): Promise<boolean> {
+  const groveCount = await database.get('groves').query().fetchCount();
+  return groveCount > 0;
 }
