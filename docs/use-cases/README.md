@@ -30,14 +30,14 @@ The activity of working within Loom Trees is called **looming** or **weaving**.
 
 ---
 
-## Agent Capabilities Summary
+## Agent Congifuration Examples
 
-| Use Case | Human Loom-Aware | Model Loom-Aware | Notes |
+| Use Case | Human is Loom-Aware | Model is Loom-Aware | Notes |
 |----------|------------------|------------------|-------|
 | Branching Exploration | ✓ | ✗ | Human navigates, model responds |
 | Comparative Model Study | ✓ | ✗ | Multiple models, none see tree |
 | Prompt Iteration Study | ✓ | ✗ | Human creates variants |
-| Behavioral Documentation | ✓ | — | Human-only activity |
+| Behavioral Documentation | ✓ | Varies | Models and Humans are technically able to document each other |
 | Assisted Exploration | ✓ | ✓ (collaborator) | Two-role pattern |
 | Provenance Verification | ✓ | — | Human-only activity |
 | Buffer Mode Writing | ✓ | ✗ | Human navigates, model completes |

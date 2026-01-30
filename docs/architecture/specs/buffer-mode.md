@@ -83,7 +83,7 @@ This means a model response where the user tweaks a few words will show mostly b
 
 **Behavior**:
 - User edits text within an existing node's character range
-- Creates a **version node** with an `edited_from` relationship to the original
+- Creates a **version node** with an `editedFrom` relationship to the original
 - Downstream nodes remain attached — they follow from "this logical position" not "this specific node"
 - The path automatically uses the new version
 - Original node preserved as a sibling (accessible but not duplicated downstream)
@@ -96,7 +96,7 @@ Before edit:
 
 After editing Node 5:
   Node 5' created with:
-    - edited_from: Node 5
+    - editedFrom: Node 5
     - Same parent as Node 5
   
   Node 6's incoming edge becomes a hyperedge:
@@ -296,7 +296,7 @@ Path stores: [node1, node2, node5', node6, node7, ...]
 
 ### Distinguishing Versions vs Branches
 
-- **Versions**: Same logical position, different content due to editing. Created via `edited_from` relationship. Downstream nodes are *shared* — no duplication.
+- **Versions**: Same logical position, different content due to editing. Created via `editedFrom` relationship. Downstream nodes are *shared* — no duplication.
   
 - **Branches**: Different continuations from a branch point. Created via generation. Downstream nodes are *separate* — each branch has its own continuation.
 
@@ -354,13 +354,13 @@ When requesting a continuation in Buffer Mode:
 
 ### Version Nodes
 - Edited nodes (versions) have their own content hash
-- `edited_from` field provides lineage
+- `editedFrom` field provides lineage
 - Original node's provenance unchanged
 
 ### Hash Computation
 - Computed on commit (when node is persisted)
 - Hash covers final content only (not edit history)
-- Edit history preserved via `edited_from` chain
+- Edit history preserved via `editedFrom` chain
 
 ---
 

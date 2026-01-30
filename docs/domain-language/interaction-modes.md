@@ -26,7 +26,7 @@ Inspired by Zed's text threads and base-model interactions.
 
 ## Voice Mode
 
-An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied. Voice Mode supports the looming/weaving activity through speech rather than text input.
+An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied. Voice Mode will eventually support looming/weaving activity through speech rather than UI; for MVP it will be most useful for linear conversations in dialogue mode.
 
 ### Core Behavior
 
@@ -120,7 +120,7 @@ An agent that is **not Loom-Aware** sees only the Active Path — they experienc
 
 **Important**: This is an Agent-level setting. Humans are agents too. A human can toggle Loom-Aware off for themselves. Conversely, a model can be Loom-Aware even when the human is not.
 
-This enables the **two-role pattern**: one agent as the "subject" (not Loom-Aware, being studied), another as the "collaborator" (Loom-Aware, helping navigate and analyze).
+This enables the **two-role pattern**: one agent as the "subject" (not Loom-Aware, being studied), another as the "collaborator" (Loom-Aware, helping navigate and analyze). For the full loom aware tooling spec, see [Loom Tools](../architecture/specs/loom-tools/README.md).
 
 ---
 

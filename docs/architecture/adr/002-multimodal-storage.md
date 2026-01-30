@@ -60,10 +60,18 @@ For non-text content, the payload contains a **reference** (file path or blob ID
 
 Binary files are stored in a dedicated directory structure:
 
-- Organized by Loom Tree ID for easy cleanup on deletion
+```
+media/
+├── loomtrees/{loomTreeId}/...
+├── documents/{documentId}/...
+```
+
+- Organized by parent entity ID (LoomTree or Document) for easy cleanup on deletion
 - Filenames use content hash for deduplication
 - Thumbnails/previews generated and stored alongside originals
 - Cleanup handled when Nodes are pruned or deleted
+
+**Note**: Documents also support multimodal content (ImageBlock, AudioBlock) and follow the same storage pattern. See [media-storage.md](../contracts/media-storage.md) for the full specification.
 
 ---
 

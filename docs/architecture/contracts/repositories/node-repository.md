@@ -20,11 +20,13 @@ Creates a new Node with optional parent connections.
 - `editedFrom` — optional ULID, for version nodes in Buffer Mode
 
 **Behavior:**
+- Generates `localId` (6-char ULID prefix, extended if collision within tree)
 - `contentHash` is pre-computed by use case layer
-- Creates Node with generated id and provided contentHash
+- Creates Node with generated id, localId, and provided contentHash
 - Creates Continuation edges from parents if provided
+- `summary` is initially null (generated async after creation)
 
-**Returns:** Created Node
+**Returns:** Created Node with `localId` populated, `summary` null
 
 ---
 
@@ -34,6 +36,21 @@ Retrieves a Node by ID.
 
 **Input:**
 - `id` — ULID
+
+**Returns:** Node or null
+
+---
+
+### findByLocalId
+
+Finds a Node by its tree-unique localId.
+
+**Input:**
+- `loomTreeId` — ULID
+- `localId` — string (6-8 chars)
+
+**Behavior:**
+- Looks up by the indexed `loomTreeId + localId` composite
 
 **Returns:** Node or null
 
@@ -134,6 +151,27 @@ Updates Node metadata without modifying content.
 **Returns:** Updated Node
 
 *Note: Tags are managed separately via [TagRepository](./tag-repository.md). Use `assignTag` and `unassignTag` for Node tagging.*
+
+---
+
+### regenerateSummary
+
+Triggers regeneration of the Node summary.
+
+**Input:**
+- `id` — ULID
+
+**Behavior:**
+- Retrieves parent node content (and grandparent if node is short)
+- Retrieves tree title for context
+- Generates new summary via summarization model (Haiku/GPT-4o-mini)
+- Updates `summary` field
+
+**Returns:** Updated Node
+
+**Triggers:**
+- Called automatically (async) after node creation
+- Can be invoked manually if summary is null or stale
 
 ---
 

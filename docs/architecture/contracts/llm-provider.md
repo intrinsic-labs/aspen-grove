@@ -112,6 +112,15 @@ Each StreamChunk contains:
 
 ## Tool Use
 
+This section describes **provider-level tools** — capabilities exposed through the provider's native tool-calling API (e.g., web search, code execution, file operations).
+
+**Note:** Loom-aware tools (view, continue, annotate, etc.) are **not** registered as provider tools. They use a custom `→ syntax` parsed client-side, which avoids provider tool system prompts that could conflict with our natural language approach. See [Loom Tools Spec](../specs/loom-tools/README.md) for details.
+
+| Tool Type | Handled By | Use Case |
+|-----------|------------|----------|
+| Provider tools | Provider API (this spec) | Web search, code execution, etc. |
+| Loom tools | Client-side parsing | Tree navigation, content creation, memory |
+
 ### ToolDefinition
 
 - **name** — string, unique identifier for the tool

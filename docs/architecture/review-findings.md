@@ -13,8 +13,10 @@
 |----------|-------|----------|------------|----------|
 | Critical | 3 | 3 | 0 | 0 |
 | Important | 5 | 5 | 0 | 0 |
-| Medium | 4 | 3 | 0 | 2 |
+| Medium | 4 | 2 | 0 | 2 |
 | Minor | 5 | 3 | 0 | 2 |
+
+**All critical and important issues resolved.**
 
 ---
 
@@ -158,15 +160,24 @@ media/
 
 ### I4. Web Search Tool Not Specified
 
-**Status**: 🟡 Needs Work
+**Status**: ✅ Resolved
 
 **Location**: [use-cases](../../use-cases/creation-collaboration.md#22-collaborative-problem-solving)
 
 **Problem**: Web search listed as "Required Tool" but no contract specification exists.
 
-**Decision**: Implement as custom Aspen Grove service (not provider-specific plugin) for cross-provider consistency. Use external search API (Tavily, SerpAPI, or Brave Search).
+**Decision**: Implement as custom Aspen Grove service (not provider-specific plugin) for cross-provider consistency. Use external search API (Tavily or Brave Search).
 
-**Resolution**: Create [web-search.md](./contracts/web-search.md) service contract.
+**Resolution**: Created [web-search.md](./contracts/web-search.md) service contract.
+
+**Completed**: Full specification covering:
+- **WebSearchService interface**: initialize, search operations
+- **Search providers**: Tavily (primary, AI-optimized), Brave (fallback)
+- **Search options**: depth (basic/deep), topic, max results, domain filtering
+- **Integration patterns**: As loom tool (`→ search`) and as provider tool for subject models
+- **Context injection**: Compact and full formats with token budgeting
+- **Error handling**: Rate limits, quota, authentication errors
+- **User configuration**: API keys stored in secure storage, same pattern as LLM providers
 
 ---
 
@@ -343,8 +354,8 @@ See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
 
 ### Before Related Features
 
-7. [x] Create [specs/loom-tools.md](./specs/loom-tools.md) — resolve I3 ✓
-8. [ ] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4
+7. [x] Create [specs/loom-tools/](./specs/loom-tools/README.md) — resolve I3 ✓
+8. [x] Create [contracts/web-search.md](./contracts/web-search.md) — resolve I4 ✓
 8. [x] Add streaming clarification to [provenance.md](./model/provenance.md) — resolve I2 ✓
 9. [x] Add Voice Mode edge cases to [interaction-modes.md](../../domain-language/interaction-modes.md) — resolve M2 ✓
 10. [x] Update tag case sensitivity in [repositories](./contracts/repositories/tag-repository.md) — resolve m2 ✓

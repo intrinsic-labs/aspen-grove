@@ -19,7 +19,7 @@ Creates a new Document.
 - Generates id and timestamps
 - Creates Document with provided blocks
 
-**Returns:** Created Document
+**Returns:** Created Document with `summary` initially null
 
 ---
 
@@ -64,8 +64,30 @@ Updates Document content.
 **Behavior:**
 - Updates `updatedAt` timestamp
 - Replaces blocks array entirely (not partial update)
+- Note: `summary` is not directly editable — use `regenerateSummary` instead
+- Summary typically regenerates when user closes document after editing
 
 **Returns:** Updated Document
+
+---
+
+### regenerateSummary
+
+Triggers regeneration of the Document summary.
+
+**Input:**
+- `id` — ULID
+
+**Behavior:**
+- Analyzes document title and text block content
+- Generates new summary via summarization model (Haiku/GPT-4o-mini)
+- Updates `summary` field and `updatedAt` timestamp
+
+**Returns:** Updated Document
+
+**Triggers:**
+- Called automatically when user closes document after editing
+- Can be invoked manually if summary is null or stale
 
 ---
 

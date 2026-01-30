@@ -237,20 +237,29 @@ When `Agent.loomAware = true`, the agent can access additional context and tools
 
 ### Additional Context Provided
 
-- Current position in tree (depth, branch index)
-- Number of siblings at current node
-- Whether current node is a branch point
-- Path history summary (nodes visited)
+Loom-aware agents receive context at two levels:
+
+**Per-node metadata** (inline with each message):
+- localId, author, relative timestamp
+- Continuation count, annotation count, bookmark status
+
+**System-level context** (once per turn):
+- Tree title, mode, total nodes, branch count
+- Current depth and position trace
+- Active permissions
+- Other agents' locations (by node localId)
+
+See [loom-tools ambient context](../specs/loom-tools/README.md#ambient-context) for full specification.
 
 ### Tools Available (for Model Agents)
 
 - **Navigation**: view, list, tree, switch
-- **Content**: continue (invoke subject model), respond (add own content), annotate, link, edit
+- **Content**: continue (invoke subject model), respond (add own content), annotate, link, edit, bookmark, prune
 - **Documents**: read, write
 - **Memory**: pin, stash, recall, drop, memory
 - **Meta**: help, think (private scratchpad)
 
-*Full tool definitions, syntax, and examples in [loom-tools.md](../specs/loom-tools.md).*
+*Full tool definitions, syntax, and examples in [loom-tools](../specs/loom-tools/README.md).*
 
 ### Design Notes
 

@@ -86,7 +86,7 @@
 3. User switches to Model B for critique (analytical, precise)
 4. User generates alternatives with Model C (different perspective)
 5. Each Node is tagged with its generating Agent
-6. User synthesizes the best elements via Merge or manual editing
+6. User synthesizes the best elements via manual editing (maybe into a document or asks a loom-aware agent to synthesize)
 
 **Value**: Models have different strengths. Multi-model workflows let users compose those strengths intentionally.
 

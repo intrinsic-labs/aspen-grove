@@ -89,6 +89,24 @@ Removes an Edge.
 
 ---
 
+### addVersionSource
+
+Adds a version node as an alternate source to an edge (for Buffer Mode editing).
+
+**Input:**
+- `edgeId` — ULID
+- `versionNodeId` — ULID, the new version node to add as source
+- `role` — enum: `primary` | `context` | `instruction` (typically matches existing sources)
+
+**Behavior:**
+- Appends new source to the edge's sources array
+- Validates version node belongs to same LoomTree
+- Used when editing a node creates a version node — all downstream edges gain the version as an alternate source
+
+**Returns:** Updated Edge
+
+---
+
 ## Hyperedge Support
 
 In Buffer Mode, edges can have multiple sources to support version nodes. When a Node is edited (creating a version node with `editedFrom`), downstream edges are updated:

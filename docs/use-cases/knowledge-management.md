@@ -10,8 +10,8 @@
 
 **Flow**:
 1. User creates Documents for standalone notes and reference material
-2. User creates Looms for model interactions
-3. User Links related items (Document ↔ Loom, Node ↔ Document, etc.)
+2. User creates Loom Trees for model interactions
+3. User Links related items (Document ↔ Loom Tree, Node ↔ Document, etc.)
 4. User applies Tags for cross-cutting organization
 5. Over time, the Grove becomes a connected knowledge graph
 6. User searches and navigates via Links and Tags
@@ -31,7 +31,7 @@
 2. User synthesizes findings in a Document
 3. User Links specific claims in the Document to specific Nodes that support them
 4. Reader (including future self) can follow Links to see the primary evidence
-5. If the Loom has provenance data, claims can be verified against raw model output
+5. If the Loom Tree has provenance data, claims can be verified against raw model output
 
 **Value**: Research integrity. Conclusions are traceable to sources.
 
@@ -44,10 +44,10 @@
 **Goal**: Share findings with others outside Aspen Grove.
 
 **Flow**:
-1. User selects a Path, Loom, or Document to export
+1. User selects a Path, Loom Tree, or Document to export
 2. User chooses export format (Markdown, JSON, PDF)
 3. System serializes content with appropriate structure
-4. For Looms, user chooses whether to export:
+4. For Loom Trees, user chooses whether to export:
    - Single Path (linear conversation)
    - Full tree (all branches)
    - Selected branches
@@ -65,7 +65,7 @@
 
 **Flow**:
 1. New user opens the Field Guide
-2. User reads conceptual articles explaining Looms, latent space, multiverse thinking
+2. User reads conceptual articles explaining Loom interfaces, latent space, multiverse thinking
 3. User follows prompting guides to improve their interaction patterns
 4. User references tool documentation when learning new features
 5. User explores external resources for deeper learning

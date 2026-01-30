@@ -25,7 +25,7 @@ Creates a new LoomTree with its root Node.
 - If `initialContent` provided, `authorAgentId` must be provided for the root Node
 - If `title` not provided, derives from `initialContent` (first ~50 chars) or defaults to "Loom Tree ${timestamp}"
 
-**Returns:** Created LoomTree with `rootNodeId` populated
+**Returns:** Created LoomTree with `rootNodeId` populated, `summary` initially null
 
 ---
 
@@ -71,8 +71,31 @@ Updates LoomTree metadata.
 
 **Behavior:**
 - Updates `updatedAt` timestamp
+- Note: `summary` is not directly editable — use `regenerateSummary` instead
 
 **Returns:** Updated LoomTree
+
+---
+
+### regenerateSummary
+
+Triggers regeneration of the LoomTree summary.
+
+**Input:**
+- `id` — ULID
+
+**Behavior:**
+- Gathers node summaries from primary path and branch points
+- Includes user-edited `description` field as context
+- Generates new summary via summarization model (Haiku/GPT-4o-mini)
+- Updates `summary` field and `updatedAt` timestamp
+
+**Returns:** Updated LoomTree
+
+**Triggers:**
+- Called automatically every 10 new nodes (configurable)
+- Called on tree close
+- Can be invoked manually by user
 
 ---
 
