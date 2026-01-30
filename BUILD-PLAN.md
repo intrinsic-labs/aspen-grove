@@ -8,11 +8,11 @@
 
 **Goal**: Core infrastructure that everything else depends on.
 
-- [ ] Project setup (React Native, TypeScript, ESLint, Prettier)
-- [ ] WatermelonDB setup with base schema
-- [ ] Secure storage abstraction (Keychain/Keystore)
-- [ ] File system abstraction (media storage paths)
-- [ ] Navigation shell (tab structure, basic screens)
+- [x] Project setup (React Native, TypeScript, ESLint, Prettier)
+- [x] WatermelonDB setup with base schema
+- [x] Secure storage abstraction (Keychain/Keystore)
+- [x] File system abstraction (media storage paths)
+- [x] Navigation shell (tab structure, basic screens)
 
 **Depends on**: Nothing  
 **Enables**: Everything else
