@@ -16,13 +16,16 @@ import { modelClasses } from './models';
  *
  * This adapter provides the underlying SQLite storage for all local data.
  * The database file is stored in the app's document directory.
+ *
+ * Note: JSI is disabled for Expo Go compatibility.
+ * For production builds with better performance, use a development build with JSI enabled.
  */
 const adapter = new SQLiteAdapter({
   schema,
   // Database file name (stored in app's documents directory)
   dbName: 'aspen_grove',
-  // Enable JSI for better performance (React Native New Architecture)
-  jsi: true,
+  // JSI disabled for Expo Go compatibility
+  jsi: false,
   // Called when database needs to be set up or migrated
   onSetUpError: (error) => {
     console.error('[Database] Setup error:', error);

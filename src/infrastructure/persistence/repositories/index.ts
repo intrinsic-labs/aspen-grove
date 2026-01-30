@@ -15,11 +15,12 @@ export { AgentRepository } from './agent-repository';
 
 // User repositories
 export { UserPreferencesRepository } from './user-preferences-repository';
+export { LocalModelRepository } from './local-model-repository';
 
-// TODO: Implement in later phases
-// export { LocalModelRepository } from './local-model-repository';
-// export { DocumentRepository } from './document-repository';
-// export { LinkRepository } from './link-repository';
-// export { TagRepository } from './tag-repository';
-// export { RawApiResponseRepository } from './provenance-repository';
-// export { TimestampCertificateRepository } from './provenance-repository';
+// Organization repositories
+export { DocumentRepository } from './document-repository';
+export { LinkRepository } from './link-repository';
+export { TagRepository } from './tag-repository';
+
+// Provenance repositories
+export { RawApiResponseRepository, TimestampCertificateRepository } from './provenance-repository';
