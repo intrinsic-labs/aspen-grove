@@ -2,7 +2,7 @@
 
 > How context is assembled for LLM completion requests: system context combination, message ordering, exclusion filtering, and truncation.
 
-**Status**: Draft  
+**Status**: Approved
 **Related**: [Context & Memory](../../domain-language/context-memory.md), [LLM Provider](../contracts/llm-provider.md), [Core Entities](../model/core-entities.md)
 
 ---

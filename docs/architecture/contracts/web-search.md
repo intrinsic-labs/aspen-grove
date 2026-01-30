@@ -2,7 +2,7 @@
 
 > Abstract interface for web search capabilities. Enables models to access real-time information from the web.
 
-**Status**: Draft  
+**Status**: Approved 
 **Related**: [LLM Provider](./llm-provider.md), [Loom Tools](../specs/loom-tools/README.md)
 
 ---

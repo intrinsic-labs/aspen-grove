@@ -2,7 +2,7 @@
 
 > How model agents interact with Loom Trees: tool definitions, execution model, ambient context, and memory management.
 
-**Status**: Draft  
+**Status**: Approved
 **Related**: [Context Assembly](../context-assembly.md), [Buffer Mode](../buffer-mode.md), [Agents](../../model/agents.md), [Core Entities](../../model/core-entities.md)
 
 ---
