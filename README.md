@@ -79,4 +79,4 @@ See [Domain Language](./docs/domain-language/README.md) for complete terminology
 
 ## License
 
-TBD
+Apache 2.0
