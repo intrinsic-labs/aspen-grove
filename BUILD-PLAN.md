@@ -24,23 +24,23 @@
 **Goal**: Entities and repositories — the foundation of all features.
 
 ### Domain Layer
-- [ ] Entity interfaces (LoomTree, Node, Edge, Agent, Document, etc.)
-- [ ] Value objects (Content types, NodeMetadata, EdgeSource)
-- [ ] Hash computation utilities (provenance)
+- [x] Entity interfaces (LoomTree, Node, Edge, Agent, Document, etc.)
+- [x] Value objects (Content types, NodeMetadata, EdgeSource)
+- [x] Hash computation utilities (provenance)
 
 ### Repository Layer
-- [ ] LoomTreeRepository
-- [ ] NodeRepository (with `localId` generation, `findByLocalId`)
-- [ ] EdgeRepository (with `addVersionSource` for hyperedges)
-- [ ] AgentRepository
-- [ ] DocumentRepository
-- [ ] GroveRepository
-- [ ] TagRepository, LinkRepository
+- [x] LoomTreeRepository
+- [x] NodeRepository (with `localId` generation, `findByLocalId`)
+- [x] EdgeRepository (with `addVersionSource` for hyperedges)
+- [x] AgentRepository
+- [x] DocumentRepository
+- [x] GroveRepository
+- [x] TagRepository, LinkRepository
 
 ### Infrastructure
-- [ ] WatermelonDB model implementations
-- [ ] Repository implementations
-- [ ] Migration system
+- [x] WatermelonDB model implementations
+- [x] Repository implementations
+- [ ] Migration system - deferred until later
 
 **Depends on**: Phase 0  
 **Enables**: Phase 2, 3

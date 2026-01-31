@@ -1,4 +1,5 @@
-import { ulid, decodeTime } from 'ulid';
+import { decodeTime, monotonicFactory } from 'ulid';
+import * as Crypto from 'expo-crypto';
 
 /**
  * ULID Utilities
@@ -10,7 +11,26 @@ import { ulid, decodeTime } from 'ulid';
  * - Case insensitive
  * - No special characters (URL safe)
  * - Monotonically increasing within same millisecond
+ *
+ * Uses expo-crypto for cryptographically secure random generation in React Native.
  */
+
+/**
+ * Custom PRNG using expo-crypto for React Native compatibility
+ *
+ * The standard ulid package tries to auto-detect a PRNG, but React Native doesn't
+ * have crypto.getRandomValues in the global scope. This provides a wrapper around
+ * expo-crypto which works reliably in React Native environments.
+ */
+function getRandom(): number {
+  // Get 4 random bytes and convert to a number between 0 and 1
+  const randomBytes = Crypto.getRandomBytes(4);
+  // Convert bytes to a 32-bit unsigned integer, then normalize to 0-1
+  const view = new Uint32Array(randomBytes.buffer);
+  return view[0] / 0xffffffff;
+}
+
+const monoFactory = monotonicFactory(getRandom);
 
 /**
  * Generate a new ULID
@@ -21,7 +41,7 @@ import { ulid, decodeTime } from 'ulid';
  * @returns A new ULID string
  */
 export function generateUlid(): string {
-  return ulid();
+  return monoFactory();
 }
 
 /**
