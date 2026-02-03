@@ -20,6 +20,17 @@ A Loom Tree interaction style where there are no message boundaries — just con
 
 Inspired by Zed's text threads and base-model interactions.
 
+### Edit Behavior Comparison
+
+Since nodes are immutable, editing always creates a new node with `editedFrom` set to track lineage. The tree behavior differs by mode:
+
+| Mode | Edit Behavior | Tree Result |
+|------|---------------|-------------|
+| **Dialogue** | Edit creates branch, conversation continues from edit point | Sibling node (traditional branch, separate downstream) |
+| **Buffer** | Edit in place, downstream preserved | Version node (hyperedge keeps downstream attached) |
+
+This means editing a message in Dialogue Mode feels like "what if I said this instead?" while editing in Buffer Mode feels like normal document editing.
+
 > For full specification, see [Buffer Mode Spec](../architecture/specs/buffer-mode.md).
 
 ---

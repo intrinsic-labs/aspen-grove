@@ -203,17 +203,25 @@ her mother's death,︱› and the windows seemed to watch her approach.
 → view branch:b3k9 as:nodes    (separated with full metadata)
 ```
 
-### Edit Creates Versions
+### Edit Behavior
 
-In Buffer Mode, `→ edit` creates version nodes rather than branches:
+The `→ edit` tool creates a new node with `editedFrom` set to track lineage. The tree behavior differs by mode:
 
+**Buffer Mode** — Creates version node, downstream preserved:
 ```
 → edit a7x2 "revised content here"
 ✓ created version [a7x2'] from [a7x2]
   downstream nodes preserved via hyperedge
 ```
 
-See [Buffer Mode spec](../buffer-mode.md) for complete semantics.
+**Dialogue Mode** — Creates branch, conversation continues from edit point:
+```
+→ edit a7x2 "revised content here"
+✓ created branch [a7x2'] from [a7x2]
+  conversation continues from edit point
+```
+
+See [Core Entities: Edit Lineage](../../model/core-entities.md#edit-lineage) for the general model and [Buffer Mode spec](../buffer-mode.md) for Buffer-specific hyperedge semantics.
 
 ---
 

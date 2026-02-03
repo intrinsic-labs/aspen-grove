@@ -54,7 +54,7 @@ A single unit of content within a Loom Tree.
 - **contentHash** — string, computed hash for tamper evidence
 - **createdAt** — timestamp
 - **metadata** — NodeMetadata object
-- **editedFrom** — optional ULID, reference to the Node this was edited from (Buffer Mode version relationship)
+- **editedFrom** — optional ULID, reference to the Node this was edited from (set in both Dialogue and Buffer modes when a node is created by editing another; see [Edit Lineage](#edit-lineage))
 
 ### NodeMetadata Properties
 
@@ -73,7 +73,7 @@ A single unit of content within a Loom Tree.
 - authorType is set at creation from the authoring Agent's type and never changes
 - contentHash computation differs by authorType (see [Provenance](./provenance.md#hash-chain-computation))
 - A Node with no incoming Continuation edges is the root (exactly one per LoomTree)
-- If `editedFrom` is set, this Node is a *version* of the referenced Node (see [Buffer Mode](#buffer-mode-version-nodes))
+- If `editedFrom` is set, this Node was created by editing the referenced Node (see [Edit Lineage](#edit-lineage))
 
 ### Indexes
 
@@ -226,9 +226,34 @@ For the complete hash chain algorithm, verification process, and rationale, see 
 
 ---
 
-## Buffer Mode: Version Nodes
+## Edit Lineage
 
-Buffer Mode introduces the concept of **version nodes** — nodes that represent edits to existing content without creating traditional branches.
+The `editedFrom` field tracks lineage when a node is created by editing another node. This applies to **both Dialogue and Buffer modes**, though the tree behavior differs.
+
+### Why Track Edit Lineage?
+
+Since nodes are immutable, "editing" always creates a new node. Without `editedFrom`, you'd have a sibling node with similar content but no indication of the relationship. Tracking lineage:
+
+- Preserves the provenance of content changes
+- Enables UI features like "show edit history" or "diff with original"
+- Supports the hyperedge optimization in Buffer Mode
+
+### Edit Behavior by Mode
+
+| Mode | Edit Behavior | Tree Result | `editedFrom` |
+|------|---------------|-------------|--------------|
+| **Dialogue** | Edit creates branch, conversation continues from edit point | Sibling node (traditional branch, separate downstream) | ✓ Set |
+| **Buffer** | Edit in place, downstream preserved | Version node (hyperedge keeps downstream attached) | ✓ Set |
+
+**Dialogue Mode**: Editing a message is like saying "what if I had said this instead?" — it creates a branch point and the conversation continues down the new path. This matches user expectations in chat-like interfaces.
+
+**Buffer Mode**: Editing is like editing a document — you fix a typo or revise a paragraph, but the rest of the document stays intact. This requires hyperedge support (see below).
+
+---
+
+## Buffer Mode: Version Nodes and Hyperedges
+
+Buffer Mode uses **version nodes** and **hyperedges** to enable edits without duplicating downstream content.
 
 ### The Problem
 
@@ -236,13 +261,13 @@ In a traditional tree, editing node 5 in an 18-node path would require duplicati
 
 ### The Solution
 
-Version nodes use the `editedFrom` field and hyperedge support to enable edits without downstream duplication:
+Version nodes use hyperedge support to enable edits without downstream duplication:
 
 1. **Version relationship**: `editedFrom` links the edited node to its original
 2. **Hyperedge sources**: Downstream edges accept any version as a valid source
 3. **Path resolution**: The active path specifies which version to use at each position
 
-### Version vs Branch
+### Version vs Branch (Buffer Mode)
 
 | Concept | Created by | Downstream behavior | Use case |
 |---------|------------|---------------------|----------|
@@ -250,7 +275,7 @@ Version nodes use the `editedFrom` field and hyperedge support to enable edits w
 | **Branch** | Generating alternatives | Separate per branch | "Try a different direction" |
 
 ```
-Versions (editing):                    Branches (generation):
+Versions (editing in Buffer):          Branches (generation):
     
 ... → 4 → 5 ──→ 6 → 7 → ...           ... → 4 → 5a → 6a → 7a → ...
           ↓                                     ↘ 5b → 6b → 7b → ...  

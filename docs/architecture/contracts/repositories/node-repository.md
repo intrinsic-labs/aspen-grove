@@ -17,7 +17,7 @@ Creates a new Node with optional parent connections.
 - `authorType` — enum: `human` | `model`
 - `contentHash` — string, pre-computed hash (see [Provenance](../../model/provenance.md#hash-chain-computation))
 - `parentNodeIds` — optional array of ULIDs
-- `editedFrom` — optional ULID, for version nodes in Buffer Mode
+- `editedFrom` — optional ULID, set when this node was created by editing another node (used in both Dialogue and Buffer modes for lineage tracking)
 
 **Behavior:**
 - Generates `localId` (6-char ULID prefix, extended if collision within tree)

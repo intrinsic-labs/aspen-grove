@@ -81,6 +81,12 @@ This means a model response where the user tweaks a few words will show mostly b
 
 **Intent**: Modify content within the current path without affecting the exploration structure.
 
+**Note on `editedFrom`**: The `editedFrom` field tracks edit lineage in **both** Dialogue and Buffer modes — it's set whenever a node is created by editing another. The difference is in tree behavior:
+- **Dialogue Mode**: Edit creates a traditional branch (sibling node with separate downstream), conversation continues from edit point
+- **Buffer Mode**: Edit creates a version node with hyperedge support (downstream preserved, no duplication)
+
+This section describes Buffer Mode's unique hyperedge behavior.
+
 **Behavior**:
 - User edits text within an existing node's character range
 - Creates a **version node** with an `editedFrom` relationship to the original

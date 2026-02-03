@@ -26,6 +26,10 @@ A single unit of content within a Loom Tree. Nodes are the vertices of the hyper
 
 Nodes are **immutable** once created. Edits create new nodes rather than modifying existing ones. Each node carries a content hash for tamper-evidence as part of the [provenance system](../provenance-overview.md).
 
+When a node is created by editing another node, the `editedFrom` field tracks this lineage. This applies to both Dialogue and Buffer modes — the difference is in tree behavior:
+- **Dialogue Mode**: Edit creates a branch (sibling node with separate downstream), conversation continues from edit point
+- **Buffer Mode**: Edit creates a version node with hyperedge support, preserving downstream without duplication
+
 Nodes are **multimodal by design** — they can contain text, images, audio, or combinations thereof.
 
 > For full property list and technical constraints, see [Architecture: Core Entities](../architecture/model/core-entities.md).

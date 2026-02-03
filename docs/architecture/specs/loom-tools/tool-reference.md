@@ -294,7 +294,7 @@ Create a link between a node and another node, tree, or document.
 
 ### edit
 
-Create an edited version of a node (for Buffer Mode).
+Create an edited version of a node. Behavior differs by tree mode.
 
 **Syntax:**
 ```
@@ -305,16 +305,23 @@ Create an edited version of a node (for Buffer Mode).
 - `localId` — Required. Node to edit.
 - `new_content` — Required. The revised content.
 
-**Return:**
+**Return (Buffer Mode):**
 ```
 ✓ created version [a7x2'] from [a7x2]
   downstream nodes preserved via hyperedge
 ```
 
+**Return (Dialogue Mode):**
+```
+✓ created branch [a7x2'] from [a7x2]
+  conversation continues from edit point
+```
+
 **Notes:**
-- Nodes are immutable; edit creates a version node with `editedFrom` relationship.
-- See [Buffer Mode spec](../buffer-mode.md) for version node semantics.
-- Downstream nodes are shared, not duplicated.
+- Nodes are immutable; edit always creates a new node with `editedFrom` set to track lineage.
+- **Dialogue Mode**: Edit creates a sibling node (traditional branch). Conversation continues from the edit point with separate downstream.
+- **Buffer Mode**: Edit creates a version node. Downstream nodes are shared via hyperedge, not duplicated.
+- See [Core Entities: Edit Lineage](../../model/core-entities.md#edit-lineage) for the general model.
 
 ---
 
@@ -782,7 +789,7 @@ their calling. This resistance typically stems from...
 | `respond` | loom_write | Add own content as node |
 | `annotate` | loom_write | Add annotation to node |
 | `link` | loom_write | Create cross-references |
-| `edit` | loom_write | Create version node (Buffer Mode) |
+| `edit` | loom_write | Create edited node (version in Buffer, branch in Dialogue) |
 | `bookmark` | loom_write | Mark node for easy retrieval |
 | `unbookmark` | loom_write | Remove bookmark |
 | `prune` | loom_write | Hide branch (soft delete) |

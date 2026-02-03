@@ -107,9 +107,15 @@ Adds a version node as an alternate source to an edge (for Buffer Mode editing).
 
 ---
 
-## Hyperedge Support
+## Hyperedge Support (Buffer Mode)
 
-In Buffer Mode, edges can have multiple sources to support version nodes. When a Node is edited (creating a version node with `editedFrom`), downstream edges are updated:
+Hyperedge support is **specific to Buffer Mode** — it enables edits without duplicating downstream nodes.
+
+**Note on `editedFrom`**: The `editedFrom` field is set in **both** Dialogue and Buffer modes when a node is created by editing another. The difference is in tree behavior:
+- **Dialogue Mode**: Edit creates a traditional branch (sibling node, separate downstream). No hyperedge updates needed.
+- **Buffer Mode**: Edit creates a version node, and downstream edges are updated to accept either version as a source.
+
+When a Node is edited in Buffer Mode (creating a version node with `editedFrom`), downstream edges are updated:
 
 ```typescript
 // Example: Node 5 edited to create Node 5'

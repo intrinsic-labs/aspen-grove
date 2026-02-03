@@ -189,13 +189,17 @@ media/
 
 **Problem**: Nodes are declared immutable, but Buffer Mode describes "inline editing."
 
-**Resolution**: Buffer Mode has specific editing semantics that preserve immutability:
-- **Working buffer**: Mutable uncommitted text at document end — not yet a node
-- **Editing committed nodes**: Creates a new *version node* with `editedFrom` relationship to original
-- **Hyperedge support**: Downstream nodes connect via hyperedge that accepts any version, so editing doesn't require duplicating downstream nodes
-- Original nodes remain immutable; edits create new nodes
+**Resolution**: Editing preserves immutability by always creating new nodes with `editedFrom` set to track lineage. The tree behavior differs by mode:
 
-See [buffer-mode.md](./specs/buffer-mode.md) for full specification.
+- **Dialogue Mode**: Edit creates a traditional branch (sibling node with separate downstream). Conversation continues from the edit point. This matches user expectations in chat-like interfaces.
+- **Buffer Mode**: Edit creates a version node. Hyperedge support means downstream nodes connect via edges that accept any version, so editing doesn't require duplicating downstream nodes. This matches user expectations in document editing.
+
+In both cases:
+- Original nodes remain immutable
+- `editedFrom` tracks the relationship to the original node
+- Working buffer (Buffer Mode) remains mutable until committed
+
+See [buffer-mode.md](./specs/buffer-mode.md) for Buffer Mode specifics and [core-entities.md](./model/core-entities.md#edit-lineage) for the general edit lineage model.
 
 ---
 
