@@ -1,6 +1,6 @@
 # Aspen Grove
 
-*A watered idea blooms*
+_A watered idea blooms_
 
 A mobile application for branching, tree-based interactions with large language models.
 
@@ -26,14 +26,14 @@ Most AI interfaces optimize for quick answers. Aspen Grove optimizes for **under
 
 ## Key Concepts
 
-| Term | Meaning |
-|------|---------|
-| **Loom Tree** | A branching tree of conversation nodes |
+| Term                  | Meaning                                              |
+| --------------------- | ---------------------------------------------------- |
+| **Loom Tree**         | A branching tree of conversation nodes               |
 | **Looming / Weaving** | The act of exploring and creating within a Loom Tree |
-| **Node** | A single piece of content (text, image, audio) |
-| **Path** | One linear route through a tree from root to leaf |
-| **Branch Point** | Where the tree splits into multiple possibilities |
-| **Agent** | Any participant — human or model |
+| **Node**              | A single piece of content (text, image, audio)       |
+| **Path**              | One linear route through a tree from root to leaf    |
+| **Branch Point**      | Where the tree splits into multiple possibilities    |
+| **Agent**             | Any participant — human or model                     |
 
 See [Domain Language](./docs/domain-language/README.md) for complete terminology.
 
@@ -52,13 +52,13 @@ See [Domain Language](./docs/domain-language/README.md) for complete terminology
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Domain Language](./docs/domain-language/README.md) | Core concepts and terminology |
-| [Use Cases](./docs/use-cases/README.md) | How users interact with the app |
+| Document                                             | Description                            |
+| ---------------------------------------------------- | -------------------------------------- |
+| [Domain Language](./docs/domain-language/README.md)  | Core concepts and terminology          |
+| [Use Cases](./docs/use-cases/README.md)              | How users interact with the app        |
 | [Provenance Overview](./docs/provenance-overview.md) | Verification and authenticity strategy |
-| [Architecture](./docs/architecture/README.md) | Technical design and specifications |
-| [Build Plan](./docs/architecture/BUILD-PLAN.md) | Implementation roadmap |
+| [Architecture](./docs/architecture/README.md)        | Technical design and specifications    |
+| [Build Plan](./docs/architecture/BUILD-PLAN.md)      | Implementation roadmap                 |
 
 ---
 
