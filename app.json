@@ -44,7 +44,50 @@
           }
         }
       ],
-      "expo-router"
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Bold.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-BoldItalic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-ExtraLight.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-ExtraLightItalic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Italic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Light.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-LightItalic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Medium.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-MediumItalic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-SemiBold.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-SemiBoldItalic.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Thin.ttf",
+            "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-ThinItalic.ttf",
+
+            "./assets/fonts/Lora/Lora-Bold.ttf",
+            "./assets/fonts/Lora/Lora-BoldItalic.ttf",
+            "./assets/fonts/Lora/Lora-Italic.ttf",
+            "./assets/fonts/Lora/Lora-Medium.ttf",
+            "./assets/fonts/Lora/Lora-MediumItalic.ttf",
+            "./assets/fonts/Lora/Lora-Regular.ttf",
+            "./assets/fonts/Lora/Lora-SemiBold.ttf",
+            "./assets/fonts/Lora/Lora-SemiBoldItalic.ttf",
+
+            "./assets/fonts/Open_Sans/OpenSans-Bold.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-BoldItalic.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-ExtraBold.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-ExtraBoldItalic.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-Italic.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-Light.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-LightItalic.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-Medium.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-MediumItalic.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-Regular.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-SemiBold.ttf",
+            "./assets/fonts/Open_Sans/OpenSans-SemiBoldItalic.ttf"
+          ]
+        }
+      ]
     ]
   }
 }
