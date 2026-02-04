@@ -6,12 +6,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "backgroundColor": "#000000"
+      }
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +26,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.intrinsiclabs.aspengrovern"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -63,7 +67,6 @@
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-SemiBoldItalic.ttf",
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Thin.ttf",
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-ThinItalic.ttf",
-
             "./assets/fonts/Lora/Lora-Bold.ttf",
             "./assets/fonts/Lora/Lora-BoldItalic.ttf",
             "./assets/fonts/Lora/Lora-Italic.ttf",
@@ -72,7 +75,6 @@
             "./assets/fonts/Lora/Lora-Regular.ttf",
             "./assets/fonts/Lora/Lora-SemiBold.ttf",
             "./assets/fonts/Lora/Lora-SemiBoldItalic.ttf",
-
             "./assets/fonts/Open_Sans/OpenSans-Bold.ttf",
             "./assets/fonts/Open_Sans/OpenSans-BoldItalic.ttf",
             "./assets/fonts/Open_Sans/OpenSans-ExtraBold.ttf",

@@ -1,11 +1,29 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useThemeColors } from '@interface/hooks/useThemeColors';
 
 const RootLayout = () => {
+  const { colors } = useThemeColors();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#808000',
+        tabBarActiveTintColor: colors.red,
+        tabBarInactiveTintColor: colors.secondary,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.background,
+        },
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerShadowVisible: false,
+        headerTitleStyle: {
+          color: colors.primary,
+          fontFamily: 'IBMPlexMono-ExtraLight',
+          fontWeight: '400',
+        },
       }}
     >
       <Tabs.Screen
@@ -47,7 +65,8 @@ const RootLayout = () => {
             <Ionicons
               name={focused ? 'options' : 'options-outline'}
               color={color}
-              size={size} />
+              size={size}
+            />
           ),
         }}
       />
