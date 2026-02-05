@@ -7,7 +7,7 @@
       "@/*": ["src/*"],
       "@domain/*": ["src/domain/*"],
       "@application/*": ["src/application/*"],
-      "@infratstructure/*": ["src/infrastructure/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
       "@interface/*": ["src/interface/*"],
     },
   },
