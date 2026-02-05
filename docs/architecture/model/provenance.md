@@ -142,7 +142,8 @@ Inputs to hash:
 1. Serialized content (deterministic JSON serialization)
 2. Array of parent node contentHashes (via incoming Continuation edges), sorted
 3. createdAt timestamp (ISO 8601)
-4. SHA-256 hash of the raw API response bytes (headers + body as a single blob, pre-compression)
+4. authorAgentId
+5. SHA-256 hash of the raw API response bytes (headers + body as a single blob, pre-compression)
 
 **Important**: The hash is computed over the **raw HTTP response bytes** — not over our parsed `RawApiResponse` domain object. This ensures the hash is tied to the actual provider response, not our representation of it.
 
@@ -154,10 +155,14 @@ Model nodes tie their hash to the full API response evidence. This means:
 - Verification requires access to the original raw bytes
 - Any tampering with the stored response invalidates the Node hash
 
-### Why Different Approaches?
+### Why Include Both for Model Nodes?
 
-- **Human nodes** — The Agent abstraction is meaningful; it represents a real person's identity within the app
-- **Model nodes** — The Agent abstraction is application-level; provenance should tie to actual API evidence, not our internal configuration
+Model nodes include both `authorAgentId` and the raw response hash because they serve different purposes:
+
+- **authorAgentId** — Ties to the agent configuration used (temperature, system prompt, etc.). Two different agents using the same underlying model produce different hashes.
+- **rawResponseHash** — Ties to the actual API response from the provider. This is the cryptographic evidence of what the model returned.
+
+Including both provides app-level provenance (which agent?) and provider-level provenance (what was returned?) in a single hash.
 
 ### Algorithm
 
@@ -187,7 +192,7 @@ Process for verifying the integrity of a Node and its ancestry.
    - `model` → use model-generated algorithm
 4. Recompute expected contentHash:
    - **For human-authored nodes**: content + parent hashes + createdAt + authorAgentId
-   - **For model-generated nodes**: content + parent hashes + createdAt + SHA-256(raw response bytes)
+   - **For model-generated nodes**: content + parent hashes + createdAt + authorAgentId + SHA-256(raw response bytes)
 5. Compare computed hash to stored Node.contentHash
 6. Result: match = valid, mismatch = tampered
 

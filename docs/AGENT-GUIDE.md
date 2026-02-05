@@ -257,7 +257,7 @@ Labels for organization. Applied via TagAssignment junction entity. Case-sensiti
 
 **Human-authored nodes:** Hash of content + parent hashes + createdAt + authorAgentId
 
-**Model-generated nodes:** Hash of content + parent hashes + createdAt + SHA-256(raw API response bytes)
+**Model-generated nodes:** Hash of content + parent hashes + createdAt + authorAgentId + SHA-256(raw API response bytes)
 
 The raw response hash must be computed **immediately upon receipt**, before any parsing.
 
@@ -600,7 +600,7 @@ Implement `LLMProvider` interface from `llm-provider.md`. Key: capture raw respo
 ### "How does the hash chain work?"
 
 Human nodes: content + parents + timestamp + agentId
-Model nodes: content + parents + timestamp + SHA-256(raw response)
+Model nodes: content + parents + timestamp + agentId + SHA-256(raw response)
 See `provenance.md`.
 
 ### "How do loom-aware tools work?"

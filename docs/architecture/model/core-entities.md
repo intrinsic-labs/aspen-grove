@@ -221,7 +221,7 @@ For the complete hash chain algorithm, verification process, and rationale, see 
 
 **Key points:**
 - Human nodes hash against `authorAgentId`
-- Model nodes hash against the SHA-256 of their `RawApiResponse`
+- Model nodes hash against both `authorAgentId` and the SHA-256 of their `RawApiResponse`
 - Any modification to content or ancestry invalidates the hash chain
 
 ---

@@ -205,8 +205,8 @@ Expected size: 2-10KB compressed per response.
 1. User requests verification
 2. Repository retrieves Node and RawApiResponse
 3. Hash verification service recomputes hash:
-   - For model nodes: includes SHA-256 of raw response bytes
-   - For human nodes: uses authorAgentId
+   - For human nodes: content + parent hashes + createdAt + authorAgentId
+   - For model nodes: content + parent hashes + createdAt + authorAgentId + SHA-256(raw response bytes)
 4. Compares computed hash to stored Node.contentHash
 5. Returns verification result
 
