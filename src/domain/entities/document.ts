@@ -83,18 +83,17 @@ export type DocumentBlock =
 // =============================================================================
 
 /**
- * Document: a rich, mutable document for notes and reference material.
+ * Document: a rich document for notes and reference material.
  *
- * Unlike Nodes, Documents are mutable. The blocks array can be modified,
- * but individual blocks are replaced wholesale (not mutated in place).
+ * Like all domain entities, Documents are immutable snapshots.
+ * Changes create new Document objects via repository.update().
  */
 export interface Document {
   readonly id: ULID;
   readonly groveId: ULID;
   readonly title: string;
   readonly summary?: string;
-  /** Mutable array of content blocks */
-  blocks: DocumentBlock[];
+  readonly blocks: readonly DocumentBlock[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly archivedAt?: Date;
