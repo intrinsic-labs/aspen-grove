@@ -143,10 +143,13 @@ export class PathState extends Model {
 
   static associations = {
     paths: { type: 'belongs_to', key: 'path_id' },
+    agents: { type: 'belongs_to', key: 'agent_id' },
     nodes: { type: 'belongs_to', key: 'active_node_id' },
   } as const;
 
   @field('path_id') pathId!: string;
+
+  @field('agent_id') agentId!: string;
 
   @field('mode') mode!: string | null;
 
@@ -156,5 +159,6 @@ export class PathState extends Model {
 
   // Relations
   @immutableRelation('paths', 'path_id') path!: Path;
+  @immutableRelation('agents', 'agent_id') agent!: Model;
   @immutableRelation('nodes', 'active_node_id') activeNode!: Model;
 }

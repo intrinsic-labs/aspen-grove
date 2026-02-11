@@ -68,6 +68,7 @@ export interface PathSelection {
 export interface PathState {
   readonly id: ULID;
   readonly pathId: ULID;
+  readonly agentId: ULID;
   readonly mode?: PathMode;
   readonly activeNodeId: ULID;
   readonly updatedAt: Date;
@@ -84,7 +85,10 @@ export interface IPathRepository {
   findById(id: ULID): Promise<Path | null>;
 
   /** Find the Path for a given (loomTreeId, ownerAgentId), or null if none exists. */
-  findByTreeAndOwner(loomTreeId: ULID, ownerAgentId: ULID): Promise<Path | null>;
+  findByTreeAndOwner(
+    loomTreeId: ULID,
+    ownerAgentId: ULID
+  ): Promise<Path | null>;
 
   /** Create a new Path for (loomTreeId, ownerAgentId). */
   create(input: CreatePathInput): Promise<Path>;
@@ -116,7 +120,11 @@ export interface IPathRepository {
    * Replace the suffix of a Path starting at `startPosition` with `nodeIds`.
    * This is the core operation for "switch sibling branch at position K".
    */
-  replaceSuffix(pathId: ULID, startPosition: number, nodeIds: readonly ULID[]): Promise<void>;
+  replaceSuffix(
+    pathId: ULID,
+    startPosition: number,
+    nodeIds: readonly ULID[]
+  ): Promise<void>;
 
   // === Selections ===
 
@@ -163,20 +171,30 @@ export type UpsertPathSelectionInput = {
  */
 export interface IPathStateRepository {
   /** Find PathState by (pathId, mode). Mode may be undefined for shared cursor. */
-  findByPathId(pathId: ULID, mode?: PathMode): Promise<PathState | null>;
+  findByPathId(
+    pathId: ULID,
+    agentId: ULID,
+    mode?: PathMode
+  ): Promise<PathState | null>;
 
   /** Create initial PathState. */
   create(input: CreatePathStateInput): Promise<PathState>;
 
   /** Update active node cursor. */
-  setActiveNode(pathId: ULID, activeNodeId: ULID, mode?: PathMode): Promise<PathState>;
+  setActiveNode(
+    pathId: ULID,
+    agentId: ULID,
+    activeNodeId: ULID,
+    mode?: PathMode
+  ): Promise<PathState>;
 
   /** Permanently delete PathState records for a Path. */
   hardDeleteByPathId(pathId: ULID): Promise<boolean>;
-};
+}
 
 export type CreatePathStateInput = {
   readonly pathId: ULID;
+  readonly agentId: ULID;
   readonly activeNodeId: ULID;
   readonly mode?: PathMode;
 };

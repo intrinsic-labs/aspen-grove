@@ -256,6 +256,7 @@ export const aspenGroveSchema = appSchema({
         { name: 'id', type: 'string' },
 
         { name: 'path_id', type: 'string' },
+        { name: 'agent_id', type: 'string' },
         { name: 'mode', type: 'string', isOptional: true },
         { name: 'active_node_id', type: 'string' },
 

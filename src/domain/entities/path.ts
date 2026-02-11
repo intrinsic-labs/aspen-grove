@@ -96,6 +96,9 @@ export interface PathState {
   readonly id: ULID;
   readonly pathId: ULID;
 
+  /** The agent whose cursor this represents. */
+  readonly agentId: ULID;
+
   /** Optional mode for separate per-mode cursor; shared Path across modes. */
   readonly mode?: PathMode;
 
@@ -104,105 +107,3 @@ export interface PathState {
 
   readonly updatedAt: Date;
 }
-
-/**
- * Application-layer repository contracts for Path persistence.
- *
- * NOTE: These are located in domain for now because tool access is disabled and the user requested
- * "entities and repository interfaces" in this file. In the preferred architecture, these
- * interfaces belong under `src/application/repositories/...` and should be moved there.
- */
-export interface IPathRepository {
-  /** Find a Path by ID, or null if not found. */
-  findById(id: ULID): Promise<Path | null>;
-
-  /** Find the Path for a given (loomTreeId, ownerAgentId), or null if none exists. */
-  findByTreeAndOwner(loomTreeId: ULID, ownerAgentId: ULID): Promise<Path | null>;
-
-  /** Create a new Path for (loomTreeId, ownerAgentId). */
-  create(input: CreatePathInput): Promise<Path>;
-
-  /** Update mutable fields (e.g., name). */
-  update(input: UpdatePathInput): Promise<Path>;
-
-  /** Permanently delete a Path and its PathNodes/Selections/State. */
-  hardDelete(id: ULID): Promise<boolean>;
-
-  // === Materialized sequence (PathNodes) ===
-
-  /** Get the current materialized node sequence for this Path (ordered by position). */
-  getNodeSequence(pathId: ULID): Promise<PathNode[]>;
-
-  /**
-   * Append a node to the end of the Path sequence.
-   * Use this for incremental forward navigation/generation.
-   */
-  appendNode(pathId: ULID, nodeId: ULID): Promise<PathNode>;
-
-  /**
-   * Truncate the Path sequence to a given length (keep positions [0..newLength-1]).
-   * Use this for back navigation and suffix replacement.
-   */
-  truncate(pathId: ULID, newLength: number): Promise<void>;
-
-  /**
-   * Replace the suffix of a Path starting at `startPosition` with `nodeIds`.
-   * This is the core operation for "switch sibling branch at position K".
-   */
-  replaceSuffix(pathId: ULID, startPosition: number, nodeIds: readonly ULID[]): Promise<void>;
-
-  // === Selections ===
-
-  /** Get all selections for a Path. */
-  getSelections(pathId: ULID): Promise<PathSelection[]>;
-
-  /** Get selection for a specific target node within a Path. */
-  getSelection(pathId: ULID, targetNodeId: ULID): Promise<PathSelection | null>;
-
-  /** Upsert selection for a target node (edge and/or source). */
-  upsertSelection(input: UpsertPathSelectionInput): Promise<PathSelection>;
-
-  /** Delete selection for a target node within a Path. */
-  deleteSelection(pathId: ULID, targetNodeId: ULID): Promise<boolean>;
-}
-
-export type CreatePathInput = {
-  readonly loomTreeId: ULID;
-  readonly ownerAgentId: ULID;
-  readonly name?: string;
-};
-
-export type UpdatePathInput = {
-  readonly id: ULID;
-  readonly changes: {
-    readonly name?: string;
-    readonly archivedAt?: Date | null;
-  };
-};
-
-export type UpsertPathSelectionInput = {
-  readonly pathId: ULID;
-  readonly targetNodeId: ULID;
-  readonly selectedEdgeId?: ULID;
-  readonly selectedSourceNodeId?: ULID;
-};
-
-export interface IPathStateRepository {
-  /** Find PathState by (pathId, mode). Mode may be undefined for shared cursor. */
-  findByPathId(pathId: ULID, mode?: PathMode): Promise<PathState | null>;
-
-  /** Create initial PathState. */
-  create(input: CreatePathStateInput): Promise<PathState>;
-
-  /** Update active node cursor. */
-  setActiveNode(pathId: ULID, activeNodeId: ULID, mode?: PathMode): Promise<PathState>;
-
-  /** Permanently delete PathState records for a Path. */
-  hardDeleteByPathId(pathId: ULID): Promise<boolean>;
-}
-
-export type CreatePathStateInput = {
-  readonly pathId: ULID;
-  readonly activeNodeId: ULID;
-  readonly mode?: PathMode;
-};
