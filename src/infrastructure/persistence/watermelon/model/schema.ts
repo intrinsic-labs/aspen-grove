@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 2,
+  version: 3,
   tables: [
     /**
      * Grove table schema
@@ -9,11 +9,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'groves',
       columns: [
-        // NOTE: WatermelonDB provides `Model.id` automatically, but keeping an explicit `id`
-        // column can be useful for clarity and interoperability. If you hit issues with this,
-        // remove the column and rely on Watermelon's built-in `id`.
-        { name: 'id', type: 'string' },
-
         { name: 'name', type: 'string' },
         { name: 'owner_agent_id', type: 'string' },
         { name: 'created_at', type: 'number' },
@@ -27,8 +22,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'user_preferences',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'display_name', type: 'string', isOptional: true },
         { name: 'email', type: 'string', isOptional: true },
         { name: 'avatar_ref', type: 'string', isOptional: true },
@@ -39,6 +32,7 @@ export const aspenGroveSchema = appSchema({
 
         { name: 'default_voice_mode_enabled', type: 'boolean' },
         { name: 'default_temperature', type: 'number' },
+        { name: 'verbose_error_alerts', type: 'boolean', isOptional: true },
 
         { name: 'node_view_style', type: 'string' },
         { name: 'node_view_corner_radius', type: 'number' },
@@ -64,8 +58,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'agents',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'name', type: 'string' },
         { name: 'agent_type', type: 'string' },
 
@@ -97,8 +89,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'loom_trees',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'grove_id', type: 'string' },
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
@@ -133,8 +123,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'nodes',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'local_id', type: 'string' },
         { name: 'loom_tree_id', type: 'string' },
 
@@ -184,8 +172,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'edges',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'loom_tree_id', type: 'string' },
         { name: 'target_node_id', type: 'string' },
         { name: 'edge_type', type: 'string' },
@@ -201,8 +187,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'edge_sources',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'edge_id', type: 'string' },
         { name: 'source_node_id', type: 'string' },
         { name: 'role', type: 'string' },
@@ -218,8 +202,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'paths',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'loom_tree_id', type: 'string' },
         { name: 'owner_agent_id', type: 'string' },
         { name: 'name', type: 'string', isOptional: true },
@@ -238,8 +220,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'path_nodes',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'path_id', type: 'string' },
         { name: 'position', type: 'number' },
         { name: 'node_id', type: 'string' },
@@ -256,8 +236,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'path_selections',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'path_id', type: 'string' },
         { name: 'target_node_id', type: 'string' },
 
@@ -280,8 +258,6 @@ export const aspenGroveSchema = appSchema({
     tableSchema({
       name: 'path_states',
       columns: [
-        { name: 'id', type: 'string' },
-
         { name: 'path_id', type: 'string' },
         { name: 'agent_id', type: 'string' },
         { name: 'mode', type: 'string', isOptional: true },
@@ -292,3 +268,5 @@ export const aspenGroveSchema = appSchema({
     }),
   ],
 });
+
+export default aspenGroveSchema;

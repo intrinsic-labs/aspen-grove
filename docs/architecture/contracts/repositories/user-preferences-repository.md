@@ -28,7 +28,7 @@ Retrieves the UserPreferences record, creating it with defaults if not exists.
 - `email` — null
 - `avatarRef` — null
 - `defaultVoiceModeEnabled` — false
-- `defaultTemperature` — null
+- `defaultTemperature` — 1.0
 - `theme` — `system`
 - `fontSize` — 16
 - `fontFace` — system default
@@ -97,7 +97,7 @@ UserPreferences captures what's truly app-wide (theme, font size, etc.) while Ag
 | `email` | string? | null | For future account features |
 | `avatarRef` | string? | null | Reference to avatar image |
 | `defaultVoiceModeEnabled` | boolean | false | Voice Mode default state |
-| `defaultTemperature` | number? | null | Default for new model agents |
+| `defaultTemperature` | number | 1.0 | Default for new model agents |
 | `theme` | enum | `system` | `light` \| `dark` \| `system` |
 | `fontSize` | number | 16 | UI text size in points |
 | `fontFace` | string | system | UI font family |

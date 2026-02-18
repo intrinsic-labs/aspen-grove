@@ -21,6 +21,7 @@ export default class UserPreferences extends Model {
   defaultVoiceModeEnabled!: boolean;
 
   @field('default_temperature') defaultTemperature!: number;
+  @field('verbose_error_alerts') verboseErrorAlerts!: boolean | null;
 
   @field('node_view_style') nodeViewStyle!: string;
   @field('node_view_corner_radius') nodeViewCornerRadius!: number;

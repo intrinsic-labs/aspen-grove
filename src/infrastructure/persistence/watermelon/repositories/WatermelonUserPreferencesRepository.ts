@@ -19,7 +19,8 @@ const DEFAULT_DISPLAY_NAME = 'Human';
 const DEFAULT_THEME: Theme = 'system';
 const DEFAULT_FONT_SIZE: FontSize = 16;
 const DEFAULT_VOICE_MODE = false;
-const DEFAULT_TEMPERATURE = 0.7;
+const DEFAULT_TEMPERATURE = 1.0;
+const DEFAULT_VERBOSE_ERROR_ALERTS = false;
 const DEFAULT_NODE_VIEW_STYLE: NodeViewStyle = 'filled';
 const DEFAULT_NODE_CORNER_RADIUS = 12;
 
@@ -74,6 +75,9 @@ export class WatermelonUserPreferencesRepository
         if (changes.defaultTemperature !== undefined) {
           record.defaultTemperature = changes.defaultTemperature;
         }
+        if (changes.verboseErrorAlerts !== undefined) {
+          record.verboseErrorAlerts = changes.verboseErrorAlerts;
+        }
 
         if (changes.nodeViewStyle !== undefined) {
           record.nodeViewStyle = changes.nodeViewStyle;
@@ -122,6 +126,7 @@ export class WatermelonUserPreferencesRepository
       record.fontFace = null;
       record.defaultVoiceModeEnabled = DEFAULT_VOICE_MODE;
       record.defaultTemperature = DEFAULT_TEMPERATURE;
+      record.verboseErrorAlerts = DEFAULT_VERBOSE_ERROR_ALERTS;
       record.nodeViewStyle = DEFAULT_NODE_VIEW_STYLE;
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
       record.createdAt = createdAt;
@@ -140,6 +145,8 @@ export class WatermelonUserPreferencesRepository
       fontFace: toOptionalString(model.fontFace),
       defaultVoiceModeEnabled: model.defaultVoiceModeEnabled,
       defaultTemperature: model.defaultTemperature,
+      verboseErrorAlerts:
+        model.verboseErrorAlerts ?? DEFAULT_VERBOSE_ERROR_ALERTS,
       nodeViewStyle: model.nodeViewStyle as NodeViewStyle,
       nodeViewCornerRadius: model.nodeViewCornerRadius,
       createdAt: model.createdAt,

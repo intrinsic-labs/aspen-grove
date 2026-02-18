@@ -105,48 +105,70 @@ export class CreateDialogueLoomTreeUseCase {
       ownerAgent.id
     );
 
-    const rootNode = await this.nodeRepository.create({
-      id: rootNodeId,
-      createdAt: rootNodeCreatedAt,
-      loomTreeId: treeId,
-      localId,
-      content,
-      authorAgentId: ownerAgent.id,
-      authorType: 'human',
-      contentHash,
-    });
+    let rootNode: Node | null = null;
+    let tree: LoomTree | null = null;
 
-    const tree = await this.loomTreeRepository.create({
-      id: treeId,
-      groveId: input.groveId,
-      rootNodeId: rootNode.id,
-      mode: 'dialogue',
-      title: input.title ?? this.deriveTitle(content),
-      description: input.description,
-      systemContext: input.systemContext,
-    });
+    try {
+      rootNode = await this.nodeRepository.create({
+        id: rootNodeId,
+        createdAt: rootNodeCreatedAt,
+        loomTreeId: treeId,
+        localId,
+        content,
+        authorAgentId: ownerAgent.id,
+        authorType: 'human',
+        contentHash,
+      });
 
-    const path = await this.pathRepository.create({
-      loomTreeId: tree.id,
-      ownerAgentId: ownerAgent.id,
-      name: input.pathName,
-    });
+      tree = await this.loomTreeRepository.create({
+        id: treeId,
+        groveId: input.groveId,
+        rootNodeId: rootNode.id,
+        mode: 'dialogue',
+        title: input.title ?? this.deriveTitle(content),
+        description: input.description,
+        systemContext: input.systemContext,
+      });
 
-    await this.pathRepository.appendNode(path.id, rootNode.id);
+      const path = await this.pathRepository.create({
+        loomTreeId: tree.id,
+        ownerAgentId: ownerAgent.id,
+        name: input.pathName,
+      });
 
-    const pathState = await this.pathStateRepository.create({
-      pathId: path.id,
-      agentId: ownerAgent.id,
-      mode: 'dialogue',
-      activeNodeId: rootNode.id,
-    });
+      await this.pathRepository.appendNode(path.id, rootNode.id);
 
-    return {
-      tree,
-      rootNode,
-      path,
-      pathState,
-    };
+      const pathState = await this.pathStateRepository.create({
+        pathId: path.id,
+        agentId: ownerAgent.id,
+        mode: 'dialogue',
+        activeNodeId: rootNode.id,
+      });
+
+      return {
+        tree,
+        rootNode,
+        path,
+        pathState,
+      };
+    } catch (error) {
+      // Best-effort rollback to avoid partial tree creation artifacts.
+      if (tree) {
+        try {
+          await this.loomTreeRepository.hardDelete(tree.id);
+        } catch {
+          // no-op
+        }
+      } else if (rootNode) {
+        try {
+          await this.nodeRepository.hardDelete(rootNode.id);
+        } catch {
+          // no-op
+        }
+      }
+
+      throw error;
+    }
   }
 
   private async requireGrove(groveId: ULID): Promise<Grove> {

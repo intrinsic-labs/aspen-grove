@@ -34,6 +34,7 @@ export type UserPreferencesChanges = {
   readonly fontFace?: string | null;
   readonly defaultVoiceModeEnabled?: boolean;
   readonly defaultTemperature?: number;
+  readonly verboseErrorAlerts?: boolean;
   readonly nodeViewStyle?: NodeViewStyle;
   readonly nodeViewCornerRadius?: number;
 };

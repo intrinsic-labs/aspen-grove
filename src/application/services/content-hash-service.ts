@@ -82,3 +82,15 @@ export const computeModelContentHash = async (
 
   return hash as ContentHash;
 };
+
+/** Computes SHA-256 hash for arbitrary payload strings (hex-encoded). */
+export const computeSha256Hash = async (
+  payload: string
+): Promise<ContentHash> => {
+  const hash = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    payload
+  );
+
+  return hash as ContentHash;
+};

@@ -20,6 +20,7 @@ export interface UserPreferences {
   // Behavior
   readonly defaultVoiceModeEnabled: boolean;
   readonly defaultTemperature: number;
+  readonly verboseErrorAlerts: boolean;
 
   // Node display
   readonly nodeViewStyle: NodeViewStyle;

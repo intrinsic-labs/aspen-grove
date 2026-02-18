@@ -8,7 +8,7 @@
  * See: https://github.com/ulid/spec
  */
 
-import { ulid, isValid } from 'ulidx';
+import { isValid, monotonicFactory } from 'ulidx';
 
 // =========================
 // Brand Definition
@@ -24,10 +24,12 @@ export type ULID = Brand<string, 'ULID'>;
 // Factory Function
 // ========================
 
+const nextULID = monotonicFactory();
+
 /**
  * Creates a new ULID.
  */
-export const createULID = (): ULID => ulid() as ULID;
+export const createULID = (): ULID => nextULID() as ULID;
 
 /**
  * Parses an existing string as a ULID.

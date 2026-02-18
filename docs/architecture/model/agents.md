@@ -109,7 +109,7 @@ App-wide user preferences stored as a singleton. Not tied to any specific Agent.
 - **email** — optional string, for future account/sync features
 - **avatarRef** — optional string, reference to avatar image in media storage
 - **defaultVoiceModeEnabled** — boolean, default false
-- **defaultTemperature** — optional number, preferred temperature for new model agents
+- **defaultTemperature** — number, preferred temperature for new model agents (default: 1.0)
 - **theme** — enum: `light` | `dark` | `system`, default `system`
 - **fontSize** — number, UI text size in points, default 16
 - **fontFace** — string, UI font family name
