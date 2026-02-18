@@ -65,7 +65,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   }
 
   async create(input: CreateLoomTreeInput): Promise<LoomTreeEntity> {
-    const id = createULID();
+    const id = input.id ?? createULID();
     const createdAt = this.now();
 
     return this.db.write(async () => {

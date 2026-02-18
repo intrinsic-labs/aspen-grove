@@ -51,6 +51,11 @@ export interface ILoomTreeRepository {
 
 /** Input for creating a new LoomTree. */
 export type CreateLoomTreeInput = {
+  /**
+   * Optional caller-supplied id.
+   * Provide this when dependent entities must reference LoomTree id before persistence.
+   */
+  readonly id?: ULID;
   readonly groveId: ULID;
   /** Root node must be created beforehand; use case coordinates this. */
   readonly rootNodeId: ULID;

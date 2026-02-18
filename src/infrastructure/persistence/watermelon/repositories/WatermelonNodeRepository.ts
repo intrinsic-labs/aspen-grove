@@ -141,8 +141,8 @@ export class WatermelonNodeRepository implements INodeRepository {
   }
 
   async create(input: CreateNodeInput): Promise<NodeEntity> {
-    const id = createULID();
-    const createdAt = this.now();
+    const id = input.id ?? createULID();
+    const createdAt = input.createdAt ?? this.now();
     const metadata = this.defaultMetadata();
 
     return this.db.write(async () => {

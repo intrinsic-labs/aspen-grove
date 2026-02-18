@@ -54,6 +54,16 @@ export interface INodeRepository {
 }
 
 export type CreateNodeInput = {
+  /**
+   * Optional caller-supplied id.
+   * Provide this when localId must be derived from the exact node ULID.
+   */
+  readonly id?: ULID;
+  /**
+   * Optional caller-supplied timestamp used in content-hash computation.
+   * When omitted, repository assigns current time.
+   */
+  readonly createdAt?: Date;
   readonly loomTreeId: ULID;
   /** Use case generates via `createLocalId()` after checking collisions. */
   readonly localId: LocalId;
