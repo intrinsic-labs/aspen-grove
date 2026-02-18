@@ -58,7 +58,7 @@ See [Domain Language](./docs/domain-language/README.md) for complete terminology
 | [Use Cases](./docs/use-cases/README.md)              | How users interact with the app        |
 | [Provenance Overview](./docs/provenance-overview.md) | Verification and authenticity strategy |
 | [Architecture](./docs/architecture/README.md)        | Technical design and specifications    |
-| [Build Plan](./docs/architecture/BUILD-PLAN.md)      | Implementation roadmap                 |
+| [Review Findings](./docs/architecture/review-findings.md) | Pre-development issues and resolutions |
 
 ---
 

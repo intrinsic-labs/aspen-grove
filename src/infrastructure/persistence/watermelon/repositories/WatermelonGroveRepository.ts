@@ -10,13 +10,9 @@ import { createULID, type ULID } from '@domain/value-objects';
 
 import GroveModel from '../model/Grove';
 import { Q } from '@nozbe/watermelondb';
+import { isRecordNotFoundError } from './helpers';
 
-/**
- * WatermelonDB implementation of `IGroveRepository`.
- *
- * This is intentionally a stub to wire the shape of the implementation.
- * You can fill in the Watermelon queries and mapping logic.
- */
+/** WatermelonDB implementation of `IGroveRepository`. */
 export class WatermelonGroveRepository implements IGroveRepository {
   private readonly db: Database;
   private readonly groves: Collection<GroveModel>;
@@ -85,22 +81,12 @@ export class WatermelonGroveRepository implements IGroveRepository {
         await model.destroyPermanently();
         return true;
       } catch (error) {
-        if (this.isNotFoundError(error)) {
+        if (isRecordNotFoundError(error, this.groves.table)) {
           return false;
         }
         throw error;
       }
     });
-  }
-
-  private isNotFoundError(error: unknown): boolean {
-    if (!(error instanceof Error) || typeof error.message !== 'string') {
-      return false;
-    }
-
-    const message = error.message;
-    const prefix = `Record ${this.groves.table}#`;
-    return message.startsWith(prefix) && message.endsWith(' not found');
   }
 
   // === Mapping helpers ===

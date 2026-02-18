@@ -45,7 +45,7 @@
   - **Editing** creates version nodes (`editedFrom` relationship) — downstream nodes preserved via hyperedge
   - **Branching** creates sibling nodes — each with potentially different downstream
 - **Hypergraph support**: Edges can have multiple sources, enabling edits without downstream node duplication
-- See [buffer-mode-questions.md](./specs/buffer-mode-questions.md) for decision history
+- See [buffer-mode.md](./specs/buffer-mode.md) for full behavior and data model
 
 ---
 
@@ -141,7 +141,7 @@ media/
 
 **Impact**: Cannot implement Loom-Aware model agents without tool specifications.
 
-**Resolution**: Created [loom-tools.md](./specs/loom-tools.md) specification.
+**Resolution**: Created [loom-tools](./specs/loom-tools/README.md) specification.
 
 **Completed**: Full specification covering:
 - **Tool syntax**: Natural language `→` prefix commands with batching support
@@ -341,7 +341,7 @@ See [buffer-mode.md](./specs/buffer-mode.md) for Buffer Mode specifics and [core
 
 **Resolution**: Field Guide content fetched from headless CMS (Sanity). Not bundled in app, not user-editable. Allows content updates without app releases.
 
-**Action**: Add note to domain-language.md.
+**Action**: Add note to domain-language docs.
 
 ---
 
