@@ -5,3 +5,4 @@ export * from './WatermelonLoomTreeRepository';
 export * from './WatermelonNodeRepository';
 export * from './WatermelonPathRepository';
 export * from './WatermelonPathStateRepository';
+export * from './WatermelonUserPreferencesRepository';

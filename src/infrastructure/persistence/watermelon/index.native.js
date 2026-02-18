@@ -9,6 +9,7 @@ import Grove from './model/Grove';
 import Agent from './model/Agent';
 import LoomTree from './model/LoomTree';
 import Node from './model/Node';
+import UserPreferences from './model/UserPreferences';
 import { Edge, EdgeSource } from './model/Edge';
 import { Path, PathNode, PathSelection, PathState } from './model/Path';
 
@@ -27,6 +28,7 @@ const database = new Database({
   modelClasses: [
     Grove,
     Agent,
+    UserPreferences,
     LoomTree,
     Node,
     Edge,
@@ -37,3 +39,6 @@ const database = new Database({
     PathState,
   ],
 });
+
+export { database };
+export default database;
