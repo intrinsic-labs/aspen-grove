@@ -1,15 +1,19 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useThemeColors } from '../hooks/useThemeColors';
+import { View, StyleSheet } from 'react-native';
+import { AppScreen, AppText, Hairline } from '../ui/system';
 
 const DocumentsView = () => {
-  const { colors } = useThemeColors();
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.primary }]}>
-        Documents
-      </Text>
-    </View>
+    <AppScreen style={styles.container}>
+      <View style={styles.content}>
+        <AppText variant="title" tone="primary">
+          Documents
+        </AppText>
+        <Hairline style={styles.divider} />
+        <AppText variant="meta" tone="secondary">
+          This surface is intentionally minimal while we finish dialogue plumbing.
+        </AppText>
+      </View>
+    </AppScreen>
   );
 };
 
@@ -18,11 +22,13 @@ export default DocumentsView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  title: {
-    fontFamily: 'Lora-Regular',
-    fontSize: 32,
+  content: {
+    marginTop: 32,
+    marginHorizontal: 18,
+    gap: 10,
+  },
+  divider: {
+    marginVertical: 4,
   },
 });
