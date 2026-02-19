@@ -8,9 +8,7 @@ import {
 import {
   ActivityIndicator,
   Pressable,
-  type LayoutChangeEvent,
   Platform,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -22,11 +20,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
+  type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
 import {
   computeHumanContentHash,
   computeModelContentHash,
 } from '@application/services/content-hash-service';
+import {
+  DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
+  ensureOpenRouterAssistantAgent,
+  getOpenRouterModelIdentifier,
+} from '@application/services/openrouter-assistant-agent';
 import { assembleDialogueContext } from '@application/services/assemble-dialogue-context';
 import { LlmProviderError } from '@application/services/llm';
 import { OpenRouterAdapter } from '@infrastructure/llm';
@@ -44,7 +48,6 @@ import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import {
   createLocalId,
   createULID,
-  parseModelRef,
   parseULID,
   type ULID,
 } from '@domain/value-objects';
@@ -67,11 +70,6 @@ type ChatRow = {
   readonly text: string;
 };
 
-const OPENROUTER_MODEL_IDENTIFIER = 'openai/gpt-4o-mini';
-const OPENROUTER_MODEL_REF = parseModelRef(
-  `openrouter:${OPENROUTER_MODEL_IDENTIFIER}`
-);
-
 const getParamString = (
   value: string | string[] | undefined
 ): string | undefined => {
@@ -85,7 +83,7 @@ const LoomTreeChatView = () => {
   const { colors } = useThemeColors();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   const inputRef = useRef<TextInput>(null);
   const activeTreeIdRef = useRef<ULID | null>(null);
   const hasUserSentMessageRef = useRef(false);
@@ -178,7 +176,10 @@ const LoomTreeChatView = () => {
         }
 
         const ownerAgentId = grove.ownerAgentId as ULID;
-        const modelAgent = await ensureOpenRouterModelAgent();
+        const modelAgent = await ensureOpenRouterAssistantAgent(repos.agentRepo);
+        const modelIdentifier =
+          getOpenRouterModelIdentifier(modelAgent) ??
+          DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
 
         const path =
           (await repos.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
@@ -211,7 +212,7 @@ const LoomTreeChatView = () => {
         setSession({
           ownerAgentId,
           modelAgentId: modelAgent.id,
-          modelIdentifier: OPENROUTER_MODEL_IDENTIFIER,
+          modelIdentifier,
           treeId: tree.id,
           pathId: path.id,
           activeNodeId,
@@ -220,7 +221,7 @@ const LoomTreeChatView = () => {
         await refreshRows({
           ownerAgentId,
           modelAgentId: modelAgent.id,
-          modelIdentifier: OPENROUTER_MODEL_IDENTIFIER,
+          modelIdentifier,
           treeId: tree.id,
           pathId: path.id,
           activeNodeId,
@@ -254,32 +255,6 @@ const LoomTreeChatView = () => {
       clearTimeout(timeoutId);
     };
   }, [loading, session, shouldAutofocus]);
-
-  const ensureOpenRouterModelAgent = async () => {
-    const existing = await repos.agentRepo.findByModelRef(OPENROUTER_MODEL_REF, true);
-    if (existing.length > 0) {
-      return existing[0];
-    }
-
-    const created = await repos.agentRepo.create({
-      name: 'OpenRouter Assistant',
-      type: 'model',
-      modelRef: OPENROUTER_MODEL_REF,
-      configuration: {
-        systemPrompt: 'You are a helpful dialogue partner in Aspen Grove.',
-        temperature: 1.0,
-      },
-      permissions: {
-        loomAware: false,
-        loomWrite: true,
-        loomGenerate: false,
-        docRead: true,
-        docWrite: false,
-      },
-    });
-
-    return created;
-  };
 
   const loadPathNodes = async (pathId: ULID): Promise<Node[]> => {
     const pathNodes = await repos.pathRepo.getNodeSequence(pathId);

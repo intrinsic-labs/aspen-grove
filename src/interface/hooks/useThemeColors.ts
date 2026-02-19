@@ -5,8 +5,8 @@ export const useThemeColors = () => {
   const isDark = colorScheme === 'dark';
 
   const light = {
-    background: '#E7E2D7',
-    backgroundMuted: '#D9D3C6',
+    background: '#fff',
+    backgroundMuted: '#f2f2f2',
     surface: '#161A22',
     surfaceSoft: '#202632',
     onSurface: '#F6F2E9',
@@ -19,8 +19,8 @@ export const useThemeColors = () => {
   } as const;
 
   const dark = {
-    background: '#101217',
-    backgroundMuted: '#171A22',
+    background: '#000',
+    backgroundMuted: '#1a1a1a',
     surface: '#ECE5D5',
     surfaceSoft: '#D7CDB8',
     onSurface: '#101217',

@@ -9,7 +9,7 @@ const TabsLayout = () => {
   return (
     <Tabs
       screenOptions={{
-        tabBarHideOnKeyboard: Platform.OS === 'android',
+        tabBarHideOnKeyboard: true,
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: colors.background,
