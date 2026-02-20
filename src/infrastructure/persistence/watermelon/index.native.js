@@ -12,6 +12,7 @@ import Node from './model/Node';
 import UserPreferences from './model/UserPreferences';
 import { Edge, EdgeSource } from './model/Edge';
 import { Path, PathNode, PathSelection, PathState } from './model/Path';
+import RawApiResponse from './model/RawApiResponse';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -37,6 +38,7 @@ const database = new Database({
     PathNode,
     PathSelection,
     PathState,
+    RawApiResponse,
   ],
 });
 

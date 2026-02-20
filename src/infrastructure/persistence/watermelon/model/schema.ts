@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 3,
+  version: 4,
   tables: [
     /**
      * Grove table schema
@@ -153,6 +153,36 @@ export const aspenGroveSchema = appSchema({
         { name: 'version_group_id', type: 'string', isOptional: true },
 
         { name: 'edited_from', type: 'string', isOptional: true },
+      ],
+    }),
+
+    /**
+     * RawApiResponse table schema
+     *
+     * Provenance evidence records for model-generated nodes.
+     * - One logical response per node (`node_id`), enforced at repository level.
+     * - `response_body` / `response_headers` are stored compressed (gzip + base64 string).
+     * - Never updated after create.
+     *
+     * Query intent:
+     * - lookup by `node_id` when verifying/model-node inspection
+     * - debugging/research by provider + request timestamp
+     */
+    tableSchema({
+      name: 'raw_api_responses',
+      columns: [
+        { name: 'node_id', type: 'string', isIndexed: true },
+        { name: 'provider', type: 'string', isIndexed: true },
+        { name: 'request_id', type: 'string', isOptional: true },
+        { name: 'model_identifier', type: 'string' },
+        { name: 'response_body', type: 'string' },
+        { name: 'response_headers', type: 'string' },
+        { name: 'request_timestamp', type: 'number', isIndexed: true },
+        { name: 'response_timestamp', type: 'number' },
+        { name: 'latency_ms', type: 'number' },
+        { name: 'token_usage', type: 'string', isOptional: true },
+        { name: 'compression_type', type: 'string' },
+        { name: 'created_at', type: 'number' },
       ],
     }),
 

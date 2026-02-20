@@ -13,6 +13,7 @@ import { createULID, type ULID } from '@domain/value-objects';
 
 import LoomTreeModel from '../model/LoomTree';
 import NodeModel from '../model/Node';
+import RawApiResponseModel from '../model/RawApiResponse';
 import { Edge as EdgeModel, EdgeSource as EdgeSourceModel } from '../model/Edge';
 import {
   Path as PathModel,
@@ -31,6 +32,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   private readonly db: Database;
   private readonly loomTrees: Collection<LoomTreeModel>;
   private readonly nodes: Collection<NodeModel>;
+  private readonly rawApiResponses: Collection<RawApiResponseModel>;
   private readonly edges: Collection<EdgeModel>;
   private readonly edgeSources: Collection<EdgeSourceModel>;
   private readonly paths: Collection<PathModel>;
@@ -43,6 +45,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
     this.db = database;
     this.loomTrees = this.db.get<LoomTreeModel>('loom_trees');
     this.nodes = this.db.get<NodeModel>('nodes');
+    this.rawApiResponses = this.db.get<RawApiResponseModel>('raw_api_responses');
     this.edges = this.db.get<EdgeModel>('edges');
     this.edgeSources = this.db.get<EdgeSourceModel>('edge_sources');
     this.paths = this.db.get<PathModel>('paths');
@@ -204,6 +207,18 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
 
   private async deleteTreeNodes(loomTreeId: ULID): Promise<void> {
     const nodes = await this.nodes.query(Q.where('loom_tree_id', loomTreeId)).fetch();
+    if (nodes.length === 0) {
+      return;
+    }
+
+    const nodeIds = nodes.map((node) => node.id);
+    const rawApiResponses = await this.rawApiResponses
+      .query(Q.where('node_id', Q.oneOf(nodeIds)))
+      .fetch();
+    for (const rawApiResponse of rawApiResponses) {
+      await rawApiResponse.destroyPermanently();
+    }
+
     for (const node of nodes) {
       await node.destroyPermanently();
     }

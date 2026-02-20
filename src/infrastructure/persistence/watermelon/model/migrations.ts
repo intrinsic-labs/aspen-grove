@@ -39,5 +39,27 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 4,
+      steps: [
+        createTable({
+          name: 'raw_api_responses',
+          columns: [
+            { name: 'node_id', type: 'string', isIndexed: true },
+            { name: 'provider', type: 'string', isIndexed: true },
+            { name: 'request_id', type: 'string', isOptional: true },
+            { name: 'model_identifier', type: 'string' },
+            { name: 'response_body', type: 'string' },
+            { name: 'response_headers', type: 'string' },
+            { name: 'request_timestamp', type: 'number', isIndexed: true },
+            { name: 'response_timestamp', type: 'number' },
+            { name: 'latency_ms', type: 'number' },
+            { name: 'token_usage', type: 'string', isOptional: true },
+            { name: 'compression_type', type: 'string' },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });

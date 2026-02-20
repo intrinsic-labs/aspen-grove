@@ -19,17 +19,20 @@ import {
 } from '@domain/value-objects';
 
 import NodeModel from '../model/Node';
+import RawApiResponseModel from '../model/RawApiResponse';
 import { isPlainObject, isRecordNotFoundError, toOptionalString } from './helpers';
 
 /** WatermelonDB implementation of `INodeRepository`. */
 export class WatermelonNodeRepository implements INodeRepository {
   private readonly db: Database;
   private readonly nodes: Collection<NodeModel>;
+  private readonly rawApiResponses: Collection<RawApiResponseModel>;
   private readonly now: () => Date;
 
   constructor(database: Database, now: () => Date = () => new Date()) {
     this.db = database;
     this.nodes = this.db.get<NodeModel>('nodes');
+    this.rawApiResponses = this.db.get<RawApiResponseModel>('raw_api_responses');
     this.now = now;
   }
 
@@ -217,6 +220,13 @@ export class WatermelonNodeRepository implements INodeRepository {
   async hardDelete(id: ULID): Promise<boolean> {
     return this.db.write(async () => {
       try {
+        const rawApiResponses = await this.rawApiResponses
+          .query(Q.where('node_id', id))
+          .fetch();
+        for (const rawApiResponse of rawApiResponses) {
+          await rawApiResponse.destroyPermanently();
+        }
+
         const model = await this.nodes.find(id);
         await model.destroyPermanently();
         return true;

@@ -23,15 +23,14 @@ import {
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
 import {
-  computeHumanContentHash,
-  computeModelContentHash,
-} from '@application/services/content-hash-service';
-import {
   DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
   ensureOpenRouterAssistantAgent,
   getOpenRouterModelIdentifier,
 } from '@application/services/openrouter-assistant-agent';
-import { assembleDialogueContext } from '@application/services/assemble-dialogue-context';
+import {
+  SendDialogueTurnUseCase,
+  type DialogueTurnSession,
+} from '@application/use-cases';
 import { LlmProviderError } from '@application/services/llm';
 import { OpenRouterAdapter } from '@infrastructure/llm';
 import database from '@infrastructure/persistence/watermelon/index.native';
@@ -43,26 +42,15 @@ import {
   WatermelonNodeRepository,
   WatermelonPathRepository,
   WatermelonPathStateRepository,
+  WatermelonRawApiResponseRepository,
 } from '@infrastructure/persistence/watermelon/repositories';
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
-import {
-  createLocalId,
-  createULID,
-  parseULID,
-  type ULID,
-} from '@domain/value-objects';
+import { parseULID, type ULID } from '@domain/value-objects';
 import type { Node } from '@domain/entities';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { AppInput, AppScreen, AppText } from '../ui/system';
 
-type ChatSession = {
-  readonly ownerAgentId: ULID;
-  readonly modelAgentId: ULID;
-  readonly modelIdentifier: string;
-  readonly treeId: ULID;
-  readonly pathId: ULID;
-  readonly activeNodeId: ULID;
-};
+type ChatSession = DialogueTurnSession;
 
 type ChatRow = {
   readonly id: ULID;
@@ -108,10 +96,25 @@ const LoomTreeChatView = () => {
       edgeRepo: new WatermelonEdgeRepository(database),
       pathRepo: new WatermelonPathRepository(database),
       pathStateRepo: new WatermelonPathStateRepository(database),
+      rawApiResponseRepo: new WatermelonRawApiResponseRepository(database),
     }),
     []
   );
   const openRouterProvider = useMemo(() => new OpenRouterAdapter(), []);
+  const sendDialogueTurnUseCase = useMemo(
+    () =>
+      new SendDialogueTurnUseCase({
+        agentRepository: repos.agentRepo,
+        loomTreeRepository: repos.treeRepo,
+        nodeRepository: repos.nodeRepo,
+        edgeRepository: repos.edgeRepo,
+        pathRepository: repos.pathRepo,
+        pathStateRepository: repos.pathStateRepo,
+        rawApiResponseRepository: repos.rawApiResponseRepo,
+        llmProvider: openRouterProvider,
+      }),
+    [openRouterProvider, repos]
+  );
   const credentialStore = useMemo(() => new ExpoSecureCredentialStore(), []);
 
   const [loading, setLoading] = useState(true);
@@ -325,146 +328,43 @@ const LoomTreeChatView = () => {
       setSending(true);
       setError(null);
       setInput('');
-
-      const previousNode = await repos.nodeRepo.findById(session.activeNodeId, true);
-      if (!previousNode) {
-        throw new Error(`Active node not found: ${session.activeNodeId}`);
-      }
-
-      const userNodeId = createULID();
-      const userCreatedAt = new Date();
-      const userLocalIds = await repos.nodeRepo.getAllLocalIds(session.treeId);
-      const userLocalId = createLocalId(userNodeId, userLocalIds);
-
-      const userContent = { type: 'text' as const, text: prompt };
-      const userContentHash = await computeHumanContentHash(
-        userContent,
-        [previousNode.contentHash],
-        userCreatedAt,
-        session.ownerAgentId
-      );
-
-      const userNode = await repos.nodeRepo.create({
-        id: userNodeId,
-        createdAt: userCreatedAt,
-        loomTreeId: session.treeId,
-        localId: userLocalId,
-        content: userContent,
-        authorAgentId: session.ownerAgentId,
-        authorType: 'human',
-        contentHash: userContentHash,
-      });
-
-      await repos.edgeRepo.create({
-        loomTreeId: session.treeId,
-        sources: [{ nodeId: previousNode.id, role: 'primary' }],
-        targetNodeId: userNode.id,
-        edgeType: 'continuation',
-      });
-
-      await repos.pathRepo.appendNode(session.pathId, userNode.id);
-      await repos.pathStateRepo.setActiveNode(
-        session.pathId,
-        session.ownerAgentId,
-        userNode.id,
-        'dialogue'
-      );
-
-      hasUserSentMessageRef.current = true;
-      setHasUserSentMessage(true);
-      await refreshRows({
-        ...session,
-        activeNodeId: userNode.id,
-      });
-
-      const contextNodes = await loadPathNodes(session.pathId);
-      const modelAgent = await repos.agentRepo.findById(session.modelAgentId);
-      const tree = await repos.treeRepo.findById(session.treeId);
-      const assembled = assembleDialogueContext({
-        nodes: contextNodes,
-        agentSystemPrompt: modelAgent?.configuration.systemPrompt,
-        treeSystemContext: tree?.systemContext,
+      const openRouterApiKey = await getOpenRouterApiKey();
+      const turnResult = await sendDialogueTurnUseCase.execute({
+        session,
+        prompt,
+        providerApiKey: openRouterApiKey,
+        providerAppName: 'Aspen Grove RN',
+        onUserNodeCommitted: async ({ userNodeId }) => {
+          hasUserSentMessageRef.current = true;
+          setHasUserSentMessage(true);
+          await refreshRows({
+            ...session,
+            activeNodeId: userNodeId,
+          });
+        },
       });
 
       console.info('[chat] assembled context', {
-        systemContextLength: assembled.systemContext?.length ?? 0,
-        messageCount: assembled.messages.length,
+        systemContextLength: turnResult.systemContextLength,
+        messageCount: turnResult.contextMessageCount,
       });
-
-      const openRouterApiKey = await getOpenRouterApiKey();
-      const initialized = await openRouterProvider.initialize(
-        { apiKey: openRouterApiKey },
-        {
-          appName: 'Aspen Grove RN',
-        }
-      );
-      if (!initialized) {
-        throw new Error('Failed to initialize OpenRouter provider.');
-      }
-
-      const completion = await openRouterProvider.generateCompletion({
-        model: session.modelIdentifier,
-        messages: assembled.messages,
-        systemPrompt: assembled.systemContext,
-        temperature: modelAgent?.configuration.temperature,
-        maxTokens: modelAgent?.configuration.maxTokens,
-        stopSequences: modelAgent?.configuration.stopSequences,
-      });
-      const assistantText = completion.content.trim();
-      if (!assistantText) {
-        throw new Error('OpenRouter returned empty completion content.');
-      }
 
       console.info('[chat] openrouter completion', {
-        modelIdentifier: completion.rawResponse.modelIdentifier ?? session.modelIdentifier,
-        latencyMs: completion.rawResponse.latencyMs,
-        finishReason: completion.finishReason,
-        usage: completion.usage,
+        modelIdentifier: turnResult.completion.modelIdentifier,
+        latencyMs: turnResult.completion.latencyMs,
+        finishReason: turnResult.completion.finishReason,
+        usage: turnResult.completion.usage,
       });
 
-      const assistantNodeId = createULID();
-      const assistantCreatedAt = new Date();
-      const assistantLocalIds = await repos.nodeRepo.getAllLocalIds(session.treeId);
-      const assistantLocalId = createLocalId(assistantNodeId, assistantLocalIds);
-
-      const assistantContent = { type: 'text' as const, text: assistantText };
-      const assistantContentHash = await computeModelContentHash(
-        assistantContent,
-        [userNode.contentHash],
-        assistantCreatedAt,
-        session.modelAgentId,
-        completion.rawResponse.rawBytesHash
-      );
-
-      const assistantNode = await repos.nodeRepo.create({
-        id: assistantNodeId,
-        createdAt: assistantCreatedAt,
-        loomTreeId: session.treeId,
-        localId: assistantLocalId,
-        content: assistantContent,
-        authorAgentId: session.modelAgentId,
-        authorType: 'model',
-        contentHash: assistantContentHash,
+      console.info('[chat] model provenance verified', {
+        nodeId: turnResult.assistantNodeId,
+        rawApiResponseId: turnResult.provenance.rawApiResponseId,
+        parentNodeCount: turnResult.provenance.parentNodeCount,
       });
-
-      await repos.edgeRepo.create({
-        loomTreeId: session.treeId,
-        sources: [{ nodeId: userNode.id, role: 'primary' }],
-        targetNodeId: assistantNode.id,
-        edgeType: 'continuation',
-      });
-
-      await repos.pathRepo.appendNode(session.pathId, assistantNode.id);
-      await repos.pathStateRepo.setActiveNode(
-        session.pathId,
-        session.ownerAgentId,
-        assistantNode.id,
-        'dialogue'
-      );
 
       await refreshRows({
         ...session,
-        activeNodeId: assistantNode.id,
+        activeNodeId: turnResult.assistantNodeId,
       });
     } catch (caught) {
       const message =
