@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
+  DEFAULT_OPENROUTER_SYSTEM_PROMPT,
   findOpenRouterAssistantAgent,
   getOpenRouterModelIdentifier,
   upsertOpenRouterAssistantAgent,
@@ -40,6 +41,7 @@ import {
 type SettingsDraft = {
   readonly apiKeyInput: string;
   readonly modelIdentifierInput: string;
+  readonly systemPromptInput: string;
   readonly temperatureInput: string;
   readonly maxTokensInput: string;
   readonly verboseErrorAlerts: boolean;
@@ -50,12 +52,14 @@ const toDraftKey = (draft: SettingsDraft): string => JSON.stringify(draft);
 const buildDraft = (input: {
   readonly apiKeyInput: string;
   readonly modelIdentifierInput: string;
+  readonly systemPromptInput: string;
   readonly temperatureInput: string;
   readonly maxTokensInput: string;
   readonly verboseErrorAlerts: boolean;
 }): SettingsDraft => ({
   apiKeyInput: input.apiKeyInput,
   modelIdentifierInput: input.modelIdentifierInput,
+  systemPromptInput: input.systemPromptInput,
   temperatureInput: input.temperatureInput,
   maxTokensInput: input.maxTokensInput,
   verboseErrorAlerts: input.verboseErrorAlerts,
@@ -85,6 +89,9 @@ const SettingsView = () => {
   const [modelIdentifierInput, setModelIdentifierInput] = useState(
     DEFAULT_OPENROUTER_MODEL_IDENTIFIER
   );
+  const [systemPromptInput, setSystemPromptInput] = useState(
+    DEFAULT_OPENROUTER_SYSTEM_PROMPT
+  );
   const [temperatureInput, setTemperatureInput] = useState('1.0');
   const [maxTokensInput, setMaxTokensInput] = useState('');
   const [verboseErrorAlerts, setVerboseErrorAlerts] = useState(false);
@@ -109,10 +116,14 @@ const SettingsView = () => {
         openRouterAgent?.configuration.temperature ??
         userPreferences.defaultTemperature;
       const maxTokens = openRouterAgent?.configuration.maxTokens;
+      const systemPrompt =
+        openRouterAgent?.configuration.systemPrompt ??
+        DEFAULT_OPENROUTER_SYSTEM_PROMPT;
 
       const loadedDraft = buildDraft({
         apiKeyInput: storedApiKey?.trim() ?? '',
         modelIdentifierInput: modelIdentifier,
+        systemPromptInput: systemPrompt,
         temperatureInput: String(temperature),
         maxTokensInput:
           typeof maxTokens === 'number' && Number.isFinite(maxTokens)
@@ -124,6 +135,7 @@ const SettingsView = () => {
       setApiKeyInput(loadedDraft.apiKeyInput);
       setHasStoredApiKey(loadedDraft.apiKeyInput.length > 0);
       setModelIdentifierInput(loadedDraft.modelIdentifierInput);
+      setSystemPromptInput(loadedDraft.systemPromptInput);
       setTemperatureInput(loadedDraft.temperatureInput);
       setMaxTokensInput(loadedDraft.maxTokensInput);
       setVerboseErrorAlerts(loadedDraft.verboseErrorAlerts);
@@ -150,6 +162,7 @@ const SettingsView = () => {
       );
       const maxTokensRaw = draft.maxTokensInput.trim();
       const normalizedApiKey = draft.apiKeyInput.trim();
+      const normalizedSystemPrompt = draft.systemPromptInput.trim();
 
       if (!modelIdentifier) {
         setError('Model identifier is required.');
@@ -189,6 +202,7 @@ const SettingsView = () => {
             modelIdentifier,
             temperature: parsedTemperature,
             maxTokens: parsedMaxTokens,
+            systemPrompt: normalizedSystemPrompt,
           }),
           normalizedApiKey.length > 0
             ? credentialStore.setProviderApiKey('openrouter', normalizedApiKey)
@@ -199,11 +213,13 @@ const SettingsView = () => {
           ...draft,
           apiKeyInput: normalizedApiKey,
           modelIdentifierInput: modelIdentifier,
+          systemPromptInput: normalizedSystemPrompt,
         });
         lastSavedDraftKeyRef.current = toDraftKey(normalizedDraft);
         setHasStoredApiKey(normalizedApiKey.length > 0);
         setApiKeyInput(normalizedApiKey);
         setModelIdentifierInput(modelIdentifier);
+        setSystemPromptInput(normalizedSystemPrompt);
         setNotice('All changes saved.');
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
@@ -222,6 +238,7 @@ const SettingsView = () => {
     const draft = buildDraft({
       apiKeyInput,
       modelIdentifierInput,
+      systemPromptInput,
       temperatureInput,
       maxTokensInput,
       verboseErrorAlerts,
@@ -244,6 +261,7 @@ const SettingsView = () => {
     maxTokensInput,
     modelIdentifierInput,
     persistDraft,
+    systemPromptInput,
     temperatureInput,
     verboseErrorAlerts,
   ]);
@@ -328,6 +346,19 @@ const SettingsView = () => {
                   autoCapitalize="none"
                   autoCorrect={false}
                   style={styles.input}
+                />
+              </SettingsStackRow>
+
+              <SettingsStackRow label="System Prompt">
+                <AppInput
+                  value={systemPromptInput}
+                  onChangeText={setSystemPromptInput}
+                  placeholder={DEFAULT_OPENROUTER_SYSTEM_PROMPT}
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                  multiline
+                  textAlignVertical="top"
+                  style={[styles.input, styles.multilineInput]}
                 />
               </SettingsStackRow>
             </SettingsSection>
@@ -440,6 +471,9 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexMono-Regular',
     fontSize: 16,
     lineHeight: 22,
+  },
+  multilineInput: {
+    minHeight: 92,
   },
   iconButton: {
     height: 30,
