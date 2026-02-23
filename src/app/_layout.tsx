@@ -6,6 +6,10 @@ import {
 } from '@react-navigation/native';
 import { useMemo } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import {
+  AppBootstrapGate,
+  AppServicesProvider,
+} from '@interface/composition';
 import { useThemeColors } from '@interface/hooks/useThemeColors';
 
 const RootLayout = () => {
@@ -29,21 +33,25 @@ const RootLayout = () => {
   return (
     <KeyboardProvider>
       <ThemeProvider value={navigationTheme}>
-        <Stack>
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="tree/[treeId]"
-            options={{
-              title: 'Dialogue',
-              headerShadowVisible: false,
-            }}
-          />
-        </Stack>
+        <AppServicesProvider>
+          <AppBootstrapGate>
+            <Stack>
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="tree/[treeId]"
+                options={{
+                  title: 'Dialogue',
+                  headerShadowVisible: false,
+                }}
+              />
+            </Stack>
+          </AppBootstrapGate>
+        </AppServicesProvider>
       </ThemeProvider>
     </KeyboardProvider>
   );

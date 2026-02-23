@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useNavigation, usePreventRemove } from '@react-navigation/native';
@@ -13,23 +8,10 @@ import {
   ensureOpenRouterAssistantAgent,
   getOpenRouterModelIdentifier,
 } from '@application/services/openrouter-assistant-agent';
-import { SendDialogueTurnUseCase } from '@application/use-cases';
 import { LlmProviderError } from '@application/services/llm';
-import { OpenRouterAdapter } from '@infrastructure/llm';
-import database from '@infrastructure/persistence/watermelon/index.native';
-import {
-  WatermelonAgentRepository,
-  WatermelonEdgeRepository,
-  WatermelonGroveRepository,
-  WatermelonLoomTreeRepository,
-  WatermelonNodeRepository,
-  WatermelonPathRepository,
-  WatermelonPathStateRepository,
-  WatermelonRawApiResponseRepository,
-} from '@infrastructure/persistence/watermelon/repositories';
-import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { parseULID, type ULID } from '@domain/value-objects';
 import type { Node } from '@domain/entities';
+import { useAppServices } from '@interface/composition';
 import type { ChatRow, ChatSession } from './types';
 
 const getParamString = (
@@ -48,6 +30,7 @@ export const useLoomTreeChatController = () => {
   const activeTreeIdRef = useRef<ULID | null>(null);
   const hasUserSentMessageRef = useRef(false);
   const isHandlingBeforeRemoveRef = useRef(false);
+  const { repositories, adapters, useCases } = useAppServices();
 
   const params = useLocalSearchParams<{
     treeId?: string | string[];
@@ -58,36 +41,6 @@ export const useLoomTreeChatController = () => {
   const treeIdParam = getParamString(params.treeId);
   const shouldAutofocus = getParamString(params.autofocus) === '1';
   const shouldDeleteEmptyOnBlur = getParamString(params.ephemeral) === '1';
-
-  const repos = useMemo(
-    () => ({
-      agentRepo: new WatermelonAgentRepository(database),
-      groveRepo: new WatermelonGroveRepository(database),
-      treeRepo: new WatermelonLoomTreeRepository(database),
-      nodeRepo: new WatermelonNodeRepository(database),
-      edgeRepo: new WatermelonEdgeRepository(database),
-      pathRepo: new WatermelonPathRepository(database),
-      pathStateRepo: new WatermelonPathStateRepository(database),
-      rawApiResponseRepo: new WatermelonRawApiResponseRepository(database),
-    }),
-    []
-  );
-  const openRouterProvider = useMemo(() => new OpenRouterAdapter(), []);
-  const sendDialogueTurnUseCase = useMemo(
-    () =>
-      new SendDialogueTurnUseCase({
-        agentRepository: repos.agentRepo,
-        loomTreeRepository: repos.treeRepo,
-        nodeRepository: repos.nodeRepo,
-        edgeRepository: repos.edgeRepo,
-        pathRepository: repos.pathRepo,
-        pathStateRepository: repos.pathStateRepo,
-        rawApiResponseRepository: repos.rawApiResponseRepo,
-        llmProvider: openRouterProvider,
-      }),
-    [openRouterProvider, repos]
-  );
-  const credentialStore = useMemo(() => new ExpoSecureCredentialStore(), []);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -111,7 +64,7 @@ export const useLoomTreeChatController = () => {
       }
 
       isHandlingBeforeRemoveRef.current = true;
-      void repos.treeRepo
+      void repositories.treeRepo
         .hardDelete(treeId)
         .then((deleted) => {
           if (deleted) {
@@ -140,40 +93,42 @@ export const useLoomTreeChatController = () => {
 
         const routeTreeId = parseULID(treeIdParam);
 
-        const tree = await repos.treeRepo.findById(routeTreeId);
+        const tree = await repositories.treeRepo.findById(routeTreeId);
         if (!tree) {
           throw new Error(`Loom Tree not found: ${routeTreeId}`);
         }
 
-        const grove = await repos.groveRepo.findById(tree.groveId);
+        const grove = await repositories.groveRepo.findById(tree.groveId);
         if (!grove) {
           throw new Error(`Grove not found for Loom Tree: ${tree.groveId}`);
         }
 
         const ownerAgentId = grove.ownerAgentId as ULID;
-        const modelAgent = await ensureOpenRouterAssistantAgent(repos.agentRepo);
+        const modelAgent = await ensureOpenRouterAssistantAgent(
+          repositories.agentRepo
+        );
         const modelIdentifier =
           getOpenRouterModelIdentifier(modelAgent) ??
           DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
 
         const path =
-          (await repos.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
-          (await repos.pathRepo.create({
+          (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
+          (await repositories.pathRepo.create({
             loomTreeId: tree.id,
             ownerAgentId,
             name: 'Main',
           }));
 
-        const pathNodes = await repos.pathRepo.getNodeSequence(path.id);
+        const pathNodes = await repositories.pathRepo.getNodeSequence(path.id);
         if (pathNodes.length === 0) {
-          await repos.pathRepo.appendNode(path.id, tree.rootNodeId);
+          await repositories.pathRepo.appendNode(path.id, tree.rootNodeId);
         }
 
-        const latestNodes = await repos.pathRepo.getNodeSequence(path.id);
+        const latestNodes = await repositories.pathRepo.getNodeSequence(path.id);
         const activeNodeId =
           latestNodes[latestNodes.length - 1]?.nodeId ?? tree.rootNodeId;
 
-        await repos.pathStateRepo.setActiveNode(
+        await repositories.pathStateRepo.setActiveNode(
           path.id,
           ownerAgentId,
           activeNodeId,
@@ -204,7 +159,7 @@ export const useLoomTreeChatController = () => {
     };
 
     void initialize();
-  }, [repos, treeIdParam]);
+  }, [repositories, treeIdParam]);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -226,9 +181,11 @@ export const useLoomTreeChatController = () => {
   }, [loading, session, shouldAutofocus]);
 
   const loadPathNodes = async (pathId: ULID): Promise<Node[]> => {
-    const pathNodes = await repos.pathRepo.getNodeSequence(pathId);
+    const pathNodes = await repositories.pathRepo.getNodeSequence(pathId);
     const resolved = await Promise.all(
-      pathNodes.map((pathNode) => repos.nodeRepo.findById(pathNode.nodeId, true))
+      pathNodes.map((pathNode) =>
+        repositories.nodeRepo.findById(pathNode.nodeId, true)
+      )
     );
 
     return resolved.filter((node): node is Node => Boolean(node));
@@ -261,7 +218,9 @@ export const useLoomTreeChatController = () => {
   };
 
   const getOpenRouterApiKey = async (): Promise<string> => {
-    const fromSecureStore = await credentialStore.getProviderApiKey('openrouter');
+    const fromSecureStore = await adapters.credentialStore.getProviderApiKey(
+      'openrouter'
+    );
     if (fromSecureStore && fromSecureStore.trim().length > 0) {
       return fromSecureStore.trim();
     }
@@ -296,7 +255,7 @@ export const useLoomTreeChatController = () => {
       setInput('');
 
       const openRouterApiKey = await getOpenRouterApiKey();
-      const turnResult = await sendDialogueTurnUseCase.execute({
+      const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
         prompt,
         providerApiKey: openRouterApiKey,

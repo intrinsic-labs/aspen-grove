@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,88 +9,50 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { CreateDialogueLoomTreeUseCase } from '@application/use-cases';
-import { initializeAppDefaults } from '@infrastructure/bootstrap';
-import database from '@infrastructure/persistence/watermelon/index.native';
-import {
-  WatermelonAgentRepository,
-  WatermelonGroveRepository,
-  WatermelonLoomTreeRepository,
-  WatermelonNodeRepository,
-  WatermelonPathRepository,
-  WatermelonPathStateRepository,
-} from '@infrastructure/persistence/watermelon/repositories';
 import type { LoomTree } from '@domain/entities';
-import type { ULID } from '@domain/value-objects';
+import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { AppScreen, AppText, Hairline } from '../ui/system';
-
-type StartupState = {
-  readonly groveId: ULID;
-  readonly ownerAgentId: ULID;
-};
 
 const LoomTreeListView = () => {
   const { colors } = useThemeColors();
   const router = useRouter();
   const navigation = useNavigation();
-
-  const repos = useMemo(
-    () => ({
-      groveRepo: new WatermelonGroveRepository(database),
-      agentRepo: new WatermelonAgentRepository(database),
-      treeRepo: new WatermelonLoomTreeRepository(database),
-      nodeRepo: new WatermelonNodeRepository(database),
-      pathRepo: new WatermelonPathRepository(database),
-      pathStateRepo: new WatermelonPathStateRepository(database),
-    }),
-    []
-  );
-
-  const createTreeUseCase = useMemo(
-    () =>
-      new CreateDialogueLoomTreeUseCase({
-        groveRepository: repos.groveRepo,
-        agentRepository: repos.agentRepo,
-        loomTreeRepository: repos.treeRepo,
-        nodeRepository: repos.nodeRepo,
-        pathRepository: repos.pathRepo,
-        pathStateRepository: repos.pathStateRepo,
-      }),
-    [repos]
-  );
+  const { repositories, useCases } = useAppServices();
+  const bootstrapState = useAppBootstrapState();
+  const bootstrap = bootstrapState.status === 'ready' ? bootstrapState.result : null;
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trees, setTrees] = useState<LoomTree[]>([]);
-  const [startup, setStartup] = useState<StartupState | null>(null);
 
-  const loadTrees = useCallback(
-    async (groveId: ULID) => {
-      const found = await repos.treeRepo.findByMode(groveId, 'dialogue', true);
-      const sorted = [...found].sort(
-        (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-      );
-      setTrees(sorted);
-    },
-    [repos.treeRepo]
-  );
+  const loadTrees = useCallback(async () => {
+    if (!bootstrap) {
+      return;
+    }
+
+    const found = await repositories.treeRepo.findByMode(
+      bootstrap.groveId,
+      'dialogue',
+      true
+    );
+    const sorted = [...found].sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
+    );
+    setTrees(sorted);
+  }, [bootstrap, repositories.treeRepo]);
 
   useEffect(() => {
-    const initialize = async () => {
+    const refresh = async () => {
+      if (!bootstrap) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
-
-        const boot = await initializeAppDefaults(database);
-        const nextStartup: StartupState = {
-          groveId: boot.grove.id as ULID,
-          ownerAgentId: boot.ownerAgent.id as ULID,
-        };
-
-        setStartup(nextStartup);
-        await loadTrees(nextStartup.groveId);
+        await loadTrees();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
       } finally {
@@ -98,20 +60,20 @@ const LoomTreeListView = () => {
       }
     };
 
-    void initialize();
-  }, [loadTrees]);
+    void refresh();
+  }, [bootstrap, loadTrees]);
 
   useFocusEffect(
     useCallback(() => {
-      if (startup) {
-        void loadTrees(startup.groveId);
+      if (bootstrap) {
+        void loadTrees();
       }
       return undefined;
-    }, [loadTrees, startup])
+    }, [bootstrap, loadTrees])
   );
 
   const onCreateTree = useCallback(async () => {
-    if (!startup || creating) {
+    if (!bootstrap || creating) {
       return;
     }
 
@@ -119,9 +81,9 @@ const LoomTreeListView = () => {
       setCreating(true);
       setError(null);
 
-      const created = await createTreeUseCase.execute({
-        groveId: startup.groveId,
-        ownerAgentId: startup.ownerAgentId,
+      const created = await useCases.createDialogueLoomTreeUseCase.execute({
+        groveId: bootstrap.groveId,
+        ownerAgentId: bootstrap.ownerAgentId,
         initialContent: {
           type: 'text',
           text: '',
@@ -142,7 +104,7 @@ const LoomTreeListView = () => {
     } finally {
       setCreating(false);
     }
-  }, [createTreeUseCase, creating, router, startup]);
+  }, [bootstrap, creating, router, useCases.createDialogueLoomTreeUseCase]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -152,7 +114,7 @@ const LoomTreeListView = () => {
       headerRight: () => (
         <Pressable
           onPress={onCreateTree}
-          disabled={loading || creating || !startup}
+          disabled={loading || creating || !bootstrap}
           style={({ pressed }) => [
             styles.headerAddButton,
             {
@@ -169,7 +131,7 @@ const LoomTreeListView = () => {
         </Pressable>
       ),
     });
-  }, [colors.line, colors.primary, creating, loading, navigation, onCreateTree, startup]);
+  }, [bootstrap, colors.line, colors.primary, creating, loading, navigation, onCreateTree]);
 
   const onOpenTree = (tree: LoomTree) => {
     router.push({
@@ -266,3 +228,4 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
 });
+
