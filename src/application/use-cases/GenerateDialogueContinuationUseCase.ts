@@ -14,41 +14,34 @@ import {
   type CompletionResponse,
   type ILlmProvider,
 } from '@application/services/llm';
-import {
-  computeHumanContentHash,
-} from '@application/services/content-hash-service';
+import { resolveContinuationPathToNode } from '@application/services/resolve-continuation-path';
+import { type ULID } from '@domain/value-objects';
 import type { Node } from '@domain/entities';
-import {
-  createLocalId,
-  createULID,
-  type ULID,
-} from '@domain/value-objects';
 
-export type DialogueTurnSession = {
+export type GenerateDialogueContinuationSession = {
   readonly ownerAgentId: ULID;
   readonly modelAgentId: ULID;
   readonly modelIdentifier: string;
   readonly treeId: ULID;
   readonly pathId: ULID;
-  readonly activeNodeId: ULID;
 };
 
-export type SendDialogueTurnInput = {
-  readonly session: DialogueTurnSession;
-  readonly prompt: string;
+export type GenerateDialogueContinuationInput = {
+  readonly session: GenerateDialogueContinuationSession;
+  readonly sourceNodeId: ULID;
   readonly providerApiKey: string;
   readonly providerAppName?: string;
   readonly stream?: boolean;
-  readonly onUserNodeCommitted?: (input: { readonly userNodeId: ULID }) => void | Promise<void>;
+  readonly activateGeneratedNode?: boolean;
   readonly onAssistantTextDelta?: (input: {
     readonly delta: string;
     readonly content: string;
   }) => void | Promise<void>;
 };
 
-export type SendDialogueTurnResult = {
-  readonly userNodeId: ULID;
+export type GenerateDialogueContinuationResult = {
   readonly assistantNodeId: ULID;
+  readonly sourceNodeId: ULID;
   readonly contextMessageCount: number;
   readonly systemContextLength: number;
   readonly completion: {
@@ -61,9 +54,10 @@ export type SendDialogueTurnResult = {
     readonly rawApiResponseId?: ULID;
     readonly parentNodeCount?: number;
   };
+  readonly activatedPath: boolean;
 };
 
-export type SendDialogueTurnDependencies = {
+export type GenerateDialogueContinuationDependencies = {
   readonly agentRepository: Pick<IAgentRepository, 'findById'>;
   readonly loomTreeRepository: Pick<ILoomTreeRepository, 'findById'>;
   readonly nodeRepository: Pick<
@@ -74,7 +68,7 @@ export type SendDialogueTurnDependencies = {
     IEdgeRepository,
     'create' | 'delete' | 'findContinuationsByTargetNodeId'
   >;
-  readonly pathRepository: Pick<IPathRepository, 'appendNode' | 'getNodeSequence'>;
+  readonly pathRepository: Pick<IPathRepository, 'findById' | 'getNodeSequence' | 'replaceSuffix'>;
   readonly pathStateRepository: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly rawApiResponseRepository: Pick<
     IRawApiResponseRepository,
@@ -84,23 +78,24 @@ export type SendDialogueTurnDependencies = {
 };
 
 /**
- * Sends one dialogue turn:
- * 1) create human node and advance path
- * 2) generate model completion
- * 3) create model node + raw response evidence
- * 4) verify model-node provenance before finalizing path cursor
+ * Generates a model continuation from any selected dialogue node.
+ *
+ * This is the backend primitive for branch generation:
+ * - Context is assembled from root -> selected source node
+ * - Resulting model node becomes a continuation child of `sourceNodeId`
+ * - Optionally activates path to the generated node
  */
-export class SendDialogueTurnUseCase {
-  private readonly agentRepository: SendDialogueTurnDependencies['agentRepository'];
-  private readonly loomTreeRepository: SendDialogueTurnDependencies['loomTreeRepository'];
-  private readonly nodeRepository: SendDialogueTurnDependencies['nodeRepository'];
-  private readonly edgeRepository: SendDialogueTurnDependencies['edgeRepository'];
-  private readonly pathRepository: SendDialogueTurnDependencies['pathRepository'];
-  private readonly pathStateRepository: SendDialogueTurnDependencies['pathStateRepository'];
-  private readonly rawApiResponseRepository: SendDialogueTurnDependencies['rawApiResponseRepository'];
+export class GenerateDialogueContinuationUseCase {
+  private readonly agentRepository: GenerateDialogueContinuationDependencies['agentRepository'];
+  private readonly loomTreeRepository: GenerateDialogueContinuationDependencies['loomTreeRepository'];
+  private readonly nodeRepository: GenerateDialogueContinuationDependencies['nodeRepository'];
+  private readonly edgeRepository: GenerateDialogueContinuationDependencies['edgeRepository'];
+  private readonly pathRepository: GenerateDialogueContinuationDependencies['pathRepository'];
+  private readonly pathStateRepository: GenerateDialogueContinuationDependencies['pathStateRepository'];
+  private readonly rawApiResponseRepository: GenerateDialogueContinuationDependencies['rawApiResponseRepository'];
   private readonly llmProvider: ILlmProvider;
 
-  constructor(dependencies: SendDialogueTurnDependencies) {
+  constructor(dependencies: GenerateDialogueContinuationDependencies) {
     this.agentRepository = dependencies.agentRepository;
     this.loomTreeRepository = dependencies.loomTreeRepository;
     this.nodeRepository = dependencies.nodeRepository;
@@ -111,61 +106,39 @@ export class SendDialogueTurnUseCase {
     this.llmProvider = dependencies.llmProvider;
   }
 
-  async execute(input: SendDialogueTurnInput): Promise<SendDialogueTurnResult> {
-    const prompt = input.prompt.trim();
-    if (!prompt) {
-      throw new Error('Prompt must not be empty.');
+  async execute(
+    input: GenerateDialogueContinuationInput
+  ): Promise<GenerateDialogueContinuationResult> {
+    const activateGeneratedNode = input.activateGeneratedNode ?? true;
+
+    const [path, sourceNode] = await Promise.all([
+      this.pathRepository.findById(input.session.pathId),
+      this.nodeRepository.findById(input.sourceNodeId, true),
+    ]);
+
+    if (!path) {
+      throw new Error(`Path not found: ${input.session.pathId}`);
+    }
+    if (!sourceNode) {
+      throw new Error(`Source node not found: ${input.sourceNodeId}`);
+    }
+    if (path.loomTreeId !== sourceNode.loomTreeId) {
+      throw new Error('Source node does not belong to the selected path tree.');
+    }
+    if (path.loomTreeId !== input.session.treeId) {
+      throw new Error('Session treeId does not match the selected path.');
     }
 
-    const previousNode = await this.nodeRepository.findById(
-      input.session.activeNodeId,
-      true
-    );
-    if (!previousNode) {
-      throw new Error(`Active node not found: ${input.session.activeNodeId}`);
-    }
-
-    const userNodeId = createULID();
-    const userCreatedAt = new Date();
-    const userLocalIds = await this.nodeRepository.getAllLocalIds(input.session.treeId);
-    const userLocalId = createLocalId(userNodeId, userLocalIds);
-    const userContent = { type: 'text' as const, text: prompt };
-    const userContentHash = await computeHumanContentHash(
-      userContent,
-      [previousNode.contentHash],
-      userCreatedAt,
-      input.session.ownerAgentId
-    );
-
-    const userNode = await this.nodeRepository.create({
-      id: userNodeId,
-      createdAt: userCreatedAt,
-      loomTreeId: input.session.treeId,
-      localId: userLocalId,
-      content: userContent,
-      authorAgentId: input.session.ownerAgentId,
-      authorType: 'human',
-      contentHash: userContentHash,
+    const sourcePathNodeIds = await resolveContinuationPathToNode(sourceNode.id, {
+      nodeRepository: this.nodeRepository,
+      edgeRepository: this.edgeRepository,
     });
 
-    await this.edgeRepository.create({
-      loomTreeId: input.session.treeId,
-      sources: [{ nodeId: previousNode.id, role: 'primary' }],
-      targetNodeId: userNode.id,
-      edgeType: 'continuation',
-    });
-
-    await this.pathRepository.appendNode(input.session.pathId, userNode.id);
-    await this.pathStateRepository.setActiveNode(
-      input.session.pathId,
-      input.session.ownerAgentId,
-      userNode.id,
-      'dialogue'
+    const sourcePathNodes = await Promise.all(
+      sourcePathNodeIds.map((nodeId) => this.nodeRepository.findById(nodeId, true))
     );
+    const contextNodes = sourcePathNodes.filter((node): node is Node => Boolean(node));
 
-    await input.onUserNodeCommitted?.({ userNodeId: userNode.id });
-
-    const contextNodes = await this.loadPathNodes(input.session.pathId);
     const modelAgent = await this.agentRepository.findById(input.session.modelAgentId);
     const tree = await this.loomTreeRepository.findById(input.session.treeId);
     const assembled = assembleDialogueContext({
@@ -200,7 +173,7 @@ export class SendDialogueTurnUseCase {
 
     const continuationResult = await createVerifiedModelContinuationNode({
       loomTreeId: input.session.treeId,
-      parentNode: userNode,
+      parentNode: sourceNode,
       modelAgentId: input.session.modelAgentId,
       requestedModelIdentifier: input.session.modelIdentifier,
       provider: this.llmProvider.provider,
@@ -210,20 +183,18 @@ export class SendDialogueTurnUseCase {
       rawApiResponseRepository: this.rawApiResponseRepository,
     });
 
-    await this.pathRepository.appendNode(
-      input.session.pathId,
-      continuationResult.assistantNodeId
-    );
-    await this.pathStateRepository.setActiveNode(
-      input.session.pathId,
-      input.session.ownerAgentId,
-      continuationResult.assistantNodeId,
-      'dialogue'
-    );
+    if (activateGeneratedNode) {
+      await this.activatePathAtNode(
+        path.id,
+        input.session.ownerAgentId,
+        sourcePathNodeIds,
+        continuationResult.assistantNodeId
+      );
+    }
 
     return {
-      userNodeId: userNode.id,
       assistantNodeId: continuationResult.assistantNodeId,
+      sourceNodeId: sourceNode.id,
       contextMessageCount: assembled.messages.length,
       systemContextLength: assembled.systemContext?.length ?? 0,
       completion: {
@@ -237,14 +208,40 @@ export class SendDialogueTurnUseCase {
         rawApiResponseId: continuationResult.rawApiResponseId,
         parentNodeCount: continuationResult.parentNodeCount,
       },
+      activatedPath: activateGeneratedNode,
     };
   }
 
-  private async loadPathNodes(pathId: ULID): Promise<Node[]> {
-    const pathNodes = await this.pathRepository.getNodeSequence(pathId);
-    const resolvedNodes = await Promise.all(
-      pathNodes.map((pathNode) => this.nodeRepository.findById(pathNode.nodeId, true))
+  private async activatePathAtNode(
+    pathId: ULID,
+    ownerAgentId: ULID,
+    sourcePathNodeIds: readonly ULID[],
+    assistantNodeId: ULID
+  ): Promise<void> {
+    const currentSequence = await this.pathRepository.getNodeSequence(pathId);
+    const currentNodeIds = currentSequence.map((node) => node.nodeId);
+    const nextNodeIds = [...sourcePathNodeIds, assistantNodeId];
+
+    let replacedFromPosition = 0;
+    const minimum = Math.min(currentNodeIds.length, nextNodeIds.length);
+    while (
+      replacedFromPosition < minimum &&
+      currentNodeIds[replacedFromPosition] === nextNodeIds[replacedFromPosition]
+    ) {
+      replacedFromPosition += 1;
+    }
+
+    await this.pathRepository.replaceSuffix(
+      pathId,
+      replacedFromPosition,
+      nextNodeIds.slice(replacedFromPosition)
     );
-    return resolvedNodes.filter((node): node is Node => Boolean(node));
+
+    await this.pathStateRepository.setActiveNode(
+      pathId,
+      ownerAgentId,
+      assistantNodeId,
+      'dialogue'
+    );
   }
 }

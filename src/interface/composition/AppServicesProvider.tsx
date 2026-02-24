@@ -7,7 +7,12 @@ import {
   type ReactNode,
 } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { CreateDialogueLoomTreeUseCase, SendDialogueTurnUseCase } from '@application/use-cases';
+import {
+  CreateDialogueLoomTreeUseCase,
+  GenerateDialogueContinuationUseCase,
+  SendDialogueTurnUseCase,
+  SwitchDialoguePathUseCase,
+} from '@application/use-cases';
 import { OpenRouterAdapter } from '@infrastructure/llm';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
 import database from '@infrastructure/persistence/watermelon/index.native';
@@ -45,7 +50,9 @@ type AppServices = {
   };
   readonly useCases: {
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
+    readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
+    readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
   };
 };
 
@@ -105,6 +112,22 @@ const buildAppServices = (): AppServices => {
       pathStateRepository: repositories.pathStateRepo,
       rawApiResponseRepository: repositories.rawApiResponseRepo,
       llmProvider: adapters.openRouterProvider,
+    }),
+    generateDialogueContinuationUseCase: new GenerateDialogueContinuationUseCase({
+      agentRepository: repositories.agentRepo,
+      loomTreeRepository: repositories.treeRepo,
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
+      pathRepository: repositories.pathRepo,
+      pathStateRepository: repositories.pathStateRepo,
+      rawApiResponseRepository: repositories.rawApiResponseRepo,
+      llmProvider: adapters.openRouterProvider,
+    }),
+    switchDialoguePathUseCase: new SwitchDialoguePathUseCase({
+      pathRepository: repositories.pathRepo,
+      pathStateRepository: repositories.pathStateRepo,
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
     }),
   } as const;
 
@@ -238,4 +261,3 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 });
-

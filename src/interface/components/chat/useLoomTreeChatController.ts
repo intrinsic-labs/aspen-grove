@@ -1,27 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useNavigation, usePreventRemove } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
-import {
-  DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
-  ensureOpenRouterAssistantAgent,
-  getOpenRouterModelIdentifier,
-} from '@application/services/openrouter-assistant-agent';
 import { LlmProviderError } from '@application/services/llm';
-import { parseULID, type ULID } from '@domain/value-objects';
-import type { Node } from '@domain/entities';
+import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
+import { getOpenRouterApiKey } from './provider-key';
+import { toDialogueRouteParams } from './route-params';
+import {
+  initializeDialogueChatSession,
+  loadDialogueRowsForPath,
+} from './session-helpers';
 import type { ChatRow, ChatSession } from './types';
-
-const getParamString = (
-  value: string | string[] | undefined
-): string | undefined => {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-};
+import { useDeleteEphemeralTreeOnBack } from './useDeleteEphemeralTreeOnBack';
 
 export const useLoomTreeChatController = () => {
   const navigation = useNavigation();
@@ -29,18 +21,15 @@ export const useLoomTreeChatController = () => {
   const inputRef = useRef<TextInput>(null);
   const activeTreeIdRef = useRef<ULID | null>(null);
   const hasUserSentMessageRef = useRef(false);
-  const isHandlingBeforeRemoveRef = useRef(false);
   const { repositories, adapters, useCases } = useAppServices();
 
-  const params = useLocalSearchParams<{
+  const routeParams = useLocalSearchParams<{
     treeId?: string | string[];
     autofocus?: string | string[];
     ephemeral?: string | string[];
   }>();
-
-  const treeIdParam = getParamString(params.treeId);
-  const shouldAutofocus = getParamString(params.autofocus) === '1';
-  const shouldDeleteEmptyOnBlur = getParamString(params.ephemeral) === '1';
+  const { treeIdParam, shouldAutofocus, shouldDeleteEmptyOnBlur } =
+    toDialogueRouteParams(routeParams);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -50,35 +39,39 @@ export const useLoomTreeChatController = () => {
   const [session, setSession] = useState<ChatSession | null>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
-  usePreventRemove(
-    shouldDeleteEmptyOnBlur && !hasUserSentMessage && Boolean(session),
-    ({ data }) => {
-      if (isHandlingBeforeRemoveRef.current) {
-        return;
-      }
+  const markAsNonEphemeral = useCallback(() => {
+    hasUserSentMessageRef.current = true;
+    setHasUserSentMessage(true);
+  }, []);
 
-      const treeId = activeTreeIdRef.current ?? session?.treeId;
-      if (!treeId) {
-        navigation.dispatch(data.action);
-        return;
-      }
+  const resetEphemeralState = useCallback(() => {
+    hasUserSentMessageRef.current = false;
+    setHasUserSentMessage(false);
+  }, []);
 
-      isHandlingBeforeRemoveRef.current = true;
-      void repositories.treeRepo
-        .hardDelete(treeId)
-        .then((deleted) => {
-          if (deleted) {
-            console.info('[chat] deleted empty tree created from quick add', {
-              treeId,
-            });
-          }
-        })
-        .finally(() => {
-          hasUserSentMessageRef.current = true;
-          setHasUserSentMessage(true);
-          navigation.dispatch(data.action);
-        });
-    }
+  useDeleteEphemeralTreeOnBack({
+    shouldDeleteEmptyOnBlur,
+    hasUserSentMessage,
+    sessionTreeId: session?.treeId,
+    fallbackTreeId: activeTreeIdRef.current,
+    treeRepo: repositories.treeRepo,
+    navigation,
+    onMarkAsNonEphemeral: markAsNonEphemeral,
+  });
+
+  const refreshRows = useCallback(
+    async (nextSession: ChatSession) => {
+      const nextRows = await loadDialogueRowsForPath(nextSession.pathId, {
+        pathRepo: repositories.pathRepo,
+        nodeRepo: repositories.nodeRepo,
+      });
+      setRows([...nextRows.rows]);
+      setSession({
+        ...nextSession,
+        activeNodeId: nextRows.activeNodeId ?? nextSession.activeNodeId,
+      });
+    },
+    [repositories.nodeRepo, repositories.pathRepo]
   );
 
   useEffect(() => {
@@ -91,64 +84,19 @@ export const useLoomTreeChatController = () => {
           throw new Error('Missing treeId route parameter');
         }
 
-        const routeTreeId = parseULID(treeIdParam);
+        const initialized = await initializeDialogueChatSession(treeIdParam, {
+          treeRepo: repositories.treeRepo,
+          groveRepo: repositories.groveRepo,
+          agentRepo: repositories.agentRepo,
+          pathRepo: repositories.pathRepo,
+          pathStateRepo: repositories.pathStateRepo,
+          nodeRepo: repositories.nodeRepo,
+        });
 
-        const tree = await repositories.treeRepo.findById(routeTreeId);
-        if (!tree) {
-          throw new Error(`Loom Tree not found: ${routeTreeId}`);
-        }
+        resetEphemeralState();
+        activeTreeIdRef.current = initialized.treeId;
 
-        const grove = await repositories.groveRepo.findById(tree.groveId);
-        if (!grove) {
-          throw new Error(`Grove not found for Loom Tree: ${tree.groveId}`);
-        }
-
-        const ownerAgentId = grove.ownerAgentId as ULID;
-        const modelAgent = await ensureOpenRouterAssistantAgent(
-          repositories.agentRepo
-        );
-        const modelIdentifier =
-          getOpenRouterModelIdentifier(modelAgent) ??
-          DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
-
-        const path =
-          (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
-          (await repositories.pathRepo.create({
-            loomTreeId: tree.id,
-            ownerAgentId,
-            name: 'Main',
-          }));
-
-        const pathNodes = await repositories.pathRepo.getNodeSequence(path.id);
-        if (pathNodes.length === 0) {
-          await repositories.pathRepo.appendNode(path.id, tree.rootNodeId);
-        }
-
-        const latestNodes = await repositories.pathRepo.getNodeSequence(path.id);
-        const activeNodeId =
-          latestNodes[latestNodes.length - 1]?.nodeId ?? tree.rootNodeId;
-
-        await repositories.pathStateRepo.setActiveNode(
-          path.id,
-          ownerAgentId,
-          activeNodeId,
-          'dialogue'
-        );
-
-        hasUserSentMessageRef.current = false;
-        setHasUserSentMessage(false);
-        activeTreeIdRef.current = tree.id;
-
-        const initializedSession: ChatSession = {
-          ownerAgentId,
-          modelAgentId: modelAgent.id,
-          modelIdentifier,
-          treeId: tree.id,
-          pathId: path.id,
-          activeNodeId,
-        };
-        setSession(initializedSession);
-
+        const initializedSession: ChatSession = initialized.session;
         await refreshRows(initializedSession);
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
@@ -159,7 +107,7 @@ export const useLoomTreeChatController = () => {
     };
 
     void initialize();
-  }, [repositories, treeIdParam]);
+  }, [repositories, refreshRows, resetEphemeralState, treeIdParam]);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -180,66 +128,7 @@ export const useLoomTreeChatController = () => {
     };
   }, [loading, session, shouldAutofocus]);
 
-  const loadPathNodes = async (pathId: ULID): Promise<Node[]> => {
-    const pathNodes = await repositories.pathRepo.getNodeSequence(pathId);
-    const resolved = await Promise.all(
-      pathNodes.map((pathNode) =>
-        repositories.nodeRepo.findById(pathNode.nodeId, true)
-      )
-    );
-
-    return resolved.filter((node): node is Node => Boolean(node));
-  };
-
-  const refreshRows = async (nextSession: ChatSession) => {
-    const nodes = await loadPathNodes(nextSession.pathId);
-
-    const mapped: ChatRow[] = [];
-    for (const node of nodes) {
-      const text =
-        node.content.type === 'text' ? node.content.text : `[${node.content.type}]`;
-      if (text.trim().length === 0) {
-        continue;
-      }
-      mapped.push({
-        id: node.id,
-        authorType: node.authorType,
-        text,
-      });
-    }
-
-    const activeNodeId = nodes[nodes.length - 1]?.id ?? nextSession.activeNodeId;
-
-    setRows(mapped);
-    setSession({
-      ...nextSession,
-      activeNodeId,
-    });
-  };
-
-  const getOpenRouterApiKey = async (): Promise<string> => {
-    const fromSecureStore = await adapters.credentialStore.getProviderApiKey(
-      'openrouter'
-    );
-    if (fromSecureStore && fromSecureStore.trim().length > 0) {
-      return fromSecureStore.trim();
-    }
-
-    const fromEnv = (
-      globalThis as {
-        process?: { env?: Record<string, string | undefined> };
-      }
-    ).process?.env?.EXPO_PUBLIC_OPENROUTER_API_KEY?.trim();
-    if (fromEnv) {
-      return fromEnv;
-    }
-
-    throw new Error(
-      'OpenRouter API key not found. Set EXPO_PUBLIC_OPENROUTER_API_KEY or store openrouter_api_key in secure storage.'
-    );
-  };
-
-  const onSend = async () => {
+  const onSend = useCallback(async () => {
     if (sending || !session) {
       return;
     }
@@ -254,15 +143,15 @@ export const useLoomTreeChatController = () => {
       setError(null);
       setInput('');
 
-      const openRouterApiKey = await getOpenRouterApiKey();
+      const openRouterApiKey = await getOpenRouterApiKey(adapters.credentialStore);
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
         prompt,
         providerApiKey: openRouterApiKey,
         providerAppName: 'Aspen Grove RN',
+        stream: true,
         onUserNodeCommitted: async ({ userNodeId }) => {
-          hasUserSentMessageRef.current = true;
-          setHasUserSentMessage(true);
+          markAsNonEphemeral();
           await refreshRows({
             ...session,
             activeNodeId: userNodeId,
@@ -303,7 +192,15 @@ export const useLoomTreeChatController = () => {
     } finally {
       setSending(false);
     }
-  };
+  }, [
+    adapters.credentialStore,
+    input,
+    markAsNonEphemeral,
+    refreshRows,
+    sending,
+    session,
+    useCases.sendDialogueTurnUseCase,
+  ]);
 
   return {
     loading,
@@ -318,4 +215,3 @@ export const useLoomTreeChatController = () => {
     canSend: !sending && !loading && input.trim().length > 0,
   };
 };
-

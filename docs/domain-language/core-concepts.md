@@ -58,7 +58,9 @@ A linear sequence of Nodes connected by Continuation edges, representing one pos
 
 The **Active Path** is the currently selected traversal — what the user sees as the "current conversation."
 
-Paths are computed, not stored. They are derived by traversing edges from a given node back to the Root.
+Conceptually, Paths are derived from graph traversal (Root → target) using continuation edges.
+
+Implementation note: Aspen Grove persists path state (`Path`, `PathNode`, `PathSelection`, `PathState`) as a materialized cursor/view per agent for fast rendering, deterministic branch switching, and restart resilience.
 
 ---
 

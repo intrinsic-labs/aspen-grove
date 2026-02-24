@@ -91,6 +91,7 @@ export type StreamChunk = {
   readonly content?: string;
   readonly toolCall?: Partial<ToolCall>;
   readonly usage?: TokenUsage;
+  readonly finishReason?: CompletionResponse['finishReason'];
   readonly rawResponse?: RawResponseCapture;
   readonly error?: string;
 };
