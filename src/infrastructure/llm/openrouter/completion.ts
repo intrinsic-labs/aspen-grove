@@ -3,6 +3,7 @@ import type {
   CompletionRequest,
   CompletionResponse,
 } from '@application/services/llm';
+import { fetch as expoFetch } from 'expo/fetch';
 import {
   headersToString,
   toCompletionText,
@@ -54,7 +55,7 @@ export const requestOpenRouterCompletion = async (input: {
       headers['X-Title'] = config.appName;
     }
 
-    const response = await fetch(config.endpoint, {
+    const response = await expoFetch(config.endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

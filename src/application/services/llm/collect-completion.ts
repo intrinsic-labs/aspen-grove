@@ -3,6 +3,7 @@ import {
   CompletionResponse,
   ILlmProvider,
   LlmProviderError,
+  type StreamInterruptionReason,
 } from './ILlmProvider';
 
 export type CollectCompletionInput = {
@@ -15,6 +16,9 @@ export type CollectCompletionInput = {
     readonly content: string;
   }) => void | Promise<void>;
 };
+
+const toInterruptedMarker = (reason: StreamInterruptionReason): string =>
+  `[stream interrupted: ${reason}]`;
 
 /**
  * Resolves a completion response using streaming or non-streaming execution.
@@ -40,6 +44,7 @@ export const collectCompletion = async (
     let content = '';
     let usage: CompletionResponse['usage'];
     let finishReason: CompletionResponse['finishReason'] = 'error';
+    let interruptionReason: StreamInterruptionReason | undefined;
     let rawResponse: CompletionResponse['rawResponse'] | undefined;
 
     for await (const chunk of llmProvider.generateStreamingCompletion(request)) {
@@ -61,6 +66,7 @@ export const collectCompletion = async (
       if (chunk.type === 'done') {
         usage = chunk.usage;
         finishReason = chunk.finishReason ?? 'stop';
+        interruptionReason = chunk.interruptedReason;
         rawResponse = chunk.rawResponse;
         if (chunk.content) {
           content = chunk.content;
@@ -72,9 +78,15 @@ export const collectCompletion = async (
       throw new Error('Provider streaming completion ended without final raw response.');
     }
 
+    const persistedContent =
+      finishReason === 'error' && interruptionReason && content.trim().length > 0
+        ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
+        : content;
+
     return {
-      content,
+      content: persistedContent,
       finishReason,
+      interruptionReason,
       usage,
       rawResponse,
     };
@@ -84,9 +96,11 @@ export const collectCompletion = async (
       error instanceof LlmProviderError &&
       error.code === 'invalidRequest'
     ) {
+      console.info('[llm] streaming unavailable, falling back to non-streaming', {
+        provider: llmProvider.provider,
+      });
       return llmProvider.generateCompletion(request);
     }
     throw error;
   }
 };
-

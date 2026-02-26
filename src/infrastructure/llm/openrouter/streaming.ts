@@ -1,6 +1,11 @@
 import { computeSha256Hash } from '@application/services/content-hash-service';
-import type { CompletionRequest, StreamChunk } from '@application/services/llm';
+import type {
+  CompletionRequest,
+  StreamChunk,
+  StreamInterruptionReason,
+} from '@application/services/llm';
 import { LlmProviderError } from '@application/services/llm';
+import { fetch as expoFetch } from 'expo/fetch';
 import { toLlmProviderError } from './errors';
 import {
   headersToString,
@@ -12,6 +17,24 @@ import {
 } from './helpers';
 import type { OpenRouterConfig, OpenRouterStreamingPayload } from './types';
 
+const toInterruptedReason = (error: unknown): StreamInterruptionReason => {
+  if (error instanceof Error && error.name === 'AbortError') {
+    return 'timeout';
+  }
+
+  if (error instanceof LlmProviderError) {
+    if (error.code === 'timeout') {
+      return 'timeout';
+    }
+    if (error.code === 'networkError') {
+      return 'network';
+    }
+    return 'provider_error';
+  }
+
+  return 'network';
+};
+
 export const streamOpenRouterCompletion = async function* (input: {
   readonly config: OpenRouterConfig;
   readonly request: CompletionRequest;
@@ -22,6 +45,35 @@ export const streamOpenRouterCompletion = async function* (input: {
   const requestTimestamp = new Date();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const rawBodyChunks: string[] = [];
+  let responseHeaders = '';
+  let requestId: string | undefined;
+  let modelIdentifier: string | undefined;
+  let usage: StreamChunk['usage'];
+  let finishReason: StreamChunk['finishReason'] = 'stop';
+  let completionText = '';
+  let parserBuffer = '';
+  let eventLines: string[] = [];
+
+  const createRawResponse = async (): Promise<NonNullable<StreamChunk['rawResponse']>> => {
+    const responseBody = rawBodyChunks.join('');
+    const responseTimestamp = new Date();
+    const latencyMs = responseTimestamp.getTime() - requestTimestamp.getTime();
+    const rawBytes = `${responseHeaders}\n\n${responseBody}`;
+    const rawBytesHash = await computeSha256Hash(rawBytes);
+
+    return {
+      rawBytes,
+      rawBytesHash,
+      requestTimestamp,
+      responseTimestamp,
+      latencyMs,
+      requestId,
+      modelIdentifier: modelIdentifier ?? request.model,
+      responseBody,
+      responseHeaders,
+    };
+  };
 
   try {
     const body = {
@@ -47,6 +99,7 @@ export const streamOpenRouterCompletion = async function* (input: {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
     };
 
     if (config.appUrl) {
@@ -56,15 +109,15 @@ export const streamOpenRouterCompletion = async function* (input: {
       headers['X-Title'] = config.appName;
     }
 
-    const response = await fetch(config.endpoint, {
+    const response = await expoFetch(config.endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     });
 
-    const responseHeaders = headersToString(response.headers);
-    const requestId =
+    responseHeaders = headersToString(response.headers);
+    requestId =
       response.headers.get('x-request-id') ??
       response.headers.get('request-id') ??
       undefined;
@@ -91,14 +144,6 @@ export const streamOpenRouterCompletion = async function* (input: {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
-
-    const rawBodyChunks: string[] = [];
-    let parserBuffer = '';
-    let eventLines: string[] = [];
-    let completionText = '';
-    let modelIdentifier: string | undefined;
-    let usage: StreamChunk['usage'];
-    let finishReason: StreamChunk['finishReason'] = 'stop';
 
     const processEvent = async (): Promise<StreamChunk | null> => {
       if (eventLines.length === 0) {
@@ -193,30 +238,26 @@ export const streamOpenRouterCompletion = async function* (input: {
       yield trailingChunk;
     }
 
-    const responseBody = rawBodyChunks.join('');
-    const responseTimestamp = new Date();
-    const latencyMs = responseTimestamp.getTime() - requestTimestamp.getTime();
-    const rawBytes = `${responseHeaders}\n\n${responseBody}`;
-    const rawBytesHash = await computeSha256Hash(rawBytes);
-
     yield {
       type: 'done',
       content: completionText,
       usage,
       finishReason,
-      rawResponse: {
-        rawBytes,
-        rawBytesHash,
-        requestTimestamp,
-        responseTimestamp,
-        latencyMs,
-        requestId,
-        modelIdentifier: modelIdentifier ?? request.model,
-        responseBody,
-        responseHeaders,
-      },
+      rawResponse: await createRawResponse(),
     };
   } catch (error) {
+    if (completionText.trim().length > 0) {
+      yield {
+        type: 'done',
+        content: completionText,
+        usage,
+        finishReason: 'error',
+        interruptedReason: toInterruptedReason(error),
+        rawResponse: await createRawResponse(),
+      };
+      return;
+    }
+
     if (error instanceof LlmProviderError) {
       throw error;
     }
@@ -240,4 +281,3 @@ export const streamOpenRouterCompletion = async function* (input: {
     clearTimeout(timeoutId);
   }
 };
-

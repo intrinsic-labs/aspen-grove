@@ -46,6 +46,7 @@ export type GenerateDialogueContinuationResult = {
   readonly systemContextLength: number;
   readonly completion: {
     readonly finishReason: CompletionResponse['finishReason'];
+    readonly interruptionReason?: CompletionResponse['interruptionReason'];
     readonly usage: CompletionResponse['usage'];
     readonly modelIdentifier: string;
     readonly latencyMs: number;
@@ -199,6 +200,7 @@ export class GenerateDialogueContinuationUseCase {
       systemContextLength: assembled.systemContext?.length ?? 0,
       completion: {
         finishReason: completion.finishReason,
+        interruptionReason: completion.interruptionReason,
         usage: completion.usage,
         modelIdentifier:
           completion.rawResponse.modelIdentifier ?? input.session.modelIdentifier,

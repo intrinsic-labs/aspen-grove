@@ -14,6 +14,7 @@ import {
 } from './session-helpers';
 import type { ChatRow, ChatSession } from './types';
 import { useDeleteEphemeralTreeOnBack } from './useDeleteEphemeralTreeOnBack';
+import { useStreamingAssistantRow } from './useStreamingAssistantRow';
 
 export const useLoomTreeChatController = () => {
   const navigation = useNavigation();
@@ -38,6 +39,11 @@ export const useLoomTreeChatController = () => {
   const [rows, setRows] = useState<ChatRow[]>([]);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const {
+    streamingText: streamingAssistantText,
+    appendDelta: appendStreamingAssistantDelta,
+    reset: resetStreamingAssistantRow,
+  } = useStreamingAssistantRow();
 
   const markAsNonEphemeral = useCallback(() => {
     hasUserSentMessageRef.current = true;
@@ -114,6 +120,13 @@ export const useLoomTreeChatController = () => {
   }, [rows, loading, sending]);
 
   useEffect(() => {
+    if (streamingAssistantText.length === 0) {
+      return;
+    }
+    scrollRef.current?.scrollToEnd({ animated: false });
+  }, [streamingAssistantText]);
+
+  useEffect(() => {
     if (!shouldAutofocus || loading || !session) {
       return;
     }
@@ -142,6 +155,7 @@ export const useLoomTreeChatController = () => {
       setSending(true);
       setError(null);
       setInput('');
+      resetStreamingAssistantRow();
 
       const openRouterApiKey = await getOpenRouterApiKey(adapters.credentialStore);
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
@@ -157,6 +171,9 @@ export const useLoomTreeChatController = () => {
             activeNodeId: userNodeId,
           });
         },
+        onAssistantTextDelta: async ({ delta }) => {
+          appendStreamingAssistantDelta(delta);
+        },
       });
 
       console.info('[chat] assembled context', {
@@ -168,6 +185,7 @@ export const useLoomTreeChatController = () => {
         modelIdentifier: turnResult.completion.modelIdentifier,
         latencyMs: turnResult.completion.latencyMs,
         finishReason: turnResult.completion.finishReason,
+        interruptionReason: turnResult.completion.interruptionReason,
         usage: turnResult.completion.usage,
       });
 
@@ -181,6 +199,14 @@ export const useLoomTreeChatController = () => {
         ...session,
         activeNodeId: turnResult.assistantNodeId,
       });
+
+      if (turnResult.completion.interruptionReason) {
+        setError(
+          `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
+        );
+      }
+
+      resetStreamingAssistantRow();
     } catch (caught) {
       const message =
         caught instanceof LlmProviderError
@@ -188,6 +214,7 @@ export const useLoomTreeChatController = () => {
           : caught instanceof Error
             ? caught.message
             : String(caught);
+      resetStreamingAssistantRow();
       setError(message);
     } finally {
       setSending(false);
@@ -199,6 +226,8 @@ export const useLoomTreeChatController = () => {
     refreshRows,
     sending,
     session,
+    appendStreamingAssistantDelta,
+    resetStreamingAssistantRow,
     useCases.sendDialogueTurnUseCase,
   ]);
 
@@ -209,6 +238,7 @@ export const useLoomTreeChatController = () => {
     input,
     setInput,
     rows,
+    streamingAssistantText,
     onSend,
     scrollRef,
     inputRef,

@@ -11,6 +11,7 @@ type ChatMessageListProps = {
   readonly loading: boolean;
   readonly sending: boolean;
   readonly rows: readonly ChatRow[];
+  readonly streamingAssistantText: string;
   readonly error: string | null;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly colors: {
@@ -20,7 +21,15 @@ type ChatMessageListProps = {
 };
 
 export const ChatMessageList = memo(
-  ({ loading, sending, rows, error, scrollRef, colors }: ChatMessageListProps) => {
+  ({
+    loading,
+    sending,
+    rows,
+    streamingAssistantText,
+    error,
+    scrollRef,
+    colors,
+  }: ChatMessageListProps) => {
     if (loading) {
       return (
         <View style={styles.loadingWrap}>
@@ -74,6 +83,17 @@ export const ChatMessageList = memo(
             )}
           </View>
         ))}
+
+        {streamingAssistantText.length > 0 ? (
+          <View style={[styles.row, styles.assistantRow]}>
+            <AppText variant="meta" tone="muted" style={styles.authorText}>
+              ASSISTANT
+            </AppText>
+            <AppText variant="body" tone="primary" style={styles.messageText}>
+              {streamingAssistantText}
+            </AppText>
+          </View>
+        ) : null}
 
         {error ? (
           <AppText variant="meta" tone="accent" style={styles.errorText}>
@@ -133,4 +153,3 @@ const styles = StyleSheet.create({
     height: 2,
   },
 });
-

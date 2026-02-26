@@ -75,10 +75,17 @@ export type RawResponseCapture = {
 export type CompletionResponse = {
   readonly content: string;
   readonly finishReason: 'stop' | 'length' | 'toolUse' | 'error';
+  readonly interruptionReason?: StreamInterruptionReason;
   readonly usage?: TokenUsage;
   readonly toolCalls?: readonly ToolCall[];
   readonly rawResponse: RawResponseCapture;
 };
+
+export type StreamInterruptionReason =
+  | 'timeout'
+  | 'network'
+  | 'provider_error'
+  | 'cancelled';
 
 export type StreamChunk = {
   readonly type:
@@ -92,6 +99,7 @@ export type StreamChunk = {
   readonly toolCall?: Partial<ToolCall>;
   readonly usage?: TokenUsage;
   readonly finishReason?: CompletionResponse['finishReason'];
+  readonly interruptedReason?: StreamInterruptionReason;
   readonly rawResponse?: RawResponseCapture;
   readonly error?: string;
 };

@@ -104,4 +104,49 @@ describe('collectCompletion', () => {
     expect(nonStreamingCalled).toBe(true);
     expect(completion.content).toBe('fallback response');
   });
+
+  it('keeps partial streamed output and appends interruption marker', async () => {
+    const provider: ILlmProvider = {
+      provider: 'openrouter',
+      initialize: async () => true,
+      getCapabilities: () => ({
+        supportsStreaming: true,
+        supportsSystemPrompt: false,
+        supportedModels: [],
+      }),
+      generateCompletion: async () => {
+        throw new Error('should not call generateCompletion in this test');
+      },
+      generateStreamingCompletion: async function* () {
+        yield { type: 'text', content: 'Partial text' };
+        yield {
+          type: 'done',
+          content: 'Partial text',
+          finishReason: 'error',
+          interruptedReason: 'timeout',
+          rawResponse: {
+            rawBytes: 'raw-partial',
+            rawBytesHash:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' as ContentHash,
+            requestTimestamp: new Date('2026-02-24T00:00:00.000Z'),
+            responseTimestamp: new Date('2026-02-24T00:00:01.000Z'),
+            latencyMs: 1000,
+            responseBody: 'raw-partial',
+            responseHeaders: 'x-request-id: req-1',
+          },
+        };
+      },
+    };
+
+    const completion = await collectCompletion({
+      llmProvider: provider,
+      request: createRequest(),
+      stream: true,
+    });
+
+    expect(completion.finishReason).toBe('error');
+    expect(completion.interruptionReason).toBe('timeout');
+    expect(completion.content).toContain('Partial text');
+    expect(completion.content).toContain('[stream interrupted: timeout]');
+  });
 });

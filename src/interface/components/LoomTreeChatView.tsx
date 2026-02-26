@@ -17,6 +17,7 @@ const LoomTreeChatView = () => {
         loading={controller.loading}
         sending={controller.sending}
         rows={controller.rows}
+        streamingAssistantText={controller.streamingAssistantText}
         error={controller.error}
         scrollRef={controller.scrollRef}
         colors={colors}
@@ -44,4 +45,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
