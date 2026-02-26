@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import {
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  TextInput,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
@@ -22,6 +26,7 @@ export const useLoomTreeChatController = () => {
   const inputRef = useRef<TextInput>(null);
   const activeTreeIdRef = useRef<ULID | null>(null);
   const hasUserSentMessageRef = useRef(false);
+  const shouldAutoScrollRef = useRef(true);
   const { repositories, adapters, useCases } = useAppServices();
 
   const routeParams = useLocalSearchParams<{
@@ -116,11 +121,17 @@ export const useLoomTreeChatController = () => {
   }, [repositories, refreshRows, resetEphemeralState, treeIdParam]);
 
   useEffect(() => {
+    if (!shouldAutoScrollRef.current) {
+      return;
+    }
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [rows, loading, sending]);
 
   useEffect(() => {
     if (streamingAssistantText.length === 0) {
+      return;
+    }
+    if (!shouldAutoScrollRef.current) {
       return;
     }
     scrollRef.current?.scrollToEnd({ animated: false });
@@ -155,6 +166,7 @@ export const useLoomTreeChatController = () => {
       setSending(true);
       setError(null);
       setInput('');
+      shouldAutoScrollRef.current = true;
       resetStreamingAssistantRow();
 
       const openRouterApiKey = await getOpenRouterApiKey(adapters.credentialStore);
@@ -231,6 +243,33 @@ export const useLoomTreeChatController = () => {
     useCases.sendDialogueTurnUseCase,
   ]);
 
+  const onMessageListScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - (contentOffset.y + layoutMeasurement.height);
+      const isNearBottom = distanceFromBottom <= 48;
+
+      if (isNearBottom) {
+        shouldAutoScrollRef.current = true;
+        return;
+      }
+
+      if (sending) {
+        shouldAutoScrollRef.current = false;
+      }
+    },
+    [sending]
+  );
+
+  const onComposerFocus = useCallback(() => {
+    shouldAutoScrollRef.current = true;
+    scrollRef.current?.scrollToEnd({ animated: true });
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 120);
+  }, []);
+
   return {
     loading,
     sending,
@@ -240,6 +279,8 @@ export const useLoomTreeChatController = () => {
     rows,
     streamingAssistantText,
     onSend,
+    onMessageListScroll,
+    onComposerFocus,
     scrollRef,
     inputRef,
     canSend: !sending && !loading && input.trim().length > 0,

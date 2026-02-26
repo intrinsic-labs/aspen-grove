@@ -1,5 +1,12 @@
 import { memo, type RefObject } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
@@ -12,8 +19,10 @@ type ChatMessageListProps = {
   readonly sending: boolean;
   readonly rows: readonly ChatRow[];
   readonly streamingAssistantText: string;
+  readonly composerHeight: number;
   readonly error: string | null;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
+  readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   readonly colors: {
     readonly primary: string;
     readonly surface: string;
@@ -26,8 +35,10 @@ export const ChatMessageList = memo(
     sending,
     rows,
     streamingAssistantText,
+    composerHeight,
     error,
     scrollRef,
+    onScroll,
     colors,
   }: ChatMessageListProps) => {
     if (loading) {
@@ -42,14 +53,21 @@ export const ChatMessageList = memo(
       <KeyboardAwareScrollView
         ref={scrollRef}
         enabled
-        extraKeyboardSpace={0}
-        bottomOffset={0}
+        extraKeyboardSpace={composerHeight}
+        bottomOffset={8}
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: Math.max(16, composerHeight + 12),
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         alwaysBounceVertical
         overScrollMode="always"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         {rows.map((row) => (
           <View
@@ -119,7 +137,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 16,
     flexGrow: 1,
     gap: 18,
   },

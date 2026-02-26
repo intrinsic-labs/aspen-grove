@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -10,6 +11,7 @@ const LoomTreeChatView = () => {
   const { colors } = useThemeColors();
   const insets = useSafeAreaInsets();
   const controller = useLoomTreeChatController();
+  const [composerHeight, setComposerHeight] = useState(72);
 
   return (
     <AppScreen style={styles.container}>
@@ -18,8 +20,10 @@ const LoomTreeChatView = () => {
         sending={controller.sending}
         rows={controller.rows}
         streamingAssistantText={controller.streamingAssistantText}
+        composerHeight={composerHeight}
         error={controller.error}
         scrollRef={controller.scrollRef}
+        onScroll={controller.onMessageListScroll}
         colors={colors}
       />
 
@@ -31,6 +35,8 @@ const LoomTreeChatView = () => {
         loading={controller.loading}
         sending={controller.sending}
         inputRef={controller.inputRef}
+        onInputFocus={controller.onComposerFocus}
+        onComposerLayout={setComposerHeight}
         bottomInset={insets.bottom}
         colors={colors}
       />

@@ -1,5 +1,11 @@
 import { memo, type RefObject } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import {
+  type LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppInput } from '@interface/ui/system';
@@ -12,6 +18,8 @@ type ChatComposerProps = {
   readonly loading: boolean;
   readonly sending: boolean;
   readonly inputRef: RefObject<TextInput | null>;
+  readonly onInputFocus: () => void;
+  readonly onComposerLayout: (height: number) => void;
   readonly bottomInset: number;
   readonly colors: {
     readonly line: string;
@@ -31,9 +39,15 @@ export const ChatComposer = memo(
     loading,
     sending,
     inputRef,
+    onInputFocus,
+    onComposerLayout,
     bottomInset,
     colors,
   }: ChatComposerProps) => {
+    const onLayout = (event: LayoutChangeEvent) => {
+      onComposerLayout(event.nativeEvent.layout.height);
+    };
+
     return (
       <KeyboardStickyView
         enabled
@@ -41,6 +55,7 @@ export const ChatComposer = memo(
         style={styles.composerSticky}
       >
         <View
+          onLayout={onLayout}
           style={[
             styles.composerWrap,
             {
@@ -60,6 +75,7 @@ export const ChatComposer = memo(
             editable={!sending && !loading}
             numberOfLines={5}
             textAlignVertical="top"
+            onFocus={onInputFocus}
           />
           <Pressable
             onPress={onSend}
@@ -115,4 +131,3 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
 });
-
