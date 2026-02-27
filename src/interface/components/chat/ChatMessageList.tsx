@@ -1,18 +1,38 @@
-import { memo, type RefObject } from 'react';
+import { memo, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
-  Platform,
-  StyleSheet,
-  View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
 } from 'react-native';
+import ContextMenu, {
+  type ContextMenuAction,
+} from 'react-native-context-menu-view';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
 import { AppText } from '@interface/ui/system';
 import type { ChatRow } from './types';
+
+export type ChatMessageMenuAction =
+  | 'regenerate'
+  | 'continuations'
+  | 'edit'
+  | 'rewind'
+  | 'copy'
+  | 'info'
+  | 'bookmark';
+
+type ChatMessageMenuItem = {
+  readonly action: ChatMessageMenuAction;
+  readonly title: string;
+  readonly systemIcon?: string;
+  readonly destructive?: boolean;
+};
 
 type ChatMessageListProps = {
   readonly loading: boolean;
@@ -23,6 +43,7 @@ type ChatMessageListProps = {
   readonly error: string | null;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  readonly onMessageAction: (nodeId: string, action: ChatMessageMenuAction) => void;
   readonly colors: {
     readonly primary: string;
     readonly surface: string;
@@ -39,6 +60,7 @@ export const ChatMessageList = memo(
     error,
     scrollRef,
     onScroll,
+    onMessageAction,
     colors,
   }: ChatMessageListProps) => {
     if (loading) {
@@ -70,43 +92,41 @@ export const ChatMessageList = memo(
         scrollEventThrottle={16}
       >
         {rows.map((row) => (
-          <View
+          <ContextMenuWrapper
             key={row.id}
-            style={[
-              styles.row,
-              row.authorType === 'human' ? styles.userRow : styles.assistantRow,
-            ]}
+            row={row}
+            onMessageAction={onMessageAction}
           >
-            <AppText variant="meta" tone="muted" style={styles.authorText}>
-              {row.authorType === 'human' ? 'YOU' : 'ASSISTANT'}
-            </AppText>
-
-            {row.authorType === 'human' ? (
-              <View
-                style={[
-                  styles.userBubble,
-                  {
-                    backgroundColor: colors.surface,
-                  },
-                ]}
-              >
-                <AppText variant="body" tone="inverse" style={styles.messageText}>
+            <Pressable
+              style={[
+                styles.row,
+                row.authorType === 'human' ? styles.userRow : styles.assistantRow,
+              ]}
+            >
+              {row.authorType === 'human' ? (
+                <View
+                  style={[
+                    styles.userBubble,
+                    {
+                      backgroundColor: colors.surface,
+                    },
+                  ]}
+                >
+                  <AppText variant="body" tone="inverse" style={styles.messageText}>
+                    {row.text}
+                  </AppText>
+                </View>
+              ) : (
+                <AppText variant="body" tone="primary" style={styles.messageText}>
                   {row.text}
                 </AppText>
-              </View>
-            ) : (
-              <AppText variant="body" tone="primary" style={styles.messageText}>
-                {row.text}
-              </AppText>
-            )}
-          </View>
+              )}
+            </Pressable>
+          </ContextMenuWrapper>
         ))}
 
         {streamingAssistantText.length > 0 ? (
           <View style={[styles.row, styles.assistantRow]}>
-            <AppText variant="meta" tone="muted" style={styles.authorText}>
-              ASSISTANT
-            </AppText>
             <AppText variant="body" tone="primary" style={styles.messageText}>
               {streamingAssistantText}
             </AppText>
@@ -124,6 +144,77 @@ export const ChatMessageList = memo(
     );
   }
 );
+
+const buildMessageMenuItems = (bookmarked: boolean): readonly ChatMessageMenuItem[] =>
+  [
+    {
+      action: 'regenerate',
+      title: 'Regenerate Response',
+      systemIcon: 'arrow.clockwise',
+    },
+    {
+      action: 'continuations',
+      title: 'Continuations',
+      systemIcon: 'point.topleft.down.curvedto.point.bottomright.up',
+    },
+    {
+      action: 'edit',
+      title: 'Edit',
+      systemIcon: 'pencil',
+    },
+    {
+      action: 'rewind',
+      title: 'Rewind To Node',
+      systemIcon: 'backward.end.alt',
+    },
+    {
+      action: 'copy',
+      title: 'Copy Text',
+      systemIcon: 'doc.on.doc',
+    },
+    {
+      action: 'info',
+      title: 'Node Info',
+      systemIcon: 'info.circle',
+    },
+    {
+      action: 'bookmark',
+      title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
+      systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
+    },
+  ] as const;
+
+const ContextMenuWrapper = ({
+  row,
+  onMessageAction,
+  children,
+}: {
+  readonly row: ChatRow;
+  readonly onMessageAction: (nodeId: string, action: ChatMessageMenuAction) => void;
+  readonly children: ReactNode;
+}) => {
+  const menuItems = buildMessageMenuItems(row.bookmarked);
+  const actions: ContextMenuAction[] = menuItems.map((item) => ({
+    title: item.title,
+    systemIcon: item.systemIcon,
+    destructive: item.destructive,
+  }));
+
+  return (
+    <ContextMenu
+      title={row.localId}
+      actions={actions}
+      onPress={(event) => {
+        const menuItem = menuItems[event.nativeEvent.index];
+        if (menuItem) {
+          onMessageAction(row.id, menuItem.action);
+        }
+      }}
+    >
+      {children}
+    </ContextMenu>
+  );
+};
 
 const styles = StyleSheet.create({
   loadingWrap: {
@@ -148,10 +239,6 @@ const styles = StyleSheet.create({
   },
   assistantRow: {
     alignItems: 'flex-start',
-  },
-  authorText: {
-    marginBottom: 6,
-    letterSpacing: 0.5,
   },
   userBubble: {
     maxWidth: '88%',

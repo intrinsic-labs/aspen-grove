@@ -42,6 +42,26 @@ Manually create a new branch from an existing Node. Unlike Generate Continuation
 
 ---
 
+## Edit
+
+Create an edited version of an existing node without mutating the original.
+
+Since nodes are immutable, editing always creates a new node with `editedFrom` set to the original node ID.
+
+**Dialogue Mode behavior:**
+- Edit creates a branch from the edited node's parent.
+- Conversation continues from the edited node.
+- Original downstream is preserved on its existing branch (not duplicated).
+
+**Use Cases:**
+- Fix wording in an earlier message and continue from there
+- Correct a model response while preserving lineage
+- Replace awkward rewind/copy/paste workflows
+
+**Result:** A new node linked by `editedFrom`, attached as an alternate continuation at the same decision point.
+
+---
+
 ## Navigate
 
 Change the Active Path to traverse through a different branch. This doesn't modify the tree — it changes what the user is looking at.
@@ -154,6 +174,7 @@ Combine insights from multiple Paths into a new Node. This is a creative/editori
 |-----------|---------------|---------------|---------------|
 | Generate Continuation | Yes | Yes | Model (via Human request) |
 | Fork | Yes | Yes | Human |
+| Edit | Yes | Yes | Human |
 | Navigate | No | No | Human |
 | Bookmark | Yes (metadata) | No | Human |
 | Annotate | Yes | Yes | Human |

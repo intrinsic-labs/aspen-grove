@@ -34,6 +34,7 @@ Scope: Dialogue mode only
 - Node-level long press opens action menu:
   - Regenerate Response
   - Continuations
+  - Edit
   - Rewind To Node
   - Copy Text
   - Node Info
@@ -66,9 +67,27 @@ Scope: Dialogue mode only
   - local id
   - optional provider/model reference
 - Menu:
+  - Edit
   - Copy All Text
   - Rewind To Node
   - Bookmark
+
+### 4.4 Edit Node Flow (Dialogue Mode)
+
+- Entry points:
+  - node long-press menu -> `Edit`
+  - node detail menu -> `Edit`
+- Edit mode behavior:
+  - composer is prefilled with the selected node text
+  - UI displays an "editing node" state (target local id visible)
+  - send action becomes "save edit" semantics
+- Save behavior:
+  - creates a new node with `editedFrom=<targetNodeId>`
+  - creates a continuation edge from the target's parent to the edited node
+  - switches active path to the edited node
+  - downstream of the original target is not copied; continuation proceeds from edited node
+- Cancel behavior:
+  - exits edit mode and restores normal composer semantics
 
 ## 5) Domain/Application Mapping
 
@@ -77,6 +96,7 @@ Scope: Dialogue mode only
 | Main chat sequence | `PathNode[]` materialized active path | `IPathRepository.getNodeSequence`, `INodeRepository.findById` | Build a dedicated read-model hook for active path rows |
 | "Make current node" | Active path switch | `SwitchDialoguePathUseCase.execute` | Wire from continuation card double-tap/menu |
 | "Regenerate response" | New continuation from selected node | `GenerateDialogueContinuationUseCase.execute` | Wire from node menu and enable streaming callback |
+| "Edit node" | Immutable-node replacement branch with lineage | `Node.editedFrom`, `IPathRepository.replaceSuffix`, `IPathStateRepository.setActiveNode` | Add `EditDialogueNodeUseCase` and wire to node menu/detail menu |
 | Sending user turn | Human node + model continuation | `SendDialogueTurnUseCase.execute` | Add UI streaming row updates via `onAssistantTextDelta` |
 | Interrupted stream persistence | Model node may be partial | `SendDialogueTurnUseCase` / `GenerateDialogueContinuationUseCase` | Add partial-finalization path that commits non-empty streamed text on timeout/network failure |
 | Continuations list for node | Outgoing continuation edges | `IEdgeRepository.findBySourceNodeId`, `INodeRepository.findById` | Add app-layer query service/use case to return preview DTOs |
@@ -84,6 +104,15 @@ Scope: Dialogue mode only
 | "Rewind to node" | Truncate/switch active path to target | `SwitchDialoguePathUseCase.execute` | Provide menu action wrapper |
 | Bookmark actions | Node metadata mutation | `INodeRepository.updateMetadata` | Add small use case for intent clarity |
 | Node provenance display | `RawApiResponse`, `Node.contentHash`, parent edges | existing repositories + provenance service outputs | Read-only DTO for node detail metadata |
+
+### 5.1 Dialogue Edit Invariants (Must Hold)
+
+- Nodes remain immutable. Edit always creates a new node.
+- Edited node must set `editedFrom` to the original node id.
+- Edited node author must be human (`authorType: "human"`), even when editing model-authored text.
+  - Reason: prevents conflating manual edits with provider-authenticated model output/provenance.
+- Root-node edit is out of scope for first pass (no parent continuation source).
+- Empty edit content is rejected (no empty nodes).
 
 ## 6) Streaming Behavior Spec (Performance-Critical)
 
@@ -147,6 +176,8 @@ Scope: Dialogue mode only
   - transient assistant row buffer + throttled flush
 - `interface/features/dialogue/useNodeContinuations.ts`
   - load continuation preview DTOs for selected source node
+- `interface/features/dialogue/useNodeEditState.ts`
+  - edit-mode target node state, prefill, save/cancel orchestration
 - `interface/features/dialogue/components/`
   - `DialogueList.tsx`
   - `UserMessageBubble.tsx`
@@ -154,6 +185,7 @@ Scope: Dialogue mode only
   - `ContinuationRail.tsx`
   - `NodeActionMenu.tsx`
   - `NodeDetailSheet.tsx`
+  - `EditModeBanner.tsx`
 
 Note: keep all style tokens sourced from shared UI system primitives/theme; do not duplicate literal spacing/color/font definitions across feature files.
 
@@ -200,6 +232,20 @@ Note: keep all style tokens sourced from shared UI system primitives/theme; do n
 
 This matches prototype intent ("how much active branch follows this node") with minimal compute.
 
+### 9.4 Dialogue Edit Branching (first pass)
+
+- Resolve continuation path to target node (`root -> ... -> target`).
+- Determine target parent from incoming continuation edge.
+- Create edited node:
+  - `authorType: "human"`
+  - `authorAgentId: session.ownerAgentId`
+  - `content: edited text`
+  - `editedFrom: targetNodeId`
+  - content hash computed via human hash strategy with parent hash(es)
+- Create continuation edge from target parent to edited node.
+- Rewrite active path suffix to end at edited node (`replaceSuffix`).
+- Set active node to edited node (`setActiveNode`).
+
 ## 10) Settings Integration
 
 - Continue using `UserPreferences` as styling/config source.
@@ -227,9 +273,11 @@ This matches prototype intent ("how much active branch follows this node") with 
 - Add long-press node menu.
 - Add continuation rail with tap/double-tap/long-press behaviors.
 - Wire actions to existing use cases.
+- Add dialogue edit flow from node menu/detail menu.
 - Acceptance:
   - can switch branches from rail/menu
   - can regenerate from arbitrary node
+  - can edit any non-root node and continue from edited branch
   - active-path indicator matches path state
 
 ### Phase C: Node detail + provenance metadata surface
@@ -256,6 +304,7 @@ This matches prototype intent ("how much active branch follows this node") with 
   - send turn with streaming deltas
   - regenerate from historical node
   - switch active path to sibling continuation
+  - edit historical node -> new node has `editedFrom`, path rewrites to edited branch
 - Device validation:
   - iOS and Android keyboard + scroll + composer behavior under streaming load
   - long conversation scroll and continuation interactions

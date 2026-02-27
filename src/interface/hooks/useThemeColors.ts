@@ -16,6 +16,7 @@ export const useThemeColors = () => {
     line: '#2A2A2A',
     red: '#E75C55',
     blue: '#5A789E',
+    green: '#6BAA75',
   } as const;
 
   const dark = {
@@ -30,6 +31,7 @@ export const useThemeColors = () => {
     line: '#3A3F4D',
     red: '#EF6F66',
     blue: '#85A8D4',
+    green: '#8BCF98',
   } as const;
 
   const palette = isDark ? dark : light;
@@ -55,6 +57,7 @@ export const useThemeColors = () => {
 
       red: palette.red,
       blue: palette.blue,
+      green: palette.green,
     },
   };
 };

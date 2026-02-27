@@ -109,8 +109,11 @@ export const loadDialogueRowsForPath = async (
     }
     rows.push({
       id: node.id,
+      localId: node.localId,
+      editedFrom: node.editedFrom,
       authorType: node.authorType,
       text,
+      bookmarked: node.metadata.bookmarked,
     });
   }
 
@@ -119,4 +122,3 @@ export const loadDialogueRowsForPath = async (
     activeNodeId: nodes[nodes.length - 1]?.id,
   };
 };
-

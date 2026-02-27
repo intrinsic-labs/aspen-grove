@@ -9,6 +9,7 @@ import {
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   CreateDialogueLoomTreeUseCase,
+  EditDialogueNodeUseCase,
   GenerateDialogueContinuationUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
@@ -50,6 +51,7 @@ type AppServices = {
   };
   readonly useCases: {
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
+    readonly editDialogueNodeUseCase: EditDialogueNodeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
@@ -100,6 +102,12 @@ const buildAppServices = (): AppServices => {
       agentRepository: repositories.agentRepo,
       loomTreeRepository: repositories.treeRepo,
       nodeRepository: repositories.nodeRepo,
+      pathRepository: repositories.pathRepo,
+      pathStateRepository: repositories.pathStateRepo,
+    }),
+    editDialogueNodeUseCase: new EditDialogueNodeUseCase({
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
       pathRepository: repositories.pathRepo,
       pathStateRepository: repositories.pathStateRepo,
     }),
