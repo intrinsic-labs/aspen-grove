@@ -9,6 +9,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppInput, AppText } from '@interface/ui/system';
+import { loomUiTokens } from './loom-ui-tokens';
 
 type ChatComposerProps = {
   readonly input: string;
@@ -70,20 +71,31 @@ export const ChatComposer = memo(
             {
               borderTopColor: colors.line,
               backgroundColor: colors.background,
-              paddingBottom: bottomInset + 8,
+              paddingBottom: bottomInset + loomUiTokens.composer.bottomPadding,
             },
           ]}
         >
           {editLabel ? (
             <View style={[styles.editBanner, { borderColor: colors.line }]}>
               <View style={styles.editBannerTextWrap}>
-                <Ionicons name="create-outline" size={14} color={colors.secondary} />
+                <Ionicons
+                  name="create-outline"
+                  size={loomUiTokens.composer.editIconSize}
+                  color={colors.secondary}
+                />
                 <AppText variant="meta" tone="secondary" style={styles.editBannerText}>
                   {editLabel}
                 </AppText>
               </View>
-              <Pressable onPress={onCancelEdit} hitSlop={8}>
-                <Ionicons name="close" size={16} color={colors.secondary} />
+              <Pressable
+                onPress={onCancelEdit}
+                hitSlop={loomUiTokens.composer.closeHitSlop}
+              >
+                <Ionicons
+                  name="close"
+                  size={loomUiTokens.composer.closeIconSize}
+                  color={colors.secondary}
+                />
               </Pressable>
             </View>
           ) : null}
@@ -120,7 +132,7 @@ export const ChatComposer = memo(
                       ? 'checkmark'
                       : 'arrow-up'
                 }
-                size={18}
+                size={loomUiTokens.composer.sendIconSize}
                 color={colors.onSurface}
               />
             </Pressable>
@@ -134,29 +146,29 @@ export const ChatComposer = memo(
 const styles = StyleSheet.create({
   composerWrap: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 18,
-    paddingTop: 10,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    paddingTop: loomUiTokens.composer.topPadding,
     alignItems: 'stretch',
-    gap: 12,
+    gap: loomUiTokens.composer.sectionGap,
   },
   editBanner: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    minHeight: 30,
+    borderRadius: loomUiTokens.composer.editBannerRadius,
+    minHeight: loomUiTokens.composer.editBannerMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: loomUiTokens.composer.editBannerPaddingHorizontal,
   },
   editBannerTextWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 6,
+    gap: loomUiTokens.composer.editBannerIconGap,
   },
   editBannerText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: loomUiTokens.composer.editBannerTextSize,
+    lineHeight: loomUiTokens.composer.editBannerTextLineHeight,
     flex: 1,
   },
   composerSticky: {
@@ -165,21 +177,21 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: loomUiTokens.composer.inputRowGap,
   },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    borderRadius: 8,
-    fontSize: 17,
-    lineHeight: 27,
-    paddingTop: 10,
-    paddingBottom: 10,
+    minHeight: loomUiTokens.composer.inputMinHeight,
+    maxHeight: loomUiTokens.composer.inputMaxHeight,
+    borderRadius: loomUiTokens.composer.inputRadius,
+    fontSize: loomUiTokens.composer.inputTextSize,
+    lineHeight: loomUiTokens.composer.inputTextLineHeight,
+    paddingTop: loomUiTokens.composer.inputVerticalPadding,
+    paddingBottom: loomUiTokens.composer.inputVerticalPadding,
   },
   sendButton: {
-    height: 44,
-    width: 44,
+    height: loomUiTokens.composer.sendButtonSize,
+    width: loomUiTokens.composer.sendButtonSize,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,0 +1,72 @@
+/**
+ * Shared dialogue-surface UI tokens extracted from the Loom prototype rhythm.
+ * Keep all hard values centralized here to make global visual refactors cheap.
+ */
+export const loomUiTokens = {
+  colors: {
+    // Prototype canonical accent colors.
+    successGreen: '#6CBA78',
+    warmAccent: '#C7B686',
+  },
+  layout: {
+    horizontalInset: 18,
+  },
+  messageList: {
+    topPadding: 18,
+    rowGap: 18,
+    bottomOffset: 8,
+    minBottomPadding: 16,
+    composerClearancePadding: 12,
+    userBubbleMaxWidthPercent: '88%' as const,
+    userBubbleRadius: 8,
+    userBubblePaddingHorizontal: 16,
+    userBubblePaddingVertical: 11,
+    textSize: 17,
+    textLineHeight: 27,
+    errorTopMargin: 8,
+    sendingBottomSpacer: 2,
+  },
+  composer: {
+    topPadding: 10,
+    bottomPadding: 8,
+    sectionGap: 12,
+    editBannerRadius: 8,
+    editBannerMinHeight: 30,
+    editBannerPaddingHorizontal: 10,
+    editBannerIconGap: 6,
+    editBannerTextSize: 12,
+    editBannerTextLineHeight: 16,
+    closeHitSlop: 8,
+    inputRowGap: 12,
+    inputMinHeight: 44,
+    inputMaxHeight: 120,
+    inputRadius: 8,
+    inputTextSize: 17,
+    inputTextLineHeight: 27,
+    inputVerticalPadding: 10,
+    sendButtonSize: 44,
+    sendIconSize: 18,
+    editIconSize: 14,
+    closeIconSize: 16,
+  },
+  continuationRail: {
+    truncateLimit: 220,
+    verticalPadding: 8,
+    headerBottomMargin: 4,
+    hintBottomMargin: 8,
+    emptyVerticalPadding: 10,
+    headerLetterSpacing: 0.6,
+    contentGap: 10,
+    cardWidth: 260,
+    cardRadius: 10,
+    cardPadding: 12,
+    cardGap: 8,
+    metaLetterSpacing: 0.4,
+    previewTextSize: 16,
+    previewTextLineHeight: 23,
+    useButtonMarginTop: 2,
+    useButtonHitSlop: 8,
+    closeHitSlop: 10,
+  },
+} as const;
+

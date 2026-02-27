@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import ContextMenu, { type ContextMenuAction } from 'react-native-context-menu-view';
 import type { ULID } from '@domain/value-objects';
 import { AppText } from '@interface/ui/system';
+import { loomUiTokens } from './loom-ui-tokens';
 import type { ContinuationPreview } from './types';
 
 export type ContinuationMenuAction =
@@ -29,18 +30,17 @@ type ContinuationRailProps = {
     readonly primary: string;
     readonly secondary: string;
     readonly tertiary: string;
-    readonly green: string;
     readonly red: string;
   };
 };
 
-const TRUNCATE_LIMIT = 220;
-
 const truncateText = (value: string): string => {
-  if (value.length <= TRUNCATE_LIMIT) {
+  if (value.length <= loomUiTokens.continuationRail.truncateLimit) {
     return value;
   }
-  return `${value.slice(0, TRUNCATE_LIMIT - 1).trimEnd()}…`;
+  return `${value
+    .slice(0, loomUiTokens.continuationRail.truncateLimit - 1)
+    .trimEnd()}…`;
 };
 
 export const ContinuationRail = memo(
@@ -76,7 +76,7 @@ export const ContinuationRail = memo(
           <AppText variant="meta" tone="secondary" style={styles.headerTitle}>
             {sourceLocalId ? `Continuations for ${sourceLocalId}` : 'Continuations'}
           </AppText>
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Pressable onPress={onClose} hitSlop={loomUiTokens.continuationRail.closeHitSlop}>
             <AppText variant="meta" tone="muted">
               Close
             </AppText>
@@ -143,7 +143,11 @@ export const ContinuationRail = memo(
                         </AppText>
                         <View style={styles.footer}>
                           {item.isOnActivePath ? (
-                            <AppText variant="meta" tone="primary" style={{ color: colors.green }}>
+                            <AppText
+                              variant="meta"
+                              tone="primary"
+                              style={{ color: loomUiTokens.colors.successGreen }}
+                            >
                               Current Branch
                             </AppText>
                           ) : (
@@ -158,7 +162,7 @@ export const ContinuationRail = memo(
                       </View>
                       <Pressable
                         onPress={() => onMakeCurrent(item.nodeId)}
-                        hitSlop={8}
+                        hitSlop={loomUiTokens.continuationRail.useButtonHitSlop}
                         style={styles.makeCurrentButton}
                       >
                         <AppText variant="meta" tone="secondary">
@@ -213,48 +217,48 @@ const styles = StyleSheet.create({
   wrap: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: loomUiTokens.continuationRail.verticalPadding,
+    paddingBottom: loomUiTokens.continuationRail.verticalPadding,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    marginBottom: 4,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    marginBottom: loomUiTokens.continuationRail.headerBottomMargin,
   },
   headerTitle: {
-    letterSpacing: 0.6,
+    letterSpacing: loomUiTokens.continuationRail.headerLetterSpacing,
     textTransform: 'uppercase',
   },
   hintText: {
-    paddingHorizontal: 18,
-    marginBottom: 8,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    marginBottom: loomUiTokens.continuationRail.hintBottomMargin,
   },
   emptyText: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    paddingVertical: loomUiTokens.continuationRail.emptyVerticalPadding,
   },
   content: {
-    paddingHorizontal: 18,
-    gap: 10,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    gap: loomUiTokens.continuationRail.contentGap,
   },
   card: {
-    width: 260,
-    borderRadius: 10,
+    width: loomUiTokens.continuationRail.cardWidth,
+    borderRadius: loomUiTokens.continuationRail.cardRadius,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 12,
-    gap: 8,
+    padding: loomUiTokens.continuationRail.cardPadding,
+    gap: loomUiTokens.continuationRail.cardGap,
   },
   inner: {
-    gap: 8,
+    gap: loomUiTokens.continuationRail.cardGap,
   },
   metaLine: {
-    letterSpacing: 0.4,
+    letterSpacing: loomUiTokens.continuationRail.metaLetterSpacing,
   },
   previewText: {
-    fontSize: 16,
-    lineHeight: 23,
+    fontSize: loomUiTokens.continuationRail.previewTextSize,
+    lineHeight: loomUiTokens.continuationRail.previewTextLineHeight,
   },
   footer: {
     flexDirection: 'row',
@@ -262,6 +266,6 @@ const styles = StyleSheet.create({
   },
   makeCurrentButton: {
     alignSelf: 'flex-end',
-    marginTop: 2,
+    marginTop: loomUiTokens.continuationRail.useButtonMarginTop,
   },
 });

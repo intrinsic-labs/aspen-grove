@@ -16,6 +16,7 @@ import {
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
 import { AppText } from '@interface/ui/system';
+import { loomUiTokens } from './loom-ui-tokens';
 import type { ChatRow } from './types';
 
 export type ChatMessageMenuAction =
@@ -76,12 +77,15 @@ export const ChatMessageList = memo(
         ref={scrollRef}
         enabled
         extraKeyboardSpace={composerHeight}
-        bottomOffset={8}
+        bottomOffset={loomUiTokens.messageList.bottomOffset}
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom: Math.max(16, composerHeight + 12),
+            paddingBottom: Math.max(
+              loomUiTokens.messageList.minBottomPadding,
+              composerHeight + loomUiTokens.messageList.composerClearancePadding
+            ),
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -226,10 +230,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
+    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    paddingTop: loomUiTokens.messageList.topPadding,
     flexGrow: 1,
-    gap: 18,
+    gap: loomUiTokens.messageList.rowGap,
   },
   row: {
     width: '100%',
@@ -241,19 +245,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   userBubble: {
-    maxWidth: '88%',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+    maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
+    borderRadius: loomUiTokens.messageList.userBubbleRadius,
+    paddingHorizontal: loomUiTokens.messageList.userBubblePaddingHorizontal,
+    paddingVertical: loomUiTokens.messageList.userBubblePaddingVertical,
   },
   messageText: {
-    fontSize: 17,
-    lineHeight: 27,
+    fontSize: loomUiTokens.messageList.textSize,
+    lineHeight: loomUiTokens.messageList.textLineHeight,
   },
   errorText: {
-    marginTop: 8,
+    marginTop: loomUiTokens.messageList.errorTopMargin,
   },
   bottomSpacer: {
-    height: 2,
+    height: loomUiTokens.messageList.sendingBottomSpacer,
   },
 });
