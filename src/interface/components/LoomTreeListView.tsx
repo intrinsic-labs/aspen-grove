@@ -11,11 +11,11 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { LoomTree } from '@domain/entities';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
-import { useThemeColors } from '../hooks/useThemeColors';
-import { AppScreen, AppText, Hairline } from '../ui/system';
+import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { AppScreen, AppText, Hairline } from '../ui/value-objects';
 
 const LoomTreeListView = () => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
   const router = useRouter();
   const navigation = useNavigation();
   const { repositories, useCases } = useAppServices();
@@ -118,7 +118,7 @@ const LoomTreeListView = () => {
           style={({ pressed }) => [
             styles.headerAddButton,
             {
-              borderColor: colors.line,
+              borderColor: colors.primary,
               opacity: pressed || creating ? 0.65 : 1,
             },
           ]}
@@ -131,7 +131,7 @@ const LoomTreeListView = () => {
         </Pressable>
       ),
     });
-  }, [bootstrap, colors.line, colors.primary, creating, loading, navigation, onCreateTree]);
+  }, [bootstrap, colors.primary, colors.primary, creating, loading, navigation, onCreateTree]);
 
   const onOpenTree = (tree: LoomTree) => {
     router.push({

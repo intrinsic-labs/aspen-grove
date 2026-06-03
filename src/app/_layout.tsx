@@ -10,24 +10,25 @@ import {
   AppBootstrapGate,
   AppServicesProvider,
 } from '@interface/composition';
-import { useThemeColors } from '@interface/hooks/useThemeColors';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { MaterialView } from '@/interface/ui/components/MaterialView';
 
 const RootLayout = () => {
-  const { colors, isDark } = useThemeColors();
+  const { colors, isDark } = useAspenGroveTheme();
 
   const navigationTheme = useMemo(
     () => ({
       ...(isDark ? DarkTheme : DefaultTheme),
       colors: {
         ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
-        background: colors.background,
-        card: colors.background,
+        background: colors.oppositePrimary,
+        card: 'transparent',
         text: colors.primary,
-        border: colors.line,
-        primary: colors.red,
+        border: colors.oppositePrimary,
+        primary: colors.accentColor,
       },
     }),
-    [colors.background, colors.line, colors.primary, colors.red, isDark]
+    [colors.primary, colors.oppositePrimary, colors.accentColor, isDark]
   );
 
   return (
@@ -46,6 +47,7 @@ const RootLayout = () => {
                 name="tree/[treeId]"
                 options={{
                   title: 'Dialogue',
+                  headerTransparent: true,
                   headerShadowVisible: false,
                 }}
               />

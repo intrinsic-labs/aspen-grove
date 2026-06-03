@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import type { FontSize, NodeViewStyle } from '@domain/entities';
 import {
   DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
   DEFAULT_OPENROUTER_SYSTEM_PROMPT,
@@ -8,7 +9,23 @@ import {
   upsertOpenRouterAssistantAgent,
 } from '@application/services/openrouter-assistant-agent';
 import { useAppServices } from '@interface/composition';
-import type { SettingsDraft } from './types';
+import type { ChatFontFace, SettingsDraft } from './types';
+
+const SUPPORTED_CHAT_FONT_FACES: readonly ChatFontFace[] = [
+  'Lora-Regular',
+  'IBMPlexMono-Regular',
+  'OpenSans-Regular',
+];
+const DEFAULT_CHAT_FONT_FACE: ChatFontFace = 'Lora-Regular';
+const MIN_CHAT_FONT_SIZE = 12;
+const MAX_CHAT_FONT_SIZE = 30;
+const MIN_NODE_CORNER_RADIUS = 0;
+const MAX_NODE_CORNER_RADIUS = 32;
+
+const toChatFontFace = (value?: string): ChatFontFace =>
+  SUPPORTED_CHAT_FONT_FACES.includes(value as ChatFontFace)
+    ? (value as ChatFontFace)
+    : DEFAULT_CHAT_FONT_FACE;
 
 const toDraftKey = (draft: SettingsDraft): string => JSON.stringify(draft);
 
@@ -19,6 +36,10 @@ const buildDraft = (input: SettingsDraft): SettingsDraft => ({
   temperatureInput: input.temperatureInput,
   maxTokensInput: input.maxTokensInput,
   verboseErrorAlerts: input.verboseErrorAlerts,
+  fontFace: input.fontFace,
+  fontSizeInput: input.fontSizeInput,
+  nodeViewStyle: input.nodeViewStyle,
+  nodeViewCornerRadiusInput: input.nodeViewCornerRadiusInput,
 });
 
 export const useSettingsController = () => {
@@ -42,6 +63,10 @@ export const useSettingsController = () => {
   const [temperatureInput, setTemperatureInput] = useState('1.0');
   const [maxTokensInput, setMaxTokensInput] = useState('');
   const [verboseErrorAlerts, setVerboseErrorAlerts] = useState(false);
+  const [fontFace, setFontFace] = useState<ChatFontFace>(DEFAULT_CHAT_FONT_FACE);
+  const [fontSizeInput, setFontSizeInput] = useState('17');
+  const [nodeViewStyle, setNodeViewStyle] = useState<NodeViewStyle>('filled');
+  const [nodeViewCornerRadiusInput, setNodeViewCornerRadiusInput] = useState('8');
 
   const loadSettings = useCallback(async () => {
     try {
@@ -76,6 +101,10 @@ export const useSettingsController = () => {
             ? String(maxTokens)
             : '',
         verboseErrorAlerts: userPreferences.verboseErrorAlerts,
+        fontFace: toChatFontFace(userPreferences.fontFace),
+        fontSizeInput: String(userPreferences.fontSize),
+        nodeViewStyle: userPreferences.nodeViewStyle,
+        nodeViewCornerRadiusInput: String(userPreferences.nodeViewCornerRadius),
       });
 
       setApiKeyInput(loadedDraft.apiKeyInput);
@@ -85,6 +114,10 @@ export const useSettingsController = () => {
       setTemperatureInput(loadedDraft.temperatureInput);
       setMaxTokensInput(loadedDraft.maxTokensInput);
       setVerboseErrorAlerts(loadedDraft.verboseErrorAlerts);
+      setFontFace(loadedDraft.fontFace);
+      setFontSizeInput(loadedDraft.fontSizeInput);
+      setNodeViewStyle(loadedDraft.nodeViewStyle);
+      setNodeViewCornerRadiusInput(loadedDraft.nodeViewCornerRadiusInput);
       lastSavedDraftKeyRef.current = toDraftKey(loadedDraft);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -107,6 +140,8 @@ export const useSettingsController = () => {
       const maxTokensRaw = draft.maxTokensInput.trim();
       const normalizedApiKey = draft.apiKeyInput.trim();
       const normalizedSystemPrompt = draft.systemPromptInput.trim();
+      const parsedFontSize = Number(draft.fontSizeInput.trim());
+      const parsedNodeCornerRadius = Number(draft.nodeViewCornerRadiusInput.trim());
 
       if (!modelIdentifier) {
         setError('Model identifier is required.');
@@ -122,6 +157,11 @@ export const useSettingsController = () => {
         return;
       }
 
+      if (!SUPPORTED_CHAT_FONT_FACES.includes(draft.fontFace)) {
+        setError('Selected font is not supported.');
+        return;
+      }
+
       let parsedMaxTokens: number | undefined;
       if (maxTokensRaw.length > 0) {
         const maxTokens = Number(maxTokensRaw);
@@ -130,6 +170,26 @@ export const useSettingsController = () => {
           return;
         }
         parsedMaxTokens = maxTokens;
+      }
+
+      if (
+        !Number.isInteger(parsedFontSize) ||
+        parsedFontSize < MIN_CHAT_FONT_SIZE ||
+        parsedFontSize > MAX_CHAT_FONT_SIZE
+      ) {
+        setError(`Font size must be a whole number between ${MIN_CHAT_FONT_SIZE} and ${MAX_CHAT_FONT_SIZE}.`);
+        return;
+      }
+
+      if (
+        !Number.isInteger(parsedNodeCornerRadius) ||
+        parsedNodeCornerRadius < MIN_NODE_CORNER_RADIUS ||
+        parsedNodeCornerRadius > MAX_NODE_CORNER_RADIUS
+      ) {
+        setError(
+          `Message corner radius must be a whole number between ${MIN_NODE_CORNER_RADIUS} and ${MAX_NODE_CORNER_RADIUS}.`
+        );
+        return;
       }
 
       setSaving(true);
@@ -141,6 +201,10 @@ export const useSettingsController = () => {
           repositories.userPreferencesRepo.update({
             defaultTemperature: parsedTemperature,
             verboseErrorAlerts: draft.verboseErrorAlerts,
+            fontFace: draft.fontFace,
+            fontSize: parsedFontSize as FontSize,
+            nodeViewStyle: draft.nodeViewStyle,
+            nodeViewCornerRadius: parsedNodeCornerRadius,
           }),
           upsertOpenRouterAssistantAgent(repositories.agentRepo, {
             modelIdentifier,
@@ -158,12 +222,16 @@ export const useSettingsController = () => {
           apiKeyInput: normalizedApiKey,
           modelIdentifierInput: modelIdentifier,
           systemPromptInput: normalizedSystemPrompt,
+          fontSizeInput: String(parsedFontSize),
+          nodeViewCornerRadiusInput: String(parsedNodeCornerRadius),
         });
         lastSavedDraftKeyRef.current = toDraftKey(normalizedDraft);
         setHasStoredApiKey(normalizedApiKey.length > 0);
         setApiKeyInput(normalizedApiKey);
         setModelIdentifierInput(modelIdentifier);
         setSystemPromptInput(normalizedSystemPrompt);
+        setFontSizeInput(String(parsedFontSize));
+        setNodeViewCornerRadiusInput(String(parsedNodeCornerRadius));
         setNotice('All changes saved.');
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
@@ -186,6 +254,10 @@ export const useSettingsController = () => {
       temperatureInput,
       maxTokensInput,
       verboseErrorAlerts,
+      fontFace,
+      fontSizeInput,
+      nodeViewStyle,
+      nodeViewCornerRadiusInput,
     });
     const draftKey = toDraftKey(draft);
     if (draftKey === lastSavedDraftKeyRef.current) {
@@ -204,6 +276,10 @@ export const useSettingsController = () => {
     loading,
     maxTokensInput,
     modelIdentifierInput,
+    fontFace,
+    fontSizeInput,
+    nodeViewStyle,
+    nodeViewCornerRadiusInput,
     persistDraft,
     systemPromptInput,
     temperatureInput,
@@ -221,8 +297,24 @@ export const useSettingsController = () => {
   const hasValidMaxTokens =
     maxTokensRaw.length === 0 ||
     (Number.isInteger(Number(maxTokensRaw)) && Number(maxTokensRaw) > 0);
+  const hasValidFontFace = SUPPORTED_CHAT_FONT_FACES.includes(fontFace);
+  const parsedFontSize = Number(fontSizeInput.trim());
+  const parsedNodeCornerRadius = Number(nodeViewCornerRadiusInput.trim());
+  const hasValidFontSize =
+    Number.isInteger(parsedFontSize) &&
+    parsedFontSize >= MIN_CHAT_FONT_SIZE &&
+    parsedFontSize <= MAX_CHAT_FONT_SIZE;
+  const hasValidNodeCornerRadius =
+    Number.isInteger(parsedNodeCornerRadius) &&
+    parsedNodeCornerRadius >= MIN_NODE_CORNER_RADIUS &&
+    parsedNodeCornerRadius <= MAX_NODE_CORNER_RADIUS;
   const hasValidationError =
-    !hasValidModel || !hasValidTemperature || !hasValidMaxTokens;
+    !hasValidModel ||
+    !hasValidTemperature ||
+    !hasValidMaxTokens ||
+    !hasValidFontFace ||
+    !hasValidFontSize ||
+    !hasValidNodeCornerRadius;
 
   const apiKeyStatusText = hasStoredApiKey
     ? 'Stored securely. Clear this field to remove.'
@@ -250,6 +342,13 @@ export const useSettingsController = () => {
     setMaxTokensInput,
     verboseErrorAlerts,
     setVerboseErrorAlerts,
+    fontFace,
+    setFontFace,
+    fontSizeInput,
+    setFontSizeInput,
+    nodeViewStyle,
+    setNodeViewStyle,
+    nodeViewCornerRadiusInput,
+    setNodeViewCornerRadiusInput,
   };
 };
-

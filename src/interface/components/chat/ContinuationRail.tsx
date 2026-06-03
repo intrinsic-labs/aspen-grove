@@ -2,8 +2,8 @@ import { memo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import ContextMenu, { type ContextMenuAction } from 'react-native-context-menu-view';
 import type { ULID } from '@domain/value-objects';
-import { AppText } from '@interface/ui/system';
-import { loomUiTokens } from './loom-ui-tokens';
+import { AppText } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import type { ContinuationPreview } from './types';
 
 export type ContinuationMenuAction =
@@ -146,7 +146,7 @@ export const ContinuationRail = memo(
                             <AppText
                               variant="meta"
                               tone="primary"
-                              style={{ color: loomUiTokens.colors.successGreen }}
+                              style={{ color: loomUiTokens.colors.green }}
                             >
                               Current Branch
                             </AppText>

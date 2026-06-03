@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform } from 'react-native';
-import { useThemeColors } from '@interface/hooks/useThemeColors';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
 const TabsLayout = () => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
 
   return (
     <Tabs
@@ -12,7 +12,7 @@ const TabsLayout = () => {
         tabBarHideOnKeyboard: true,
         headerShadowVisible: false,
         headerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colors.oppositePrimary,
         },
         headerTitleStyle: {
           color: colors.primary,
@@ -21,11 +21,11 @@ const TabsLayout = () => {
           letterSpacing: 0.6,
         },
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.line,
+          backgroundColor: colors.oppositePrimary,
+          borderTopColor: colors.oppositePrimary,
         },
-        tabBarActiveTintColor: colors.red,
-        tabBarInactiveTintColor: colors.secondary,
+        tabBarActiveTintColor: colors.accentColor,
+        tabBarInactiveTintColor: colors.secondaryVariant,
         tabBarLabelStyle: {
           fontFamily: 'IBMPlexMono-Regular',
           fontSize: 11,

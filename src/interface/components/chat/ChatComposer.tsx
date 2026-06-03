@@ -1,4 +1,4 @@
-import { memo, type RefObject } from 'react';
+import { memo, type RefObject, useState } from 'react';
 import {
   type LayoutChangeEvent,
   Pressable,
@@ -8,8 +8,11 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
-import { AppInput, AppText } from '@interface/ui/system';
-import { loomUiTokens } from './loom-ui-tokens';
+import { AppInput, AppText } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
+import type { ChatDisplayPreferences } from './types';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { MaterialView } from '@/interface/ui/components/MaterialView';
 
 type ChatComposerProps = {
   readonly input: string;
@@ -26,14 +29,7 @@ type ChatComposerProps = {
   readonly onInputFocus: () => void;
   readonly onComposerLayout: (height: number) => void;
   readonly bottomInset: number;
-  readonly colors: {
-    readonly line: string;
-    readonly background: string;
-    readonly tertiary: string;
-    readonly red: string;
-    readonly onSurface: string;
-    readonly secondary: string;
-  };
+  readonly displayPreferences: ChatDisplayPreferences;
 };
 
 export const ChatComposer = memo(
@@ -52,38 +48,62 @@ export const ChatComposer = memo(
     onInputFocus,
     onComposerLayout,
     bottomInset,
-    colors,
+    displayPreferences,
   }: ChatComposerProps) => {
+    const [isFocused, setIsFocused] = useState(false);
+
     const onLayout = (event: LayoutChangeEvent) => {
       onComposerLayout(event.nativeEvent.layout.height);
     };
+    const inputTextStyle = {
+      fontSize: displayPreferences.messageFontSize,
+      lineHeight: displayPreferences.messageLineHeight,
+      ...(displayPreferences.messageFontFamily
+        ? {
+            fontFamily: displayPreferences.messageFontFamily,
+          }
+        : {}),
+    };
+
+    const theme = useAspenGroveTheme();
+    const { colors } = theme;
 
     return (
       <KeyboardStickyView
         enabled
         offset={{ closed: 0, opened: 0 }}
-        style={styles.composerSticky}
+        style={[
+          styles.composerSticky,
+          {
+            backgroundColor: 'transparent',
+            backfaceVisibility: 'hidden',
+          },
+        ]}
       >
         <View
           onLayout={onLayout}
           style={[
             styles.composerWrap,
             {
-              borderTopColor: colors.line,
-              backgroundColor: colors.background,
               paddingBottom: bottomInset + loomUiTokens.composer.bottomPadding,
             },
           ]}
         >
           {editLabel ? (
-            <View style={[styles.editBanner, { borderColor: colors.line }]}>
+            <View
+              style={[styles.editBanner, { borderColor: colors.secondary }]}
+            >
               <View style={styles.editBannerTextWrap}>
                 <Ionicons
                   name="create-outline"
                   size={loomUiTokens.composer.editIconSize}
                   color={colors.secondary}
                 />
-                <AppText variant="meta" tone="secondary" style={styles.editBannerText}>
+                <AppText
+                  variant="meta"
+                  tone="secondary"
+                  style={styles.editBannerText}
+                >
                   {editLabel}
                 </AppText>
               </View>
@@ -100,18 +120,32 @@ export const ChatComposer = memo(
             </View>
           ) : null}
 
-          <View style={styles.inputRow}>
+          <MaterialView
+            variant="regular"
+            style={[
+              styles.inputRow,
+              {
+                borderWidth: 1,
+                borderColor: isFocused ? colors.green : 'dark-grey',
+                borderRadius: theme.styles.composer.borderRadius,
+              },
+            ]}
+          >
             <AppInput
               ref={inputRef}
               value={input}
               onChangeText={onChangeInput}
               placeholder={placeholder}
-              style={styles.input}
               multiline
               editable={!sending && !loading}
               numberOfLines={5}
               textAlignVertical="top"
-              onFocus={onInputFocus}
+              onFocus={() => {
+                setIsFocused(true);
+                onInputFocus();
+              }}
+              onBlur={() => setIsFocused(false)}
+              style={[styles.input, inputTextStyle]}
             />
             <Pressable
               onPress={onSend}
@@ -119,8 +153,11 @@ export const ChatComposer = memo(
               style={({ pressed }) => [
                 styles.sendButton,
                 {
-                  backgroundColor: canSend ? colors.red : colors.tertiary,
+                  backgroundColor: canSend ? colors.green : colors.secondary,
                   opacity: pressed ? 0.8 : 1,
+                  width: theme.styles.composer.buttonSize,
+                  height: theme.styles.composer.buttonSize,
+                  margin: 10,
                 },
               ]}
             >
@@ -133,10 +170,10 @@ export const ChatComposer = memo(
                       : 'arrow-up'
                 }
                 size={loomUiTokens.composer.sendIconSize}
-                color={colors.onSurface}
+                color={colors.primary}
               />
             </Pressable>
-          </View>
+          </MaterialView>
         </View>
       </KeyboardStickyView>
     );
@@ -145,15 +182,15 @@ export const ChatComposer = memo(
 
 const styles = StyleSheet.create({
   composerWrap: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    // borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: loomUiTokens.layout.inputBarPadding,
     paddingTop: loomUiTokens.composer.topPadding,
     alignItems: 'stretch',
     gap: loomUiTokens.composer.sectionGap,
   },
   editBanner: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: loomUiTokens.composer.editBannerRadius,
+    // borderWidth: StyleSheet.hairlineWidth,
+    // borderRadius: loomUiTokens.composer.editBannerRadius,
     minHeight: loomUiTokens.composer.editBannerMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
@@ -172,26 +209,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   composerSticky: {
-    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: loomUiTokens.composer.inputRowGap,
+    // gap: loomUiTokens.composer.inputRowGap,
   },
   input: {
     flex: 1,
     minHeight: loomUiTokens.composer.inputMinHeight,
     maxHeight: loomUiTokens.composer.inputMaxHeight,
-    borderRadius: loomUiTokens.composer.inputRadius,
+    // borderRadius: 20,
     fontSize: loomUiTokens.composer.inputTextSize,
     lineHeight: loomUiTokens.composer.inputTextLineHeight,
     paddingTop: loomUiTokens.composer.inputVerticalPadding,
     paddingBottom: loomUiTokens.composer.inputVerticalPadding,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   sendButton: {
-    height: loomUiTokens.composer.sendButtonSize,
-    width: loomUiTokens.composer.sendButtonSize,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',

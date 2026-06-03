@@ -4,10 +4,10 @@ export {
   AppScreen,
   AppText,
   Hairline,
-} from './primitives';
+} from '../components/primitives';
 export {
   SettingsInlineRow,
   SettingsList,
   SettingsSection,
   SettingsStackRow,
-} from './settings-list';
+} from '../components/settings-list';

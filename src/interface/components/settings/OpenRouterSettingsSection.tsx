@@ -4,7 +4,7 @@ import {
   AppInput,
   SettingsSection,
   SettingsStackRow,
-} from '@interface/ui/system';
+} from '@/interface/ui/value-objects';
 
 type OpenRouterSettingsSectionProps = {
   readonly apiKeyStatusText: string;

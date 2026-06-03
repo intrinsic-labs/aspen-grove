@@ -1,4 +1,5 @@
 import type { DialogueTurnSession } from '@application/use-cases';
+import type { NodeViewStyle } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
 export type ChatSession = DialogueTurnSession;
@@ -19,4 +20,12 @@ export type ContinuationPreview = {
   readonly isOnActivePath: boolean;
   readonly onBranchCount: number;
   readonly isBookmarked: boolean;
+};
+
+export type ChatDisplayPreferences = {
+  readonly userNodeViewStyle: NodeViewStyle;
+  readonly userNodeCornerRadius: number;
+  readonly messageFontSize: number;
+  readonly messageLineHeight: number;
+  readonly messageFontFamily?: string;
 };

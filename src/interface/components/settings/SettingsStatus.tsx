@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { AppText } from '@interface/ui/system';
+import { AppText } from '@/interface/ui/value-objects';
 
 type SettingsStatusProps = {
   readonly saving: boolean;

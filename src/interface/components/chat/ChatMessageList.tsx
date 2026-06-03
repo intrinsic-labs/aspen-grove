@@ -1,11 +1,19 @@
-import { memo, type ReactNode, type RefObject } from 'react';
+import {
+  memo,
+  type ReactNode,
+  type RefObject,
+  useState,
+  useCallback,
+} from 'react';
 import {
   ActivityIndicator,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type NativeSyntheticEvent as NSE,
   Platform,
   Pressable,
   StyleSheet,
+  type TextLayoutEventData,
   View,
 } from 'react-native';
 import ContextMenu, {
@@ -15,9 +23,9 @@ import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
-import { AppText } from '@interface/ui/system';
-import { loomUiTokens } from './loom-ui-tokens';
-import type { ChatRow } from './types';
+import { AppText } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+import type { ChatDisplayPreferences, ChatRow } from './types';
 
 export type ChatMessageMenuAction =
   | 'regenerate'
@@ -41,13 +49,17 @@ type ChatMessageListProps = {
   readonly rows: readonly ChatRow[];
   readonly streamingAssistantText: string;
   readonly composerHeight: number;
+  readonly headerHeight: number;
   readonly error: string | null;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-  readonly onMessageAction: (nodeId: string, action: ChatMessageMenuAction) => void;
+  readonly onMessageAction: (
+    nodeId: string,
+    action: ChatMessageMenuAction
+  ) => void;
+  readonly displayPreferences: ChatDisplayPreferences;
   readonly colors: {
     readonly primary: string;
-    readonly surface: string;
   };
 };
 
@@ -58,12 +70,24 @@ export const ChatMessageList = memo(
     rows,
     streamingAssistantText,
     composerHeight,
+    headerHeight,
     error,
     scrollRef,
     onScroll,
     onMessageAction,
+    displayPreferences,
     colors,
   }: ChatMessageListProps) => {
+    const messageTextStyle = {
+      fontSize: displayPreferences.messageFontSize,
+      lineHeight: displayPreferences.messageLineHeight,
+      ...(displayPreferences.messageFontFamily
+        ? {
+            fontFamily: displayPreferences.messageFontFamily,
+          }
+        : {}),
+    };
+
     if (loading) {
       return (
         <View style={styles.loadingWrap}>
@@ -82,6 +106,7 @@ export const ChatMessageList = memo(
         contentContainerStyle={[
           styles.content,
           {
+            paddingTop: headerHeight + loomUiTokens.messageList.topPadding,
             paddingBottom: Math.max(
               loomUiTokens.messageList.minBottomPadding,
               composerHeight + loomUiTokens.messageList.composerClearancePadding
@@ -104,24 +129,28 @@ export const ChatMessageList = memo(
             <Pressable
               style={[
                 styles.row,
-                row.authorType === 'human' ? styles.userRow : styles.assistantRow,
+                row.authorType === 'human'
+                  ? styles.userRow
+                  : styles.assistantRow,
               ]}
             >
               {row.authorType === 'human' ? (
-                <View
+                <UserBubble
+                  text={row.text}
+                  cornerRadius={displayPreferences.userNodeCornerRadius}
+                  viewStyle={displayPreferences.userNodeViewStyle}
+                  messageTextStyle={messageTextStyle}
+                />
+              ) : (
+                <AppText
+                  variant="body"
+                  tone="primary"
                   style={[
-                    styles.userBubble,
-                    {
-                      backgroundColor: colors.surface,
-                    },
+                    styles.messageText,
+                    messageTextStyle,
+                    styles.standardText,
                   ]}
                 >
-                  <AppText variant="body" tone="inverse" style={styles.messageText}>
-                    {row.text}
-                  </AppText>
-                </View>
-              ) : (
-                <AppText variant="body" tone="primary" style={styles.messageText}>
                   {row.text}
                 </AppText>
               )}
@@ -131,7 +160,15 @@ export const ChatMessageList = memo(
 
         {streamingAssistantText.length > 0 ? (
           <View style={[styles.row, styles.assistantRow]}>
-            <AppText variant="body" tone="primary" style={styles.messageText}>
+            <AppText
+              variant="body"
+              tone="primary"
+              style={[
+                styles.messageText,
+                messageTextStyle,
+                styles.standardText,
+              ]}
+            >
               {streamingAssistantText}
             </AppText>
           </View>
@@ -149,7 +186,9 @@ export const ChatMessageList = memo(
   }
 );
 
-const buildMessageMenuItems = (bookmarked: boolean): readonly ChatMessageMenuItem[] =>
+const buildMessageMenuItems = (
+  bookmarked: boolean
+): readonly ChatMessageMenuItem[] =>
   [
     {
       action: 'regenerate',
@@ -188,13 +227,83 @@ const buildMessageMenuItems = (bookmarked: boolean): readonly ChatMessageMenuIte
     },
   ] as const;
 
+type UserBubbleProps = {
+  readonly text: string;
+  readonly cornerRadius: number;
+  readonly viewStyle: 'filled' | 'outlined';
+  readonly messageTextStyle: object;
+};
+
+const UserBubble = memo(
+  ({ text, cornerRadius, viewStyle, messageTextStyle }: UserBubbleProps) => {
+    const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+
+    const onTextLayout = useCallback((event: NSE<TextLayoutEventData>) => {
+      const { lines } = event.nativeEvent;
+      if (lines.length === 0) return;
+
+      // Find the maximum line width
+      const maxLineWidth = Math.max(...lines.map((line) => line.width));
+
+      // Add padding to get the bubble width
+      const bubbleWidth =
+        maxLineWidth + loomUiTokens.messageList.userBubblePaddingHorizontal * 2;
+
+      setMeasuredWidth(bubbleWidth);
+    }, []);
+
+    return (
+      <View style={styles.userBubbleWrapper}>
+        <View
+          style={[
+            styles.userBubble,
+            {
+              borderRadius: cornerRadius,
+              // Apply measured width if available
+              ...(measuredWidth !== null && { width: measuredWidth }),
+            },
+            viewStyle === 'filled'
+              ? {
+                  backgroundColor: loomUiTokens.colors.userBubbleFill,
+                  borderWidth: 0,
+                }
+              : {
+                  backgroundColor: 'transparent',
+                  borderColor: loomUiTokens.colors.userBubbleOutline,
+                  borderWidth: loomUiTokens.messageList.userBubbleOutlineWidth,
+                },
+          ]}
+        >
+          <AppText
+            variant="body"
+            tone={viewStyle === 'filled' ? 'inverse' : 'primary'}
+            onTextLayout={onTextLayout}
+            style={[
+              styles.messageText,
+              messageTextStyle,
+              viewStyle === 'filled'
+                ? styles.userFilledText
+                : styles.standardText,
+            ]}
+          >
+            {text}
+          </AppText>
+        </View>
+      </View>
+    );
+  }
+);
+
 const ContextMenuWrapper = ({
   row,
   onMessageAction,
   children,
 }: {
   readonly row: ChatRow;
-  readonly onMessageAction: (nodeId: string, action: ChatMessageMenuAction) => void;
+  readonly onMessageAction: (
+    nodeId: string,
+    action: ChatMessageMenuAction
+  ) => void;
   readonly children: ReactNode;
 }) => {
   const menuItems = buildMessageMenuItems(row.bookmarked);
@@ -231,7 +340,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
-    paddingTop: loomUiTokens.messageList.topPadding,
     flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
   },
@@ -244,11 +352,21 @@ const styles = StyleSheet.create({
   assistantRow: {
     alignItems: 'flex-start',
   },
-  userBubble: {
+  userBubbleWrapper: {
     maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
-    borderRadius: loomUiTokens.messageList.userBubbleRadius,
+    alignItems: 'flex-end',
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
     paddingHorizontal: loomUiTokens.messageList.userBubblePaddingHorizontal,
     paddingVertical: loomUiTokens.messageList.userBubblePaddingVertical,
+  },
+  standardText: {
+    opacity: loomUiTokens.messageList.messageTextOpacity,
+  },
+  userFilledText: {
+    color: loomUiTokens.colors.userBubbleFillText,
+    opacity: loomUiTokens.messageList.messageTextOpacity,
   },
   messageText: {
     fontSize: loomUiTokens.messageList.textSize,

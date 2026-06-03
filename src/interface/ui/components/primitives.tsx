@@ -5,11 +5,13 @@ import {
   Text,
   TextInput,
   type TextInputProps,
+  type TextLayoutEventData,
   type TextStyle,
+  type NativeSyntheticEvent,
   type ViewStyle,
   View,
 } from 'react-native';
-import { useThemeColors } from '@interface/hooks/useThemeColors';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import type { ReactNode } from 'react';
 
 type TextTone = 'primary' | 'secondary' | 'muted' | 'accent' | 'inverse';
@@ -17,17 +19,17 @@ type TextVariant = 'display' | 'title' | 'body' | 'mono' | 'meta';
 
 const getTextToneColor = (
   tone: TextTone,
-  colors: ReturnType<typeof useThemeColors>['colors']
+  colors: ReturnType<typeof useAspenGroveTheme>['colors']
 ) => {
   switch (tone) {
     case 'secondary':
       return colors.secondary;
     case 'muted':
-      return colors.tertiary;
+      return colors.secondaryVariant;
     case 'accent':
-      return colors.red;
+      return colors.accentColor;
     case 'inverse':
-      return colors.onSurface;
+      return colors.oppositePrimary;
     default:
       return colors.primary;
   }
@@ -75,6 +77,9 @@ type AppTextProps = {
   readonly tone?: TextTone;
   readonly numberOfLines?: number;
   readonly style?: TextStyle | TextStyle[];
+  readonly onTextLayout?: (
+    event: NativeSyntheticEvent<TextLayoutEventData>
+  ) => void;
 };
 
 export const AppText = ({
@@ -83,12 +88,14 @@ export const AppText = ({
   tone = 'primary',
   numberOfLines,
   style,
+  onTextLayout,
 }: AppTextProps) => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
 
   return (
     <Text
       numberOfLines={numberOfLines}
+      onTextLayout={onTextLayout}
       style={[
         getTextVariantStyle(variant),
         { color: getTextToneColor(tone, colors) },
@@ -106,19 +113,37 @@ type AppScreenProps = {
 };
 
 export const AppScreen = ({ children, style }: AppScreenProps) => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }, style]}>
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.oppositePrimary },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
 };
 
-export const Hairline = ({ style }: { readonly style?: ViewStyle | ViewStyle[] }) => {
-  const { colors } = useThemeColors();
+export const Hairline = ({
+  style,
+}: {
+  readonly style?: ViewStyle | ViewStyle[];
+}) => {
+  const { colors } = useAspenGroveTheme();
 
-  return <View style={[styles.hairline, { backgroundColor: colors.line }, style]} />;
+  return (
+    <View
+      style={[
+        styles.hairline,
+        { backgroundColor: colors.secondaryVariant },
+        style,
+      ]}
+    />
+  );
 };
 
 type AppPillButtonProps = {
@@ -136,7 +161,7 @@ export const AppPillButton = ({
   variant = 'solid',
   style,
 }: AppPillButtonProps) => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
 
   return (
     <Pressable
@@ -146,12 +171,12 @@ export const AppPillButton = ({
         styles.pillButton,
         variant === 'solid'
           ? {
-              backgroundColor: colors.surface,
-              borderColor: colors.surface,
+              backgroundColor: colors.secondary,
+              borderColor: colors.secondary,
             }
           : {
               backgroundColor: 'transparent',
-              borderColor: colors.line,
+              borderColor: colors.secondary,
             },
         (pressed || disabled) && styles.pillButtonPressed,
         style,
@@ -174,18 +199,18 @@ type AppInputProps = Omit<TextInputProps, 'style'> & {
 
 export const AppInput = forwardRef<TextInput, AppInputProps>(
   ({ style, placeholderTextColor, ...props }, ref) => {
-    const { colors } = useThemeColors();
+    const { colors } = useAspenGroveTheme();
 
     return (
       <TextInput
         ref={ref}
-        placeholderTextColor={placeholderTextColor ?? colors.tertiary}
+        placeholderTextColor={placeholderTextColor ?? colors.secondaryVariant}
         style={[
           styles.input,
           {
             color: colors.primary,
-            borderColor: colors.line,
-            backgroundColor: colors.backgroundMuted,
+            borderColor: colors.secondaryVariant,
+            backgroundColor: colors.codeBackground,
           },
           style,
         ]}

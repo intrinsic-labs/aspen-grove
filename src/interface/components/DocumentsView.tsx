@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import { AppScreen, AppText, Hairline } from '../ui/system';
+import { AppScreen, AppText, Hairline } from '../ui/value-objects';
 
 const DocumentsView = () => {
   return (

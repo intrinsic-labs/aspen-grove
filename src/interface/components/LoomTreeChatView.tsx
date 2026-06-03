@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useThemeColors } from '../hooks/useThemeColors';
-import { AppScreen } from '../ui/system';
+import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { AppScreen } from '../ui/value-objects';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { ContinuationRail } from './chat/ContinuationRail';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 
 const LoomTreeChatView = () => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const controller = useLoomTreeChatController();
   const [composerHeight, setComposerHeight] = useState(72);
 
@@ -22,10 +25,12 @@ const LoomTreeChatView = () => {
         rows={controller.rows}
         streamingAssistantText={controller.streamingAssistantText}
         composerHeight={composerHeight}
+        headerHeight={headerHeight}
         error={controller.error}
         scrollRef={controller.scrollRef}
         onScroll={controller.onMessageListScroll}
         onMessageAction={controller.onMessageAction}
+        displayPreferences={controller.displayPreferences}
         colors={colors}
       />
 
@@ -43,6 +48,16 @@ const LoomTreeChatView = () => {
         colors={colors}
       />
 
+      <View
+        style={[styles.bottomFade, { height: composerHeight * 0.8, bottom: 0 }]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['transparent', colors.oppositePrimary]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <ChatComposer
         input={controller.input}
         onChangeInput={controller.setInput}
@@ -58,7 +73,8 @@ const LoomTreeChatView = () => {
         onInputFocus={controller.onComposerFocus}
         onComposerLayout={setComposerHeight}
         bottomInset={insets.bottom}
-        colors={colors}
+        displayPreferences={controller.displayPreferences}
+        //colors={colors}
       />
     </AppScreen>
   );
@@ -69,5 +85,10 @@ export default LoomTreeChatView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
 });

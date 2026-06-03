@@ -9,18 +9,19 @@ import {
   KeyboardToolbar,
 } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useThemeColors } from '../hooks/useThemeColors';
-import { AppScreen, SettingsList } from '../ui/system';
+import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { AppScreen, SettingsList } from '../ui/value-objects';
 import {
   AppBehaviorSection,
   GenerationDefaultsSection,
+  MessageTypographySection,
   OpenRouterSettingsSection,
   SettingsStatus,
   useSettingsController,
 } from './settings';
 
 const SettingsView = () => {
-  const { colors, isDark } = useThemeColors();
+  const { colors, isDark } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
   const controller = useSettingsController();
 
@@ -65,6 +66,20 @@ const SettingsView = () => {
               onChangeMaxTokensInput={controller.setMaxTokensInput}
               systemPromptInput={controller.systemPromptInput}
               onChangeSystemPromptInput={controller.setSystemPromptInput}
+            />
+
+            <MessageTypographySection
+              fontFace={controller.fontFace}
+              onChangeFontFace={controller.setFontFace}
+              fontSizeInput={controller.fontSizeInput}
+              onChangeFontSizeInput={controller.setFontSizeInput}
+              nodeViewStyle={controller.nodeViewStyle}
+              onChangeNodeViewStyle={controller.setNodeViewStyle}
+              nodeViewCornerRadiusInput={controller.nodeViewCornerRadiusInput}
+              onChangeNodeViewCornerRadiusInput={
+                controller.setNodeViewCornerRadiusInput
+              }
+              colors={colors}
             />
 
             <AppBehaviorSection

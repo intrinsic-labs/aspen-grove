@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import {
   DEFAULT_OPENROUTER_SYSTEM_PROMPT,
 } from '@application/services/openrouter-assistant-agent';
-import { AppInput, SettingsSection, SettingsStackRow } from '@interface/ui/system';
+import { AppInput, SettingsSection, SettingsStackRow } from '@/interface/ui/value-objects';
 
 type GenerationDefaultsSectionProps = {
   readonly temperatureInput: string;

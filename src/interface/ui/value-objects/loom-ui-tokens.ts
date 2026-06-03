@@ -5,11 +5,16 @@
 export const loomUiTokens = {
   colors: {
     // Prototype canonical accent colors.
-    successGreen: '#6CBA78',
-    warmAccent: '#C7B686',
+    green: '#6CBA78',
+    accentColor: '#C7B686',
+    // userBubbleFill: '#ECE5D5',
+    userBubbleFill: 'rgba(255, 255, 255, 0.12)',
+    // userBubbleFillText: '#101217',
+    userBubbleFillText: '#fff',    userBubbleOutline: 'rgba(182, 176, 158, 0.8)',
   },
   layout: {
     horizontalInset: 18,
+    inputBarPadding: 10,
   },
   messageList: {
     topPadding: 18,
@@ -17,10 +22,12 @@ export const loomUiTokens = {
     bottomOffset: 8,
     minBottomPadding: 16,
     composerClearancePadding: 12,
-    userBubbleMaxWidthPercent: '88%' as const,
+    userBubbleMaxWidthPercent: '85%' as const,
     userBubbleRadius: 8,
-    userBubblePaddingHorizontal: 16,
-    userBubblePaddingVertical: 11,
+    userBubblePaddingHorizontal: 10,
+    userBubblePaddingVertical: 10,
+    userBubbleOutlineWidth: 1,
+    messageTextOpacity: 0.9,
     textSize: 17,
     textLineHeight: 27,
     errorTopMargin: 8,
@@ -69,4 +76,3 @@ export const loomUiTokens = {
     closeHitSlop: 10,
   },
 } as const;
-

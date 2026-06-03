@@ -1,5 +1,5 @@
 import { Switch } from 'react-native';
-import { SettingsInlineRow, SettingsSection } from '@interface/ui/system';
+import { SettingsInlineRow, SettingsSection } from '@/interface/ui/value-objects';
 
 type AppBehaviorSectionProps = {
   readonly verboseErrorAlerts: boolean;

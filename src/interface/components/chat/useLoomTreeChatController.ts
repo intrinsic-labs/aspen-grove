@@ -22,6 +22,7 @@ import {
 } from './session-helpers';
 import type { ChatSession } from './types';
 import { useDeleteEphemeralTreeOnBack } from './useDeleteEphemeralTreeOnBack';
+import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
 
@@ -69,6 +70,9 @@ export const useLoomTreeChatController = () => {
     nodeRepo: repositories.nodeRepo,
     pathRepo: repositories.pathRepo,
     pathId: session?.pathId,
+  });
+  const displayPreferences = useDialogueDisplayPreferences({
+    userPreferencesRepo: repositories.userPreferencesRepo,
   });
 
   const markAsNonEphemeral = useCallback(() => {
@@ -635,5 +639,6 @@ export const useLoomTreeChatController = () => {
     canSend: !sending && !loading && input.trim().length > 0,
     composerPlaceholder: editTarget ? 'Update this message...' : 'Send a message...',
     sendLabel: editTarget ? 'Save' : 'Send',
+    displayPreferences,
   };
 };

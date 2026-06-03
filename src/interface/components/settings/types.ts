@@ -1,3 +1,7 @@
+import type { NodeViewStyle } from '@domain/entities';
+
+export type ChatFontFace = 'Lora-Regular' | 'IBMPlexMono-Regular' | 'OpenSans-Regular';
+
 export type SettingsDraft = {
   readonly apiKeyInput: string;
   readonly modelIdentifierInput: string;
@@ -5,5 +9,8 @@ export type SettingsDraft = {
   readonly temperatureInput: string;
   readonly maxTokensInput: string;
   readonly verboseErrorAlerts: boolean;
+  readonly fontFace: ChatFontFace;
+  readonly fontSizeInput: string;
+  readonly nodeViewStyle: NodeViewStyle;
+  readonly nodeViewCornerRadiusInput: string;
 };
-

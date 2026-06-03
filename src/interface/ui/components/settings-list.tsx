@@ -1,6 +1,6 @@
 import { Children, Fragment, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { useThemeColors } from '@interface/hooks/useThemeColors';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from './primitives';
 
 type SettingsListProps = {
@@ -25,7 +25,7 @@ export const SettingsSection = ({
   children,
   style,
 }: SettingsSectionProps) => {
-  const { isDark } = useThemeColors();
+  const { isDark } = useAspenGroveTheme();
   const items = Children.toArray(children).filter(Boolean);
   const sectionBackgroundColor = isDark
     ? 'rgba(255, 255, 255, 0.05)'

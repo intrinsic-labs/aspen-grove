@@ -30,8 +30,8 @@ import {
 } from '@infrastructure/persistence/watermelon/repositories';
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { parseULID, type ULID } from '@domain/value-objects';
-import { useThemeColors } from '@interface/hooks/useThemeColors';
-import { AppText } from '@interface/ui/system';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { AppText } from '@/interface/ui/value-objects';
 
 type AppServices = {
   readonly repositories: {
@@ -237,7 +237,7 @@ type AppBootstrapGateProps = {
 };
 
 export const AppBootstrapGate = ({ children }: AppBootstrapGateProps) => {
-  const { colors } = useThemeColors();
+  const { colors } = useAspenGroveTheme();
   const bootstrap = useAppBootstrapState();
 
   if (bootstrap.status === 'loading') {

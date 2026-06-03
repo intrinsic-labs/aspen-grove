@@ -22,7 +22,7 @@ const DEFAULT_VOICE_MODE = false;
 const DEFAULT_TEMPERATURE = 1.0;
 const DEFAULT_VERBOSE_ERROR_ALERTS = false;
 const DEFAULT_NODE_VIEW_STYLE: NodeViewStyle = 'filled';
-const DEFAULT_NODE_CORNER_RADIUS = 12;
+const DEFAULT_NODE_CORNER_RADIUS = 8;
 
 /** WatermelonDB implementation of `IUserPreferencesRepository`. */
 export class WatermelonUserPreferencesRepository
