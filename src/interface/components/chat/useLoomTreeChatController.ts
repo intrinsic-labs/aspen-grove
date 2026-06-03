@@ -51,9 +51,9 @@ export const useLoomTreeChatController = () => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');
-  const [rows, setRows] = useState<Awaited<
-    ReturnType<typeof loadDialogueRowsForPath>
-  >['rows']>([]);
+  const [rows, setRows] = useState<
+    Awaited<ReturnType<typeof loadDialogueRowsForPath>>['rows']
+  >([]);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [editTarget, setEditTarget] = useState<{
@@ -142,10 +142,13 @@ export const useLoomTreeChatController = () => {
         resetEphemeralState();
         activeTreeIdRef.current = initialized.treeId;
 
+        navigation.setOptions({ title: initialized.treeTitle });
+
         const initializedSession: ChatSession = initialized.session;
         await refreshRows(initializedSession);
       } catch (caught) {
-        const message = caught instanceof Error ? caught.message : String(caught);
+        const message =
+          caught instanceof Error ? caught.message : String(caught);
         setError(message);
       } finally {
         setLoading(false);
@@ -206,7 +209,9 @@ export const useLoomTreeChatController = () => {
       }
 
       const text =
-        node.content.type === 'text' ? node.content.text : `[${node.content.type}]`;
+        node.content.type === 'text'
+          ? node.content.text
+          : `[${node.content.type}]`;
       await Clipboard.setStringAsync(text);
     },
     [getRowById, repositories.nodeRepo]
@@ -271,7 +276,12 @@ export const useLoomTreeChatController = () => {
         setSending(false);
       }
     },
-    [refreshRowsAndContinuations, sending, session, useCases.switchDialoguePathUseCase]
+    [
+      refreshRowsAndContinuations,
+      sending,
+      session,
+      useCases.switchDialoguePathUseCase,
+    ]
   );
 
   const startEditForNode = useCallback(
@@ -320,24 +330,27 @@ export const useLoomTreeChatController = () => {
           });
         }
 
-        const openRouterApiKey = await getOpenRouterApiKey(adapters.credentialStore);
-        const result = await useCases.generateDialogueContinuationUseCase.execute({
-          session: {
-            ownerAgentId: session.ownerAgentId,
-            modelAgentId: session.modelAgentId,
-            modelIdentifier: session.modelIdentifier,
-            treeId: session.treeId,
-            pathId: session.pathId,
-          },
-          sourceNodeId,
-          providerApiKey: openRouterApiKey,
-          providerAppName: 'Aspen Grove RN',
-          stream: true,
-          activateGeneratedNode: true,
-          onAssistantTextDelta: async ({ delta }) => {
-            appendStreamingAssistantDelta(delta);
-          },
-        });
+        const openRouterApiKey = await getOpenRouterApiKey(
+          adapters.credentialStore
+        );
+        const result =
+          await useCases.generateDialogueContinuationUseCase.execute({
+            session: {
+              ownerAgentId: session.ownerAgentId,
+              modelAgentId: session.modelAgentId,
+              modelIdentifier: session.modelIdentifier,
+              treeId: session.treeId,
+              pathId: session.pathId,
+            },
+            sourceNodeId,
+            providerApiKey: openRouterApiKey,
+            providerAppName: 'Aspen Grove RN',
+            stream: true,
+            activateGeneratedNode: true,
+            onAssistantTextDelta: async ({ delta }) => {
+              appendStreamingAssistantDelta(delta);
+            },
+          });
 
         console.info('[chat] generated continuation', {
           sourceNodeId,
@@ -426,7 +439,9 @@ export const useLoomTreeChatController = () => {
         return;
       }
 
-      const openRouterApiKey = await getOpenRouterApiKey(adapters.credentialStore);
+      const openRouterApiKey = await getOpenRouterApiKey(
+        adapters.credentialStore
+      );
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
         prompt,
@@ -570,16 +585,13 @@ export const useLoomTreeChatController = () => {
         await continuations.toggleBookmark(targetNodeId);
       }
     },
-    [
-      continuations,
-      copyNodeText,
-      rewindToNode,
-    ]
+    [continuations, copyNodeText, rewindToNode]
   );
 
   const onMessageListScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const { layoutMeasurement, contentOffset, contentSize } =
+        event.nativeEvent;
       const distanceFromBottom =
         contentSize.height - (contentOffset.y + layoutMeasurement.height);
       const isNearBottom = distanceFromBottom <= 48;
@@ -637,7 +649,9 @@ export const useLoomTreeChatController = () => {
     scrollRef,
     inputRef,
     canSend: !sending && !loading && input.trim().length > 0,
-    composerPlaceholder: editTarget ? 'Update this message...' : 'Send a message...',
+    composerPlaceholder: editTarget
+      ? 'Update this message...'
+      : 'Send a message...',
     sendLabel: editTarget ? 'Save' : 'Send',
     displayPreferences,
   };

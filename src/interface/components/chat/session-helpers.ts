@@ -29,6 +29,7 @@ type ChatSessionRepositories = {
 
 export type InitializedChatSession = {
   readonly treeId: ULID;
+  readonly treeTitle: string;
   readonly session: ChatSession;
 };
 
@@ -49,7 +50,9 @@ export const initializeDialogueChatSession = async (
   }
 
   const ownerAgentId = grove.ownerAgentId as ULID;
-  const modelAgent = await ensureOpenRouterAssistantAgent(repositories.agentRepo);
+  const modelAgent = await ensureOpenRouterAssistantAgent(
+    repositories.agentRepo
+  );
   const modelIdentifier =
     getOpenRouterModelIdentifier(modelAgent) ??
     DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
@@ -68,7 +71,8 @@ export const initializeDialogueChatSession = async (
   }
 
   const latestNodes = await repositories.pathRepo.getNodeSequence(path.id);
-  const activeNodeId = latestNodes[latestNodes.length - 1]?.nodeId ?? tree.rootNodeId;
+  const activeNodeId =
+    latestNodes[latestNodes.length - 1]?.nodeId ?? tree.rootNodeId;
 
   await repositories.pathStateRepo.setActiveNode(
     path.id,
@@ -79,6 +83,7 @@ export const initializeDialogueChatSession = async (
 
   return {
     treeId: tree.id,
+    treeTitle: tree.title,
     session: {
       ownerAgentId,
       modelAgentId: modelAgent.id,
@@ -93,17 +98,24 @@ export const initializeDialogueChatSession = async (
 export const loadDialogueRowsForPath = async (
   pathId: ULID,
   repositories: Pick<ChatSessionRepositories, 'pathRepo' | 'nodeRepo'>
-): Promise<{ readonly rows: readonly ChatRow[]; readonly activeNodeId?: ULID }> => {
+): Promise<{
+  readonly rows: readonly ChatRow[];
+  readonly activeNodeId?: ULID;
+}> => {
   const pathNodes = await repositories.pathRepo.getNodeSequence(pathId);
   const resolved = await Promise.all(
-    pathNodes.map((pathNode) => repositories.nodeRepo.findById(pathNode.nodeId, true))
+    pathNodes.map((pathNode) =>
+      repositories.nodeRepo.findById(pathNode.nodeId, true)
+    )
   );
   const nodes = resolved.filter((node): node is Node => Boolean(node));
 
   const rows: ChatRow[] = [];
   for (const node of nodes) {
     const text =
-      node.content.type === 'text' ? node.content.text : `[${node.content.type}]`;
+      node.content.type === 'text'
+        ? node.content.text
+        : `[${node.content.type}]`;
     if (text.trim().length === 0) {
       continue;
     }

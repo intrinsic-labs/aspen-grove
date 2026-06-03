@@ -6,10 +6,7 @@ import {
 } from '@react-navigation/native';
 import { useMemo } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import {
-  AppBootstrapGate,
-  AppServicesProvider,
-} from '@interface/composition';
+import { AppBootstrapGate, AppServicesProvider } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { MaterialView } from '@/interface/ui/components/MaterialView';
 
@@ -49,6 +46,9 @@ const RootLayout = () => {
                   title: 'Dialogue',
                   headerTransparent: true,
                   headerShadowVisible: false,
+                  headerBackTitle: '',
+                  // headerBackVisible: false,
+                  headerBackButtonDisplayMode: 'minimal',
                 }}
               />
             </Stack>
