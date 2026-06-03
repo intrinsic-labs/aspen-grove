@@ -10,7 +10,7 @@ const DEFAULT_CORNER_RADIUS = 8;
 const MAX_CORNER_RADIUS = 32;
 
 const SUPPORTED_FONT_FAMILIES = new Set<string>([
-  'Lora-Regular',
+  'Cardo-Regular',
   'IBMPlexMono-Regular',
   'OpenSans-Regular',
 ]);
@@ -44,9 +44,8 @@ type UseDialogueDisplayPreferencesInput = {
 export const useDialogueDisplayPreferences = ({
   userPreferencesRepo,
 }: UseDialogueDisplayPreferencesInput): ChatDisplayPreferences => {
-  const [preferences, setPreferences] = useState<ChatDisplayPreferences>(
-    createDefaults()
-  );
+  const [preferences, setPreferences] =
+    useState<ChatDisplayPreferences>(createDefaults());
 
   const load = useCallback(async () => {
     try {

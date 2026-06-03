@@ -1,6 +1,9 @@
 import type { NodeViewStyle } from '@domain/entities';
 
-export type ChatFontFace = 'Lora-Regular' | 'IBMPlexMono-Regular' | 'OpenSans-Regular';
+export type ChatFontFace =
+  | 'Cardo-Regular'
+  | 'IBMPlexMono-Regular'
+  | 'OpenSans-Regular';
 
 export type SettingsDraft = {
   readonly apiKeyInput: string;

@@ -51,7 +51,7 @@ const getTextVariantStyle = (variant: TextVariant): TextStyle => {
       };
     case 'body':
       return {
-        fontFamily: 'Lora-Regular',
+        fontFamily: 'Cardo-Regular',
         fontSize: 20,
         lineHeight: 30,
       };
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Cardo-Regular',
     fontSize: 18,
     lineHeight: 26,
   },

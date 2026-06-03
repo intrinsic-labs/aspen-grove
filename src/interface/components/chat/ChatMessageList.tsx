@@ -25,6 +25,7 @@ import {
 } from 'react-native-keyboard-controller';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+import { MarkdownText } from './MarkdownText';
 import type { ChatDisplayPreferences, ChatRow } from './types';
 
 export type ChatMessageMenuAction =
@@ -142,17 +143,14 @@ export const ChatMessageList = memo(
                   messageTextStyle={messageTextStyle}
                 />
               ) : (
-                <AppText
-                  variant="body"
-                  tone="primary"
-                  style={[
-                    styles.messageText,
-                    messageTextStyle,
-                    styles.standardText,
-                  ]}
+                <MarkdownText
+                  baseStyle={{
+                    ...messageTextStyle,
+                    opacity: loomUiTokens.messageList.messageTextOpacity,
+                  }}
                 >
                   {row.text}
-                </AppText>
+                </MarkdownText>
               )}
             </Pressable>
           </ContextMenuWrapper>
@@ -160,17 +158,14 @@ export const ChatMessageList = memo(
 
         {streamingAssistantText.length > 0 ? (
           <View style={[styles.row, styles.assistantRow]}>
-            <AppText
-              variant="body"
-              tone="primary"
-              style={[
-                styles.messageText,
-                messageTextStyle,
-                styles.standardText,
-              ]}
+            <MarkdownText
+              baseStyle={{
+                ...messageTextStyle,
+                opacity: loomUiTokens.messageList.messageTextOpacity,
+              }}
             >
               {streamingAssistantText}
-            </AppText>
+            </MarkdownText>
           </View>
         ) : null}
 

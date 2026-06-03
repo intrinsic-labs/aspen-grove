@@ -24,7 +24,7 @@ type MessageTypographySectionProps = {
 };
 
 const FONT_OPTIONS: readonly { label: string; value: ChatFontFace }[] = [
-  { label: 'Serif', value: 'Lora-Regular' },
+  { label: 'Serif', value: 'Cardo-Regular' },
   { label: 'Mono', value: 'IBMPlexMono-Regular' },
   { label: 'Sans', value: 'OpenSans-Regular' },
 ] as const;

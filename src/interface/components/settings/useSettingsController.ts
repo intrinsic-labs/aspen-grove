@@ -12,11 +12,11 @@ import { useAppServices } from '@interface/composition';
 import type { ChatFontFace, SettingsDraft } from './types';
 
 const SUPPORTED_CHAT_FONT_FACES: readonly ChatFontFace[] = [
-  'Lora-Regular',
+  'Cardo-Regular',
   'IBMPlexMono-Regular',
   'OpenSans-Regular',
 ];
-const DEFAULT_CHAT_FONT_FACE: ChatFontFace = 'Lora-Regular';
+const DEFAULT_CHAT_FONT_FACE: ChatFontFace = 'Cardo-Regular';
 const MIN_CHAT_FONT_SIZE = 12;
 const MAX_CHAT_FONT_SIZE = 30;
 const MIN_NODE_CORNER_RADIUS = 0;
@@ -63,10 +63,13 @@ export const useSettingsController = () => {
   const [temperatureInput, setTemperatureInput] = useState('1.0');
   const [maxTokensInput, setMaxTokensInput] = useState('');
   const [verboseErrorAlerts, setVerboseErrorAlerts] = useState(false);
-  const [fontFace, setFontFace] = useState<ChatFontFace>(DEFAULT_CHAT_FONT_FACE);
+  const [fontFace, setFontFace] = useState<ChatFontFace>(
+    DEFAULT_CHAT_FONT_FACE
+  );
   const [fontSizeInput, setFontSizeInput] = useState('17');
   const [nodeViewStyle, setNodeViewStyle] = useState<NodeViewStyle>('filled');
-  const [nodeViewCornerRadiusInput, setNodeViewCornerRadiusInput] = useState('8');
+  const [nodeViewCornerRadiusInput, setNodeViewCornerRadiusInput] =
+    useState('8');
 
   const loadSettings = useCallback(async () => {
     try {
@@ -74,11 +77,12 @@ export const useSettingsController = () => {
       setError(null);
       setNotice(null);
 
-      const [userPreferences, openRouterAgent, storedApiKey] = await Promise.all([
-        repositories.userPreferencesRepo.get(),
-        findOpenRouterAssistantAgent(repositories.agentRepo),
-        adapters.credentialStore.getProviderApiKey('openrouter'),
-      ]);
+      const [userPreferences, openRouterAgent, storedApiKey] =
+        await Promise.all([
+          repositories.userPreferencesRepo.get(),
+          findOpenRouterAssistantAgent(repositories.agentRepo),
+          adapters.credentialStore.getProviderApiKey('openrouter'),
+        ]);
 
       const modelIdentifier =
         getOpenRouterModelIdentifier(openRouterAgent) ??
@@ -124,7 +128,11 @@ export const useSettingsController = () => {
     } finally {
       setLoading(false);
     }
-  }, [adapters.credentialStore, repositories.agentRepo, repositories.userPreferencesRepo]);
+  }, [
+    adapters.credentialStore,
+    repositories.agentRepo,
+    repositories.userPreferencesRepo,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -136,12 +144,16 @@ export const useSettingsController = () => {
   const persistDraft = useCallback(
     async (draft: SettingsDraft): Promise<void> => {
       const modelIdentifier = draft.modelIdentifierInput.trim();
-      const parsedTemperature = Number(draft.temperatureInput.replace(',', '.').trim());
+      const parsedTemperature = Number(
+        draft.temperatureInput.replace(',', '.').trim()
+      );
       const maxTokensRaw = draft.maxTokensInput.trim();
       const normalizedApiKey = draft.apiKeyInput.trim();
       const normalizedSystemPrompt = draft.systemPromptInput.trim();
       const parsedFontSize = Number(draft.fontSizeInput.trim());
-      const parsedNodeCornerRadius = Number(draft.nodeViewCornerRadiusInput.trim());
+      const parsedNodeCornerRadius = Number(
+        draft.nodeViewCornerRadiusInput.trim()
+      );
 
       if (!modelIdentifier) {
         setError('Model identifier is required.');
@@ -177,7 +189,9 @@ export const useSettingsController = () => {
         parsedFontSize < MIN_CHAT_FONT_SIZE ||
         parsedFontSize > MAX_CHAT_FONT_SIZE
       ) {
-        setError(`Font size must be a whole number between ${MIN_CHAT_FONT_SIZE} and ${MAX_CHAT_FONT_SIZE}.`);
+        setError(
+          `Font size must be a whole number between ${MIN_CHAT_FONT_SIZE} and ${MAX_CHAT_FONT_SIZE}.`
+        );
         return;
       }
 
@@ -213,7 +227,10 @@ export const useSettingsController = () => {
             systemPrompt: normalizedSystemPrompt,
           }),
           normalizedApiKey.length > 0
-            ? adapters.credentialStore.setProviderApiKey('openrouter', normalizedApiKey)
+            ? adapters.credentialStore.setProviderApiKey(
+                'openrouter',
+                normalizedApiKey
+              )
             : adapters.credentialStore.deleteProviderApiKey('openrouter'),
         ]);
 
@@ -239,7 +256,11 @@ export const useSettingsController = () => {
         setSaving(false);
       }
     },
-    [adapters.credentialStore, repositories.agentRepo, repositories.userPreferencesRepo]
+    [
+      adapters.credentialStore,
+      repositories.agentRepo,
+      repositories.userPreferencesRepo,
+    ]
   );
 
   useEffect(() => {

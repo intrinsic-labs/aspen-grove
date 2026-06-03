@@ -41,10 +41,7 @@
             "extraPods": [
               {
                 "name": "simdjson",
-                "configurations": [
-                  "Debug",
-                  "Release"
-                ],
+                "configurations": ["Debug", "Release"],
                 "path": "../node_modules/@nozbe/simdjson",
                 "modular_headers": true
               }
@@ -71,14 +68,9 @@
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-SemiBoldItalic.ttf",
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-Thin.ttf",
             "./assets/fonts/IBM_Plex_Mono/IBMPlexMono-ThinItalic.ttf",
-            "./assets/fonts/Lora/Lora-Bold.ttf",
-            "./assets/fonts/Lora/Lora-BoldItalic.ttf",
-            "./assets/fonts/Lora/Lora-Italic.ttf",
-            "./assets/fonts/Lora/Lora-Medium.ttf",
-            "./assets/fonts/Lora/Lora-MediumItalic.ttf",
-            "./assets/fonts/Lora/Lora-Regular.ttf",
-            "./assets/fonts/Lora/Lora-SemiBold.ttf",
-            "./assets/fonts/Lora/Lora-SemiBoldItalic.ttf",
+            "./assets/fonts/Cardo/Cardo-Regular.ttf",
+            "./assets/fonts/Cardo/Cardo-Bold.ttf",
+            "./assets/fonts/Cardo/Cardo-Italic.ttf",
             "./assets/fonts/Open_Sans/OpenSans-Bold.ttf",
             "./assets/fonts/Open_Sans/OpenSans-BoldItalic.ttf",
             "./assets/fonts/Open_Sans/OpenSans-ExtraBold.ttf",
