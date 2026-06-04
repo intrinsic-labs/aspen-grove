@@ -19,8 +19,8 @@ The core data structure is the **Loom Tree**: a hypergraph-backed tree where nod
 Most AI interfaces optimize for quick answers. Aspen Grove optimizes for **understanding**.
 
 - **Models are probability spaces, not oracles** — The same prompt can yield wildly different responses. Seeing that distribution builds intuition.
-- **Exploration beats optimization** — Sometimes the third branch is where the insight lives.
-- **Provenance matters** — For researchers and anyone who needs to demonstrate authenticity, we provide hash chains, timestamps, and raw API response storage.
+- **Exploration beats optimization** — Sometimes the fourth branch is where the insight lives.
+- **Provenance matters** — For researchers and anyone who needs to demonstrate authenticity, Aspen Grove provide hash chains, timestamps, and raw API response storage.
 
 ---
 
@@ -73,7 +73,9 @@ See [Domain Language](./docs/domain-language/README.md) for complete terminology
 
 ## Project Status
 
-🚧 **Early Development** — Architecture and specifications defined, implementation beginning.
+- Architecture and specifications defined
+- Backend API and DB implemented
+- UI/UX under construction
 
 ---
 
