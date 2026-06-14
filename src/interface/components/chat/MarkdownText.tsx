@@ -306,7 +306,7 @@ const codeBlockStyles = StyleSheet.create({
   container: {
     marginVertical: 8,
     overflow: 'hidden',
-    backgroundColor: '#000'
+    backgroundColor: '#000',
   },
   scrollView: {
     backgroundColor: '#000',
