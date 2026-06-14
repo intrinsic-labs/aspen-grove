@@ -1,6 +1,8 @@
 import {
   FontSize,
+  LMStudioSettings,
   NodeViewStyle,
+  SelectableProvider,
   Theme,
   UserPreferences,
 } from '@domain/entities';
@@ -37,4 +39,6 @@ export type UserPreferencesChanges = {
   readonly verboseErrorAlerts?: boolean;
   readonly nodeViewStyle?: NodeViewStyle;
   readonly nodeViewCornerRadius?: number;
+  readonly selectedProvider?: SelectableProvider;
+  readonly lmstudioSettings?: Partial<LMStudioSettings>;
 };

@@ -1,9 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import {
-  date,
-  field,
-  text,
-} from '@nozbe/watermelondb/decorators';
+import { date, field, text } from '@nozbe/watermelondb/decorators';
 
 /** Persistence model for app-wide UserPreferences singleton. */
 export default class UserPreferences extends Model {
@@ -25,6 +21,9 @@ export default class UserPreferences extends Model {
 
   @field('node_view_style') nodeViewStyle!: string;
   @field('node_view_corner_radius') nodeViewCornerRadius!: number;
+
+  @text('selected_provider') selectedProvider!: string | null;
+  @text('lmstudio_settings') lmstudioSettings!: string | null;
 
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;

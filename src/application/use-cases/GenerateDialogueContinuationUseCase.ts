@@ -12,7 +12,7 @@ import { createVerifiedModelContinuationNode } from '@application/services/creat
 import {
   collectCompletion,
   type CompletionResponse,
-  type ILlmProvider,
+  type IProviderRegistry,
 } from '@application/services/llm';
 import { resolveContinuationPathToNode } from '@application/services/resolve-continuation-path';
 import { type ULID } from '@domain/value-objects';
@@ -69,13 +69,16 @@ export type GenerateDialogueContinuationDependencies = {
     IEdgeRepository,
     'create' | 'delete' | 'findContinuationsByTargetNodeId'
   >;
-  readonly pathRepository: Pick<IPathRepository, 'findById' | 'getNodeSequence' | 'replaceSuffix'>;
+  readonly pathRepository: Pick<
+    IPathRepository,
+    'findById' | 'getNodeSequence' | 'replaceSuffix'
+  >;
   readonly pathStateRepository: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly rawApiResponseRepository: Pick<
     IRawApiResponseRepository,
     'create' | 'findByNodeId' | 'deleteByNodeId'
   >;
-  readonly llmProvider: ILlmProvider;
+  readonly providerRegistry: IProviderRegistry;
 };
 
 /**
@@ -94,7 +97,7 @@ export class GenerateDialogueContinuationUseCase {
   private readonly pathRepository: GenerateDialogueContinuationDependencies['pathRepository'];
   private readonly pathStateRepository: GenerateDialogueContinuationDependencies['pathStateRepository'];
   private readonly rawApiResponseRepository: GenerateDialogueContinuationDependencies['rawApiResponseRepository'];
-  private readonly llmProvider: ILlmProvider;
+  private readonly providerRegistry: IProviderRegistry;
 
   constructor(dependencies: GenerateDialogueContinuationDependencies) {
     this.agentRepository = dependencies.agentRepository;
@@ -104,7 +107,7 @@ export class GenerateDialogueContinuationUseCase {
     this.pathRepository = dependencies.pathRepository;
     this.pathStateRepository = dependencies.pathStateRepository;
     this.rawApiResponseRepository = dependencies.rawApiResponseRepository;
-    this.llmProvider = dependencies.llmProvider;
+    this.providerRegistry = dependencies.providerRegistry;
   }
 
   async execute(
@@ -130,17 +133,26 @@ export class GenerateDialogueContinuationUseCase {
       throw new Error('Session treeId does not match the selected path.');
     }
 
-    const sourcePathNodeIds = await resolveContinuationPathToNode(sourceNode.id, {
-      nodeRepository: this.nodeRepository,
-      edgeRepository: this.edgeRepository,
-    });
+    const sourcePathNodeIds = await resolveContinuationPathToNode(
+      sourceNode.id,
+      {
+        nodeRepository: this.nodeRepository,
+        edgeRepository: this.edgeRepository,
+      }
+    );
 
     const sourcePathNodes = await Promise.all(
-      sourcePathNodeIds.map((nodeId) => this.nodeRepository.findById(nodeId, true))
+      sourcePathNodeIds.map((nodeId) =>
+        this.nodeRepository.findById(nodeId, true)
+      )
     );
-    const contextNodes = sourcePathNodes.filter((node): node is Node => Boolean(node));
+    const contextNodes = sourcePathNodes.filter((node): node is Node =>
+      Boolean(node)
+    );
 
-    const modelAgent = await this.agentRepository.findById(input.session.modelAgentId);
+    const modelAgent = await this.agentRepository.findById(
+      input.session.modelAgentId
+    );
     const tree = await this.loomTreeRepository.findById(input.session.treeId);
     const assembled = assembleDialogueContext({
       nodes: contextNodes,
@@ -148,7 +160,9 @@ export class GenerateDialogueContinuationUseCase {
       treeSystemContext: tree?.systemContext,
     });
 
-    const initialized = await this.llmProvider.initialize(
+    const llmProvider = this.providerRegistry.getActiveProvider();
+
+    const initialized = await llmProvider.initialize(
       { apiKey: input.providerApiKey },
       {
         appName: input.providerAppName,
@@ -159,7 +173,7 @@ export class GenerateDialogueContinuationUseCase {
     }
 
     const completion = await collectCompletion({
-      llmProvider: this.llmProvider,
+      llmProvider,
       stream: input.stream ?? false,
       request: {
         model: input.session.modelIdentifier,
@@ -177,7 +191,7 @@ export class GenerateDialogueContinuationUseCase {
       parentNode: sourceNode,
       modelAgentId: input.session.modelAgentId,
       requestedModelIdentifier: input.session.modelIdentifier,
-      provider: this.llmProvider.provider,
+      provider: llmProvider.provider,
       completion,
       nodeRepository: this.nodeRepository,
       edgeRepository: this.edgeRepository,
@@ -203,7 +217,8 @@ export class GenerateDialogueContinuationUseCase {
         interruptionReason: completion.interruptionReason,
         usage: completion.usage,
         modelIdentifier:
-          completion.rawResponse.modelIdentifier ?? input.session.modelIdentifier,
+          completion.rawResponse.modelIdentifier ??
+          input.session.modelIdentifier,
         latencyMs: completion.rawResponse.latencyMs,
       },
       provenance: {

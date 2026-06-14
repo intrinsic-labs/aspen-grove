@@ -14,7 +14,11 @@ import {
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
 } from '@application/use-cases';
-import { OpenRouterAdapter } from '@infrastructure/llm';
+import {
+  LMStudioAdapter,
+  OpenRouterAdapter,
+  ProviderRegistry,
+} from '@infrastructure/llm';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
 import database from '@infrastructure/persistence/watermelon/index.native';
 import {
@@ -46,7 +50,7 @@ type AppServices = {
     readonly userPreferencesRepo: WatermelonUserPreferencesRepository;
   };
   readonly adapters: {
-    readonly openRouterProvider: OpenRouterAdapter;
+    readonly providerRegistry: ProviderRegistry;
     readonly credentialStore: ExpoSecureCredentialStore;
   };
   readonly useCases: {
@@ -76,7 +80,9 @@ type AppCompositionContextValue = {
   readonly bootstrap: AppBootstrapState;
 };
 
-const AppCompositionContext = createContext<AppCompositionContextValue | null>(null);
+const AppCompositionContext = createContext<AppCompositionContextValue | null>(
+  null
+);
 
 const buildAppServices = (): AppServices => {
   const repositories = {
@@ -91,8 +97,14 @@ const buildAppServices = (): AppServices => {
     userPreferencesRepo: new WatermelonUserPreferencesRepository(database),
   } as const;
 
+  const openRouterAdapter = new OpenRouterAdapter();
+  const lmStudioAdapter = new LMStudioAdapter();
+
   const adapters = {
-    openRouterProvider: new OpenRouterAdapter(),
+    providerRegistry: new ProviderRegistry({
+      openrouter: openRouterAdapter,
+      lmstudio: lmStudioAdapter,
+    }),
     credentialStore: new ExpoSecureCredentialStore(),
   } as const;
 
@@ -119,18 +131,19 @@ const buildAppServices = (): AppServices => {
       pathRepository: repositories.pathRepo,
       pathStateRepository: repositories.pathStateRepo,
       rawApiResponseRepository: repositories.rawApiResponseRepo,
-      llmProvider: adapters.openRouterProvider,
+      providerRegistry: adapters.providerRegistry,
     }),
-    generateDialogueContinuationUseCase: new GenerateDialogueContinuationUseCase({
-      agentRepository: repositories.agentRepo,
-      loomTreeRepository: repositories.treeRepo,
-      nodeRepository: repositories.nodeRepo,
-      edgeRepository: repositories.edgeRepo,
-      pathRepository: repositories.pathRepo,
-      pathStateRepository: repositories.pathStateRepo,
-      rawApiResponseRepository: repositories.rawApiResponseRepo,
-      llmProvider: adapters.openRouterProvider,
-    }),
+    generateDialogueContinuationUseCase:
+      new GenerateDialogueContinuationUseCase({
+        agentRepository: repositories.agentRepo,
+        loomTreeRepository: repositories.treeRepo,
+        nodeRepository: repositories.nodeRepo,
+        edgeRepository: repositories.edgeRepo,
+        pathRepository: repositories.pathRepo,
+        pathStateRepository: repositories.pathStateRepo,
+        rawApiResponseRepository: repositories.rawApiResponseRepo,
+        providerRegistry: adapters.providerRegistry,
+      }),
     switchDialoguePathUseCase: new SwitchDialoguePathUseCase({
       pathRepository: repositories.pathRepo,
       pathStateRepository: repositories.pathStateRepo,
@@ -179,6 +192,29 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
         if (isCancelled) {
           return;
         }
+
+        // Initialize provider registry from user preferences
+        const userPreferences =
+          await services.repositories.userPreferencesRepo.get();
+        services.adapters.providerRegistry.setActiveProvider(
+          userPreferences.selectedProvider
+        );
+
+        // Initialize LM Studio adapter with stored settings
+        const lmSettings = userPreferences.lmstudioSettings;
+        if (lmSettings) {
+          const lmAdapter =
+            services.adapters.providerRegistry.getLMStudioAdapter();
+          await lmAdapter.initialize(
+            { apiKey: '' }, // Token retrieved from secure store at request time
+            { endpoint: lmSettings.endpoint }
+          );
+          lmAdapter.configure({
+            useMcpTools: lmSettings.useMcpTools,
+            autoLoadModels: lmSettings.autoLoadModels,
+          });
+        }
+
         setBootstrap({
           status: 'ready',
           result: toBootstrapResult(startupResult),
@@ -199,7 +235,7 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [services]);
 
   const value = useMemo(
     () => ({
@@ -227,7 +263,9 @@ export const useAppServices = (): AppServices => {
 export const useAppBootstrapState = (): AppBootstrapState => {
   const context = useContext(AppCompositionContext);
   if (!context) {
-    throw new Error('useAppBootstrapState must be used within AppServicesProvider');
+    throw new Error(
+      'useAppBootstrapState must be used within AppServicesProvider'
+    );
   }
   return context.bootstrap;
 };

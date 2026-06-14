@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { computeSha256Hash } from '@application/services/content-hash-service';
+import type { IProviderRegistry } from '@application/services/llm';
 import type {
   Agent,
   Edge,
@@ -61,7 +62,8 @@ describe('SendDialogueTurnUseCase', () => {
     let completionRequested = false;
     let callbackHappenedBeforeCompletion = false;
 
-    const responseHeaders = 'x-request-id: req_turn_1\ncontent-type: application/json';
+    const responseHeaders =
+      'x-request-id: req_turn_1\ncontent-type: application/json';
     const responseBody =
       '{"id":"resp_1","model":"anthropic/claude-haiku-4.5","choices":[{"finish_reason":"stop","message":{"content":"Assistant reply"}}],"usage":{"prompt_tokens":10,"completion_tokens":12,"total_tokens":22}}';
     const rawBytesHash = await computeSha256Hash(
@@ -114,7 +116,8 @@ describe('SendDialogueTurnUseCase', () => {
             authorType: input.authorType,
             authorAgentId: input.authorAgentId,
             contentHash: input.contentHash,
-            text: input.content.type === 'text' ? input.content.text : '[non-text]',
+            text:
+              input.content.type === 'text' ? input.content.text : '[non-text]',
             localId: String(input.localId),
           });
           nodesById.set(node.id, node);
@@ -202,44 +205,47 @@ describe('SendDialogueTurnUseCase', () => {
           rawResponsesByNodeId.set(input.nodeId, raw);
           return raw;
         },
-        findByNodeId: async (nodeId) => rawResponsesByNodeId.get(nodeId) ?? null,
+        findByNodeId: async (nodeId) =>
+          rawResponsesByNodeId.get(nodeId) ?? null,
         deleteByNodeId: async (nodeId) => rawResponsesByNodeId.delete(nodeId),
       },
-      llmProvider: {
-        provider: 'openrouter',
-        initialize: async () => true,
-        getCapabilities: () => ({
-          supportsStreaming: false,
-          supportsSystemPrompt: true,
-          supportedModels: ['anthropic/claude-haiku-4.5'],
+      providerRegistry: {
+        getActiveProvider: () => ({
+          provider: 'openrouter',
+          initialize: async () => true,
+          getCapabilities: () => ({
+            supportsStreaming: false,
+            supportsSystemPrompt: true,
+            supportedModels: ['anthropic/claude-haiku-4.5'],
+          }),
+          generateCompletion: async () => {
+            completionRequested = true;
+            return {
+              content: 'Assistant reply',
+              finishReason: 'stop',
+              usage: {
+                promptTokens: 10,
+                completionTokens: 12,
+                totalTokens: 22,
+              },
+              rawResponse: {
+                rawBytes: `${responseHeaders}\n\n${responseBody}`,
+                rawBytesHash,
+                requestTimestamp: now,
+                responseTimestamp: now,
+                latencyMs: 1000,
+                requestId: 'req_turn_1',
+                modelIdentifier: 'anthropic/claude-haiku-4.5',
+                responseBody,
+                responseHeaders,
+              },
+            };
+          },
+          generateStreamingCompletion: async function* () {
+            return;
+          },
         }),
-        generateCompletion: async () => {
-          completionRequested = true;
-          return {
-            content: 'Assistant reply',
-            finishReason: 'stop',
-            usage: {
-              promptTokens: 10,
-              completionTokens: 12,
-              totalTokens: 22,
-            },
-            rawResponse: {
-              rawBytes: `${responseHeaders}\n\n${responseBody}`,
-              rawBytesHash,
-              requestTimestamp: now,
-              responseTimestamp: now,
-              latencyMs: 1000,
-              requestId: 'req_turn_1',
-              modelIdentifier: 'anthropic/claude-haiku-4.5',
-              responseBody,
-              responseHeaders,
-            },
-          };
-        },
-        generateStreamingCompletion: async function* () {
-          return;
-        },
-      },
+      } as unknown as IProviderRegistry,
     });
 
     const result = await useCase.execute({

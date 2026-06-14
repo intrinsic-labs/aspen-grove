@@ -1,5 +1,5 @@
 import { Children, Fragment, type ReactNode } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, Switch, View, type ViewStyle } from 'react-native';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from './primitives';
 
@@ -42,7 +42,12 @@ export const SettingsSection = ({
         </AppText>
       ) : null}
 
-      <View style={[styles.sectionCard, { backgroundColor: sectionBackgroundColor }]}>
+      <View
+        style={[
+          styles.sectionCard,
+          { backgroundColor: sectionBackgroundColor },
+        ]}
+      >
         {items.map((item, index) => (
           <Fragment key={index}>
             {item}
@@ -107,6 +112,33 @@ export const SettingsInlineRow = ({
   </View>
 );
 
+type SettingsSwitchRowProps = {
+  readonly label: ReactNode;
+  readonly value: boolean;
+  readonly onValueChange: (value: boolean) => void;
+  readonly trackColor?: { false: string; true: string };
+  readonly style?: ViewStyle | ViewStyle[];
+};
+
+export const SettingsSwitchRow = ({
+  label,
+  value,
+  onValueChange,
+  trackColor,
+  style,
+}: SettingsSwitchRowProps) => (
+  <View style={[styles.switchRow, style]}>
+    <AppText variant="mono" tone="primary" style={styles.switchLabel}>
+      {label}
+    </AppText>
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={trackColor}
+    />
+  </View>
+);
+
 const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 14,
@@ -161,6 +193,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   inlineLabel: {
+    flex: 1,
+    fontFamily: 'IBMPlexMono-Regular',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  switchLabel: {
     flex: 1,
     fontFamily: 'IBMPlexMono-Regular',
     fontSize: 15,

@@ -1,4 +1,5 @@
 import { ULID } from '../value-objects';
+import type { SelectableProvider } from './provider';
 
 /**
  * UserPreferences entity
@@ -21,6 +22,12 @@ export interface UserPreferences {
   readonly defaultVoiceModeEnabled: boolean;
   readonly defaultTemperature: number;
   readonly verboseErrorAlerts: boolean;
+
+  // Provider selection
+  readonly selectedProvider: SelectableProvider;
+
+  // LM Studio settings (stored in preferences, token in secure store)
+  readonly lmstudioSettings: LMStudioSettings;
 
   // Node display
   readonly nodeViewStyle: NodeViewStyle;
@@ -67,3 +74,26 @@ export type FontSize =
  * Node view style options
  */
 export type NodeViewStyle = 'filled' | 'outlined';
+
+/**
+ * LM Studio connection settings
+ */
+export interface LMStudioSettings {
+  /** Server endpoint (e.g., "http://192.168.1.100:1234") */
+  readonly endpoint: string;
+  /** Enable server-side MCP tools */
+  readonly useMcpTools: boolean;
+  /** Auto-load models on first request */
+  readonly autoLoadModels: boolean;
+  /** Auto-unload after idle (seconds, 0 = disabled) */
+  readonly idleTtlSeconds: number;
+  /** Last selected model identifier */
+  readonly selectedModel?: string;
+}
+
+export const DEFAULT_LMSTUDIO_SETTINGS: LMStudioSettings = {
+  endpoint: 'http://localhost:1234',
+  useMcpTools: true,
+  autoLoadModels: true,
+  idleTtlSeconds: 0,
+};

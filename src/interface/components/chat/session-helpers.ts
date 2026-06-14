@@ -3,6 +3,10 @@ import {
   ensureOpenRouterAssistantAgent,
   getOpenRouterModelIdentifier,
 } from '@application/services/openrouter-assistant-agent';
+import {
+  ensureLMStudioAssistantAgent,
+  getLMStudioModelIdentifier,
+} from '@application/services/lmstudio-assistant-agent';
 import type {
   IAgentRepository,
   IGroveRepository,
@@ -10,8 +14,9 @@ import type {
   INodeRepository,
   IPathRepository,
   IPathStateRepository,
+  IUserPreferencesRepository,
 } from '@application/repositories';
-import type { Node } from '@domain/entities';
+import type { Agent, Node, SelectableProvider } from '@domain/entities';
 import { parseULID, type ULID } from '@domain/value-objects';
 import type { ChatRow, ChatSession } from './types';
 
@@ -25,6 +30,7 @@ type ChatSessionRepositories = {
   >;
   readonly pathStateRepo: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById'>;
+  readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
 };
 
 export type InitializedChatSession = {
@@ -33,13 +39,57 @@ export type InitializedChatSession = {
   readonly session: ChatSession;
 };
 
+type ResolvedModelAgent = {
+  readonly agent: Agent;
+  readonly modelIdentifier: string;
+  readonly provider: SelectableProvider;
+};
+
+const resolveModelAgentForProvider = async (
+  provider: SelectableProvider,
+  agentRepo: IAgentRepository,
+  lmstudioSelectedModel?: string
+): Promise<ResolvedModelAgent> => {
+  if (provider === 'lmstudio') {
+    const agent = await ensureLMStudioAssistantAgent(agentRepo, {
+      preferredModelIdentifier: lmstudioSelectedModel,
+    });
+
+    if (!agent) {
+      throw new Error(
+        'LM Studio is selected but no model is configured. Please select a model in Settings.'
+      );
+    }
+
+    const modelIdentifier = getLMStudioModelIdentifier(agent);
+    if (!modelIdentifier) {
+      throw new Error(
+        'LM Studio agent exists but has no model identifier. Please reconfigure in Settings.'
+      );
+    }
+
+    return { agent, modelIdentifier, provider: 'lmstudio' };
+  }
+
+  // Default to OpenRouter
+  const agent = await ensureOpenRouterAssistantAgent(agentRepo);
+  const modelIdentifier =
+    getOpenRouterModelIdentifier(agent) ?? DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
+
+  return { agent, modelIdentifier, provider: 'openrouter' };
+};
+
 export const initializeDialogueChatSession = async (
   treeIdParam: string,
   repositories: ChatSessionRepositories
 ): Promise<InitializedChatSession> => {
   const routeTreeId = parseULID(treeIdParam);
 
-  const tree = await repositories.treeRepo.findById(routeTreeId);
+  const [tree, userPreferences] = await Promise.all([
+    repositories.treeRepo.findById(routeTreeId),
+    repositories.userPreferencesRepo.get(),
+  ]);
+
   if (!tree) {
     throw new Error(`Loom Tree not found: ${routeTreeId}`);
   }
@@ -50,12 +100,15 @@ export const initializeDialogueChatSession = async (
   }
 
   const ownerAgentId = grove.ownerAgentId as ULID;
-  const modelAgent = await ensureOpenRouterAssistantAgent(
-    repositories.agentRepo
-  );
-  const modelIdentifier =
-    getOpenRouterModelIdentifier(modelAgent) ??
-    DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
+  const activeProvider = userPreferences.selectedProvider;
+  const lmstudioSelectedModel = userPreferences.lmstudioSettings?.selectedModel;
+
+  const { agent: modelAgent, modelIdentifier } =
+    await resolveModelAgentForProvider(
+      activeProvider,
+      repositories.agentRepo,
+      lmstudioSelectedModel
+    );
 
   const path =
     (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??

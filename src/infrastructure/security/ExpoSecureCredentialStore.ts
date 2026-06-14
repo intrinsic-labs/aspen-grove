@@ -4,6 +4,7 @@ import type { Provider } from '@domain/entities';
 
 const PROVIDER_API_KEY_MAP: Record<Provider, string> = {
   openrouter: 'openrouter_api_key',
+  lmstudio: 'lmstudio_api_token',
   hyperbolic: 'hyperbolic_api_key',
   anthropic: 'anthropic_api_key',
   openai: 'openai_api_key',

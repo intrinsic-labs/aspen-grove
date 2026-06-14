@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { computeSha256Hash } from '@application/services/content-hash-service';
+import type { IProviderRegistry } from '@application/services/llm';
 import type {
   Agent,
   Edge,
@@ -106,7 +107,8 @@ describe('GenerateDialogueContinuationUseCase', () => {
     const rawResponsesByNodeId = new Map<ULID, RawApiResponse>();
     const pathNodeIds: ULID[] = [rootNodeId, sourceNodeId, existingAssistantId];
 
-    const responseHeaders = 'x-request-id: req_branch_1\ncontent-type: application/json';
+    const responseHeaders =
+      'x-request-id: req_branch_1\ncontent-type: application/json';
     const responseBody =
       '{"id":"resp_branch_1","model":"anthropic/claude-haiku-4.5","choices":[{"finish_reason":"stop","message":{"content":"Alternative assistant response"}}],"usage":{"prompt_tokens":12,"completion_tokens":11,"total_tokens":23}}';
     const rawBytesHash = await computeSha256Hash(
@@ -154,10 +156,18 @@ describe('GenerateDialogueContinuationUseCase', () => {
     };
 
     const replaceSuffix = jest.fn<
-      (replacePathId: ULID, startPosition: number, nodeIds: readonly ULID[]) => Promise<void>
+      (
+        replacePathId: ULID,
+        startPosition: number,
+        nodeIds: readonly ULID[]
+      ) => Promise<void>
     >(async (replacePathId, startPosition, nodeIds) => {
       expect(replacePathId).toBe(pathId);
-      pathNodeIds.splice(startPosition, pathNodeIds.length - startPosition, ...nodeIds);
+      pathNodeIds.splice(
+        startPosition,
+        pathNodeIds.length - startPosition,
+        ...nodeIds
+      );
     });
 
     const useCase = new GenerateDialogueContinuationUseCase({
@@ -176,7 +186,8 @@ describe('GenerateDialogueContinuationUseCase', () => {
             authorType: input.authorType,
             authorAgentId: input.authorAgentId,
             contentHash: input.contentHash,
-            text: input.content.type === 'text' ? input.content.text : '[non-text]',
+            text:
+              input.content.type === 'text' ? input.content.text : '[non-text]',
             localId: String(input.localId),
           });
           nodesById.set(node.id, node);
@@ -256,41 +267,44 @@ describe('GenerateDialogueContinuationUseCase', () => {
           rawResponsesByNodeId.set(input.nodeId, raw);
           return raw;
         },
-        findByNodeId: async (nodeId) => rawResponsesByNodeId.get(nodeId) ?? null,
+        findByNodeId: async (nodeId) =>
+          rawResponsesByNodeId.get(nodeId) ?? null,
         deleteByNodeId: async (nodeId) => rawResponsesByNodeId.delete(nodeId),
       },
-      llmProvider: {
-        provider: 'openrouter',
-        initialize: async () => true,
-        getCapabilities: () => ({
-          supportsStreaming: false,
-          supportsSystemPrompt: true,
-          supportedModels: ['anthropic/claude-haiku-4.5'],
-        }),
-        generateCompletion: async () => ({
-          content: 'Alternative assistant response',
-          finishReason: 'stop',
-          usage: {
-            promptTokens: 12,
-            completionTokens: 11,
-            totalTokens: 23,
+      providerRegistry: {
+        getActiveProvider: () => ({
+          provider: 'openrouter',
+          initialize: async () => true,
+          getCapabilities: () => ({
+            supportsStreaming: false,
+            supportsSystemPrompt: true,
+            supportedModels: ['anthropic/claude-haiku-4.5'],
+          }),
+          generateCompletion: async () => ({
+            content: 'Alternative assistant response',
+            finishReason: 'stop',
+            usage: {
+              promptTokens: 12,
+              completionTokens: 11,
+              totalTokens: 23,
+            },
+            rawResponse: {
+              rawBytes: `${responseHeaders}\n\n${responseBody}`,
+              rawBytesHash,
+              requestTimestamp: now,
+              responseTimestamp: now,
+              latencyMs: 900,
+              requestId: 'req_branch_1',
+              modelIdentifier: 'anthropic/claude-haiku-4.5',
+              responseBody,
+              responseHeaders,
+            },
+          }),
+          generateStreamingCompletion: async function* () {
+            return;
           },
-          rawResponse: {
-            rawBytes: `${responseHeaders}\n\n${responseBody}`,
-            rawBytesHash,
-            requestTimestamp: now,
-            responseTimestamp: now,
-            latencyMs: 900,
-            requestId: 'req_branch_1',
-            modelIdentifier: 'anthropic/claude-haiku-4.5',
-            responseBody,
-            responseHeaders,
-          },
         }),
-        generateStreamingCompletion: async function* () {
-          return;
-        },
-      },
+      } as unknown as IProviderRegistry,
     });
 
     const result = await useCase.execute({

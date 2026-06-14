@@ -14,7 +14,7 @@ import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import type { ContinuationMenuAction } from './ContinuationRail';
 import type { ChatMessageMenuAction } from './ChatMessageList';
-import { getOpenRouterApiKey } from './provider-key';
+import { getProviderApiKey } from './provider-key';
 import { toDialogueRouteParams } from './route-params';
 import {
   initializeDialogueChatSession,
@@ -137,6 +137,7 @@ export const useLoomTreeChatController = () => {
           pathRepo: repositories.pathRepo,
           pathStateRepo: repositories.pathStateRepo,
           nodeRepo: repositories.nodeRepo,
+          userPreferencesRepo: repositories.userPreferencesRepo,
         });
 
         resetEphemeralState();
@@ -330,8 +331,11 @@ export const useLoomTreeChatController = () => {
           });
         }
 
-        const openRouterApiKey = await getOpenRouterApiKey(
-          adapters.credentialStore
+        const activeProvider =
+          adapters.providerRegistry.getActiveProviderName();
+        const providerApiKey = await getProviderApiKey(
+          adapters.credentialStore,
+          activeProvider
         );
         const result =
           await useCases.generateDialogueContinuationUseCase.execute({
@@ -343,7 +347,7 @@ export const useLoomTreeChatController = () => {
               pathId: session.pathId,
             },
             sourceNodeId,
-            providerApiKey: openRouterApiKey,
+            providerApiKey,
             providerAppName: 'Aspen Grove RN',
             stream: true,
             activateGeneratedNode: true,
@@ -439,13 +443,15 @@ export const useLoomTreeChatController = () => {
         return;
       }
 
-      const openRouterApiKey = await getOpenRouterApiKey(
-        adapters.credentialStore
+      const activeProvider = adapters.providerRegistry.getActiveProviderName();
+      const providerApiKey = await getProviderApiKey(
+        adapters.credentialStore,
+        activeProvider
       );
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
         prompt,
-        providerApiKey: openRouterApiKey,
+        providerApiKey,
         providerAppName: 'Aspen Grove RN',
         stream: true,
         onUserNodeCommitted: async ({ userNodeId }) => {
@@ -465,7 +471,7 @@ export const useLoomTreeChatController = () => {
         messageCount: turnResult.contextMessageCount,
       });
 
-      console.info('[chat] openrouter completion', {
+      console.info(`[chat] ${activeProvider} completion`, {
         modelIdentifier: turnResult.completion.modelIdentifier,
         latencyMs: turnResult.completion.latencyMs,
         finishReason: turnResult.completion.finishReason,

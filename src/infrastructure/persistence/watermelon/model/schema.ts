@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 4,
+  version: 5,
   tables: [
     /**
      * Grove table schema
@@ -36,6 +36,12 @@ export const aspenGroveSchema = appSchema({
 
         { name: 'node_view_style', type: 'string' },
         { name: 'node_view_corner_radius', type: 'number' },
+
+        // Provider selection
+        { name: 'selected_provider', type: 'string', isOptional: true },
+
+        // LM Studio settings (stored as JSON)
+        { name: 'lmstudio_settings', type: 'string', isOptional: true },
 
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

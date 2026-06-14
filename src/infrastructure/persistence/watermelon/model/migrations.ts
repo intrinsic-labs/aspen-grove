@@ -61,5 +61,17 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 5,
+      steps: [
+        addColumns({
+          table: 'user_preferences',
+          columns: [
+            { name: 'selected_provider', type: 'string', isOptional: true },
+            { name: 'lmstudio_settings', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

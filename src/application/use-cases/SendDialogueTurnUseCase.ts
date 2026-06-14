@@ -12,17 +12,11 @@ import { createVerifiedModelContinuationNode } from '@application/services/creat
 import {
   collectCompletion,
   type CompletionResponse,
-  type ILlmProvider,
+  type IProviderRegistry,
 } from '@application/services/llm';
-import {
-  computeHumanContentHash,
-} from '@application/services/content-hash-service';
+import { computeHumanContentHash } from '@application/services/content-hash-service';
 import type { Node } from '@domain/entities';
-import {
-  createLocalId,
-  createULID,
-  type ULID,
-} from '@domain/value-objects';
+import { createLocalId, createULID, type ULID } from '@domain/value-objects';
 
 export type DialogueTurnSession = {
   readonly ownerAgentId: ULID;
@@ -39,7 +33,9 @@ export type SendDialogueTurnInput = {
   readonly providerApiKey: string;
   readonly providerAppName?: string;
   readonly stream?: boolean;
-  readonly onUserNodeCommitted?: (input: { readonly userNodeId: ULID }) => void | Promise<void>;
+  readonly onUserNodeCommitted?: (input: {
+    readonly userNodeId: ULID;
+  }) => void | Promise<void>;
   readonly onAssistantTextDelta?: (input: {
     readonly delta: string;
     readonly content: string;
@@ -75,13 +71,16 @@ export type SendDialogueTurnDependencies = {
     IEdgeRepository,
     'create' | 'delete' | 'findContinuationsByTargetNodeId'
   >;
-  readonly pathRepository: Pick<IPathRepository, 'appendNode' | 'getNodeSequence'>;
+  readonly pathRepository: Pick<
+    IPathRepository,
+    'appendNode' | 'getNodeSequence'
+  >;
   readonly pathStateRepository: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly rawApiResponseRepository: Pick<
     IRawApiResponseRepository,
     'create' | 'findByNodeId' | 'deleteByNodeId'
   >;
-  readonly llmProvider: ILlmProvider;
+  readonly providerRegistry: IProviderRegistry;
 };
 
 /**
@@ -99,7 +98,7 @@ export class SendDialogueTurnUseCase {
   private readonly pathRepository: SendDialogueTurnDependencies['pathRepository'];
   private readonly pathStateRepository: SendDialogueTurnDependencies['pathStateRepository'];
   private readonly rawApiResponseRepository: SendDialogueTurnDependencies['rawApiResponseRepository'];
-  private readonly llmProvider: ILlmProvider;
+  private readonly providerRegistry: IProviderRegistry;
 
   constructor(dependencies: SendDialogueTurnDependencies) {
     this.agentRepository = dependencies.agentRepository;
@@ -109,7 +108,7 @@ export class SendDialogueTurnUseCase {
     this.pathRepository = dependencies.pathRepository;
     this.pathStateRepository = dependencies.pathStateRepository;
     this.rawApiResponseRepository = dependencies.rawApiResponseRepository;
-    this.llmProvider = dependencies.llmProvider;
+    this.providerRegistry = dependencies.providerRegistry;
   }
 
   async execute(input: SendDialogueTurnInput): Promise<SendDialogueTurnResult> {
@@ -128,7 +127,9 @@ export class SendDialogueTurnUseCase {
 
     const userNodeId = createULID();
     const userCreatedAt = new Date();
-    const userLocalIds = await this.nodeRepository.getAllLocalIds(input.session.treeId);
+    const userLocalIds = await this.nodeRepository.getAllLocalIds(
+      input.session.treeId
+    );
     const userLocalId = createLocalId(userNodeId, userLocalIds);
     const userContent = { type: 'text' as const, text: prompt };
     const userContentHash = await computeHumanContentHash(
@@ -167,7 +168,9 @@ export class SendDialogueTurnUseCase {
     await input.onUserNodeCommitted?.({ userNodeId: userNode.id });
 
     const contextNodes = await this.loadPathNodes(input.session.pathId);
-    const modelAgent = await this.agentRepository.findById(input.session.modelAgentId);
+    const modelAgent = await this.agentRepository.findById(
+      input.session.modelAgentId
+    );
     const tree = await this.loomTreeRepository.findById(input.session.treeId);
     const assembled = assembleDialogueContext({
       nodes: contextNodes,
@@ -175,7 +178,9 @@ export class SendDialogueTurnUseCase {
       treeSystemContext: tree?.systemContext,
     });
 
-    const initialized = await this.llmProvider.initialize(
+    const llmProvider = this.providerRegistry.getActiveProvider();
+
+    const initialized = await llmProvider.initialize(
       { apiKey: input.providerApiKey },
       {
         appName: input.providerAppName,
@@ -186,7 +191,7 @@ export class SendDialogueTurnUseCase {
     }
 
     const completion = await collectCompletion({
-      llmProvider: this.llmProvider,
+      llmProvider,
       stream: input.stream ?? false,
       request: {
         model: input.session.modelIdentifier,
@@ -204,7 +209,7 @@ export class SendDialogueTurnUseCase {
       parentNode: userNode,
       modelAgentId: input.session.modelAgentId,
       requestedModelIdentifier: input.session.modelIdentifier,
-      provider: this.llmProvider.provider,
+      provider: llmProvider.provider,
       completion,
       nodeRepository: this.nodeRepository,
       edgeRepository: this.edgeRepository,
@@ -232,7 +237,8 @@ export class SendDialogueTurnUseCase {
         interruptionReason: completion.interruptionReason,
         usage: completion.usage,
         modelIdentifier:
-          completion.rawResponse.modelIdentifier ?? input.session.modelIdentifier,
+          completion.rawResponse.modelIdentifier ??
+          input.session.modelIdentifier,
         latencyMs: completion.rawResponse.latencyMs,
       },
       provenance: {
@@ -245,7 +251,9 @@ export class SendDialogueTurnUseCase {
   private async loadPathNodes(pathId: ULID): Promise<Node[]> {
     const pathNodes = await this.pathRepository.getNodeSequence(pathId);
     const resolvedNodes = await Promise.all(
-      pathNodes.map((pathNode) => this.nodeRepository.findById(pathNode.nodeId, true))
+      pathNodes.map((pathNode) =>
+        this.nodeRepository.findById(pathNode.nodeId, true)
+      )
     );
     return resolvedNodes.filter((node): node is Node => Boolean(node));
   }

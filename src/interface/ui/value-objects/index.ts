@@ -10,4 +10,5 @@ export {
   SettingsList,
   SettingsSection,
   SettingsStackRow,
+  SettingsSwitchRow,
 } from '../components/settings-list';

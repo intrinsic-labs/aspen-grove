@@ -1,9 +1,4 @@
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import {
   KeyboardAwareScrollView,
   KeyboardToolbar,
@@ -14,8 +9,10 @@ import { AppScreen, SettingsList } from '../ui/value-objects';
 import {
   AppBehaviorSection,
   GenerationDefaultsSection,
+  LMStudioSettingsSection,
   MessageTypographySection,
   OpenRouterSettingsSection,
+  ProviderPickerSection,
   SettingsStatus,
   useSettingsController,
 } from './settings';
@@ -43,21 +40,64 @@ const SettingsView = () => {
           style={styles.container}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
         >
           <SettingsList>
-            <OpenRouterSettingsSection
-              apiKeyStatusText={controller.apiKeyStatusText}
-              apiKeyInput={controller.apiKeyInput}
-              onChangeApiKeyInput={controller.setApiKeyInput}
-              showApiKey={controller.showApiKey}
-              onToggleShowApiKey={() =>
-                controller.setShowApiKey((visible) => !visible)
-              }
-              modelIdentifierInput={controller.modelIdentifierInput}
-              onChangeModelIdentifierInput={controller.setModelIdentifierInput}
+            <ProviderPickerSection
+              selectedProvider={controller.selectedProvider}
+              onChangeProvider={controller.setSelectedProvider}
               colors={colors}
             />
+
+            {controller.selectedProvider === 'openrouter' && (
+              <OpenRouterSettingsSection
+                apiKeyStatusText={controller.apiKeyStatusText}
+                apiKeyInput={controller.apiKeyInput}
+                onChangeApiKeyInput={controller.setApiKeyInput}
+                showApiKey={controller.showApiKey}
+                onToggleShowApiKey={() =>
+                  controller.setShowApiKey((visible) => !visible)
+                }
+                modelIdentifierInput={controller.modelIdentifierInput}
+                onChangeModelIdentifierInput={
+                  controller.setModelIdentifierInput
+                }
+                colors={colors}
+              />
+            )}
+
+            {controller.selectedProvider === 'lmstudio' && (
+              <LMStudioSettingsSection
+                endpointInput={controller.lmstudioEndpointInput}
+                onChangeEndpointInput={controller.setLmstudioEndpointInput}
+                apiTokenInput={controller.lmstudioApiTokenInput}
+                onChangeApiTokenInput={controller.setLmstudioApiTokenInput}
+                showApiToken={controller.showLmstudioToken}
+                onToggleShowApiToken={() =>
+                  controller.setShowLmstudioToken((visible) => !visible)
+                }
+                useMcpTools={controller.lmstudioUseMcpTools}
+                onChangeUseMcpTools={controller.setLmstudioUseMcpTools}
+                autoLoadModels={controller.lmstudioAutoLoadModels}
+                onChangeAutoLoadModels={controller.setLmstudioAutoLoadModels}
+                selectedModel={controller.lmstudioSelectedModel}
+                onChangeSelectedModel={controller.setLmstudioSelectedModel}
+                models={controller.lmstudioModels}
+                modelsLoading={controller.lmstudioModelsLoading}
+                modelsError={controller.lmstudioModelsError}
+                onRefreshModels={controller.fetchLmstudioModels}
+                connectionStatus={controller.lmstudioConnectionStatus}
+                switchOffTrack={switchOffTrack}
+                colors={{
+                  ...colors,
+                  success: '#34C759',
+                  error: '#FF3B30',
+                  muted: colors.line,
+                }}
+              />
+            )}
 
             <GenerationDefaultsSection
               temperatureInput={controller.temperatureInput}

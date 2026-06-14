@@ -22,6 +22,13 @@ export const useAspenGroveTheme = () => {
       secondary: '#999999',
       secondaryVariant: 'rgba(153, 153, 153, 0.8)',
       codeBackground: 'rgba(153, 153, 155, 0.08)',
+      // Additional colors for settings and UI components
+      line: 'rgba(255, 255, 255, 0.2)',
+      surface: 'rgba(255, 255, 255, 0.15)',
+      backgroundMuted: 'rgba(255, 255, 255, 0.05)',
+      tertiary: 'rgba(255, 255, 255, 0.4)',
+      red: '#FF3B30',
+      onSurface: 'rgba(255, 255, 255, 0.9)',
     },
 
     light: {
@@ -33,6 +40,13 @@ export const useAspenGroveTheme = () => {
       secondary: '#8b8b8b',
       secondaryVariant: 'rgba(139, 139, 139, 0.8)',
       codeBackground: 'rgba(139, 139, 139, 0.08)',
+      // Additional colors for settings and UI components
+      line: 'rgba(0, 0, 0, 0.2)',
+      surface: 'rgba(0, 0, 0, 0.1)',
+      backgroundMuted: 'rgba(0, 0, 0, 0.05)',
+      tertiary: 'rgba(0, 0, 0, 0.4)',
+      red: '#FF3B30',
+      onSurface: 'rgba(0, 0, 0, 0.9)',
     },
   };
 
