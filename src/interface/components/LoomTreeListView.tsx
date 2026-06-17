@@ -9,6 +9,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import type { LoomTree } from '@domain/entities';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
@@ -82,11 +83,15 @@ const LoomTreeListView = () => {
       setCreating(true);
       setError(null);
 
-      // TODO (Phase 3): Replace this with a proper agent picker UX and a
-      // `UserPreferences.defaultModelAgentId` lookup. For now we just pick
-      // any active shared model agent so existing flows keep working.
-      const sharedAgents = await repositories.agentRepo.findSharedModels(true);
-      const defaultAgent = sharedAgents[0];
+      // Pinned default first; fall back to the first available shared agent.
+      // Stale pins are cleared inside the helper.
+      // TODO (Phase 5): Once Settings → Agents lands, expose a proper picker
+      // so users can switch the pinned default without going through a save
+      // cycle on a provider's settings panel.
+      const defaultAgent = await resolveDefaultModelAgent({
+        agentRepository: repositories.agentRepo,
+        userPreferencesRepository: repositories.userPreferencesRepo,
+      });
       if (!defaultAgent) {
         throw new Error(
           'No model agents configured. Set up an agent in Settings before creating a tree.'
@@ -121,6 +126,7 @@ const LoomTreeListView = () => {
     bootstrap,
     creating,
     repositories.agentRepo,
+    repositories.userPreferencesRepo,
     router,
     useCases.createDialogueLoomTreeUseCase,
   ]);

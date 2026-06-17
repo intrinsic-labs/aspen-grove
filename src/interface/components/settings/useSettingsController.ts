@@ -13,6 +13,8 @@ import {
   getOpenRouterModelIdentifier,
   upsertOpenRouterAssistantAgent,
 } from '@application/services/openrouter-assistant-agent';
+import { upsertLMStudioAssistantAgent } from '@application/services/lmstudio-assistant-agent';
+import { pinDefaultModelAgentIfUnset } from '@application/services/resolve-default-model-agent';
 import type { LMStudioModel } from '@infrastructure/llm';
 import { useAppServices } from '@interface/composition';
 import type { ChatFontFace, SettingsDraft } from './types';
@@ -363,8 +365,10 @@ export const useSettingsController = () => {
       setNotice(null);
 
       try {
+        // Run the side-effectful writes that don't return anything we need
+        // downstream in parallel; agent upserts (whose ids we need for the
+        // default-pin step) run sequentially below.
         await Promise.all([
-          // Update UserPreferences
           repositories.userPreferencesRepo.update({
             defaultTemperature: parsedTemperature,
             verboseErrorAlerts: draft.verboseErrorAlerts,
@@ -381,21 +385,12 @@ export const useSettingsController = () => {
               autoLoadModels: draft.lmstudioAutoLoadModels,
             },
           }),
-          // Update OpenRouter agent
-          upsertOpenRouterAssistantAgent(repositories.agentRepo, {
-            modelIdentifier,
-            temperature: parsedTemperature,
-            maxTokens: parsedMaxTokens,
-            systemPrompt: normalizedSystemPrompt,
-          }),
-          // Update OpenRouter API key
           normalizedApiKey.length > 0
             ? adapters.credentialStore.setProviderApiKey(
                 'openrouter',
                 normalizedApiKey
               )
             : adapters.credentialStore.deleteProviderApiKey('openrouter'),
-          // Update LM Studio API token
           normalizedLmstudioToken.length > 0
             ? adapters.credentialStore.setProviderApiKey(
                 'lmstudio',
@@ -403,6 +398,50 @@ export const useSettingsController = () => {
               )
             : adapters.credentialStore.deleteProviderApiKey('lmstudio'),
         ]);
+
+        // Upsert provider-specific assistant agents. OpenRouter is always
+        // upserted (its model identifier defaults if blank). LM Studio is
+        // only upserted when a model has been selected via the discovery
+        // picker — there's no meaningful default for it.
+        const openRouterAgent = await upsertOpenRouterAssistantAgent(
+          repositories.agentRepo,
+          {
+            modelIdentifier,
+            temperature: parsedTemperature,
+            maxTokens: parsedMaxTokens,
+            systemPrompt: normalizedSystemPrompt,
+          }
+        );
+
+        const lmstudioModelIdentifier = draft.lmstudioSelectedModel.trim();
+        const lmStudioAgent = lmstudioModelIdentifier
+          ? await upsertLMStudioAssistantAgent(repositories.agentRepo, {
+              modelIdentifier: lmstudioModelIdentifier,
+              temperature: parsedTemperature,
+              maxTokens: parsedMaxTokens,
+              systemPrompt: normalizedSystemPrompt,
+            })
+          : null;
+
+        // Pin a default for new trees if none exists yet. Order matters:
+        // whichever provider the user is currently viewing (per the in-memory
+        // picker) gets first dibs, so a fresh user who configures LM Studio
+        // and saves with the LM Studio panel open ends up with LM Studio as
+        // their default rather than OpenRouter.
+        // TODO (Phase 5): Replace this implicit pinning with an explicit
+        // "default agent for new trees" picker in Settings → Agents.
+        const pinDeps = {
+          userPreferencesRepository: repositories.userPreferencesRepo,
+        };
+        if (draft.selectedProvider === 'lmstudio' && lmStudioAgent) {
+          await pinDefaultModelAgentIfUnset(lmStudioAgent.id, pinDeps);
+          await pinDefaultModelAgentIfUnset(openRouterAgent.id, pinDeps);
+        } else {
+          await pinDefaultModelAgentIfUnset(openRouterAgent.id, pinDeps);
+          if (lmStudioAgent) {
+            await pinDefaultModelAgentIfUnset(lmStudioAgent.id, pinDeps);
+          }
+        }
 
         // (Phase 2) No more setActiveProvider — see note in loadSettings.
 

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 6,
+  version: 7,
   tables: [
     /**
      * Grove table schema
@@ -44,6 +44,16 @@ export const aspenGroveSchema = appSchema({
         // intentionally not declared here and not read/written by the repo.
         // LM Studio connection settings (endpoint, useMcpTools, etc.) live here.
         { name: 'lmstudio_settings', type: 'string', isOptional: true },
+
+        // The model Agent that new LoomTrees are pinned to by default.
+        // Optional — if unset (or if the referenced agent no longer exists),
+        // the tree-creation flow falls back to the first available shared
+        // model agent.
+        {
+          name: 'default_model_agent_id',
+          type: 'string',
+          isOptional: true,
+        },
 
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

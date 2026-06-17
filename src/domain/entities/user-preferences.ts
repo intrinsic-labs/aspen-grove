@@ -31,6 +31,15 @@ export interface UserPreferences {
   // LM Studio connection settings (token lives in secure store)
   readonly lmstudioSettings: LMStudioSettings;
 
+  /**
+   * The model Agent that fresh LoomTrees are pinned to.
+   *
+   * Set automatically the first time the user configures any model agent.
+   * If the referenced agent is later deleted, the tree-creation flow falls
+   * back to any available shared model agent and clears this field.
+   */
+  readonly defaultModelAgentId?: ULID;
+
   // Node display
   readonly nodeViewStyle: NodeViewStyle;
   readonly nodeViewCornerRadius: number;

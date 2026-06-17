@@ -141,26 +141,57 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ---
 
-## Phase 3: Tree Creation Flow
+## Phase 3: Tree Creation Flow ✅ (placeholder)
 
-**Goal**: Trees are always created with a `defaultModelAgentId`. If no agent exists, the user is prompted to set one up first.
+**Goal**: Trees are always created with a `defaultModelAgentId`, resolved from a user-pinned default with sensible fallbacks. UI is intentionally placeholder — the proper picker lands in Phase 5.
+
+### Schema (WatermelonDB)
+
+- [x] Bump schema to v7.
+- [x] Add `user_preferences.default_model_agent_id: string?` column (additive migration).
+
+### Domain / repositories
+
+- [x] `UserPreferences`: add optional `defaultModelAgentId?: ULID`.
+- [x] `IUserPreferencesRepository`: `UserPreferencesChanges` accepts `defaultModelAgentId?: ULID | null` (nullable so we can clear stale pins).
+- [x] `WatermelonUserPreferencesRepository`: reads/writes the new column. New singleton seeds it as `null`.
+
+### Application services
+
+- [x] New: `resolveDefaultModelAgent` helper in `application/services/`. Resolves the model Agent for a new tree in the order:
+  1. Pinned `UserPreferences.defaultModelAgentId` if still active.
+  2. Otherwise, first available shared model agent.
+  3. Otherwise, `null` — caller surfaces an error.
+  - Stale pins (deleted/archived agents) are cleared automatically.
+- [x] New: `pinDefaultModelAgentIfUnset` companion helper. No-ops if a pin already exists, so subsequent Settings saves don't silently re-route future trees.
 
 ### Interface
 
-- [ ] `LoomTreeListView` create-new flow:
-  - If at least one shared model agent exists, pick the user's "default" (last-used or marked-default — see open Q below) and create the tree pointing at it.
-  - If no model agents exist, navigate to Settings → Agents with a banner like "Set up your first agent to start a tree."
-- [ ] New: tiny `useAvailableAgentsForNewTree` hook in the chat module.
+- [x] `LoomTreeListView`: tree-create flow uses `resolveDefaultModelAgent` instead of the Phase 2 "first shared agent" stopgap. Clear error message when no agents exist (placeholder — future banner / Settings deeplink in Phase 5).
+- [x] `useSettingsController.persistDraft`:
+  - Always upserts the OpenRouter assistant agent (existing behavior preserved).
+  - **New**: also upserts the LM Studio assistant agent when the in-memory "selected model" is set, so the LM Studio routing path is reachable end-to-end.
+  - **New**: after upsert, calls `pinDefaultModelAgentIfUnset` for each. Order is biased toward the provider the user has open in the picker, so first-time LM Studio configurators get LM Studio as their default.
+  - No explicit "set as default" UI shipped — deliberate per the placeholder approach.
 
-### Defaults
+### Bootstrap / startup
 
-- [ ] Add `UserPreferences.defaultModelAgentId?: ULID` to remember the "default for new trees" choice.
-- [ ] Add `user_preferences.default_model_agent_id` column (schema v6 alongside the others).
-- [ ] If the chosen default is archived/deleted, fall back to "most recently used model agent" and update the preference.
+- [x] `runStartupOrchestrator`: smoke-tree path now uses `resolveDefaultModelAgent` instead of `findSharedModels` directly. Same skip-when-empty behavior.
 
 ### Doc updates
 
-- [ ] `docs/architecture/model/agents.md` UserPreferences section: add `defaultModelAgentId`.
+- [x] `docs/architecture/model/agents.md` UserPreferences section: added `defaultModelAgentId` field and a new "Default Model Agent for New Trees" section documenting resolution order and stale-pin handling.
+
+### Explicit non-goals (deferred)
+
+- ~~Navigate to Settings → Agents with a banner when no model agents exist.~~ Placeholder error message used instead. Phase 5 ships the banner + deeplink.
+- ~~`useAvailableAgentsForNewTree` hook.~~ Folded into the inline `resolveDefaultModelAgent` call. The hook isn't valuable until there's a picker UI to consume it.
+- ~~Explicit "default agent for new trees" picker.~~ Phase 5 Settings → Agents.
+
+### Verification
+
+- [x] `npm test` — 6 suites / 9 tests pass.
+- [x] Zed diagnostics — zero errors / warnings across the project.
 
 ---
 

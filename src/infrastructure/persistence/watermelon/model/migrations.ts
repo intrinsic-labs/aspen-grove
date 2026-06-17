@@ -107,5 +107,24 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      // v7: User-pinned default model Agent for new trees.
+      // Adds `user_preferences.default_model_agent_id`. Tree creation reads
+      // this to decide which agent a fresh tree references; unset means
+      // "fall back to any available shared model agent."
+      toVersion: 7,
+      steps: [
+        addColumns({
+          table: 'user_preferences',
+          columns: [
+            {
+              name: 'default_model_agent_id',
+              type: 'string',
+              isOptional: true,
+            },
+          ],
+        }),
+      ],
+    },
   ],
 });

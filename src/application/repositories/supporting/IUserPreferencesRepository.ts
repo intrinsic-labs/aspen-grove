@@ -5,6 +5,7 @@ import {
   Theme,
   UserPreferences,
 } from '@domain/entities';
+import type { ULID } from '@domain/value-objects';
 
 /**
  * Repository interface for UserPreferences persistence operations.
@@ -39,4 +40,9 @@ export type UserPreferencesChanges = {
   readonly nodeViewStyle?: NodeViewStyle;
   readonly nodeViewCornerRadius?: number;
   readonly lmstudioSettings?: Partial<LMStudioSettings>;
+  /**
+   * Pin the user's default model Agent for new LoomTrees. Pass `null` to
+   * clear the pin (e.g., when the referenced agent has been deleted).
+   */
+  readonly defaultModelAgentId?: ULID | null;
 };

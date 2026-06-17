@@ -129,6 +129,10 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
           record.lmstudioSettings = JSON.stringify(merged);
         }
 
+        if (changes.defaultModelAgentId !== undefined) {
+          record.defaultModelAgentId = changes.defaultModelAgentId;
+        }
+
         record.updatedAt = this.now();
       });
 
@@ -173,6 +177,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.nodeViewStyle = DEFAULT_NODE_VIEW_STYLE;
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
+      record.defaultModelAgentId = null;
       record.createdAt = createdAt;
       record.updatedAt = createdAt;
     });
@@ -194,6 +199,9 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       nodeViewStyle: model.nodeViewStyle as NodeViewStyle,
       nodeViewCornerRadius: model.nodeViewCornerRadius,
       lmstudioSettings: parseLMStudioSettings(model.lmstudioSettings),
+      defaultModelAgentId: model.defaultModelAgentId
+        ? (model.defaultModelAgentId as ULID)
+        : undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     };

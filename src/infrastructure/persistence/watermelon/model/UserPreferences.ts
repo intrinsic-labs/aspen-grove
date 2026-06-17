@@ -27,6 +27,13 @@ export default class UserPreferences extends Model {
   // model. Provider routing is now driven by each Agent's `modelRef`.
   @text('lmstudio_settings') lmstudioSettings!: string | null;
 
+  /**
+   * User-pinned default model Agent for new LoomTrees. Tree creation reads
+   * this; if unset (or stale), the flow falls back to any available shared
+   * model agent.
+   */
+  @field('default_model_agent_id') defaultModelAgentId!: string | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
 }

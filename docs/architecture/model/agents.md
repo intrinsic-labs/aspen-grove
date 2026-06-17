@@ -143,6 +143,7 @@ App-wide user preferences stored as a singleton. Not tied to any specific Agent.
 - **avatarRef** — optional string, reference to avatar image in media storage
 - **defaultVoiceModeEnabled** — boolean, default false
 - **defaultTemperature** — number, preferred temperature for new model agents (default: 1.0)
+- **defaultModelAgentId** — optional ULID, the model Agent that new LoomTrees are pinned to (see [Default Model Agent](#default-model-agent-for-new-trees))
 - **theme** — enum: `light` | `dark` | `system`, default `system`
 - **fontSize** — number, UI text size in points, default 16
 - **fontFace** — string, UI font family name
@@ -151,6 +152,21 @@ App-wide user preferences stored as a singleton. Not tied to any specific Agent.
 - **verboseErrorAlerts** — boolean, show detailed error info, default false
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
+
+### Default Model Agent for New Trees
+
+`UserPreferences.defaultModelAgentId` records the user's preferred model Agent for newly-created LoomTrees. Tree creation resolves it in this order:
+
+1. The pinned `defaultModelAgentId`, if it still references an active, non-archived model agent.
+2. Otherwise, the first available shared (library) model agent.
+3. Otherwise, the create-tree flow fails with a message directing the user to Settings.
+
+Stale pins (the referenced agent has been deleted or archived) are cleared automatically the next time the resolver runs, so the user isn't stuck on a dead pointer.
+
+The pin is currently set in two ways:
+
+- **First-time pinning during Settings save**: when the user configures their first model agent in Settings, that agent becomes the default. Subsequent saves do not change the pin unless it was cleared.
+- **Explicit user choice** (post-Phase 5): the Settings → Agents UI exposes a "set as default for new trees" affordance per agent.
 
 ### Constraints
 

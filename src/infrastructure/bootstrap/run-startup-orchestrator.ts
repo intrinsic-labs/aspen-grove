@@ -1,4 +1,5 @@
 import type { Database } from '@nozbe/watermelondb';
+import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import { CreateDialogueLoomTreeUseCase } from '@application/use-cases';
 import { initializeAppDefaults } from '@infrastructure/bootstrap/initialize-app-defaults';
 import {
@@ -8,6 +9,7 @@ import {
   WatermelonNodeRepository,
   WatermelonPathRepository,
   WatermelonPathStateRepository,
+  WatermelonUserPreferencesRepository,
 } from '@infrastructure/persistence/watermelon/repositories';
 
 type StartupLogger = (
@@ -83,12 +85,18 @@ export const runStartupOrchestrator = async (
     };
   }
 
-  // Smoke trees need a default model agent. If the user hasn't configured
-  // any model agents yet, skip the smoke tree rather than failing startup.
-  // The empty-state UI will guide them through agent setup.
+  // Smoke trees need a default model agent. Resolve from the user's pinned
+  // default first, falling back to any available shared agent. If none
+  // exists, skip the smoke tree rather than failing startup — the empty-state
+  // UI guides the user through agent setup.
   const agentRepository = new WatermelonAgentRepository(database);
-  const candidateAgents = await agentRepository.findSharedModels(true);
-  const smokeTreeAgent = candidateAgents[0];
+  const userPreferencesRepository = new WatermelonUserPreferencesRepository(
+    database
+  );
+  const smokeTreeAgent = await resolveDefaultModelAgent({
+    agentRepository,
+    userPreferencesRepository,
+  });
   if (!smokeTreeAgent) {
     log('skipping smoke dialogue tree: no model agents configured');
     return {
