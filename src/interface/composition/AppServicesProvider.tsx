@@ -9,10 +9,15 @@ import {
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   CreateDialogueLoomTreeUseCase,
+  CreateSharedAgentUseCase,
+  DeleteAgentUseCase,
   EditDialogueNodeUseCase,
+  ForkAgentForTreeUseCase,
   GenerateDialogueContinuationUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
+  UpdateAgentConfigurationUseCase,
+  UpdateTreeDefaultAgentUseCase,
 } from '@application/use-cases';
 import {
   LMStudioAdapter,
@@ -55,10 +60,15 @@ type AppServices = {
   };
   readonly useCases: {
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
+    readonly createSharedAgentUseCase: CreateSharedAgentUseCase;
+    readonly deleteAgentUseCase: DeleteAgentUseCase;
     readonly editDialogueNodeUseCase: EditDialogueNodeUseCase;
+    readonly forkAgentForTreeUseCase: ForkAgentForTreeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
+    readonly updateAgentConfigurationUseCase: UpdateAgentConfigurationUseCase;
+    readonly updateTreeDefaultAgentUseCase: UpdateTreeDefaultAgentUseCase;
   };
 };
 
@@ -149,6 +159,25 @@ const buildAppServices = (): AppServices => {
       pathStateRepository: repositories.pathStateRepo,
       nodeRepository: repositories.nodeRepo,
       edgeRepository: repositories.edgeRepo,
+    }),
+    // Agent management use cases (used by chat ⚙️ sheet and Settings → Agents)
+    createSharedAgentUseCase: new CreateSharedAgentUseCase({
+      agentRepository: repositories.agentRepo,
+    }),
+    updateAgentConfigurationUseCase: new UpdateAgentConfigurationUseCase({
+      agentRepository: repositories.agentRepo,
+    }),
+    forkAgentForTreeUseCase: new ForkAgentForTreeUseCase({
+      agentRepository: repositories.agentRepo,
+      loomTreeRepository: repositories.treeRepo,
+    }),
+    updateTreeDefaultAgentUseCase: new UpdateTreeDefaultAgentUseCase({
+      loomTreeRepository: repositories.treeRepo,
+      agentRepository: repositories.agentRepo,
+    }),
+    deleteAgentUseCase: new DeleteAgentUseCase({
+      agentRepository: repositories.agentRepo,
+      loomTreeRepository: repositories.treeRepo,
     }),
   } as const;
 

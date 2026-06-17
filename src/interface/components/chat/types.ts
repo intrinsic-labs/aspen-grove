@@ -1,8 +1,18 @@
 import type { DialogueTurnSession } from '@application/use-cases';
-import type { NodeViewStyle } from '@domain/entities';
+import type { NodeViewStyle, SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
-export type ChatSession = DialogueTurnSession;
+/**
+ * Chat session state carried by the controller.
+ *
+ * Extends `DialogueTurnSession` (the use-case input) with `provider`, which
+ * the controller uses to fetch the right per-provider API key from the
+ * credential store. The use cases themselves resolve the provider from the
+ * agent's `modelRef` and do not need this field on their input.
+ */
+export type ChatSession = DialogueTurnSession & {
+  readonly provider: SelectableProvider;
+};
 
 export type ChatRow = {
   readonly id: ULID;

@@ -1,12 +1,4 @@
-import {
-  DEFAULT_OPENROUTER_MODEL_IDENTIFIER,
-  ensureOpenRouterAssistantAgent,
-  getOpenRouterModelIdentifier,
-} from '@application/services/openrouter-assistant-agent';
-import {
-  ensureLMStudioAssistantAgent,
-  getLMStudioModelIdentifier,
-} from '@application/services/lmstudio-assistant-agent';
+import { selectableProviderFromModelRef } from '@application/services/llm';
 import type {
   IAgentRepository,
   IGroveRepository,
@@ -23,13 +15,18 @@ import type { ChatRow, ChatSession } from './types';
 type ChatSessionRepositories = {
   readonly treeRepo: Pick<ILoomTreeRepository, 'findById'>;
   readonly groveRepo: Pick<IGroveRepository, 'findById'>;
-  readonly agentRepo: IAgentRepository;
+  readonly agentRepo: Pick<IAgentRepository, 'findById'>;
   readonly pathRepo: Pick<
     IPathRepository,
     'findByTreeAndOwner' | 'create' | 'getNodeSequence' | 'appendNode'
   >;
   readonly pathStateRepo: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById'>;
+  /**
+   * Reserved for future use (display preferences, defaults). Kept on the
+   * dependency surface so the chat controller doesn't need to re-thread this
+   * for upcoming Phase 4 work.
+   */
   readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
 };
 
@@ -39,44 +36,43 @@ export type InitializedChatSession = {
   readonly session: ChatSession;
 };
 
-type ResolvedModelAgent = {
-  readonly agent: Agent;
-  readonly modelIdentifier: string;
-  readonly provider: SelectableProvider;
-};
-
-const resolveModelAgentForProvider = async (
-  provider: SelectableProvider,
-  agentRepo: IAgentRepository,
-  lmstudioSelectedModel?: string
-): Promise<ResolvedModelAgent> => {
-  if (provider === 'lmstudio') {
-    const agent = await ensureLMStudioAssistantAgent(agentRepo, {
-      preferredModelIdentifier: lmstudioSelectedModel,
-    });
-
-    if (!agent) {
-      throw new Error(
-        'LM Studio is selected but no model is configured. Please select a model in Settings.'
-      );
-    }
-
-    const modelIdentifier = getLMStudioModelIdentifier(agent);
-    if (!modelIdentifier) {
-      throw new Error(
-        'LM Studio agent exists but has no model identifier. Please reconfigure in Settings.'
-      );
-    }
-
-    return { agent, modelIdentifier, provider: 'lmstudio' };
+const resolveModelAgent = async (
+  treeId: ULID,
+  defaultModelAgentId: ULID | undefined,
+  agentRepo: Pick<IAgentRepository, 'findById'>
+): Promise<{ agent: Agent; provider: SelectableProvider }> => {
+  if (!defaultModelAgentId) {
+    throw new Error(
+      `Loom Tree ${treeId} has no default model agent configured. ` +
+        `Configure an agent in Settings before opening this tree.`
+    );
   }
 
-  // Default to OpenRouter
-  const agent = await ensureOpenRouterAssistantAgent(agentRepo);
-  const modelIdentifier =
-    getOpenRouterModelIdentifier(agent) ?? DEFAULT_OPENROUTER_MODEL_IDENTIFIER;
+  const agent = await agentRepo.findById(defaultModelAgentId);
+  if (!agent) {
+    throw new Error(
+      `Loom Tree ${treeId} references a model agent that no longer exists ` +
+        `(${defaultModelAgentId}). Re-select an agent in this tree's settings.`
+    );
+  }
+  if (agent.type !== 'model') {
+    throw new Error(
+      `Loom Tree ${treeId}'s default agent must be a model agent (got ${agent.type}).`
+    );
+  }
+  if (!agent.modelRef) {
+    throw new Error(
+      `Model agent ${agent.id} has no modelRef. Re-configure it in Settings.`
+    );
+  }
+  if (agent.archivedAt) {
+    throw new Error(
+      `Model agent ${agent.id} is archived. Restore it or switch to another agent.`
+    );
+  }
 
-  return { agent, modelIdentifier, provider: 'openrouter' };
+  const provider = selectableProviderFromModelRef(agent.modelRef);
+  return { agent, provider };
 };
 
 export const initializeDialogueChatSession = async (
@@ -85,11 +81,7 @@ export const initializeDialogueChatSession = async (
 ): Promise<InitializedChatSession> => {
   const routeTreeId = parseULID(treeIdParam);
 
-  const [tree, userPreferences] = await Promise.all([
-    repositories.treeRepo.findById(routeTreeId),
-    repositories.userPreferencesRepo.get(),
-  ]);
-
+  const tree = await repositories.treeRepo.findById(routeTreeId);
   if (!tree) {
     throw new Error(`Loom Tree not found: ${routeTreeId}`);
   }
@@ -101,21 +93,14 @@ export const initializeDialogueChatSession = async (
 
   const ownerAgentId = grove.ownerAgentId as ULID;
 
-  // TODO (Phase 2): Resolve provider/model from `tree.defaultModelAgentId`
-  // instead of the global "active provider" flag.
-  //
-  // For now we always route through the OpenRouter singleton assistant agent
-  // because the per-tree default has not been wired through yet. LM Studio
-  // trees are temporarily unreachable from the chat surface until Phase 2 —
-  // they remain configurable in Settings (connection only) and will be
-  // reachable once Agents-as-first-class lands.
-  //
-  // The reference to `userPreferences` is preserved because subsequent phases
-  // will read display preferences from it; this avoids churning the call site
-  // again immediately.
-  void userPreferences;
-  const { agent: modelAgent, modelIdentifier } =
-    await resolveModelAgentForProvider('openrouter', repositories.agentRepo);
+  // Resolve the model agent this tree generates from. The agent's modelRef
+  // determines the provider — there is no global "active provider".
+  const { agent: modelAgent, provider } = await resolveModelAgent(
+    tree.id,
+    tree.defaultModelAgentId,
+    repositories.agentRepo
+  );
+  const modelIdentifier = modelRefIdentifier(modelAgent.modelRef);
 
   const path =
     (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
@@ -148,11 +133,25 @@ export const initializeDialogueChatSession = async (
       ownerAgentId,
       modelAgentId: modelAgent.id,
       modelIdentifier,
+      provider,
       treeId: tree.id,
       pathId: path.id,
       activeNodeId,
     },
   };
+};
+
+/**
+ * Strip the `{provider}:` prefix from a modelRef to get the raw identifier
+ * the provider's API expects (e.g., `anthropic/claude-sonnet-4` for
+ * OpenRouter, or the bare model id for LM Studio).
+ */
+const modelRefIdentifier = (modelRef: string | undefined): string => {
+  if (!modelRef) {
+    throw new Error('Cannot extract identifier from empty modelRef.');
+  }
+  const colonIndex = modelRef.indexOf(':');
+  return colonIndex === -1 ? modelRef : modelRef.slice(colonIndex + 1);
 };
 
 export const loadDialogueRowsForPath = async (

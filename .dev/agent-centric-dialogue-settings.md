@@ -95,50 +95,49 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ---
 
-## Phase 2: Application Layer — Use Cases
+## Phase 2: Application Layer — Use Cases ✅
 
 **Goal**: Replace global-provider resolution with agent-driven resolution.
 
 ### Provider adapter routing
 
-- [ ] Add a helper to map an `Agent.modelRef` → `SelectableProvider`. (E.g., `openrouter:foo` → `openrouter`, `local:ulid` → resolve LocalModel.provider, `lmstudio:foo` → `lmstudio`.) This replaces "consult the registry for the currently active provider."
-- [ ] `IProviderRegistry`: keep `getProvider(name)` and `getProvider(agent)`. Remove `getActiveProvider()` / `getActiveProviderName()` / `setActiveProvider()` — they no longer have a sensible meaning.
+- [x] Added `selectableProviderFromModelRef(modelRef)` helper in `application/services/llm/`. Maps `openrouter:foo` → `openrouter`, `lmstudio:foo` → `lmstudio`. Throws for currently-unrouteable providers (anthropic/openai/google/local/custom). Local model resolution stays a Phase 7 concern.
+- [x] `IProviderRegistry`: replaced `getActiveProvider` / `getActiveProviderName` / `setActiveProvider` with `getProviderForAgent(agent)` and `getProviderForModelRef(modelRef)`. Kept `getProvider(name)` and `getAvailableProviders()`.
+- [x] `ProviderRegistry` (infrastructure): no longer tracks an active provider. Provider escape hatches (`getOpenRouterAdapter`, `getLMStudioAdapter`) preserved for connection-config flows.
 
 ### Use case updates
 
-- [ ] `SendDialogueTurnUseCase`:
-  - Resolve provider from the model agent (not the registry's "active" state).
-  - Use `agent.configuration` (temperature, maxTokens, systemPrompt) as-is.
-- [ ] `GenerateDialogueContinuationUseCase`: same as above.
-- [ ] `CreateDialogueLoomTreeUseCase`:
-  - Require `defaultModelAgentId` in input.
-  - Validate the agent exists and is a model agent.
-  - Persist the field on the tree.
-- [ ] New: `UpdateTreeDefaultAgentUseCase` (sets which agent generates for the tree; used when user switches agents from chat ⚙️).
-- [ ] New: `ForkAgentForTreeUseCase`:
-  - Input: `sourceAgentId`, `treeId`
-  - Output: new tree-owned `Agent` cloned from source, with `ownerTreeId = treeId`
-  - Updates the tree's `defaultModelAgentId` to point at the clone
-  - Used when user customizes a shared agent's settings from chat ⚙️
-- [ ] New: `UpdateAgentConfigurationUseCase`:
-  - Mutates an existing agent's configuration (name, modelRef, temperature, systemPrompt, maxTokens, etc.)
-  - Used by both Settings → Agents and chat ⚙️ (when agent is already tree-owned)
-- [ ] New: `CreateSharedAgentUseCase`:
-  - Creates an agent with `ownerTreeId === null`
-  - Used by Settings → Agents → "+ New Agent"
-- [ ] New: `DeleteAgentUseCase`:
-  - For shared agents: hard delete (or archive — TBD), but block if any tree references it
-  - For tree-owned agents: triggered by tree deletion only
-- [ ] Update `WatermelonLoomTreeRepository.hardDelete` to also delete the tree-owned agent (if any).
+- [x] `SendDialogueTurnUseCase`: resolves provider via `providerRegistry.getProviderForAgent(modelAgent)`. Treats a missing model agent as a hard error (was previously silently optional). Uses `agent.configuration` directly.
+- [x] `GenerateDialogueContinuationUseCase`: same treatment as `SendDialogueTurnUseCase`.
+- [x] `CreateDialogueLoomTreeUseCase`: `defaultModelAgentId` is now required in input. Validates that the referenced agent exists, is `type: model`, and isn't archived. Persists the field on the tree.
+- [x] New: `UpdateTreeDefaultAgentUseCase`. Validates the target agent is a model agent, non-archived, and (if tree-owned) belongs to *this* tree. Re-points the tree's `defaultModelAgentId`.
+- [x] New: `ForkAgentForTreeUseCase`. Clones a shared agent's configuration into a tree-owned copy (`ownerTreeId = treeId`) and re-points the tree at the clone. Refuses to fork already-tree-owned agents.
+- [x] New: `UpdateAgentConfigurationUseCase`. Provider-agnostic mutation of name, modelRef, and configuration (merged on top of existing). Used by both shared-agent edits and tree-owned-agent edits.
+- [x] New: `CreateSharedAgentUseCase`. Creates a library agent (`ownerTreeId === null`) from a name + modelRef + optional configuration/permissions. Tree-owned agents are not created from scratch — they're forked from existing library agents.
+- [x] New: `DeleteAgentUseCase`. Refuses to delete shared agents while any active tree references them (blocking error includes the count). Accepts a `force` escape hatch for tree-cascade flows. Refuses to delete human agents.
+- [x] `WatermelonLoomTreeRepository.hardDelete`: cascade-deletes any tree-owned agents bound to the tree. Shared agents are never touched.
+- [x] `ILoomTreeRepository`: added `findByDefaultModelAgentId(modelAgentId, onlyActive?)` (used by `DeleteAgentUseCase` to detect in-use shared agents, and available for the upcoming Phase 4 "affects N trees" warning UI).
 
 ### Bootstrap / startup
 
-- [ ] `runStartupOrchestrator`: stop seeding any default model agent. Trees can't be created until the user sets up an agent.
-- [ ] `AppServicesProvider`: remove the call to `setActiveProvider(userPreferences.selectedProvider)`. Keep LM Studio adapter initialization (endpoint config) since that's connection-level.
+- [x] `runStartupOrchestrator`: smoke-tree path now resolves a default agent via `findSharedModels`. If no model agent exists, skips smoke tree creation cleanly (logs and returns). Trees can be created once an agent is configured.
+- [x] `AppServicesProvider`: removed the `setActiveProvider` call (Phase 1 already had this; finalized in Phase 2). LM Studio connection-level initialization preserved. New use cases wired into the `useCases` bundle (`createSharedAgentUseCase`, `updateAgentConfigurationUseCase`, `forkAgentForTreeUseCase`, `updateTreeDefaultAgentUseCase`, `deleteAgentUseCase`).
+
+### Chat / interface updates
+
+- [x] `ChatSession` type now carries `provider: SelectableProvider`, populated at session init from the resolved agent's `modelRef`. The chat controller uses it to fetch the right API key from secure storage.
+- [x] `session-helpers.ts`: rewritten. Resolves the model agent from `tree.defaultModelAgentId`, derives provider via `selectableProviderFromModelRef`. Clear, actionable errors when the tree has no agent or the agent is missing/archived/malformed. The OpenRouter-shim from Phase 1 is gone.
+- [x] `useLoomTreeChatController.ts`: removed the two `providerRegistry.getActiveProviderName()` calls in favor of `session.provider`.
+- [x] `LoomTreeListView.tsx`: tree creation now picks a default agent from `findSharedModels` and passes it as `defaultModelAgentId`. Surfaces a clear error if no agents exist (Phase 3 will route to Settings instead).
 
 ### Doc updates
 
-- [ ] `docs/architecture/contracts/llm-provider.md`: remove "active provider" concept; document that providers are selected per-request based on agent.
+- [x] `docs/architecture/contracts/llm-provider.md`: new `ProviderRegistry` section. Explicitly documents the "no active provider" routing principle and the agent-driven request path.
+
+### Verification
+
+- [x] `npm test` — 6 suites / 9 tests pass. Updated `SendDialogueTurnUseCase.test.ts` and `GenerateDialogueContinuationUseCase.test.ts` mocks from `getActiveProvider` → `getProviderForAgent`.
+- [x] Zed diagnostics — zero errors / warnings across the project.
 
 ---
 

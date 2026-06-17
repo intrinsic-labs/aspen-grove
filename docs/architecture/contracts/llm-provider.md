@@ -15,6 +15,28 @@ The LLM provider abstraction enables:
 
 ---
 
+## ProviderRegistry
+
+The `ProviderRegistry` holds a collection of `LLMProvider` adapters and resolves which adapter should handle a given request.
+
+### Routing Principle
+
+There is **no "active provider"** — the registry does not hold any global state about which provider is currently selected. Every request carries an `Agent` with it, and that Agent's `modelRef` (formatted `{provider}:{identifier}`) is what determines the provider. This is consistent with the Agent-centric architecture: provider/model choice belongs to the Agent, not to the app.
+
+### Operations
+
+- **getProvider(name)** — Look up an adapter by provider name. Used when callers already know the provider (rarely needed outside infrastructure).
+- **getProviderForAgent(agent)** — Resolve the adapter responsible for a given Agent's model. The primary request-path entry point. Throws if the agent is not a model agent, has no `modelRef`, or its provider is not registered.
+- **getProviderForModelRef(modelRef)** — Same as above but accepts the raw `ModelRef` string. Useful when the full Agent object isn't available.
+- **getAvailableProviders()** — Enumerate providers that the registry can route to.
+
+### Implementation Notes
+
+- Each request initializes the resolved adapter with the provider's credentials (fetched from secure storage per-provider) before issuing the completion call. The registry itself does not hold credentials.
+- Provider-specific operations (model catalog discovery, server health checks) are exposed via adapter-specific escape hatches (e.g., `getOpenRouterAdapter`, `getLMStudioAdapter`) and are not part of the `IProviderRegistry` contract.
+
+---
+
 ## LLMProvider Interface
 
 The core interface that all provider implementations must satisfy.

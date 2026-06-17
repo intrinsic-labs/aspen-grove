@@ -1,15 +1,5 @@
-import type {
-  Agent,
-  Content,
-  Grove,
-  LoomTree,
-  Node,
-} from '@domain/entities';
-import {
-  createLocalId,
-  createULID,
-  type ULID,
-} from '@domain/value-objects';
+import type { Agent, Content, Grove, LoomTree, Node } from '@domain/entities';
+import { createLocalId, createULID, type ULID } from '@domain/value-objects';
 import type {
   IAgentRepository,
   IGroveRepository,
@@ -27,6 +17,11 @@ const TITLE_MAX_LENGTH = 50;
 export type CreateDialogueLoomTreeInput = {
   readonly groveId: ULID;
   readonly ownerAgentId: ULID;
+  /**
+   * The model Agent that will generate continuations for this tree.
+   * Required — a dialogue tree always has a default generating agent.
+   */
+  readonly defaultModelAgentId: ULID;
   readonly title?: string;
   readonly description?: string;
   readonly systemContext?: string;
@@ -85,18 +80,20 @@ export class CreateDialogueLoomTreeUseCase {
     const ownerAgent = await this.requireAgent(input.ownerAgentId);
     this.ensureHumanOwner(ownerAgent);
 
+    const defaultModelAgent = await this.requireAgent(
+      input.defaultModelAgentId
+    );
+    this.ensureModelAgent(defaultModelAgent);
+
     const treeId = createULID();
     const rootNodeId = createULID();
     const rootNodeCreatedAt = new Date();
-    const content =
-      input.initialContent ?? {
-        type: 'text',
-        text: '',
-      };
+    const content = input.initialContent ?? {
+      type: 'text',
+      text: '',
+    };
 
-    const existingLocalIds = await this.nodeRepository.getAllLocalIds(
-      treeId
-    );
+    const existingLocalIds = await this.nodeRepository.getAllLocalIds(treeId);
     const localId = createLocalId(rootNodeId, existingLocalIds);
     const contentHash = await computeHumanContentHash(
       content,
@@ -128,6 +125,7 @@ export class CreateDialogueLoomTreeUseCase {
         title: input.title ?? this.deriveTitle(content),
         description: input.description,
         systemContext: input.systemContext,
+        defaultModelAgentId: input.defaultModelAgentId,
       });
 
       const path = await this.pathRepository.create({
@@ -196,6 +194,19 @@ export class CreateDialogueLoomTreeUseCase {
   private ensureHumanOwner(ownerAgent: Agent): void {
     if (ownerAgent.type !== 'human') {
       throw new Error('Dialogue tree owner must be a human agent');
+    }
+  }
+
+  private ensureModelAgent(agent: Agent): void {
+    if (agent.type !== 'model') {
+      throw new Error(
+        `Default model agent must be a model agent (got type=${agent.type})`
+      );
+    }
+    if (agent.archivedAt) {
+      throw new Error(
+        `Default model agent ${agent.id} is archived and cannot be used for a new tree`
+      );
     }
   }
 

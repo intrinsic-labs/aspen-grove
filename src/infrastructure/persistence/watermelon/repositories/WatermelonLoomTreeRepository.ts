@@ -11,6 +11,7 @@ import type {
 } from '@domain/entities';
 import { createULID, type ULID } from '@domain/value-objects';
 
+import AgentModel from '../model/Agent';
 import LoomTreeModel from '../model/LoomTree';
 import NodeModel from '../model/Node';
 import RawApiResponseModel from '../model/RawApiResponse';
@@ -42,6 +43,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   private readonly pathNodes: Collection<PathNodeModel>;
   private readonly pathSelections: Collection<PathSelectionModel>;
   private readonly pathStates: Collection<PathStateModel>;
+  private readonly agents: Collection<AgentModel>;
   private readonly now: () => Date;
 
   constructor(database: Database, now: () => Date = () => new Date()) {
@@ -56,6 +58,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
     this.pathNodes = this.db.get<PathNodeModel>('path_nodes');
     this.pathSelections = this.db.get<PathSelectionModel>('path_selections');
     this.pathStates = this.db.get<PathStateModel>('path_states');
+    this.agents = this.db.get<AgentModel>('agents');
     this.now = now;
   }
 
@@ -150,6 +153,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
         await this.deleteTreePaths(id);
         await this.deleteTreeEdges(id);
         await this.deleteTreeNodes(id);
+        await this.deleteTreeOwnedAgents(id);
         await tree.destroyPermanently();
 
         return true;
@@ -160,6 +164,20 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
         throw error;
       }
     });
+  }
+
+  /**
+   * Cascade-delete any tree-owned agents bound to this tree. Shared agents
+   * (ownerTreeId === null) are never touched here — they remain in the
+   * library for other trees.
+   */
+  private async deleteTreeOwnedAgents(loomTreeId: ULID): Promise<void> {
+    const ownedAgents = await this.agents
+      .query(Q.where('owner_tree_id', loomTreeId))
+      .fetch();
+    for (const agent of ownedAgents) {
+      await agent.destroyPermanently();
+    }
   }
 
   async findByGroveId(
@@ -206,6 +224,18 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
     }
 
     const models = await query.fetch();
+    return models.map((model) => this.toDomain(model));
+  }
+
+  async findByDefaultModelAgentId(
+    modelAgentId: ULID,
+    onlyActive: boolean = true
+  ): Promise<LoomTreeEntity[]> {
+    const clauses = [Q.where('default_model_agent_id', modelAgentId)];
+    if (onlyActive) {
+      clauses.push(Q.where('archived_at', null));
+    }
+    const models = await this.loomTrees.query(...clauses).fetch();
     return models.map((model) => this.toDomain(model));
   }
 

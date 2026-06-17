@@ -331,11 +331,11 @@ export const useLoomTreeChatController = () => {
           });
         }
 
-        const activeProvider =
-          adapters.providerRegistry.getActiveProviderName();
+        // Provider is bound to this session's agent (via tree.defaultModelAgentId).
+        // Fetch the matching API key from secure storage.
         const providerApiKey = await getProviderApiKey(
           adapters.credentialStore,
-          activeProvider
+          session.provider
         );
         const result =
           await useCases.generateDialogueContinuationUseCase.execute({
@@ -443,10 +443,11 @@ export const useLoomTreeChatController = () => {
         return;
       }
 
-      const activeProvider = adapters.providerRegistry.getActiveProviderName();
+      // Provider is bound to this session's agent (via tree.defaultModelAgentId).
+      // Fetch the matching API key from secure storage.
       const providerApiKey = await getProviderApiKey(
         adapters.credentialStore,
-        activeProvider
+        session.provider
       );
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
@@ -471,7 +472,7 @@ export const useLoomTreeChatController = () => {
         messageCount: turnResult.contextMessageCount,
       });
 
-      console.info(`[chat] ${activeProvider} completion`, {
+      console.info(`[chat] ${session.provider} completion`, {
         modelIdentifier: turnResult.completion.modelIdentifier,
         latencyMs: turnResult.completion.latencyMs,
         finishReason: turnResult.completion.finishReason,

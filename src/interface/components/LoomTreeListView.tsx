@@ -20,7 +20,8 @@ const LoomTreeListView = () => {
   const navigation = useNavigation();
   const { repositories, useCases } = useAppServices();
   const bootstrapState = useAppBootstrapState();
-  const bootstrap = bootstrapState.status === 'ready' ? bootstrapState.result : null;
+  const bootstrap =
+    bootstrapState.status === 'ready' ? bootstrapState.result : null;
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -81,9 +82,21 @@ const LoomTreeListView = () => {
       setCreating(true);
       setError(null);
 
+      // TODO (Phase 3): Replace this with a proper agent picker UX and a
+      // `UserPreferences.defaultModelAgentId` lookup. For now we just pick
+      // any active shared model agent so existing flows keep working.
+      const sharedAgents = await repositories.agentRepo.findSharedModels(true);
+      const defaultAgent = sharedAgents[0];
+      if (!defaultAgent) {
+        throw new Error(
+          'No model agents configured. Set up an agent in Settings before creating a tree.'
+        );
+      }
+
       const created = await useCases.createDialogueLoomTreeUseCase.execute({
         groveId: bootstrap.groveId,
         ownerAgentId: bootstrap.ownerAgentId,
+        defaultModelAgentId: defaultAgent.id,
         initialContent: {
           type: 'text',
           text: '',
@@ -104,7 +117,13 @@ const LoomTreeListView = () => {
     } finally {
       setCreating(false);
     }
-  }, [bootstrap, creating, router, useCases.createDialogueLoomTreeUseCase]);
+  }, [
+    bootstrap,
+    creating,
+    repositories.agentRepo,
+    router,
+    useCases.createDialogueLoomTreeUseCase,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -131,7 +150,15 @@ const LoomTreeListView = () => {
         </Pressable>
       ),
     });
-  }, [bootstrap, colors.primary, colors.primary, creating, loading, navigation, onCreateTree]);
+  }, [
+    bootstrap,
+    colors.primary,
+    colors.primary,
+    creating,
+    loading,
+    navigation,
+    onCreateTree,
+  ]);
 
   const onOpenTree = (tree: LoomTree) => {
     router.push({
@@ -228,4 +255,3 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
 });
-

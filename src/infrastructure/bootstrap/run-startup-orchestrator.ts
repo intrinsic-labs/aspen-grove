@@ -10,7 +10,10 @@ import {
   WatermelonPathStateRepository,
 } from '@infrastructure/persistence/watermelon/repositories';
 
-type StartupLogger = (message: string, details?: Record<string, unknown>) => void;
+type StartupLogger = (
+  message: string,
+  details?: Record<string, unknown>
+) => void;
 
 export type RunStartupOrchestratorOptions = {
   readonly ensureDialogueSmokeTreeIfEmpty?: boolean;
@@ -80,10 +83,26 @@ export const runStartupOrchestrator = async (
     };
   }
 
+  // Smoke trees need a default model agent. If the user hasn't configured
+  // any model agents yet, skip the smoke tree rather than failing startup.
+  // The empty-state UI will guide them through agent setup.
+  const agentRepository = new WatermelonAgentRepository(database);
+  const candidateAgents = await agentRepository.findSharedModels(true);
+  const smokeTreeAgent = candidateAgents[0];
+  if (!smokeTreeAgent) {
+    log('skipping smoke dialogue tree: no model agents configured');
+    return {
+      userPreferencesId: defaults.userPreferences.id,
+      ownerAgentId: defaults.ownerAgent.id,
+      groveId: defaults.grove.id,
+      existingTreeCount: 0,
+    };
+  }
+
   log('creating smoke dialogue tree');
   const createDialogueLoomTreeUseCase = new CreateDialogueLoomTreeUseCase({
     groveRepository: new WatermelonGroveRepository(database),
-    agentRepository: new WatermelonAgentRepository(database),
+    agentRepository,
     nodeRepository: new WatermelonNodeRepository(database),
     loomTreeRepository: new WatermelonLoomTreeRepository(database),
     pathRepository: new WatermelonPathRepository(database),
@@ -93,6 +112,7 @@ export const runStartupOrchestrator = async (
   const created = await createDialogueLoomTreeUseCase.execute({
     groveId: defaults.grove.id,
     ownerAgentId: defaults.ownerAgent.id,
+    defaultModelAgentId: smokeTreeAgent.id,
     title: 'First Loom Tree',
     initialContent: {
       type: 'text',

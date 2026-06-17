@@ -272,7 +272,7 @@ describe('GenerateDialogueContinuationUseCase', () => {
         deleteByNodeId: async (nodeId) => rawResponsesByNodeId.delete(nodeId),
       },
       providerRegistry: {
-        getActiveProvider: () => ({
+        getProviderForAgent: () => ({
           provider: 'openrouter',
           initialize: async () => true,
           getCapabilities: () => ({

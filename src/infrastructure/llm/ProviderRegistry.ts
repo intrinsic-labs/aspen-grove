@@ -1,5 +1,14 @@
-import type { ILlmProvider, IProviderRegistry } from '@application/services/llm';
-import { SELECTABLE_PROVIDERS, type SelectableProvider } from '@domain/entities';
+import {
+  selectableProviderFromModelRef,
+  type ILlmProvider,
+  type IProviderRegistry,
+} from '@application/services/llm';
+import {
+  SELECTABLE_PROVIDERS,
+  type Agent,
+  type SelectableProvider,
+} from '@domain/entities';
+import type { ModelRef } from '@domain/value-objects';
 import type { LMStudioAdapter } from './LMStudioAdapter';
 import type { OpenRouterAdapter } from './OpenRouterAdapter';
 
@@ -9,51 +18,65 @@ type ProviderAdapters = {
 };
 
 /**
- * Manages LLM provider adapters and allows runtime switching.
+ * Holds provider adapters and resolves which one should handle a given
+ * request based on the requesting Agent's `modelRef`.
+ *
+ * There is intentionally no "active provider" concept: every request carries
+ * the agent (and therefore the provider) with it.
  */
 export class ProviderRegistry implements IProviderRegistry {
-  private activeProvider: SelectableProvider;
   private readonly adapters: ProviderAdapters;
 
-  constructor(
-    adapters: ProviderAdapters,
-    initialProvider: SelectableProvider = 'openrouter'
-  ) {
+  constructor(adapters: ProviderAdapters) {
     this.adapters = adapters;
-    this.activeProvider = initialProvider;
-  }
-
-  getActiveProvider(): ILlmProvider {
-    return this.adapters[this.activeProvider];
   }
 
   getProvider(provider: SelectableProvider): ILlmProvider {
-    return this.adapters[provider];
+    const adapter = this.adapters[provider];
+    if (!adapter) {
+      throw new Error(`No adapter registered for provider: ${provider}`);
+    }
+    return adapter;
+  }
+
+  getProviderForAgent(agent: Agent): ILlmProvider {
+    if (agent.type !== 'model') {
+      throw new Error(
+        `Cannot resolve provider: agent "${agent.id}" is not a model agent.`
+      );
+    }
+    if (!agent.modelRef) {
+      throw new Error(
+        `Cannot resolve provider: agent "${agent.id}" has no modelRef.`
+      );
+    }
+    return this.getProviderForModelRef(agent.modelRef);
+  }
+
+  getProviderForModelRef(modelRef: ModelRef): ILlmProvider {
+    const providerName = selectableProviderFromModelRef(modelRef);
+    return this.getProvider(providerName);
+  }
+
+  getAvailableProviders(): readonly SelectableProvider[] {
+    return SELECTABLE_PROVIDERS;
   }
 
   /**
-   * Get the OpenRouter adapter specifically (for OpenRouter-specific operations).
+   * Get the OpenRouter adapter specifically. Used for OpenRouter-specific
+   * concerns (e.g., catalog discovery) where the generic interface isn't
+   * enough. Prefer `getProviderForAgent` for normal request routing.
    */
   getOpenRouterAdapter(): OpenRouterAdapter {
     return this.adapters.openrouter;
   }
 
   /**
-   * Get the LM Studio adapter specifically (for LM Studio-specific operations like model discovery).
+   * Get the LM Studio adapter specifically. Used for LM Studio-specific
+   * concerns like model discovery against a running server. Prefer
+   * `getProviderForAgent` for normal request routing.
    */
   getLMStudioAdapter(): LMStudioAdapter {
     return this.adapters.lmstudio;
-  }
-
-  setActiveProvider(provider: SelectableProvider): void {
-    this.activeProvider = provider;
-  }
-
-  getActiveProviderName(): SelectableProvider {
-    return this.activeProvider;
-  }
-
-  getAvailableProviders(): readonly SelectableProvider[] {
-    return SELECTABLE_PROVIDERS;
   }
 }

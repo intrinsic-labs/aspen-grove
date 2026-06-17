@@ -153,14 +153,19 @@ export class GenerateDialogueContinuationUseCase {
     const modelAgent = await this.agentRepository.findById(
       input.session.modelAgentId
     );
+    if (!modelAgent) {
+      throw new Error(`Model agent not found: ${input.session.modelAgentId}`);
+    }
     const tree = await this.loomTreeRepository.findById(input.session.treeId);
     const assembled = assembleDialogueContext({
       nodes: contextNodes,
-      agentSystemPrompt: modelAgent?.configuration.systemPrompt,
+      agentSystemPrompt: modelAgent.configuration.systemPrompt,
       treeSystemContext: tree?.systemContext,
     });
 
-    const llmProvider = this.providerRegistry.getActiveProvider();
+    // Provider is determined by the agent's modelRef. Branching from a single
+    // node may invoke whichever provider is bound to this tree's agent.
+    const llmProvider = this.providerRegistry.getProviderForAgent(modelAgent);
 
     const initialized = await llmProvider.initialize(
       { apiKey: input.providerApiKey },
@@ -179,9 +184,9 @@ export class GenerateDialogueContinuationUseCase {
         model: input.session.modelIdentifier,
         messages: assembled.messages,
         systemPrompt: assembled.systemContext,
-        temperature: modelAgent?.configuration.temperature,
-        maxTokens: modelAgent?.configuration.maxTokens,
-        stopSequences: modelAgent?.configuration.stopSequences,
+        temperature: modelAgent.configuration.temperature,
+        maxTokens: modelAgent.configuration.maxTokens,
+        stopSequences: modelAgent.configuration.stopSequences,
       },
       onTextDelta: input.onAssistantTextDelta,
     });

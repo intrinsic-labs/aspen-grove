@@ -250,8 +250,10 @@ export const useSettingsController = () => {
       setNodeViewStyle(loadedDraft.nodeViewStyle);
       setNodeViewCornerRadiusInput(loadedDraft.nodeViewCornerRadiusInput);
 
-      // Update provider registry
-      adapters.providerRegistry.setActiveProvider(loadedDraft.selectedProvider);
+      // NOTE (Phase 2): The provider registry no longer holds an "active"
+      // provider — provider routing is resolved per request from each Agent's
+      // modelRef. The Settings UI's provider picker is in-memory only and will
+      // be replaced by the Agents library in Phase 5.
 
       lastSavedDraftKeyRef.current = toDraftKey(loadedDraft);
     } catch (caught) {
@@ -402,8 +404,7 @@ export const useSettingsController = () => {
             : adapters.credentialStore.deleteProviderApiKey('lmstudio'),
         ]);
 
-        // Update provider registry
-        adapters.providerRegistry.setActiveProvider(draft.selectedProvider);
+        // (Phase 2) No more setActiveProvider — see note in loadSettings.
 
         const normalizedDraft = buildDraft({
           ...draft,

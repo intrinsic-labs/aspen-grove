@@ -47,6 +47,19 @@ export interface ILoomTreeRepository {
     limit?: number,
     offset?: number
   ): Promise<LoomTree[]>;
+
+  /**
+   * Find all trees that reference a given Agent as their default model agent.
+   *
+   * Used to:
+   * - Block deletion of a shared agent that's still in use
+   * - Surface "this change affects N trees" warnings in the chat header UI
+   * - Power cascading workflows (e.g., re-pointing trees when an agent goes away)
+   */
+  findByDefaultModelAgentId(
+    modelAgentId: ULID,
+    onlyActive?: boolean
+  ): Promise<LoomTree[]>;
 }
 
 /** Input for creating a new LoomTree. */
