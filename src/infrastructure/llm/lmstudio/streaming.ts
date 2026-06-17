@@ -36,8 +36,13 @@ const toInterruptedReason = (error: unknown): StreamInterruptionReason => {
 };
 
 /**
- * Makes a streaming completion request to LM Studio's native API.
- * Uses /api/v1/chat with stream: true which supports MCP tools.
+ * Makes a streaming completion request to LM Studio's OpenAI-compatible
+ * endpoint (`/v1/chat/completions` with `stream: true`).
+ *
+ * Uses standard OpenAI SSE format: `data: {...}` chunks with
+ * `choices[0].delta.content`, terminated by `data: [DONE]`. See
+ * `requestLMStudioCompletion` for the rationale for choosing OpenAI-compat
+ * over LM Studio's native streaming events API.
  */
 export const streamLMStudioCompletion = async function* (input: {
   readonly config: LMStudioConfig;
@@ -83,7 +88,7 @@ export const streamLMStudioCompletion = async function* (input: {
 
   try {
     const endpoint = config.endpoint.replace(/\/$/, '');
-    const url = `${endpoint}/api/v1/chat`;
+    const url = `${endpoint}/v1/chat/completions`;
 
     const messages = toLMStudioMessages(request.messages, request.systemPrompt);
 

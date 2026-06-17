@@ -16,8 +16,21 @@ import { toLlmProviderError } from './errors';
 import type { LMStudioConfig, LMStudioResponsePayload } from './types';
 
 /**
- * Makes a non-streaming completion request to LM Studio's native API.
- * Uses /api/v1/chat which supports MCP tools configured on the server.
+ * Makes a non-streaming completion request to LM Studio's OpenAI-compatible
+ * endpoint (`/v1/chat/completions`).
+ *
+ * Why not the native `/api/v1/chat`?
+ * - Native uses `input` instead of `messages` and treats history via stateful
+ *   `previous_response_id` chains — incompatible with branching loom trees,
+ *   where each branch needs an independent message history including prior
+ *   assistant turns.
+ * - OpenAI-compat accepts the same shape we already send to OpenRouter, so
+ *   one body builder covers both providers.
+ *
+ * Trade-off: LM Studio's pre-configured MCP integrations are only available
+ * through the native endpoint. The `useMcpTools` config flag is effectively
+ * a no-op here — it's retained for forward compatibility if/when we add a
+ * hybrid path for MCP-enabled requests.
  */
 export const requestLMStudioCompletion = async (input: {
   readonly config: LMStudioConfig;
@@ -31,7 +44,7 @@ export const requestLMStudioCompletion = async (input: {
 
   try {
     const endpoint = config.endpoint.replace(/\/$/, '');
-    const url = `${endpoint}/api/v1/chat`;
+    const url = `${endpoint}/v1/chat/completions`;
 
     const messages = toLMStudioMessages(request.messages, request.systemPrompt);
 

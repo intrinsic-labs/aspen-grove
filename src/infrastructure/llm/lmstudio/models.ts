@@ -40,12 +40,6 @@ export const fetchLMStudioModels = async (input: {
   const endpoint = config.endpoint.replace(/\/$/, '');
   const url = `${endpoint}/api/v1/models`;
 
-  console.log('[LMStudio:models] Fetching models', {
-    url,
-    hasApiToken: !!config.apiToken,
-    timeoutMs,
-  });
-
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -55,35 +49,15 @@ export const fetchLMStudioModels = async (input: {
       headers['Authorization'] = `Bearer ${config.apiToken}`;
     }
 
-    console.log(
-      '[LMStudio:models] Making request with headers:',
-      Object.keys(headers)
-    );
-
     const response = await expoFetch(url, {
       method: 'GET',
       headers,
       signal: controller.signal,
     });
 
-    console.log(
-      '[LMStudio:models] Response status:',
-      response.status,
-      response.statusText
-    );
-
     const responseText = await response.text();
-    console.log(
-      '[LMStudio:models] Response body (first 500 chars):',
-      responseText.slice(0, 500)
-    );
 
     if (!response.ok) {
-      console.error(
-        '[LMStudio:models] Request failed:',
-        response.status,
-        responseText
-      );
       throw toLlmProviderError({
         status: response.status,
         responseHeaders: response.headers,
@@ -95,8 +69,7 @@ export const fetchLMStudioModels = async (input: {
     let payload: LMStudioModelsResponse;
     try {
       payload = JSON.parse(responseText) as LMStudioModelsResponse;
-    } catch (parseError) {
-      console.error('[LMStudio:models] Failed to parse JSON:', parseError);
+    } catch {
       throw new LlmProviderError({
         code: 'invalidRequest',
         message: `Invalid JSON response: ${responseText.slice(0, 200)}`,
@@ -105,28 +78,12 @@ export const fetchLMStudioModels = async (input: {
       });
     }
 
-    console.log('[LMStudio:models] Parsed payload:', {
-      hasModels: !!payload.models,
-      modelsLength: payload.models?.length,
-      rawPayload: JSON.stringify(payload).slice(0, 500),
-    });
-
     const apiModels = payload.models ?? [];
 
     // Filter to only LLM models (not embedding models) and normalize
     const models = apiModels
       .filter((m) => m.type === 'llm')
       .map(normalizeModel);
-
-    console.log(
-      '[LMStudio:models] Found LLM models:',
-      models.length,
-      models.map((m) => ({
-        id: m.id,
-        displayName: m.displayName,
-        state: m.state,
-      }))
-    );
 
     // Sort: loaded models first, then alphabetically
     return models.slice().sort((a, b) => {

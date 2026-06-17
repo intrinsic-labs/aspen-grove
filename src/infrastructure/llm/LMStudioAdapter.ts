@@ -32,10 +32,11 @@ export type LMStudioAdapterOptions = {
 /**
  * LM Studio implementation of `ILlmProvider`.
  *
- * Uses LM Studio's native /api/v1/chat endpoint which supports:
- * - Server-side MCP tool execution (configured in LM Studio)
- * - Model loading/unloading
- * - Token stats and performance metrics
+ * Chat completions go through the OpenAI-compatible `/v1/chat/completions`
+ * endpoint so we can include assistant messages in history (required for
+ * branching loom trees). Model discovery and load/unload use the native
+ * `/api/v1/models*` endpoints because those expose richer metadata (state,
+ * vision capability, etc.) than the OpenAI-compat models endpoint.
  */
 export class LMStudioAdapter implements ILlmProvider {
   readonly provider = 'lmstudio' as const;

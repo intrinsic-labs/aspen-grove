@@ -121,25 +121,18 @@ export const useSettingsController = () => {
 
   // Fetch LM Studio models
   const fetchLmstudioModels = useCallback(async () => {
-    console.log('[Settings:LMStudio] fetchLmstudioModels called', {
-      endpoint: lmstudioEndpointInput,
-      hasToken: !!lmstudioApiTokenInput,
-    });
-
     setLmstudioModelsLoading(true);
     setLmstudioModelsError(null);
     setLmstudioConnectionStatus('checking');
 
     try {
       const lmstudioAdapter = adapters.providerRegistry.getLMStudioAdapter();
-      console.log('[Settings:LMStudio] Got adapter, initializing...');
 
       // Initialize with current settings
       await lmstudioAdapter.initialize(
         { apiKey: lmstudioApiTokenInput },
         { endpoint: lmstudioEndpointInput }
       );
-      console.log('[Settings:LMStudio] Initialized, configuring...');
 
       lmstudioAdapter.configure({
         useMcpTools: lmstudioUseMcpTools,
