@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen, SettingsList } from '../ui/value-objects';
 import {
+  AgentsSection,
   AppBehaviorSection,
   GenerationDefaultsSection,
   LMStudioSettingsSection,
@@ -107,6 +108,8 @@ const SettingsView = () => {
               systemPromptInput={controller.systemPromptInput}
               onChangeSystemPromptInput={controller.setSystemPromptInput}
             />
+
+            <AgentsSection colors={colors} />
 
             <MessageTypographySection
               fontFace={controller.fontFace}

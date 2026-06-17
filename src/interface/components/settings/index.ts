@@ -1,3 +1,4 @@
+export * from './AgentsSection';
 export * from './AppBehaviorSection';
 export * from './GenerationDefaultsSection';
 export * from './LMStudioSettingsSection';

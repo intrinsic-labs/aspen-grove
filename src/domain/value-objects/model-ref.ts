@@ -10,8 +10,12 @@ type Brand<T, B> = T & { readonly [__brand]: B };
  */
 export type ModelRef = Brand<string, 'ModelRef'>;
 
+// Keep in sync with the `Provider` type in `entities/provider.ts`.
+// Missing entries here cause `parseModelRef` to reject otherwise-valid
+// modelRefs, which silently breaks agent creation for that provider.
 const VALID_PROVIDERS: Provider[] = [
   'openrouter',
+  'lmstudio',
   'hyperbolic',
   'anthropic',
   'openai',
