@@ -38,6 +38,12 @@ export default class Agent extends Model {
 
   @field('loom_aware') loomAware!: boolean | null;
 
+  /**
+   * If set, this agent is private to the referenced LoomTree ("tree-owned").
+   * Null = shared library agent.
+   */
+  @field('owner_tree_id') ownerTreeId!: string | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
   @date('archived_at') archivedAt!: Date | null;

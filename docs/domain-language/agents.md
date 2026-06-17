@@ -57,6 +57,17 @@ Tree operations don't distinguish between human and model agents at the interfac
 - **Agent** = a configured instance with specific parameters, prompts, and permissions
 - One Model → many Agents is the normal pattern
 
+### Shared vs Tree-Owned Agents
+
+Agents come in two flavors based on scope:
+
+- **Shared agents** are managed in Settings and reusable across Loom Trees. Editing a shared agent affects every tree that references it. This is the "library" model — e.g., "Default Claude" or "Creative Llama" as named, reusable profiles.
+- **Tree-owned agents** are private to a single Loom Tree. They're created implicitly when a user just wants to tweak the model settings for one specific conversation without thinking about agents as a concept. Editing a tree-owned agent doesn't affect anything outside that tree; deleting the tree deletes the agent.
+
+A tree can switch between using a shared agent and a tree-owned agent. "Customize for this conversation only" forks the shared agent into a tree-owned copy.
+
+For the architectural specification of how this is modeled, see [Architecture: Agents](../architecture/model/agents.md#shared-vs-tree-owned-agents).
+
 ### Authorship & Provenance
 
 Every Node records its `authorAgentId`. The `authorType` field (human or model) is denormalized from the Agent for efficient hash verification in the provenance system.

@@ -1,11 +1,16 @@
 import { ULID } from '../value-objects';
-import type { SelectableProvider } from './provider';
 
 /**
  * UserPreferences entity
  *
  * App-wide singleton for user settings.
  * Not tied to any Agent — these are application-level preferences.
+ *
+ * Provider routing is NOT controlled here. Each Agent's `modelRef` determines
+ * which provider adapter handles a given request; trees reference agents via
+ * `LoomTree.defaultModelAgentId`. Connection configuration (endpoints, API
+ * tokens) for the LM Studio provider lives here for now because there is no
+ * better home for it — credentials remain in secure storage.
  */
 export interface UserPreferences {
   readonly id: ULID;
@@ -23,10 +28,7 @@ export interface UserPreferences {
   readonly defaultTemperature: number;
   readonly verboseErrorAlerts: boolean;
 
-  // Provider selection
-  readonly selectedProvider: SelectableProvider;
-
-  // LM Studio settings (stored in preferences, token in secure store)
+  // LM Studio connection settings (token lives in secure store)
   readonly lmstudioSettings: LMStudioSettings;
 
   // Node display
@@ -76,7 +78,10 @@ export type FontSize =
 export type NodeViewStyle = 'filled' | 'outlined';
 
 /**
- * LM Studio connection settings
+ * LM Studio connection settings.
+ *
+ * Connection-level only — model selection is no longer stored here. The model
+ * an LM Studio Agent talks to is encoded in that Agent's `modelRef`.
  */
 export interface LMStudioSettings {
   /** Server endpoint (e.g., "http://192.168.1.100:1234") */
@@ -87,8 +92,6 @@ export interface LMStudioSettings {
   readonly autoLoadModels: boolean;
   /** Auto-unload after idle (seconds, 0 = disabled) */
   readonly idleTtlSeconds: number;
-  /** Last selected model identifier */
-  readonly selectedModel?: string;
 }
 
 export const DEFAULT_LMSTUDIO_SETTINGS: LMStudioSettings = {

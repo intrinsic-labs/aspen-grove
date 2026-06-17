@@ -22,7 +22,9 @@ export default class UserPreferences extends Model {
   @field('node_view_style') nodeViewStyle!: string;
   @field('node_view_corner_radius') nodeViewCornerRadius!: number;
 
-  @text('selected_provider') selectedProvider!: string | null;
+  // NOTE: `selected_provider` was removed at schema v6. The column may still
+  // exist in legacy SQLite databases but is intentionally not declared on the
+  // model. Provider routing is now driven by each Agent's `modelRef`.
   @text('lmstudio_settings') lmstudioSettings!: string | null;
 
   @date('created_at') createdAt!: Date;

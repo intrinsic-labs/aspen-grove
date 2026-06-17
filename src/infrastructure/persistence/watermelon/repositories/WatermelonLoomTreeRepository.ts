@@ -14,7 +14,10 @@ import { createULID, type ULID } from '@domain/value-objects';
 import LoomTreeModel from '../model/LoomTree';
 import NodeModel from '../model/Node';
 import RawApiResponseModel from '../model/RawApiResponse';
-import { Edge as EdgeModel, EdgeSource as EdgeSourceModel } from '../model/Edge';
+import {
+  Edge as EdgeModel,
+  EdgeSource as EdgeSourceModel,
+} from '../model/Edge';
 import {
   Path as PathModel,
   PathNode as PathNodeModel,
@@ -45,7 +48,8 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
     this.db = database;
     this.loomTrees = this.db.get<LoomTreeModel>('loom_trees');
     this.nodes = this.db.get<NodeModel>('nodes');
-    this.rawApiResponses = this.db.get<RawApiResponseModel>('raw_api_responses');
+    this.rawApiResponses =
+      this.db.get<RawApiResponseModel>('raw_api_responses');
     this.edges = this.db.get<EdgeModel>('edges');
     this.edgeSources = this.db.get<EdgeSourceModel>('edge_sources');
     this.paths = this.db.get<PathModel>('paths');
@@ -81,6 +85,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
         record.rootNodeId = input.rootNodeId;
         record.mode = input.mode;
         record.systemContext = input.systemContext ?? null;
+        record.defaultModelAgentId = input.defaultModelAgentId ?? null;
         record.createdAt = createdAt;
         record.updatedAt = createdAt;
         record.archivedAt = null;
@@ -103,6 +108,9 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
         }
         if (input.changes.systemContext !== undefined) {
           record.systemContext = input.changes.systemContext;
+        }
+        if (input.changes.defaultModelAgentId !== undefined) {
+          record.defaultModelAgentId = input.changes.defaultModelAgentId;
         }
         record.updatedAt = this.now();
       });
@@ -206,7 +214,9 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   }
 
   private async deleteTreeNodes(loomTreeId: ULID): Promise<void> {
-    const nodes = await this.nodes.query(Q.where('loom_tree_id', loomTreeId)).fetch();
+    const nodes = await this.nodes
+      .query(Q.where('loom_tree_id', loomTreeId))
+      .fetch();
     if (nodes.length === 0) {
       return;
     }
@@ -225,7 +235,9 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   }
 
   private async deleteTreeEdges(loomTreeId: ULID): Promise<void> {
-    const edges = await this.edges.query(Q.where('loom_tree_id', loomTreeId)).fetch();
+    const edges = await this.edges
+      .query(Q.where('loom_tree_id', loomTreeId))
+      .fetch();
     if (edges.length === 0) {
       return;
     }
@@ -245,7 +257,9 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
   }
 
   private async deleteTreePaths(loomTreeId: ULID): Promise<void> {
-    const paths = await this.paths.query(Q.where('loom_tree_id', loomTreeId)).fetch();
+    const paths = await this.paths
+      .query(Q.where('loom_tree_id', loomTreeId))
+      .fetch();
     if (paths.length === 0) {
       return;
     }
@@ -281,6 +295,9 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
       rootNodeId: model.rootNodeId as ULID,
       mode: model.mode as LoomTreeMode,
       systemContext: toOptionalString(model.systemContext),
+      defaultModelAgentId: model.defaultModelAgentId
+        ? (model.defaultModelAgentId as ULID)
+        : undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       archivedAt: toOptionalDate(model.archivedAt),

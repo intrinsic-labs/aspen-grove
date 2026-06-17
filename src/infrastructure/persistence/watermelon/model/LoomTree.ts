@@ -41,6 +41,13 @@ export default class LoomTree extends Model {
 
   @text('system_context') systemContext!: string | null;
 
+  /**
+   * The model Agent that generates when the user hits send.
+   * Required at the use-case level for dialogue-mode trees; stored nullable to
+   * support backfills and buffer-mode (which may not have a default).
+   */
+  @field('default_model_agent_id') defaultModelAgentId!: string | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
   @date('archived_at') archivedAt!: Date | null;

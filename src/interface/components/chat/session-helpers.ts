@@ -100,15 +100,22 @@ export const initializeDialogueChatSession = async (
   }
 
   const ownerAgentId = grove.ownerAgentId as ULID;
-  const activeProvider = userPreferences.selectedProvider;
-  const lmstudioSelectedModel = userPreferences.lmstudioSettings?.selectedModel;
 
+  // TODO (Phase 2): Resolve provider/model from `tree.defaultModelAgentId`
+  // instead of the global "active provider" flag.
+  //
+  // For now we always route through the OpenRouter singleton assistant agent
+  // because the per-tree default has not been wired through yet. LM Studio
+  // trees are temporarily unreachable from the chat surface until Phase 2 —
+  // they remain configurable in Settings (connection only) and will be
+  // reachable once Agents-as-first-class lands.
+  //
+  // The reference to `userPreferences` is preserved because subsequent phases
+  // will read display preferences from it; this avoids churning the call site
+  // again immediately.
+  void userPreferences;
   const { agent: modelAgent, modelIdentifier } =
-    await resolveModelAgentForProvider(
-      activeProvider,
-      repositories.agentRepo,
-      lmstudioSelectedModel
-    );
+    await resolveModelAgentForProvider('openrouter', repositories.agentRepo);
 
   const path =
     (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??

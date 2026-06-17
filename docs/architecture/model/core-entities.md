@@ -18,6 +18,7 @@ The top-level container for a branching exploration.
 - **rootNodeId** — ULID, reference to the single root Node
 - **mode** — enum: `dialogue` | `buffer`
 - **systemContext** — optional string, persistent instructions prepended to every context window
+- **defaultModelAgentId** — optional ULID, reference to the model Agent that generates a continuation when the user sends a turn (see [Default Model Agent](#default-model-agent))
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
 - **archivedAt** — optional timestamp, soft delete marker
@@ -28,6 +29,8 @@ The top-level container for a branching exploration.
 - Title defaults to first few words of root content or "Loom Tree <index>"
 - Description defaults to nil
 - Mode is set at creation and cannot change (different modes have different rendering logic)
+- `defaultModelAgentId` is required for `mode: dialogue` trees (enforced by use cases); may be unset for `mode: buffer` trees that don't drive generation through a single agent
+- The referenced Agent must have `type: model` (humans cannot generate continuations)
 
 ### Indexes
 
@@ -35,6 +38,17 @@ The top-level container for a branching exploration.
 - By groveId (for listing trees in a Grove)
 - By groveId + createdAt (for listing/sorting within Grove)
 - By archivedAt null (for active trees only)
+- By defaultModelAgentId (for finding all trees that reference a given agent, e.g., to block deletion of a shared agent that's still in use)
+
+### Default Model Agent
+
+The `defaultModelAgentId` links a tree to the model Agent that participates as the assistant side of the conversation. This is what makes a tree's settings *belong to the tree*: the agent encapsulates provider, model identifier, temperature, system prompt, and other generation parameters — all per-tree.
+
+Key behaviors:
+
+- Changing `defaultModelAgentId` switches the tree to a different agent. This does NOT modify the previously-referenced agent.
+- Changing the *configuration* of the referenced agent is a separate operation handled by agent use cases. Whether that change is scoped to this one tree or affects other trees depends on whether the agent is shared or tree-owned — see [Shared vs Tree-Owned Agents](./agents.md#shared-vs-tree-owned-agents).
+- Multi-agent participation in a tree (e.g., the loom-aware "two-role pattern" with a subject + collaborator) is a future extension. The current model supports one default generating agent plus the human owner; additional participants will be added via a separate junction without disturbing this field.
 
 ---
 

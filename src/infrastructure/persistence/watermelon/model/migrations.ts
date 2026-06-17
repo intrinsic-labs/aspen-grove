@@ -73,5 +73,39 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      // v6: Pivot from global provider selection to per-tree agent references.
+      // - Adds `agents.owner_tree_id` for tree-owned (ad-hoc) agents.
+      // - Adds `loom_trees.default_model_agent_id` for the agent that generates
+      //   when the user hits send.
+      // Note: `user_preferences.selected_provider` is no longer used at v6 but
+      // the column is not dropped (WatermelonDB has no dropColumn). It will
+      // simply be ignored by the repository.
+      toVersion: 6,
+      steps: [
+        addColumns({
+          table: 'agents',
+          columns: [
+            {
+              name: 'owner_tree_id',
+              type: 'string',
+              isOptional: true,
+              isIndexed: true,
+            },
+          ],
+        }),
+        addColumns({
+          table: 'loom_trees',
+          columns: [
+            {
+              name: 'default_model_agent_id',
+              type: 'string',
+              isOptional: true,
+              isIndexed: true,
+            },
+          ],
+        }),
+      ],
+    },
   ],
 });

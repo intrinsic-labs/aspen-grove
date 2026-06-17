@@ -27,6 +27,7 @@ The core abstraction for any entity that can participate in or operate on a Loom
 - **configuration** — AgentConfiguration object
 - **permissions** — AgentPermissions object
 - **loomAware** — boolean, whether this agent can access tree navigation tools
+- **ownerTreeId** — optional ULID, marks this agent as private to a specific LoomTree (see [Shared vs Tree-Owned Agents](#shared-vs-tree-owned-agents))
 - **createdAt** — timestamp
 - **updatedAt** — timestamp
 - **archivedAt** — optional timestamp, soft delete marker
@@ -54,6 +55,7 @@ The core abstraction for any entity that can participate in or operate on a Loom
 - `loomAware` defaults to `true` for human agents, `false` for model agents
 - One model can back multiple Agents (different configurations/personas)
 - There is exactly one human Agent marked as the **owner Agent** (see Default Agents below)
+- `ownerTreeId` must reference an existing LoomTree when set; human agents must have `ownerTreeId = null`
 
 ### Indexes
 
@@ -61,6 +63,37 @@ The core abstraction for any entity that can participate in or operate on a Loom
 - By type (for filtering humans vs models)
 - By modelRef (for finding all agents using a given model)
 - By archivedAt null (for active agents only)
+- By ownerTreeId (for resolving a tree's owned agent and for cascading deletes)
+
+---
+
+## Shared vs Tree-Owned Agents
+
+Agents have two flavors depending on whether they're managed at the application level or scoped to a single conversation.
+
+### Shared (Library) Agents
+
+- `ownerTreeId === null`
+- Created and managed by the user in Settings → Agents
+- Show up in the global Agents list
+- Multiple LoomTrees may reference the same shared agent via `LoomTree.defaultModelAgentId`
+- Edits to a shared agent's configuration propagate to every tree that references it
+- Cannot be deleted while any LoomTree still references them
+
+### Tree-Owned (Private / Ad-Hoc) Agents
+
+- `ownerTreeId === <some LoomTree id>`
+- Created implicitly when a user customizes dialogue settings inside a chat without explicitly managing agents ("feels like changing settings for this conversation")
+- Filtered out of the global Agents list (Settings → Agents shows only shared agents)
+- Lifecycle is tied to the owning LoomTree — hard-deleting the tree hard-deletes the tree-owned agent
+- Editing a tree-owned agent affects only that tree (no propagation)
+- A tree-owned agent can be "promoted" to a shared agent by clearing `ownerTreeId`
+
+### UX Flows
+
+- **From Settings**: User edits a shared agent. Changes affect every tree using it.
+- **From a chat's dialogue settings sheet**, if the tree currently uses a **shared** agent: user chooses between "Edit shared agent (affects N other trees)" or "Customize for this tree only" — the latter forks the shared agent into a tree-owned copy and re-points the tree at the copy.
+- **From a chat's dialogue settings sheet**, if the tree currently uses a **tree-owned** agent: edits apply directly to that agent. No fork prompt; it already belongs to this tree.
 
 ---
 

@@ -193,14 +193,16 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
           return;
         }
 
-        // Initialize provider registry from user preferences
+        // TODO (Phase 6): Remove `setActiveProvider` entirely — the registry
+        // no longer has a concept of an "active" provider. Provider routing is
+        // resolved per request from each Agent's `modelRef`. For now the
+        // registry retains its default ('openrouter') for any legacy callers.
         const userPreferences =
           await services.repositories.userPreferencesRepo.get();
-        services.adapters.providerRegistry.setActiveProvider(
-          userPreferences.selectedProvider
-        );
 
-        // Initialize LM Studio adapter with stored settings
+        // Initialize LM Studio adapter with stored connection settings.
+        // This is connection-level config (endpoint, MCP toggle) — NOT a
+        // declaration that LM Studio is the active provider.
         const lmSettings = userPreferences.lmstudioSettings;
         if (lmSettings) {
           const lmAdapter =

@@ -8,7 +8,6 @@ import type {
   FontSize,
   LMStudioSettings,
   NodeViewStyle,
-  SelectableProvider,
   Theme,
   UserPreferences as UserPreferencesEntity,
 } from '@domain/entities';
@@ -26,7 +25,6 @@ const DEFAULT_TEMPERATURE = 1.0;
 const DEFAULT_VERBOSE_ERROR_ALERTS = false;
 const DEFAULT_NODE_VIEW_STYLE: NodeViewStyle = 'filled';
 const DEFAULT_NODE_CORNER_RADIUS = 8;
-const DEFAULT_SELECTED_PROVIDER: SelectableProvider = 'openrouter';
 
 const parseLMStudioSettings = (json: string | null): LMStudioSettings => {
   if (!json) {
@@ -41,7 +39,6 @@ const parseLMStudioSettings = (json: string | null): LMStudioSettings => {
         parsed.autoLoadModels ?? DEFAULT_LMSTUDIO_SETTINGS.autoLoadModels,
       idleTtlSeconds:
         parsed.idleTtlSeconds ?? DEFAULT_LMSTUDIO_SETTINGS.idleTtlSeconds,
-      selectedModel: parsed.selectedModel,
     };
   } catch {
     return DEFAULT_LMSTUDIO_SETTINGS;
@@ -56,10 +53,6 @@ const mergeLMStudioSettings = (
   useMcpTools: changes.useMcpTools ?? existing.useMcpTools,
   autoLoadModels: changes.autoLoadModels ?? existing.autoLoadModels,
   idleTtlSeconds: changes.idleTtlSeconds ?? existing.idleTtlSeconds,
-  selectedModel:
-    changes.selectedModel !== undefined
-      ? changes.selectedModel
-      : existing.selectedModel,
 });
 
 /** WatermelonDB implementation of `IUserPreferencesRepository`. */
@@ -125,10 +118,6 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
           record.nodeViewCornerRadius = changes.nodeViewCornerRadius;
         }
 
-        if (changes.selectedProvider !== undefined) {
-          record.selectedProvider = changes.selectedProvider;
-        }
-
         if (changes.lmstudioSettings !== undefined) {
           const currentSettings = parseLMStudioSettings(
             record.lmstudioSettings
@@ -183,7 +172,6 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.verboseErrorAlerts = DEFAULT_VERBOSE_ERROR_ALERTS;
       record.nodeViewStyle = DEFAULT_NODE_VIEW_STYLE;
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
-      record.selectedProvider = DEFAULT_SELECTED_PROVIDER;
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
       record.createdAt = createdAt;
       record.updatedAt = createdAt;
@@ -205,9 +193,6 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
         model.verboseErrorAlerts ?? DEFAULT_VERBOSE_ERROR_ALERTS,
       nodeViewStyle: model.nodeViewStyle as NodeViewStyle,
       nodeViewCornerRadius: model.nodeViewCornerRadius,
-      selectedProvider:
-        (model.selectedProvider as SelectableProvider) ??
-        DEFAULT_SELECTED_PROVIDER,
       lmstudioSettings: parseLMStudioSettings(model.lmstudioSettings),
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,

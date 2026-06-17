@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 5,
+  version: 6,
   tables: [
     /**
      * Grove table schema
@@ -37,10 +37,12 @@ export const aspenGroveSchema = appSchema({
         { name: 'node_view_style', type: 'string' },
         { name: 'node_view_corner_radius', type: 'number' },
 
-        // Provider selection
-        { name: 'selected_provider', type: 'string', isOptional: true },
-
-        // LM Studio settings (stored as JSON)
+        // Provider connection settings.
+        // NOTE: `selected_provider` was removed at v6 — provider routing is now
+        // driven by each Agent's `modelRef`. The column may still exist in
+        // existing SQLite databases (WatermelonDB cannot drop columns); it is
+        // intentionally not declared here and not read/written by the repo.
+        // LM Studio connection settings (endpoint, useMcpTools, etc.) live here.
         { name: 'lmstudio_settings', type: 'string', isOptional: true },
 
         { name: 'created_at', type: 'number' },
@@ -79,6 +81,16 @@ export const aspenGroveSchema = appSchema({
         // Denormalized for fast querying (source of truth remains permissions JSON)
         { name: 'loom_aware', type: 'boolean', isOptional: true },
 
+        // When set, this agent is private to a specific LoomTree ("tree-owned").
+        // Tree-owned agents are filtered out of the global agent library and
+        // deleted when the owning tree is hard-deleted. Null = shared (library) agent.
+        {
+          name: 'owner_tree_id',
+          type: 'string',
+          isOptional: true,
+          isIndexed: true,
+        },
+
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'archived_at', type: 'number', isOptional: true },
@@ -102,6 +114,18 @@ export const aspenGroveSchema = appSchema({
         { name: 'root_node_id', type: 'string' },
         { name: 'mode', type: 'string' },
         { name: 'system_context', type: 'string', isOptional: true },
+
+        // The model agent that generates when the user hits send.
+        // Required at the use-case level for dialogue-mode trees, but
+        // stored as optional so existing trees (created before v6) can be
+        // backfilled. Tree creation flow enforces presence.
+        {
+          name: 'default_model_agent_id',
+          type: 'string',
+          isOptional: true,
+          isIndexed: true,
+        },
+
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'archived_at', type: 'number', isOptional: true },

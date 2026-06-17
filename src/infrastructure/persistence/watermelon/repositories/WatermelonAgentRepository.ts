@@ -64,8 +64,7 @@ export class WatermelonAgentRepository implements IAgentRepository {
 
     const id = createULID();
     const createdAt = this.now();
-    const configuration =
-      input.configuration ?? DEFAULT_AGENT_CONFIGURATION;
+    const configuration = input.configuration ?? DEFAULT_AGENT_CONFIGURATION;
     const permissions = this.normalizePermissions(input.permissions);
 
     return this.db.write(async () => {
@@ -77,6 +76,7 @@ export class WatermelonAgentRepository implements IAgentRepository {
         record.configuration = configuration as Record<string, unknown>;
         record.permissions = permissions;
         record.loomAware = permissions.loomAware;
+        record.ownerTreeId = input.ownerTreeId ?? null;
         record.createdAt = createdAt;
         record.updatedAt = createdAt;
         record.archivedAt = null;
@@ -103,8 +103,10 @@ export class WatermelonAgentRepository implements IAgentRepository {
         }
 
         if (input.changes.configuration !== undefined) {
-          record.configuration =
-            input.changes.configuration as Record<string, unknown>;
+          record.configuration = input.changes.configuration as Record<
+            string,
+            unknown
+          >;
         }
 
         if (input.changes.permissions !== undefined) {
@@ -113,6 +115,10 @@ export class WatermelonAgentRepository implements IAgentRepository {
           );
           record.permissions = permissions;
           record.loomAware = permissions.loomAware;
+        }
+
+        if (input.changes.ownerTreeId !== undefined) {
+          record.ownerTreeId = input.changes.ownerTreeId;
         }
 
         record.updatedAt = this.now();
@@ -162,7 +168,8 @@ export class WatermelonAgentRepository implements IAgentRepository {
 
   async findAll(
     onlyActive: boolean = true,
-    type?: AgentType
+    type?: AgentType,
+    includeTreeOwned: boolean = false
   ): Promise<AgentEntity[]> {
     const queryClauses = [];
 
@@ -174,16 +181,24 @@ export class WatermelonAgentRepository implements IAgentRepository {
       queryClauses.push(Q.where('agent_type', type));
     }
 
+    if (!includeTreeOwned) {
+      queryClauses.push(Q.where('owner_tree_id', null));
+    }
+
     const models = await this.agents.query(...queryClauses).fetch();
     return models.map((model) => this.toDomain(model));
   }
 
   async findHumans(onlyActive: boolean = true): Promise<AgentEntity[]> {
+    // Human agents cannot be tree-owned, so includeTreeOwned has no effect here.
     return this.findAll(onlyActive, 'human');
   }
 
-  async findModels(onlyActive: boolean = true): Promise<AgentEntity[]> {
-    return this.findAll(onlyActive, 'model');
+  async findModels(
+    onlyActive: boolean = true,
+    includeTreeOwned: boolean = false
+  ): Promise<AgentEntity[]> {
+    return this.findAll(onlyActive, 'model', includeTreeOwned);
   }
 
   async findByModelRef(
@@ -207,6 +222,18 @@ export class WatermelonAgentRepository implements IAgentRepository {
 
     const models = await this.agents.query(...queryClauses).fetch();
     return models.map((model) => this.toDomain(model));
+  }
+
+  async findByOwnerTreeId(treeId: ULID): Promise<AgentEntity | null> {
+    const models = await this.agents
+      .query(Q.where('owner_tree_id', treeId), Q.take(1))
+      .fetch();
+    const first = models[0];
+    return first ? this.toDomain(first) : null;
+  }
+
+  async findSharedModels(onlyActive: boolean = true): Promise<AgentEntity[]> {
+    return this.findAll(onlyActive, 'model', false);
   }
 
   private validateModelRefForType(
@@ -236,7 +263,10 @@ export class WatermelonAgentRepository implements IAgentRepository {
   }
 
   private toDomain(model: AgentModel): AgentEntity {
-    const permissions = this.readPermissions(model.permissions, model.loomAware);
+    const permissions = this.readPermissions(
+      model.permissions,
+      model.loomAware
+    );
 
     return {
       id: model.id as ULID,
@@ -245,6 +275,7 @@ export class WatermelonAgentRepository implements IAgentRepository {
       modelRef: model.modelRef ? parseModelRef(model.modelRef) : undefined,
       configuration: this.readConfiguration(model.configuration),
       permissions,
+      ownerTreeId: model.ownerTreeId ? (model.ownerTreeId as ULID) : undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       archivedAt: toOptionalDate(model.archivedAt),

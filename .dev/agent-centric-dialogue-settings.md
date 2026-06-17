@@ -40,50 +40,58 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ---
 
-## Phase 1: Data Model — Schema & Domain Entities
+## Phase 1: Data Model — Schema & Domain Entities ✅
 
 **Goal**: Land the new fields on `Agent` and `LoomTree`. Database is wiped (no real data yet).
 
 ### Schema (WatermelonDB)
 
-- [ ] Bump schema to v6 with destructive migration (full reset acceptable per user direction).
-- [ ] Add `agents.owner_tree_id: string?` column (indexed).
-- [ ] Add `loom_trees.default_model_agent_id: string?` column (nullable in storage; required at app-level for dialogue trees, enforced by use cases).
-- [ ] Remove `user_preferences.selected_provider` column. Keep `lmstudio_settings` (connection-only).
+- [x] Bump schema to v6.
+- [x] Add `agents.owner_tree_id: string?` column (indexed).
+- [x] Add `loom_trees.default_model_agent_id: string?` column (nullable in storage; required at app-level for dialogue trees, enforced by use cases).
+- [x] Drop `user_preferences.selected_provider` from the schema definition. WatermelonDB cannot drop SQLite columns; the column will linger in legacy databases but the model and repo no longer reference it. Functionally removed.
 
 ### Domain entities
 
-- [ ] `Agent`: add optional `ownerTreeId?: ULID`.
-- [ ] `LoomTree`: add optional `defaultModelAgentId?: ULID`.
-- [ ] `UserPreferences`: remove `selectedProvider`. Update `LMStudioSettings` to drop `selectedModel` (that becomes an agent's `modelRef`, not a global preference).
-- [ ] Update `domain/entities/provider.ts`: keep `SelectableProvider` for adapter-registry routing, but it's no longer a user-facing concept.
+- [x] `Agent`: add optional `ownerTreeId?: ULID`.
+- [x] `LoomTree`: add optional `defaultModelAgentId?: ULID`.
+- [x] `UserPreferences`: remove `selectedProvider`. `LMStudioSettings` no longer has `selectedModel` (that's now an agent's `modelRef`).
+- [x] `domain/entities/provider.ts`: `SelectableProvider` retained for adapter-registry routing (internal); no longer a user-facing concept.
 
 ### Repository contracts
 
-- [ ] `IAgentRepository`:
-  - Add `findByOwnerTreeId(treeId): Promise<Agent | null>`
-  - Add `findShared(): Promise<Agent[]>` (returns agents where `ownerTreeId === null`, excludes owner human agent)
-  - Update `findModels(onlyActive)` to exclude tree-owned agents from default results (or accept an `includeTreeOwned` flag)
-- [ ] `ILoomTreeRepository`:
-  - `CreateLoomTreeInput`: add `defaultModelAgentId?: ULID`
-  - `UpdateLoomTreeInput.changes`: add `defaultModelAgentId?: ULID`
-- [ ] `IUserPreferencesRepository`: remove `selectedProvider`-related fields from `UpdateUserPreferencesInput`
+- [x] `IAgentRepository`:
+  - Added `findByOwnerTreeId(treeId): Promise<Agent | null>`
+  - Added `findSharedModels(onlyActive?): Promise<Agent[]>`
+  - `findAll`/`findModels` now accept `includeTreeOwned` flag (default `false`); tree-owned agents are excluded by default
+  - `CreateAgentInput` accepts `ownerTreeId?`; `UpdateAgentInput.changes` accepts `ownerTreeId?: ULID | null`
+- [x] `ILoomTreeRepository`:
+  - `CreateLoomTreeInput` accepts `defaultModelAgentId?`
+  - `UpdateLoomTreeInput.changes` accepts `defaultModelAgentId?`
+- [x] `IUserPreferencesRepository`: removed `selectedProvider` from `UserPreferencesChanges`.
 
 ### Infrastructure (Watermelon repositories)
 
-- [ ] `WatermelonAgentRepository`: read/write `owner_tree_id`, implement new query methods.
-- [ ] `WatermelonLoomTreeRepository`: read/write `default_model_agent_id`.
-- [ ] `WatermelonUserPreferencesRepository`: drop `selectedProvider` read/write.
+- [x] `WatermelonAgentRepository`: reads/writes `owner_tree_id`, implements `findByOwnerTreeId` and `findSharedModels`, filters tree-owned agents from default queries.
+- [x] `WatermelonLoomTreeRepository`: reads/writes `default_model_agent_id`.
+- [x] `WatermelonUserPreferencesRepository`: stopped reading/writing `selected_provider` and `lmstudio_settings.selectedModel`.
+
+### Interim UI shims (will be properly fixed in later phases)
+
+- [x] `useSettingsController.ts`: keeps `selectedProvider` and `lmstudioSelectedModel` as **in-memory UI state only** (no persistence). Settings UI renders as before, but provider/model choice is transient. Marked with TODO pointing at Phase 5.
+- [x] `AppServicesProvider.tsx`: stopped calling `setActiveProvider` at bootstrap. Registry retains its default. Marked with TODO pointing at Phase 6.
+- [x] `session-helpers.ts`: temporarily routes every chat session through the OpenRouter singleton assistant agent (LM Studio trees are temporarily unreachable from chat). Marked with TODO pointing at Phase 2.
 
 ### Doc updates
 
-- [ ] `docs/architecture/model/agents.md`:
-  - Document `ownerTreeId` on Agent (semantics, lifecycle).
-  - Note that tree-owned agents are filtered from the "library" view.
-- [ ] `docs/architecture/model/core-entities.md`:
-  - Document `defaultModelAgentId` on LoomTree.
-  - Note constraint: dialogue-mode trees require this; buffer-mode trees may not.
-- [ ] `docs/domain-language/agents.md`: mention shared vs tree-owned agents at the conceptual level.
+- [x] `docs/architecture/model/agents.md`: documented `ownerTreeId` on Agent, added "Shared vs Tree-Owned Agents" section with lifecycle and UX flows.
+- [x] `docs/architecture/model/core-entities.md`: documented `defaultModelAgentId` on LoomTree, added "Default Model Agent" section.
+- [x] `docs/domain-language/agents.md`: added "Shared vs Tree-Owned Agents" at the conceptual level.
+
+### Verification
+
+- [x] `npm test` — 6 suites / 9 tests pass.
+- [x] Zed diagnostics — zero errors / warnings across the project.
 
 ---
 

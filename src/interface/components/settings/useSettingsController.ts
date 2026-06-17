@@ -202,15 +202,21 @@ export const useSettingsController = () => {
 
       const lmSettings = userPreferences.lmstudioSettings;
 
+      // NOTE (Phase 1 interim state): `selectedProvider` and
+      // `lmstudioSelectedModel` are no longer persisted. They live as
+      // in-memory UI state only; the values seeded here are arbitrary
+      // defaults so the existing Settings UI keeps rendering. Phase 5 will
+      // remove them entirely and replace the Settings screen with an Agents
+      // library.
       const loadedDraft = buildDraft({
-        selectedProvider: userPreferences.selectedProvider,
+        selectedProvider: 'openrouter',
         apiKeyInput: storedOpenRouterKey?.trim() ?? '',
         modelIdentifierInput: modelIdentifier,
         lmstudioEndpointInput: lmSettings.endpoint,
         lmstudioApiTokenInput: storedLmstudioToken?.trim() ?? '',
         lmstudioUseMcpTools: lmSettings.useMcpTools,
         lmstudioAutoLoadModels: lmSettings.autoLoadModels,
-        lmstudioSelectedModel: lmSettings.selectedModel ?? '',
+        lmstudioSelectedModel: '',
         systemPromptInput: systemPrompt,
         temperatureInput: String(temperature),
         maxTokensInput:
@@ -364,12 +370,13 @@ export const useSettingsController = () => {
             fontSize: parsedFontSize as FontSize,
             nodeViewStyle: draft.nodeViewStyle,
             nodeViewCornerRadius: parsedNodeCornerRadius,
-            selectedProvider: draft.selectedProvider,
+            // `selectedProvider` and `selectedModel` are no longer persisted
+            // at the preference level (see Phase 1 plan). They remain in the
+            // UI draft as transient state only.
             lmstudioSettings: {
               endpoint: draft.lmstudioEndpointInput.trim(),
               useMcpTools: draft.lmstudioUseMcpTools,
               autoLoadModels: draft.lmstudioAutoLoadModels,
-              selectedModel: draft.lmstudioSelectedModel || undefined,
             },
           }),
           // Update OpenRouter agent

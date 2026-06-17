@@ -63,6 +63,11 @@ export type CreateLoomTreeInput = {
   readonly title?: string;
   readonly description?: string;
   readonly systemContext?: string;
+  /**
+   * The default model Agent this tree generates from. Required at the use-case
+   * level for dialogue-mode trees — enforced upstream of the repository.
+   */
+  readonly defaultModelAgentId?: ULID;
 };
 
 /** Input for updating a LoomTree's mutable fields. */
@@ -72,5 +77,10 @@ export type UpdateLoomTreeInput = {
     readonly title?: string;
     readonly description?: string;
     readonly systemContext?: string;
+    /**
+     * Switch the tree to a different model Agent. Editing the referenced
+     * agent's configuration is a separate operation — see the agent use cases.
+     */
+    readonly defaultModelAgentId?: ULID;
   };
 };
