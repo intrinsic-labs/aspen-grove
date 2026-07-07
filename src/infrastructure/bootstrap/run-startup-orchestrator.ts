@@ -2,6 +2,7 @@ import type { Database } from '@nozbe/watermelondb';
 import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import { CreateDialogueLoomTreeUseCase } from '@application/use-cases';
 import { initializeAppDefaults } from '@infrastructure/bootstrap/initialize-app-defaults';
+import { devLog } from '@infrastructure/logging/dev-log';
 import {
   WatermelonAgentRepository,
   WatermelonGroveRepository,
@@ -31,11 +32,7 @@ export type RunStartupOrchestratorResult = {
 };
 
 const defaultLogger: StartupLogger = (message, details) => {
-  if (details) {
-    console.info(`[startup] ${message}`, details);
-    return;
-  }
-  console.info(`[startup] ${message}`);
+  devLog(`[startup] ${message}`, details);
 };
 
 /**

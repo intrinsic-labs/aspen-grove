@@ -5,12 +5,14 @@ import {
   LlmProviderError,
   type StreamInterruptionReason,
 } from './ILlmProvider';
+import { isRetryableLlmError, withRetry, type RetryOptions } from './retry';
 
 export type CollectCompletionInput = {
   readonly llmProvider: ILlmProvider;
   readonly request: CompletionRequest;
   readonly stream?: boolean;
   readonly fallbackToNonStreamingOnInvalidRequest?: boolean;
+  readonly retry?: RetryOptions;
   readonly onTextDelta?: (input: {
     readonly delta: string;
     readonly content: string;
@@ -24,6 +26,11 @@ const toInterruptedMarker = (reason: StreamInterruptionReason): string =>
  * Resolves a completion response using streaming or non-streaming execution.
  *
  * When streaming is enabled, the final `CompletionResponse` is assembled from stream chunks.
+ *
+ * Retryable provider errors (`LlmProviderError.retryable`) are retried with
+ * exponential backoff. Streaming attempts are only retried while no chunks
+ * have been received yet — once content has streamed, retrying would risk
+ * duplicating output, so mid-stream failures are surfaced as-is.
  */
 export const collectCompletion = async (
   input: CollectCompletionInput
@@ -33,14 +40,17 @@ export const collectCompletion = async (
     request,
     stream = false,
     fallbackToNonStreamingOnInvalidRequest = true,
+    retry,
     onTextDelta,
   } = input;
 
   if (!stream) {
-    return llmProvider.generateCompletion(request);
+    return withRetry(() => llmProvider.generateCompletion(request), retry);
   }
 
-  try {
+  const collectStream = async (
+    onChunkReceived: () => void
+  ): Promise<CompletionResponse> => {
     let content = '';
     let usage: CompletionResponse['usage'];
     let finishReason: CompletionResponse['finishReason'] = 'error';
@@ -48,6 +58,8 @@ export const collectCompletion = async (
     let rawResponse: CompletionResponse['rawResponse'] | undefined;
 
     for await (const chunk of llmProvider.generateStreamingCompletion(request)) {
+      onChunkReceived();
+
       if (chunk.type === 'text' && chunk.content) {
         content += chunk.content;
         await onTextDelta?.({
@@ -90,16 +102,31 @@ export const collectCompletion = async (
       usage,
       rawResponse,
     };
+  };
+
+  try {
+    let chunkReceivedThisAttempt = false;
+    return await withRetry(
+      () => {
+        chunkReceivedThisAttempt = false;
+        return collectStream(() => {
+          chunkReceivedThisAttempt = true;
+        });
+      },
+      {
+        ...retry,
+        shouldRetry: (error) =>
+          !chunkReceivedThisAttempt &&
+          (retry?.shouldRetry ?? isRetryableLlmError)(error),
+      }
+    );
   } catch (error) {
     if (
       fallbackToNonStreamingOnInvalidRequest &&
       error instanceof LlmProviderError &&
       error.code === 'invalidRequest'
     ) {
-      console.info('[llm] streaming unavailable, falling back to non-streaming', {
-        provider: llmProvider.provider,
-      });
-      return llmProvider.generateCompletion(request);
+      return withRetry(() => llmProvider.generateCompletion(request), retry);
     }
     throw error;
   }
