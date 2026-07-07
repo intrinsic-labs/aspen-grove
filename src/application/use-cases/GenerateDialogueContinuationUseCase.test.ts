@@ -1,6 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { computeSha256Hash } from '@application/services/content-hash-service';
-import type { IProviderRegistry } from '@application/services/llm';
+import type {
+  CompletionRequest,
+  IProviderRegistry,
+} from '@application/services/llm';
 import type {
   Agent,
   Edge,
@@ -106,6 +109,7 @@ describe('GenerateDialogueContinuationUseCase', () => {
     ];
     const rawResponsesByNodeId = new Map<ULID, RawApiResponse>();
     const pathNodeIds: ULID[] = [rootNodeId, sourceNodeId, existingAssistantId];
+    let receivedCompletionRequest: CompletionRequest | undefined;
 
     const responseHeaders =
       'x-request-id: req_branch_1\ncontent-type: application/json';
@@ -123,6 +127,8 @@ describe('GenerateDialogueContinuationUseCase', () => {
       configuration: {
         systemPrompt: 'You are helpful.',
         temperature: 1,
+        maxTokens: 256,
+        stopSequences: ['\nHuman:'],
       },
       permissions: {
         loomAware: false,
@@ -280,26 +286,29 @@ describe('GenerateDialogueContinuationUseCase', () => {
             supportsSystemPrompt: true,
             supportedModels: ['anthropic/claude-haiku-4.5'],
           }),
-          generateCompletion: async () => ({
-            content: 'Alternative assistant response',
-            finishReason: 'stop',
-            usage: {
-              promptTokens: 12,
-              completionTokens: 11,
-              totalTokens: 23,
-            },
-            rawResponse: {
-              rawBytes: `${responseHeaders}\n\n${responseBody}`,
-              rawBytesHash,
-              requestTimestamp: now,
-              responseTimestamp: now,
-              latencyMs: 900,
-              requestId: 'req_branch_1',
-              modelIdentifier: 'anthropic/claude-haiku-4.5',
-              responseBody,
-              responseHeaders,
-            },
-          }),
+          generateCompletion: async (request: CompletionRequest) => {
+            receivedCompletionRequest = request;
+            return {
+              content: 'Alternative assistant response',
+              finishReason: 'stop',
+              usage: {
+                promptTokens: 12,
+                completionTokens: 11,
+                totalTokens: 23,
+              },
+              rawResponse: {
+                rawBytes: `${responseHeaders}\n\n${responseBody}`,
+                rawBytesHash,
+                requestTimestamp: now,
+                responseTimestamp: now,
+                latencyMs: 900,
+                requestId: 'req_branch_1',
+                modelIdentifier: 'anthropic/claude-haiku-4.5',
+                responseBody,
+                responseHeaders,
+              },
+            };
+          },
           generateStreamingCompletion: async function* () {
             return;
           },
@@ -321,6 +330,17 @@ describe('GenerateDialogueContinuationUseCase', () => {
     });
 
     expect(result.sourceNodeId).toBe(sourceNodeId);
+    expect(receivedCompletionRequest?.temperature).toBe(1);
+    expect(receivedCompletionRequest?.maxTokens).toBe(256);
+    expect(receivedCompletionRequest?.stopSequences).toEqual(['\nHuman:']);
+    expect(receivedCompletionRequest?.systemPrompt).toBe('You are helpful.');
+    // root + source are both human-authored, so they merge into one message.
+    expect(receivedCompletionRequest?.messages).toEqual([
+      {
+        role: 'user',
+        content: 'Hello Aspen Grove.\n\nGive me another response',
+      },
+    ]);
     expect(result.assistantNodeId).toBeDefined();
     expect(result.activatedPath).toBe(true);
     expect(result.provenance.rawApiResponseId).toBeDefined();

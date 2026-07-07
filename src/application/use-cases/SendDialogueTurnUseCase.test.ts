@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { computeSha256Hash } from '@application/services/content-hash-service';
-import type { IProviderRegistry } from '@application/services/llm';
+import type {
+  CompletionRequest,
+  IProviderRegistry,
+} from '@application/services/llm';
 import type {
   Agent,
   Edge,
@@ -61,6 +64,7 @@ describe('SendDialogueTurnUseCase', () => {
 
     let completionRequested = false;
     let callbackHappenedBeforeCompletion = false;
+    let receivedCompletionRequest: CompletionRequest | undefined;
 
     const responseHeaders =
       'x-request-id: req_turn_1\ncontent-type: application/json';
@@ -78,6 +82,8 @@ describe('SendDialogueTurnUseCase', () => {
       configuration: {
         systemPrompt: 'You are helpful.',
         temperature: 1,
+        maxTokens: 512,
+        stopSequences: ['\nUser:'],
       },
       permissions: {
         loomAware: false,
@@ -218,8 +224,9 @@ describe('SendDialogueTurnUseCase', () => {
             supportsSystemPrompt: true,
             supportedModels: ['anthropic/claude-haiku-4.5'],
           }),
-          generateCompletion: async () => {
+          generateCompletion: async (request: CompletionRequest) => {
             completionRequested = true;
+            receivedCompletionRequest = request;
             return {
               content: 'Assistant reply',
               finishReason: 'stop',
@@ -265,6 +272,12 @@ describe('SendDialogueTurnUseCase', () => {
     });
 
     expect(callbackHappenedBeforeCompletion).toBe(true);
+    expect(receivedCompletionRequest?.temperature).toBe(1);
+    expect(receivedCompletionRequest?.maxTokens).toBe(512);
+    expect(receivedCompletionRequest?.stopSequences).toEqual(['\nUser:']);
+    expect(receivedCompletionRequest?.systemPrompt).toBe(
+      'You are helpful.\n\nTree system context'
+    );
     expect(result.userNodeId).toBeDefined();
     expect(result.assistantNodeId).toBeDefined();
     expect(result.completion.finishReason).toBe('stop');

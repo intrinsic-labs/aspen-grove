@@ -7,7 +7,10 @@ import type {
   IPathStateRepository,
   IRawApiResponseRepository,
 } from '@application/repositories';
-import { assembleDialogueContext } from '@application/services/assemble-dialogue-context';
+import {
+  assembleDialogueContext,
+  resolveAgentMaxContextTokens,
+} from '@application/services/context';
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
   collectCompletion,
@@ -158,6 +161,9 @@ export class GenerateDialogueContinuationUseCase {
       nodes: contextNodes,
       agentSystemPrompt: modelAgent?.configuration.systemPrompt,
       treeSystemContext: tree?.systemContext,
+      truncation: {
+        maxContextTokens: resolveAgentMaxContextTokens(modelAgent),
+      },
     });
 
     const llmProvider = this.providerRegistry.getActiveProvider();
