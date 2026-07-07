@@ -322,7 +322,7 @@ export const useLoomTreeChatController = () => {
   );
 
   const regenerateFromNode = useCallback(
-    async (sourceNodeId: ULID) => {
+    async (targetNodeId: ULID) => {
       if (!session || sending) {
         return;
       }
@@ -332,6 +332,26 @@ export const useLoomTreeChatController = () => {
         setError(null);
         shouldAutoScrollRef.current = true;
         resetStreamingAssistantRow();
+
+        // Regenerating a model response means generating a SIBLING: the
+        // source is the response's parent, so the old response leaves the
+        // active path (it remains reachable as a branch) and the new one
+        // streams in its place. Regenerating from a human node continues
+        // from that node directly.
+        let sourceNodeId = targetNodeId;
+        const row = getRowById(targetNodeId);
+        if (row?.authorType === 'model') {
+          const incoming =
+            await repositories.edgeRepo.findContinuationsByTargetNodeId(
+              targetNodeId
+            );
+          const primarySource =
+            incoming[0]?.sources.find((source) => source.role === 'primary') ??
+            incoming[0]?.sources[0];
+          if (primarySource) {
+            sourceNodeId = primarySource.nodeId;
+          }
+        }
 
         if (session.activeNodeId !== sourceNodeId) {
           const rewound = await useCases.switchDialoguePathUseCase.execute({
@@ -351,6 +371,9 @@ export const useLoomTreeChatController = () => {
           adapters.credentialStore,
           session.provider
         );
+        const streamStartedAtMs = Date.now();
+        let firstDeltaAtMs: number | null = null;
+        let deltaCount = 0;
         const result =
           await useCases.generateDialogueContinuationUseCase.execute({
             session: {
@@ -366,14 +389,32 @@ export const useLoomTreeChatController = () => {
             stream: true,
             activateGeneratedNode: true,
             onAssistantTextDelta: async ({ delta }) => {
+              if (firstDeltaAtMs === null) {
+                firstDeltaAtMs = Date.now();
+              }
+              deltaCount += 1;
               appendStreamingAssistantDelta(delta);
             },
           });
+
+        if (__DEV__) {
+          // Streaming health check: many deltas spread over time = healthy;
+          // one or two deltas arriving at the end = transport is buffering.
+          console.log('[stream-diagnostic] regenerate', {
+            deltaCount,
+            msToFirstDelta:
+              firstDeltaAtMs === null
+                ? null
+                : firstDeltaAtMs - streamStartedAtMs,
+            msTotal: Date.now() - streamStartedAtMs,
+          });
+        }
 
         await refreshRowsAndContinuations({
           ...session,
           activeNodeId: result.assistantNodeId,
         });
+        resetStreamingAssistantRow();
 
         if (result.completion.interruptionReason) {
           setError(
@@ -396,7 +437,9 @@ export const useLoomTreeChatController = () => {
     [
       adapters.credentialStore,
       appendStreamingAssistantDelta,
+      getRowById,
       refreshRowsAndContinuations,
+      repositories.edgeRepo,
       resetStreamingAssistantRow,
       sending,
       session,
@@ -448,6 +491,9 @@ export const useLoomTreeChatController = () => {
         adapters.credentialStore,
         session.provider
       );
+      const streamStartedAtMs = Date.now();
+      let firstDeltaAtMs: number | null = null;
+      let deltaCount = 0;
       const turnResult = await useCases.sendDialogueTurnUseCase.execute({
         session,
         prompt,
@@ -462,14 +508,32 @@ export const useLoomTreeChatController = () => {
           });
         },
         onAssistantTextDelta: async ({ delta }) => {
+          if (firstDeltaAtMs === null) {
+            firstDeltaAtMs = Date.now();
+          }
+          deltaCount += 1;
           appendStreamingAssistantDelta(delta);
         },
       });
+
+      if (__DEV__) {
+        // Streaming health check: many deltas spread over time = healthy;
+        // one or two deltas arriving at the end = transport is buffering.
+        console.log('[stream-diagnostic] send', {
+          deltaCount,
+          msToFirstDelta:
+            firstDeltaAtMs === null ? null : firstDeltaAtMs - streamStartedAtMs,
+          msTotal: Date.now() - streamStartedAtMs,
+        });
+      }
 
       await refreshRowsAndContinuations({
         ...session,
         activeNodeId: turnResult.assistantNodeId,
       });
+      // Clear the transient streaming row now that the committed node is in
+      // `rows` — leaving it set rendered the response twice until remount.
+      resetStreamingAssistantRow();
 
       if (turnResult.completion.interruptionReason) {
         setError(
@@ -483,9 +547,9 @@ export const useLoomTreeChatController = () => {
           : caught instanceof Error
             ? caught.message
             : String(caught);
-      resetStreamingAssistantRow();
       setError(message);
     } finally {
+      resetStreamingAssistantRow();
       setSending(false);
     }
   }, [

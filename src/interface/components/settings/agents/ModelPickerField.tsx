@@ -74,12 +74,12 @@ export const ModelPickerField = ({
                   setSearch('');
                 }
               }}
+              hitSlop={6}
               style={({ pressed }) => [
-                styles.providerChip,
+                styles.providerTab,
                 {
-                  borderColor: isSelected ? colors.primary : colors.line,
-                  backgroundColor: isSelected
-                    ? `${colors.primary}15`
+                  borderBottomColor: isSelected
+                    ? colors.primary
                     : 'transparent',
                   opacity: pressed ? 0.65 : 1,
                 },
@@ -99,9 +99,7 @@ export const ModelPickerField = ({
       </View>
 
       {modelIdentifier.length > 0 ? (
-        <View
-          style={[styles.selectedModelRow, { borderColor: colors.primary }]}
-        >
+        <View style={styles.selectedModelRow}>
           <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
           <AppText
             variant="meta"
@@ -136,12 +134,10 @@ export const ModelPickerField = ({
         <Pressable
           onPress={picker.refresh}
           disabled={picker.loading}
+          hitSlop={6}
           style={({ pressed }) => [
-            styles.iconButton,
-            {
-              borderColor: colors.line,
-              opacity: pressed || picker.loading ? 0.65 : 1,
-            },
+            styles.refreshButton,
+            { opacity: pressed || picker.loading ? 0.65 : 1 },
           ]}
         >
           <Ionicons name="refresh" size={16} color={colors.primary} />
@@ -157,13 +153,14 @@ export const ModelPickerField = ({
           {picker.error}
         </AppText>
       ) : (
-        <View style={styles.optionList}>
+        <View>
           {showCustomRow ? (
             <Pressable
               onPress={() => onChangeModelIdentifier(trimmedSearch)}
               style={({ pressed }) => [
                 styles.optionRow,
-                { borderColor: colors.line, opacity: pressed ? 0.65 : 1 },
+                { borderBottomColor: colors.line },
+                { opacity: pressed ? 0.65 : 1 },
               ]}
             >
               <AppText variant="meta" numberOfLines={1}>
@@ -180,39 +177,43 @@ export const ModelPickerField = ({
                 onPress={() => onChangeModelIdentifier(option.id)}
                 style={({ pressed }) => [
                   styles.optionRow,
-                  {
-                    borderColor: isSelected ? colors.primary : colors.line,
-                    backgroundColor: isSelected
-                      ? `${colors.primary}15`
-                      : 'transparent',
-                    opacity: pressed ? 0.65 : 1,
-                  },
+                  { borderBottomColor: colors.line },
+                  { opacity: pressed ? 0.65 : 1 },
                 ]}
               >
-                <View style={styles.optionHeader}>
+                <View style={styles.optionText}>
+                  <View style={styles.optionHeader}>
+                    <AppText
+                      variant="meta"
+                      numberOfLines={1}
+                      style={
+                        isSelected
+                          ? [styles.optionLabel, { color: colors.primary }]
+                          : styles.optionLabel
+                      }
+                    >
+                      {option.label}
+                    </AppText>
+                    {option.loaded ? (
+                      <Ionicons name="flash" size={12} color={colors.primary} />
+                    ) : null}
+                  </View>
                   <AppText
                     variant="meta"
                     numberOfLines={1}
-                    style={styles.optionLabel}
+                    style={[styles.optionDetail, { color: colors.secondary }]}
                   >
-                    {option.label}
+                    {option.id}
+                    {option.detail ? `  ·  ${option.detail}` : ''}
                   </AppText>
-                  {option.loaded ? (
-                    <Ionicons
-                      name="flash"
-                      size={12}
-                      color={colors.primary}
-                    />
-                  ) : null}
                 </View>
-                <AppText
-                  variant="meta"
-                  numberOfLines={1}
-                  style={[styles.optionDetail, { color: colors.secondary }]}
-                >
-                  {option.id}
-                  {option.detail ? `  ·  ${option.detail}` : ''}
-                </AppText>
+                {isSelected ? (
+                  <Ionicons
+                    name="checkmark"
+                    size={16}
+                    color={colors.primary}
+                  />
+                ) : null}
               </Pressable>
             );
           })}
@@ -239,22 +240,17 @@ const styles = StyleSheet.create({
   },
   providerRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 20,
   },
-  providerChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
+  providerTab: {
+    paddingVertical: 6,
+    borderBottomWidth: 2,
   },
   selectedModelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    paddingVertical: 4,
   },
   selectedModelText: {
     flex: 1,
@@ -273,29 +269,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
   },
-  iconButton: {
+  refreshButton: {
     height: 32,
     width: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
   },
   centerWrap: {
     paddingVertical: 16,
     alignItems: 'center',
   },
-  optionList: {
-    gap: 6,
-  },
   optionRow: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 9,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  optionText: {
+    flex: 1,
   },
   optionHeader: {
     flexDirection: 'row',
@@ -306,7 +301,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionDetail: {
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   statusText: {

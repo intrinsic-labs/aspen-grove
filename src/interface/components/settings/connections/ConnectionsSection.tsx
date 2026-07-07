@@ -155,12 +155,10 @@ export const ConnectionsSection = ({
           <Pressable
             onPress={controller.testLmstudioConnection}
             disabled={status === 'checking'}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.testButton,
-              {
-                borderColor: colors.line,
-                opacity: pressed || status === 'checking' ? 0.65 : 1,
-              },
+              { opacity: pressed || status === 'checking' ? 0.65 : 1 },
             ]}
           >
             {status === 'checking' ? (
@@ -202,8 +200,6 @@ const styles = StyleSheet.create({
     width: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
   },
   statusDot: {
     width: 8,
@@ -215,15 +211,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 10,
   },
   testButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
     minWidth: 110,
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
 });

@@ -125,12 +125,12 @@ export const AgentEditorSheet = ({
                       setDraft(template.draft);
                       setError(null);
                     }}
-                    style={({ pressed }) => [
-                      styles.templateChip,
-                      { borderColor: colors.line, opacity: pressed ? 0.65 : 1 },
-                    ]}
+                    hitSlop={4}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
                   >
-                    <AppText variant="meta">{template.label}</AppText>
+                    <AppText variant="meta" style={{ color: colors.primary }}>
+                      {template.label}
+                    </AppText>
                   </Pressable>
                 ))}
               </View>
@@ -223,19 +223,14 @@ const styles = StyleSheet.create({
   templatesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  templateChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
+    columnGap: 20,
+    rowGap: 10,
   },
   block: {
     gap: 8,
   },
   blockLabel: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.7,
   },
   errorText: {

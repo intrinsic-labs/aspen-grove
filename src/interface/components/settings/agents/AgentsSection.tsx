@@ -1,11 +1,17 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { Agent } from '@domain/entities';
+import {
+  DEFAULT_AGENT_SYSTEM_PROMPT,
+  DEFAULT_AGENT_TEMPERATURE,
+} from '@application/services/agent-defaults';
 import { AppText, SettingsSection } from '@/interface/ui/value-objects';
 import { AgentEditorSheet } from './AgentEditorSheet';
-import { draftFromAgent, useAgentsLibraryController } from './useAgentsLibraryController';
+import {
+  draftFromAgent,
+  useAgentsLibraryController,
+} from './useAgentsLibraryController';
 import type { AgentDraft } from './agent-editor-types';
-import { DEFAULT_AGENT_SYSTEM_PROMPT, DEFAULT_AGENT_TEMPERATURE } from '@application/services/agent-defaults';
 
 type AgentsSectionProps = {
   readonly colors: {
@@ -43,11 +49,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
         disabled={isBusy}
         style={({ pressed }) => [
           styles.agentRow,
-          {
-            borderColor: isDefault ? colors.primary : colors.line,
-            backgroundColor: isDefault ? `${colors.primary}10` : 'transparent',
-            opacity: isBusy ? 0.5 : pressed ? 0.75 : 1,
-          },
+          { opacity: isBusy ? 0.5 : pressed ? 0.75 : 1 },
         ]}
       >
         <View style={styles.agentHeader}>
@@ -57,46 +59,32 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
           {isDefault && (
             <View style={styles.defaultBadge}>
               <Ionicons name="star" size={12} color={colors.primary} />
-              <AppText
-                variant="meta"
-                style={[styles.defaultLabel, { color: colors.primary }]}
-              >
+              <AppText variant="meta" style={{ color: colors.primary }}>
                 Default
               </AppText>
             </View>
           )}
         </View>
-        <AppText variant="meta" style={{ color: colors.secondary, marginTop: 2 }}>
+        <AppText
+          variant="meta"
+          style={{ color: colors.secondary, marginTop: 2 }}
+        >
           {agent.modelRef ?? '(no modelRef)'}
+          {typeof agent.configuration.temperature === 'number'
+            ? `  ·  temp ${agent.configuration.temperature}`
+            : ''}
+          {typeof agent.configuration.maxTokens === 'number'
+            ? `  ·  max ${agent.configuration.maxTokens}`
+            : ''}
         </AppText>
-        {(typeof agent.configuration.temperature === 'number' ||
-          typeof agent.configuration.maxTokens === 'number') && (
-          <AppText
-            variant="meta"
-            style={{ color: colors.secondary, marginTop: 2 }}
-          >
-            {typeof agent.configuration.temperature === 'number'
-              ? `temp ${agent.configuration.temperature}`
-              : ''}
-            {typeof agent.configuration.temperature === 'number' &&
-            typeof agent.configuration.maxTokens === 'number'
-              ? '  ·  '
-              : ''}
-            {typeof agent.configuration.maxTokens === 'number'
-              ? `max ${agent.configuration.maxTokens}`
-              : ''}
-          </AppText>
-        )}
 
         <View style={styles.actionRow}>
           {!isDefault && (
             <Pressable
               onPress={() => controller.makeDefault(agent.id)}
               disabled={isBusy}
-              style={({ pressed }) => [
-                styles.actionButton,
-                { borderColor: colors.primary, opacity: pressed ? 0.65 : 1 },
-              ]}
+              hitSlop={6}
+              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
             >
               <AppText variant="meta" style={{ color: colors.primary }}>
                 Make default
@@ -106,10 +94,8 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
           <Pressable
             onPress={() => controller.deleteAgent(agent)}
             disabled={isBusy}
-            style={({ pressed }) => [
-              styles.actionButton,
-              { borderColor: colors.line, opacity: pressed ? 0.65 : 1 },
-            ]}
+            hitSlop={6}
+            style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
           >
             <AppText variant="meta" style={{ color: colors.secondary }}>
               Delete
@@ -121,52 +107,56 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
   };
 
   return (
-    <SettingsSection
-      title="Agents"
-      footer="Agents pair a model with a system prompt and generation settings. New trees use the default agent; each tree can switch or customize its own from the chat's ⚙️ menu."
-    >
-      <View style={styles.list}>
+    <>
+      <SettingsSection
+        title="Agents"
+        footer="Agents pair a model with a system prompt and generation settings. New trees use the default agent; each tree can switch or customize its own from the chat's settings."
+      >
         {controller.loading ? (
-          <AppText variant="meta" style={{ color: colors.secondary }}>
+          <AppText
+            variant="meta"
+            style={[styles.statusText, { color: colors.secondary }]}
+          >
             Loading…
           </AppText>
-        ) : (
-          <>
-            {controller.agents.map(renderAgent)}
+        ) : null}
 
-            {controller.agents.length === 0 ? (
-              <AppText variant="meta" style={{ color: colors.secondary }}>
-                No agents yet. Create one to start weaving.
-              </AppText>
-            ) : null}
+        {!controller.loading ? controller.agents.map(renderAgent) : null}
 
-            <Pressable
-              onPress={controller.openCreate}
-              style={({ pressed }) => [
-                styles.newAgentRow,
-                { borderColor: colors.primary, opacity: pressed ? 0.65 : 1 },
-              ]}
-            >
-              <Ionicons name="add" size={16} color={colors.primary} />
-              <AppText variant="meta" style={{ color: colors.primary }}>
-                New Agent
-              </AppText>
-            </Pressable>
+        {!controller.loading && controller.agents.length === 0 ? (
+          <AppText
+            variant="meta"
+            style={[styles.statusText, { color: colors.secondary }]}
+          >
+            No agents yet. Create one to start weaving.
+          </AppText>
+        ) : null}
 
-            {controller.error ? (
-              <AppText variant="meta" tone="accent">
-                {controller.error}
-              </AppText>
-            ) : null}
-          </>
-        )}
-      </View>
+        {!controller.loading ? (
+          <Pressable
+            onPress={controller.openCreate}
+            style={({ pressed }) => [
+              styles.newAgentRow,
+              { opacity: pressed ? 0.65 : 1 },
+            ]}
+          >
+            <Ionicons name="add" size={16} color={colors.primary} />
+            <AppText variant="meta" style={{ color: colors.primary }}>
+              New Agent
+            </AppText>
+          </Pressable>
+        ) : null}
+
+        {controller.error ? (
+          <AppText variant="meta" tone="accent" style={styles.statusText}>
+            {controller.error}
+          </AppText>
+        ) : null}
+      </SettingsSection>
 
       <AgentEditorSheet
         visible={controller.editor !== null}
-        title={
-          controller.editor?.mode === 'edit' ? 'Edit Agent' : 'New Agent'
-        }
+        title={controller.editor?.mode === 'edit' ? 'Edit Agent' : 'New Agent'}
         initialDraft={
           controller.editor?.mode === 'edit'
             ? draftFromAgent(controller.editor.agent)
@@ -177,21 +167,13 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
         onCancel={controller.closeEditor}
         onSubmit={controller.submitEditor}
       />
-    </SettingsSection>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 10,
-  },
   agentRow: {
-    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
   },
   agentHeader: {
     flexDirection: 'row',
@@ -206,28 +188,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  defaultLabel: {
-    fontWeight: '500',
-  },
   actionRow: {
     flexDirection: 'row',
-    marginTop: 10,
-    gap: 8,
+    marginTop: 8,
+    gap: 20,
   },
-  actionButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
+  statusText: {
+    paddingVertical: 10,
   },
   newAgentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
-    borderStyle: 'dashed',
+    paddingVertical: 12,
   },
 });

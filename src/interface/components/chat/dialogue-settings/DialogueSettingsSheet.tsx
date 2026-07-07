@@ -87,7 +87,7 @@ export const DialogueSettingsSheet = ({
           AGENT
         </AppText>
         {controller.agent ? (
-          <View style={[styles.agentCard, { borderColor: colors.line }]}>
+          <View style={styles.agentBlock}>
             <AppText variant="body" style={styles.agentName}>
               {controller.agent.name}
             </AppText>
@@ -112,10 +112,8 @@ export const DialogueSettingsSheet = ({
               <Pressable
                 onPress={controller.onEditAgent}
                 disabled={controller.busy}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  { borderColor: colors.primary, opacity: pressed ? 0.65 : 1 },
-                ]}
+                hitSlop={6}
+                style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
               >
                 <AppText variant="meta" style={{ color: colors.primary }}>
                   Edit agent
@@ -124,10 +122,8 @@ export const DialogueSettingsSheet = ({
               <Pressable
                 onPress={() => controller.setMode('switchAgent')}
                 disabled={controller.busy}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  { borderColor: colors.line, opacity: pressed ? 0.65 : 1 },
-                ]}
+                hitSlop={6}
+                style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
               >
                 <AppText variant="meta" style={{ color: colors.secondary }}>
                   Switch agent
@@ -165,9 +161,10 @@ export const DialogueSettingsSheet = ({
           <Pressable
             onPress={() => void controller.saveSystemContext()}
             disabled={controller.busy}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.saveContextButton,
-              { borderColor: colors.primary, opacity: pressed ? 0.65 : 1 },
+              { opacity: pressed ? 0.65 : 1 },
             ]}
           >
             {controller.busy ? (
@@ -211,11 +208,9 @@ export const DialogueSettingsSheet = ({
               onPress={() => void controller.switchToAgent(candidate.id)}
               disabled={controller.busy}
               style={({ pressed }) => [
-                styles.agentCard,
-                {
-                  borderColor: colors.line,
-                  opacity: controller.busy ? 0.5 : pressed ? 0.65 : 1,
-                },
+                styles.candidateRow,
+                { borderBottomColor: colors.line },
+                { opacity: controller.busy ? 0.5 : pressed ? 0.65 : 1 },
               ]}
             >
               <AppText variant="body" style={styles.agentName}>
@@ -283,12 +278,10 @@ export const DialogueSettingsSheet = ({
         <Pressable
           onPress={() => void onSaveAgentEdit()}
           disabled={editSaving}
+          hitSlop={6}
           style={({ pressed }) => [
             styles.savePrimaryButton,
-            {
-              borderColor: colors.primary,
-              opacity: pressed || editSaving ? 0.65 : 1,
-            },
+            { opacity: pressed || editSaving ? 0.65 : 1 },
           ]}
         >
           {editSaving ? (
@@ -404,49 +397,39 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   blockLabel: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.7,
   },
   helperText: {
-    fontSize: 11,
+    fontSize: 12,
   },
-  agentCard: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
+  agentBlock: {
+    paddingVertical: 4,
+  },
+  candidateRow: {
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   agentName: {
     fontWeight: '500',
   },
   actionRow: {
     flexDirection: 'row',
-    marginTop: 10,
-    gap: 8,
-  },
-  actionButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
+    marginTop: 12,
+    gap: 24,
   },
   systemContextInput: {
     minHeight: 92,
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
   },
   saveContextButton: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
+    paddingVertical: 4,
   },
   savePrimaryButton: {
     alignItems: 'center',
     paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
   },
 });

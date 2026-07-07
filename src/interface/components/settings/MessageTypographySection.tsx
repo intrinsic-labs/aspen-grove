@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 15,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },

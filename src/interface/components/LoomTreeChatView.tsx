@@ -24,11 +24,17 @@ const LoomTreeChatView = () => {
   const openDialogueSettings = controller.dialogueSettings.open;
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerRightContainerStyle: {
+        paddingRight: 14,
+      },
       headerRight: () => (
         <Pressable
           onPress={openDialogueSettings}
           hitSlop={8}
-          style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+          style={({ pressed }) => [
+            styles.headerSettingsButton,
+            { opacity: pressed ? 0.65 : 1 },
+          ]}
         >
           <Ionicons name="options-outline" size={20} color={colors.primary} />
         </Pressable>
@@ -115,5 +121,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+  },
+  headerSettingsButton: {
+    height: 36,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -19,6 +19,10 @@ type SettingsSectionProps = {
   readonly style?: ViewStyle | ViewStyle[];
 };
 
+/**
+ * A flat settings section: uppercase mono header, rows separated by hairline
+ * dividers, optional footer. Deliberately boring — no cards, no outlines.
+ */
 export const SettingsSection = ({
   title,
   footer,
@@ -27,10 +31,7 @@ export const SettingsSection = ({
 }: SettingsSectionProps) => {
   const { isDark } = useAspenGroveTheme();
   const items = Children.toArray(children).filter(Boolean);
-  const sectionBackgroundColor = isDark
-    ? 'rgba(255, 255, 255, 0.05)'
-    : 'rgba(0, 0, 0, 0.05)';
-  const sectionDividerColor = isDark
+  const dividerColor = isDark
     ? 'rgba(255, 255, 255, 0.12)'
     : 'rgba(0, 0, 0, 0.12)';
 
@@ -42,23 +43,13 @@ export const SettingsSection = ({
         </AppText>
       ) : null}
 
-      <View
-        style={[
-          styles.sectionCard,
-          { backgroundColor: sectionBackgroundColor },
-        ]}
-      >
+      <View>
         {items.map((item, index) => (
           <Fragment key={index}>
             {item}
             {index < items.length - 1 ? (
               <View
-                style={[
-                  styles.rowDivider,
-                  {
-                    backgroundColor: sectionDividerColor,
-                  },
-                ]}
+                style={[styles.rowDivider, { backgroundColor: dividerColor }]}
               />
             ) : null}
           </Fragment>
@@ -141,75 +132,67 @@ export const SettingsSwitchRow = ({
 
 const styles = StyleSheet.create({
   list: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     paddingBottom: 20,
-    gap: 18,
+    gap: 30,
   },
   section: {
-    gap: 5,
+    gap: 4,
   },
   sectionHeader: {
-    marginLeft: 4,
     fontFamily: 'IBMPlexMono-Semibold',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0.7,
     textTransform: 'uppercase',
+    marginBottom: 4,
   },
   sectionFooter: {
-    marginLeft: 4,
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0.25,
-  },
-  sectionCard: {
-    borderRadius: 13,
-    overflow: 'hidden',
+    marginTop: 6,
   },
   row: {
-    paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 4,
   },
   rowLabel: {
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0.35,
     textTransform: 'uppercase',
   },
   rowDivider: {
     height: StyleSheet.hairlineWidth,
-    marginHorizontal: 12,
   },
   inlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 10,
   },
   inlineLabel: {
     flex: 1,
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 10,
   },
   switchLabel: {
     flex: 1,
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
   },
 });

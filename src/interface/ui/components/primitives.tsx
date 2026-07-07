@@ -58,8 +58,8 @@ const getTextVariantStyle = (variant: TextVariant): TextStyle => {
     case 'meta':
       return {
         fontFamily: 'IBMPlexMono-Regular',
-        fontSize: 12,
-        lineHeight: 18,
+        fontSize: 13,
+        lineHeight: 19,
         letterSpacing: 0.4,
       };
     default:

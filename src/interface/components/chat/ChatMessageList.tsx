@@ -156,7 +156,7 @@ export const ChatMessageList = memo(
           </ContextMenuWrapper>
         ))}
 
-        {streamingAssistantText.length > 0 ? (
+        {sending && streamingAssistantText.length > 0 ? (
           <View style={[styles.row, styles.assistantRow]}>
             <MarkdownText
               baseStyle={{
