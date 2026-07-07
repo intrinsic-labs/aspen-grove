@@ -84,17 +84,16 @@ const LoomTreeListView = () => {
       setError(null);
 
       // Pinned default first; fall back to the first available shared agent.
-      // Stale pins are cleared inside the helper.
-      // TODO (Phase 5): Once Settings → Agents lands, expose a proper picker
-      // so users can switch the pinned default without going through a save
-      // cycle on a provider's settings panel.
+      // Stale pins are cleared inside the helper. The pin is managed in
+      // Settings → Agents ("Make default"); per-tree switching happens in
+      // the chat ⚙️ sheet after creation.
       const defaultAgent = await resolveDefaultModelAgent({
         agentRepository: repositories.agentRepo,
         userPreferencesRepository: repositories.userPreferencesRepo,
       });
       if (!defaultAgent) {
         throw new Error(
-          'No model agents configured. Set up an agent in Settings before creating a tree.'
+          'No agents yet. Create one in Settings → Agents, then come back to start a tree.'
         );
       }
 

@@ -110,8 +110,21 @@ The unified abstraction for any entity that participates in a Loom Tree. **Both 
 - `loomAware` — Can access tree navigation/manipulation tools
 - `configuration` — systemPrompt, temperature, maxTokens, etc.
 - `permissions` — read, write
+- `ownerTreeId` — When set, the agent is **tree-owned**: private to that
+  LoomTree, hidden from the shared library, and hard-deleted with the tree.
+  `null` = shared/library agent.
 
 **One model can back multiple agents** with different configurations (e.g., "Claude Balanced" vs "Claude Creative" with different temperatures).
+
+### Tree → Agent Linkage
+
+Each dialogue tree references the model agent that generates when the user
+sends a turn (`LoomTree.defaultModelAgentId`, required for dialogue trees).
+There is **no global "active provider"** — provider routing is resolved per
+request from the agent's `modelRef`. Editing dialogue settings inside a chat
+either mutates the shared agent (explicit choice) or forks a tree-owned copy.
+New trees use the pinned default agent (`UserPreferences.defaultModelAgentId`)
+with fallback to the first shared model agent.
 
 ### Model Reference Format
 

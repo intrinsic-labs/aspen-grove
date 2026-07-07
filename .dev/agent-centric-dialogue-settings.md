@@ -3,8 +3,9 @@
 > Pivot from global provider selection to per-tree agent references.
 > Tracks the work to make each Loom Tree own its model configuration via Agents.
 
-**Status**: Planning complete, ready to implement
+**Status**: ✅ Complete (Phases 1–6 implemented; Phase 7 remains future work)
 **Created**: 2026-06-14
+**Completed**: 2026-07-07
 **Supersedes**: The implicit "OpenRouter assistant" / "LM Studio assistant" singleton-agent pattern and the `UserPreferences.selectedProvider` global flag.
 
 ---
@@ -195,85 +196,73 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ---
 
-## Phase 4: Chat Header — Per-Tree Agent Settings UI
+## Phase 4: Chat Header — Per-Tree Agent Settings UI ✅
 
 **Goal**: A ⚙️ in the chat header opens a sheet that exposes the tree's current agent and lets the user tweak it without thinking about "agents."
 
 ### Components
 
-- [ ] `DialogueSettingsButton` in the chat screen header (right side).
-- [ ] `DialogueSettingsSheet`:
-  - Shows the tree's current agent: provider, model, temperature, max tokens, system prompt, system context (tree-level).
-  - **If agent is tree-owned**: all fields directly editable. Save → `UpdateAgentConfigurationUseCase`.
-  - **If agent is shared**:
-    - Read-only display with a banner: "Shared agent — edits affect N other trees."
-    - Two primary actions: "Edit shared agent" (mutates the shared agent, with a confirmation) and "Customize for this tree only" (forks into a tree-owned copy via `ForkAgentForTreeUseCase`).
-  - Also: "Switch agent" → picker listing other shared agents + "+ New ad-hoc agent" (creates tree-owned).
-  - Tree-level `systemContext` is editable here too, independent of the agent's `systemPrompt`.
+- [x] Settings button in the chat screen header (right side, `LoomTreeChatView`).
+- [x] `DialogueSettingsSheet` (`chat/dialogue-settings/`):
+  - Shows the tree's current agent + ownership ("Private to this conversation" / "Shared agent · used by N trees").
+  - **If agent is tree-owned**: edit mode opens directly. Save → `UpdateAgentConfigurationUseCase`.
+  - **If agent is shared**: prompt with "Edit shared agent" vs "Customize for this tree only" (`ForkAgentForTreeUseCase`), including the referencing-tree count.
+  - "Switch agent" lists other shared agents → `UpdateTreeDefaultAgentUseCase`. ("+ New ad-hoc agent" dropped — tree-owned agents are created only by forking; creating from scratch stays a library concern.)
+  - Tree-level `systemContext` editable with explicit save.
+  - Implementation note: modes swap within one modal (overview / edit / switch) instead of stacking modals — nested page-sheet modals are unreliable cross-platform.
 
 ### Wiring
 
-- [ ] Extend `useLoomTreeChatController` with `dialogueSettings` state and the actions above.
-- [ ] After any agent mutation, refresh the session's `modelIdentifier` / `modelAgentId` references.
+- [x] `useLoomTreeChatController` exposes `dialogueSettings` state; sheet mutations call back into `reinitializeSession`.
+- [x] Session re-initialization preserves the ephemeral-tree flag (an active conversation is never mistaken for an empty quick-add tree).
 
 ### Doc updates
 
-- [ ] New file: `docs/architecture/specs/dialogue-settings-ui.md` describing the sheet, the shared-vs-owned distinction, and the fork behavior.
+- [x] `docs/architecture/specs/dialogue-settings-ui.md`.
 
 ---
 
-## Phase 5: Settings — Agents Library
+## Phase 5: Settings — Agents Library ✅
 
 **Goal**: A proper agent management surface in Settings, replacing the current ProviderPickerSection / per-provider sections that mix connection config with agent config.
 
 ### Settings restructure
 
-- [ ] **Connections section** (existing settings reorganized):
-  - OpenRouter: API key only.
-  - LM Studio: endpoint, optional API token, useMcpTools, autoLoadModels.
-  - These remain the only credential-bearing parts.
-- [ ] **Agents section** (new):
-  - List shared agents with name, provider, model identifier, temperature.
-  - Tap → editor (same fields as the chat ⚙️ sheet, minus the fork affordance).
-  - "+ New Agent" → opens an editor:
-    - For OpenRouter: pick from suggested templates (Claude Sonnet via OpenRouter, Llama via OpenRouter, etc.) or enter a custom model identifier.
-    - For LM Studio: pick from discovered LM Studio models (uses the existing `fetchLmstudioModels` logic). No "template" concept here.
-  - "Set as default for new trees" toggle per agent.
-  - Delete agent: blocked if any tree references it (with explanation).
+- [x] **Connections section** (`settings/connections/`): OpenRouter API key; LM Studio endpoint, optional token, useMcpTools, autoLoadModels + "Test connection". The only credential-bearing surface.
+- [x] **Agents section** (`settings/agents/`):
+  - Lists shared agents with name, modelRef, temperature/max tokens.
+  - Tap → `AgentEditorSheet` (same form internals as the chat ⚙️ sheet).
+  - "+ New Agent" editor with provider chips: OpenRouter (searchable catalog picker via new `OpenRouterModelCatalog`, 24h cache, custom identifiers allowed) or LM Studio (discovered models).
+  - "Make default" action per agent (explicit pin; first created agent auto-pins via `pinDefaultModelAgentIfUnset`).
+  - Delete blocked while referenced (existing `DeleteAgentUseCase` behavior surfaced in UI).
+- [x] Controllers split by concern: `useConnectionsController`, `useAppearanceController`, `useAgentsLibraryController` — the 634-line `useSettingsController` is gone, along with the temperature dual-write to `UserPreferences.defaultTemperature`.
 
 ### Cleanup
 
-- [ ] Remove `ProviderPickerSection` (no longer meaningful).
-- [ ] Strip provider/model/temperature/systemPrompt fields out of `OpenRouterSettingsSection` (those move to agent editor).
-- [ ] `LMStudioSettingsSection`: keep only endpoint, token, useMcpTools, autoLoadModels.
-- [ ] Remove the `(default temperature)` global setting if it's no longer used anywhere (agents own temperature).
+- [x] Removed `ProviderPickerSection`, `OpenRouterSettingsSection`, `LMStudioSettingsSection`, `GenerationDefaultsSection` (agents own generation config now).
+- [x] Global default-temperature UI removed (the preference field remains in storage, unused by settings).
 
 ### Suggested templates
 
-- [ ] Define a small static template list (OpenRouter-routed for now): e.g.
-  - `openrouter:anthropic/claude-sonnet-4` — "Claude Sonnet (Balanced)" @ temp 0.7
-  - `openrouter:anthropic/claude-sonnet-4` — "Claude Sonnet (Creative)" @ temp 1.0
-  - `openrouter:openai/gpt-4o` — "GPT-4o (Balanced)" @ temp 0.7
-- [ ] Templates are NOT auto-instantiated. User picks one when adding an agent.
+- [x] Static OpenRouter-routed list in `settings/agents/agent-templates.ts` (Claude Sonnet balanced/creative, Claude Haiku fast, GPT-4o). Not auto-instantiated; user picks one as a starting draft.
 
 ### Doc updates
 
-- [ ] `docs/architecture/model/agents.md`: document the templates pattern as implemented (OpenRouter-routed for now; native provider keys are a future expansion).
+- [x] Covered by `docs/architecture/specs/dialogue-settings-ui.md` + this plan; `agents.md` already documents shared vs tree-owned lifecycle.
 
 ---
 
-## Phase 6: Cleanup
+## Phase 6: Cleanup ✅
 
-- [ ] Remove `openrouter-assistant-agent.ts` and `lmstudio-assistant-agent.ts` singleton helpers. They embodied the old "one assistant agent per provider, auto-resolved" model.
-- [ ] Remove `selectedProvider` from all code paths (already done schema-side in Phase 1, but sweep for leftover references).
-- [ ] Remove `IProviderRegistry.setActiveProvider` / `getActiveProvider` / `getActiveProviderName`.
-- [ ] Audit tests for assumptions about "active provider" or singleton assistant agents; update or replace.
-- [ ] Run `npm test` and address breakages.
+- [x] Removed `openrouter-assistant-agent.ts` and `lmstudio-assistant-agent.ts` singleton helpers. Shared defaults now live in `application/services/agent-defaults.ts`.
+- [x] `selectedProvider` swept from all code paths (only the un-droppable legacy SQLite column remains, unreferenced).
+- [x] `IProviderRegistry` active-provider methods were already gone (Phase 2); stale TODO comments removed.
+- [x] Tests audited — no active-provider/singleton assumptions remained; suite green.
 
 ### Doc updates
 
-- [ ] `AGENTS.md` (root): update the "Agents, Humans, & Models" section to mention `ownerTreeId` and tree-default-agent linkage.
-- [ ] Mark this file as completed.
+- [x] `AGENTS.md`: "Agents, Humans, & Models" now documents `ownerTreeId` and the tree → agent linkage / no-active-provider routing.
+- [x] This file marked completed.
 
 ---
 
