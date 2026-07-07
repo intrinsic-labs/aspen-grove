@@ -1,5 +1,6 @@
 import { Children, Fragment, type ReactNode } from 'react';
 import { StyleSheet, Switch, View, type ViewStyle } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from './primitives';
 
@@ -103,6 +104,54 @@ export const SettingsInlineRow = ({
   </View>
 );
 
+type SettingsSliderRowProps = {
+  readonly label: ReactNode;
+  readonly value: number;
+  readonly minimumValue: number;
+  readonly maximumValue: number;
+  readonly step: number;
+  readonly onValueChange: (value: number) => void;
+  /** Formats the value shown next to the label. Defaults to String(value). */
+  readonly formatValue?: (value: number) => string;
+  readonly style?: ViewStyle | ViewStyle[];
+};
+
+export const SettingsSliderRow = ({
+  label,
+  value,
+  minimumValue,
+  maximumValue,
+  step,
+  onValueChange,
+  formatValue,
+  style,
+}: SettingsSliderRowProps) => {
+  const { colors } = useAspenGroveTheme();
+
+  return (
+    <View style={[styles.row, style]}>
+      <View style={styles.sliderHeader}>
+        <AppText variant="meta" tone="secondary" style={styles.rowLabel}>
+          {label}
+        </AppText>
+        <AppText variant="meta" tone="primary">
+          {formatValue ? formatValue(value) : String(value)}
+        </AppText>
+      </View>
+      <Slider
+        value={value}
+        minimumValue={minimumValue}
+        maximumValue={maximumValue}
+        step={step}
+        onValueChange={onValueChange}
+        minimumTrackTintColor={colors.primary}
+        maximumTrackTintColor={colors.secondaryVariant}
+        style={styles.slider}
+      />
+    </View>
+  );
+};
+
 type SettingsSwitchRowProps = {
   readonly label: ReactNode;
   readonly value: boolean;
@@ -168,6 +217,15 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     height: StyleSheet.hairlineWidth,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  slider: {
+    width: '100%',
+    height: 32,
   },
   inlineRow: {
     flexDirection: 'row',

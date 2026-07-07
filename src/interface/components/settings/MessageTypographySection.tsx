@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { NodeViewStyle } from '@domain/entities';
 import {
-  AppInput,
   AppText,
   SettingsSection,
+  SettingsSliderRow,
   SettingsStackRow,
 } from '@/interface/ui/value-objects';
 import type { ChatFontFace } from './types';
@@ -98,16 +98,14 @@ export const MessageTypographySection = ({
         />
       </SettingsStackRow>
 
-      <SettingsStackRow label="Font Size (12 - 30)">
-        <AppInput
-          value={fontSizeInput}
-          onChangeText={onChangeFontSizeInput}
-          placeholder="17"
-          keyboardType="number-pad"
-          autoCorrect={false}
-          style={styles.input}
-        />
-      </SettingsStackRow>
+      <SettingsSliderRow
+        label="Font Size"
+        value={Number(fontSizeInput) || 17}
+        minimumValue={12}
+        maximumValue={30}
+        step={1}
+        onValueChange={(value) => onChangeFontSizeInput(String(value))}
+      />
 
       <SettingsStackRow label="Message Style">
         <OptionSelector
@@ -118,16 +116,20 @@ export const MessageTypographySection = ({
         />
       </SettingsStackRow>
 
-      <SettingsStackRow label="Message Corner Radius (0 - 32)">
-        <AppInput
-          value={nodeViewCornerRadiusInput}
-          onChangeText={onChangeNodeViewCornerRadiusInput}
-          placeholder="8"
-          keyboardType="number-pad"
-          autoCorrect={false}
-          style={styles.input}
-        />
-      </SettingsStackRow>
+      <SettingsSliderRow
+        label="Message Corner Radius"
+        value={
+          Number.isFinite(Number(nodeViewCornerRadiusInput))
+            ? Number(nodeViewCornerRadiusInput)
+            : 8
+        }
+        minimumValue={0}
+        maximumValue={32}
+        step={1}
+        onValueChange={(value) =>
+          onChangeNodeViewCornerRadiusInput(String(value))
+        }
+      />
     </SettingsSection>
   );
 };
@@ -153,16 +155,5 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
-  },
-  input: {
-    minHeight: 28,
-    borderWidth: 0,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 16,
-    lineHeight: 22,
   },
 });

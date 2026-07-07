@@ -18,6 +18,7 @@ type AgentsSectionProps = {
     readonly line: string;
     readonly primary: string;
     readonly secondary: string;
+    readonly red: string;
   };
 };
 
@@ -97,7 +98,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
             hitSlop={6}
             style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
           >
-            <AppText variant="meta" style={{ color: colors.secondary }}>
+            <AppText variant="meta" style={{ color: colors.red }}>
               Delete
             </AppText>
           </Pressable>

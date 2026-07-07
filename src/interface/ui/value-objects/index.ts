@@ -9,6 +9,7 @@ export {
   SettingsInlineRow,
   SettingsList,
   SettingsSection,
+  SettingsSliderRow,
   SettingsStackRow,
   SettingsSwitchRow,
 } from '../components/settings-list';

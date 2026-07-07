@@ -332,6 +332,7 @@ export const useLoomTreeChatController = () => {
         setError(null);
         shouldAutoScrollRef.current = true;
         resetStreamingAssistantRow();
+        continuations.hide();
 
         // Regenerating a model response means generating a SIBLING: the
         // source is the response's parent, so the old response leaves the
@@ -353,16 +354,18 @@ export const useLoomTreeChatController = () => {
           }
         }
 
-        if (session.activeNodeId !== sourceNodeId) {
-          const rewound = await useCases.switchDialoguePathUseCase.execute({
-            pathId: session.pathId,
-            ownerAgentId: session.ownerAgentId,
-            targetNodeId: sourceNodeId,
-          });
-          await refreshRowsAndContinuations({
-            ...session,
-            activeNodeId: rewound.targetNodeId,
-          });
+        // No path rewind here: the use case resolves the context path from
+        // the source node itself and replaces the path suffix on activation.
+        // We only trim the local rows so the regenerated message (and
+        // anything after it) disappears while everything before it stays
+        // untouched — the new response then streams into the gap.
+        const targetIndex = rows.findIndex(
+          (candidate) => candidate.id === targetNodeId
+        );
+        if (targetIndex >= 0) {
+          const keepCount =
+            row?.authorType === 'model' ? targetIndex : targetIndex + 1;
+          setRows((current) => current.slice(0, keepCount));
         }
 
         // Provider is bound to this session's agent (via tree.defaultModelAgentId).
@@ -429,6 +432,9 @@ export const useLoomTreeChatController = () => {
               ? caught.message
               : String(caught);
         setError(message);
+        // Rows were trimmed optimistically; reload from the (unchanged)
+        // path so the old response reappears after a failed regenerate.
+        await refreshRows(session);
       } finally {
         resetStreamingAssistantRow();
         setSending(false);
@@ -437,14 +443,16 @@ export const useLoomTreeChatController = () => {
     [
       adapters.credentialStore,
       appendStreamingAssistantDelta,
+      continuations,
       getRowById,
+      refreshRows,
       refreshRowsAndContinuations,
       repositories.edgeRepo,
       resetStreamingAssistantRow,
+      rows,
       sending,
       session,
       useCases.generateDialogueContinuationUseCase,
-      useCases.switchDialoguePathUseCase,
     ]
   );
 

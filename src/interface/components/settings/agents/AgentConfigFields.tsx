@@ -1,6 +1,13 @@
 import { StyleSheet } from 'react-native';
-import { DEFAULT_AGENT_SYSTEM_PROMPT } from '@application/services/agent-defaults';
-import { AppInput, SettingsStackRow } from '@/interface/ui/value-objects';
+import {
+  DEFAULT_AGENT_SYSTEM_PROMPT,
+  DEFAULT_AGENT_TEMPERATURE,
+} from '@application/services/agent-defaults';
+import {
+  AppInput,
+  SettingsSliderRow,
+  SettingsStackRow,
+} from '@/interface/ui/value-objects';
 
 type AgentConfigFieldsProps = {
   readonly name: string;
@@ -42,16 +49,19 @@ export const AgentConfigFields = ({
         />
       </SettingsStackRow>
 
-      <SettingsStackRow label="Temperature (0.0 - 2.0)">
-        <AppInput
-          value={temperatureInput}
-          onChangeText={onChangeTemperatureInput}
-          placeholder="1.0"
-          keyboardType="decimal-pad"
-          autoCorrect={false}
-          style={styles.input}
-        />
-      </SettingsStackRow>
+      <SettingsSliderRow
+        label="Temperature"
+        value={
+          Number.isFinite(Number(temperatureInput.replace(',', '.')))
+            ? Number(temperatureInput.replace(',', '.'))
+            : DEFAULT_AGENT_TEMPERATURE
+        }
+        minimumValue={0}
+        maximumValue={2}
+        step={0.1}
+        onValueChange={(value) => onChangeTemperatureInput(value.toFixed(1))}
+        formatValue={(value) => value.toFixed(1)}
+      />
 
       <SettingsStackRow label="Max Tokens (optional)">
         <AppInput

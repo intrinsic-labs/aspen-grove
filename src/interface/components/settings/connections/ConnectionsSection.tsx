@@ -16,13 +16,10 @@ type ConnectionsSectionProps = {
     readonly line: string;
     readonly primary: string;
     readonly secondary: string;
+    readonly red: string;
+    readonly green: string;
   };
 };
-
-const STATUS_COLORS = {
-  connected: '#34C759',
-  disconnected: '#FF3B30',
-} as const;
 
 /**
  * Provider connections: OpenRouter API key and the LM Studio server.
@@ -36,9 +33,9 @@ export const ConnectionsSection = ({
   const status = controller.lmstudioConnectionStatus;
   const statusColor =
     status === 'connected'
-      ? STATUS_COLORS.connected
+      ? colors.green
       : status === 'disconnected'
-        ? STATUS_COLORS.disconnected
+        ? colors.red
         : colors.line;
   const statusText =
     status === 'connected'
