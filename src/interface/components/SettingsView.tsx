@@ -9,19 +9,22 @@ import { AppScreen, SettingsList } from '../ui/value-objects';
 import {
   AgentsSection,
   AppBehaviorSection,
-  GenerationDefaultsSection,
-  LMStudioSettingsSection,
+  ConnectionsSection,
   MessageTypographySection,
-  OpenRouterSettingsSection,
-  ProviderPickerSection,
   SettingsStatus,
-  useSettingsController,
+  useAppearanceController,
+  useConnectionsController,
 } from './settings';
 
 const SettingsView = () => {
   const { colors, isDark } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
-  const controller = useSettingsController();
+  const connections = useConnectionsController();
+  const appearance = useAppearanceController();
+
+  const loading = connections.loading || appearance.loading;
+  const saving = connections.saving || appearance.saving;
+  const error = connections.error ?? appearance.error;
 
   const switchOffTrack = isDark
     ? 'rgba(255, 255, 255, 0.22)'
@@ -29,7 +32,7 @@ const SettingsView = () => {
 
   return (
     <AppScreen>
-      {controller.loading ? (
+      {loading ? (
         <View style={styles.centerWrap}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -46,103 +49,46 @@ const SettingsView = () => {
           }
         >
           <SettingsList>
-            <ProviderPickerSection
-              selectedProvider={controller.selectedProvider}
-              onChangeProvider={controller.setSelectedProvider}
+            <AgentsSection colors={colors} />
+
+            <ConnectionsSection
+              controller={connections}
+              switchOffTrack={switchOffTrack}
               colors={colors}
             />
 
-            {controller.selectedProvider === 'openrouter' && (
-              <OpenRouterSettingsSection
-                apiKeyStatusText={controller.apiKeyStatusText}
-                apiKeyInput={controller.apiKeyInput}
-                onChangeApiKeyInput={controller.setApiKeyInput}
-                showApiKey={controller.showApiKey}
-                onToggleShowApiKey={() =>
-                  controller.setShowApiKey((visible) => !visible)
-                }
-                modelIdentifierInput={controller.modelIdentifierInput}
-                onChangeModelIdentifierInput={
-                  controller.setModelIdentifierInput
-                }
-                colors={colors}
-              />
-            )}
-
-            {controller.selectedProvider === 'lmstudio' && (
-              <LMStudioSettingsSection
-                endpointInput={controller.lmstudioEndpointInput}
-                onChangeEndpointInput={controller.setLmstudioEndpointInput}
-                apiTokenInput={controller.lmstudioApiTokenInput}
-                onChangeApiTokenInput={controller.setLmstudioApiTokenInput}
-                showApiToken={controller.showLmstudioToken}
-                onToggleShowApiToken={() =>
-                  controller.setShowLmstudioToken((visible) => !visible)
-                }
-                useMcpTools={controller.lmstudioUseMcpTools}
-                onChangeUseMcpTools={controller.setLmstudioUseMcpTools}
-                autoLoadModels={controller.lmstudioAutoLoadModels}
-                onChangeAutoLoadModels={controller.setLmstudioAutoLoadModels}
-                selectedModel={controller.lmstudioSelectedModel}
-                onChangeSelectedModel={controller.setLmstudioSelectedModel}
-                models={controller.lmstudioModels}
-                modelsLoading={controller.lmstudioModelsLoading}
-                modelsError={controller.lmstudioModelsError}
-                onRefreshModels={controller.fetchLmstudioModels}
-                connectionStatus={controller.lmstudioConnectionStatus}
-                switchOffTrack={switchOffTrack}
-                colors={{
-                  ...colors,
-                  success: '#34C759',
-                  error: '#FF3B30',
-                  muted: colors.line,
-                }}
-              />
-            )}
-
-            <GenerationDefaultsSection
-              temperatureInput={controller.temperatureInput}
-              onChangeTemperatureInput={controller.setTemperatureInput}
-              maxTokensInput={controller.maxTokensInput}
-              onChangeMaxTokensInput={controller.setMaxTokensInput}
-              systemPromptInput={controller.systemPromptInput}
-              onChangeSystemPromptInput={controller.setSystemPromptInput}
-            />
-
-            <AgentsSection colors={colors} />
-
             <MessageTypographySection
-              fontFace={controller.fontFace}
-              onChangeFontFace={controller.setFontFace}
-              fontSizeInput={controller.fontSizeInput}
-              onChangeFontSizeInput={controller.setFontSizeInput}
-              nodeViewStyle={controller.nodeViewStyle}
-              onChangeNodeViewStyle={controller.setNodeViewStyle}
-              nodeViewCornerRadiusInput={controller.nodeViewCornerRadiusInput}
+              fontFace={appearance.fontFace}
+              onChangeFontFace={appearance.setFontFace}
+              fontSizeInput={appearance.fontSizeInput}
+              onChangeFontSizeInput={appearance.setFontSizeInput}
+              nodeViewStyle={appearance.nodeViewStyle}
+              onChangeNodeViewStyle={appearance.setNodeViewStyle}
+              nodeViewCornerRadiusInput={appearance.nodeViewCornerRadiusInput}
               onChangeNodeViewCornerRadiusInput={
-                controller.setNodeViewCornerRadiusInput
+                appearance.setNodeViewCornerRadiusInput
               }
               colors={colors}
             />
 
             <AppBehaviorSection
-              verboseErrorAlerts={controller.verboseErrorAlerts}
-              onChangeVerboseErrorAlerts={controller.setVerboseErrorAlerts}
+              verboseErrorAlerts={appearance.verboseErrorAlerts}
+              onChangeVerboseErrorAlerts={appearance.setVerboseErrorAlerts}
               switchOffTrack={switchOffTrack}
               colors={colors}
             />
 
             <SettingsStatus
-              saving={controller.saving}
-              notice={controller.notice}
-              error={controller.error}
-              hasValidationError={controller.hasValidationError}
+              saving={saving}
+              notice={null}
+              error={error}
+              hasValidationError={false}
             />
           </SettingsList>
         </KeyboardAwareScrollView>
       )}
 
-      {Platform.OS === 'ios' && !controller.loading ? (
+      {Platform.OS === 'ios' && !loading ? (
         <KeyboardToolbar insets={{ left: insets.left, right: insets.right }}>
           <KeyboardToolbar.Prev />
           <KeyboardToolbar.Next />

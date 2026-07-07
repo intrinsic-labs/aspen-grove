@@ -22,6 +22,7 @@ import {
 import {
   LMStudioAdapter,
   OpenRouterAdapter,
+  OpenRouterModelCatalog,
   ProviderRegistry,
 } from '@infrastructure/llm';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
@@ -57,6 +58,7 @@ type AppServices = {
   readonly adapters: {
     readonly providerRegistry: ProviderRegistry;
     readonly credentialStore: ExpoSecureCredentialStore;
+    readonly openRouterCatalog: OpenRouterModelCatalog;
   };
   readonly useCases: {
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
@@ -116,6 +118,7 @@ const buildAppServices = (): AppServices => {
       lmstudio: lmStudioAdapter,
     }),
     credentialStore: new ExpoSecureCredentialStore(),
+    openRouterCatalog: new OpenRouterModelCatalog(database),
   } as const;
 
   const useCases = {
@@ -222,10 +225,6 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
           return;
         }
 
-        // TODO (Phase 6): Remove `setActiveProvider` entirely — the registry
-        // no longer has a concept of an "active" provider. Provider routing is
-        // resolved per request from each Agent's `modelRef`. For now the
-        // registry retains its default ('openrouter') for any legacy callers.
         const userPreferences =
           await services.repositories.userPreferencesRepo.get();
 

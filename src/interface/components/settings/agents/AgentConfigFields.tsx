@@ -1,28 +1,47 @@
 import { StyleSheet } from 'react-native';
-import {
-  DEFAULT_OPENROUTER_SYSTEM_PROMPT,
-} from '@application/services/openrouter-assistant-agent';
-import { AppInput, SettingsSection, SettingsStackRow } from '@/interface/ui/value-objects';
+import { DEFAULT_AGENT_SYSTEM_PROMPT } from '@application/services/agent-defaults';
+import { AppInput, SettingsStackRow } from '@/interface/ui/value-objects';
 
-type GenerationDefaultsSectionProps = {
+type AgentConfigFieldsProps = {
+  readonly name: string;
+  readonly onChangeName: (value: string) => void;
   readonly temperatureInput: string;
   readonly onChangeTemperatureInput: (value: string) => void;
   readonly maxTokensInput: string;
   readonly onChangeMaxTokensInput: (value: string) => void;
-  readonly systemPromptInput: string;
-  readonly onChangeSystemPromptInput: (value: string) => void;
+  readonly systemPrompt: string;
+  readonly onChangeSystemPrompt: (value: string) => void;
 };
 
-export const GenerationDefaultsSection = ({
+/**
+ * The generation-config form fields shared by the Settings agent editor and
+ * the chat-side dialogue settings sheet. Model selection is separate (see
+ * ModelPickerField) because the chat sheet sometimes shows config without
+ * allowing a model switch.
+ */
+export const AgentConfigFields = ({
+  name,
+  onChangeName,
   temperatureInput,
   onChangeTemperatureInput,
   maxTokensInput,
   onChangeMaxTokensInput,
-  systemPromptInput,
-  onChangeSystemPromptInput,
-}: GenerationDefaultsSectionProps) => {
+  systemPrompt,
+  onChangeSystemPrompt,
+}: AgentConfigFieldsProps) => {
   return (
-    <SettingsSection title="Generation Defaults">
+    <>
+      <SettingsStackRow label="Name">
+        <AppInput
+          value={name}
+          onChangeText={onChangeName}
+          placeholder="e.g. Claude (Creative)"
+          autoCapitalize="words"
+          autoCorrect={false}
+          style={styles.input}
+        />
+      </SettingsStackRow>
+
       <SettingsStackRow label="Temperature (0.0 - 2.0)">
         <AppInput
           value={temperatureInput}
@@ -47,9 +66,9 @@ export const GenerationDefaultsSection = ({
 
       <SettingsStackRow label="System Prompt">
         <AppInput
-          value={systemPromptInput}
-          onChangeText={onChangeSystemPromptInput}
-          placeholder={DEFAULT_OPENROUTER_SYSTEM_PROMPT}
+          value={systemPrompt}
+          onChangeText={onChangeSystemPrompt}
+          placeholder={DEFAULT_AGENT_SYSTEM_PROMPT}
           autoCapitalize="sentences"
           autoCorrect={false}
           multiline
@@ -57,7 +76,7 @@ export const GenerationDefaultsSection = ({
           style={[styles.input, styles.multilineInput]}
         />
       </SettingsStackRow>
-    </SettingsSection>
+    </>
   );
 };
 
