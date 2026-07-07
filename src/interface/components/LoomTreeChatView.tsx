@@ -1,21 +1,40 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useLayoutEffect, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen } from '../ui/value-objects';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { ContinuationRail } from './chat/ContinuationRail';
+import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 
 const LoomTreeChatView = () => {
   const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const navigation = useNavigation();
   const controller = useLoomTreeChatController();
   const [composerHeight, setComposerHeight] = useState(72);
+
+  const openDialogueSettings = controller.dialogueSettings.open;
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={openDialogueSettings}
+          hitSlop={8}
+          style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+        >
+          <Ionicons name="options-outline" size={20} color={colors.primary} />
+        </Pressable>
+      ),
+    });
+  }, [colors.primary, navigation, openDialogueSettings]);
 
   return (
     <AppScreen style={styles.container}>
@@ -74,7 +93,13 @@ const LoomTreeChatView = () => {
         onComposerLayout={setComposerHeight}
         bottomInset={insets.bottom}
         displayPreferences={controller.displayPreferences}
-        //colors={colors}
+      />
+
+      <DialogueSettingsSheet
+        visible={controller.dialogueSettings.visible}
+        treeId={controller.dialogueSettings.treeId}
+        onClose={controller.dialogueSettings.close}
+        onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
       />
     </AppScreen>
   );

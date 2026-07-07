@@ -40,13 +40,6 @@ export const useDeleteEphemeralTreeOnBack = (
       isHandlingRef.current = true;
       void input.treeRepo
         .hardDelete(treeId)
-        .then((deleted) => {
-          if (deleted) {
-            console.info('[chat] deleted empty tree created from quick add', {
-              treeId,
-            });
-          }
-        })
         .finally(() => {
           input.onMarkAsNonEphemeral();
           isHandlingRef.current = false;

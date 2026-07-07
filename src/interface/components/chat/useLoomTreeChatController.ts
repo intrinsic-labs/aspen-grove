@@ -60,6 +60,8 @@ export const useLoomTreeChatController = () => {
     readonly nodeId: ULID;
     readonly localId: string;
   } | null>(null);
+  const [dialogueSettingsVisible, setDialogueSettingsVisible] =
+    useState(false);
   const {
     streamingText: streamingAssistantText,
     appendDelta: appendStreamingAssistantDelta,
@@ -120,8 +122,8 @@ export const useLoomTreeChatController = () => {
     [continuations.showForNode, continuations.sourceNodeId, refreshRows]
   );
 
-  useEffect(() => {
-    const initialize = async () => {
+  const initializeSession = useCallback(
+    async (options?: { readonly preserveEphemeralState?: boolean }) => {
       try {
         setLoading(true);
         setError(null);
@@ -140,7 +142,9 @@ export const useLoomTreeChatController = () => {
           userPreferencesRepo: repositories.userPreferencesRepo,
         });
 
-        resetEphemeralState();
+        if (!options?.preserveEphemeralState) {
+          resetEphemeralState();
+        }
         activeTreeIdRef.current = initialized.treeId;
 
         navigation.setOptions({ title: initialized.treeTitle });
@@ -154,10 +158,20 @@ export const useLoomTreeChatController = () => {
       } finally {
         setLoading(false);
       }
-    };
+    },
+    [navigation, repositories, refreshRows, resetEphemeralState, treeIdParam]
+  );
 
-    void initialize();
-  }, [repositories, refreshRows, resetEphemeralState, treeIdParam]);
+  useEffect(() => {
+    void initializeSession();
+  }, [initializeSession]);
+
+  // Re-resolve the session after the ⚙️ sheet mutates the tree's agent or
+  // system context. Preserves the ephemeral flag so an in-progress
+  // conversation is never mistaken for an empty quick-add tree.
+  const reinitializeSession = useCallback(async () => {
+    await initializeSession({ preserveEphemeralState: true });
+  }, [initializeSession]);
 
   useEffect(() => {
     if (!shouldAutoScrollRef.current) {
@@ -356,15 +370,6 @@ export const useLoomTreeChatController = () => {
             },
           });
 
-        console.info('[chat] generated continuation', {
-          sourceNodeId,
-          assistantNodeId: result.assistantNodeId,
-          finishReason: result.completion.finishReason,
-          interruptionReason: result.completion.interruptionReason,
-          modelIdentifier: result.completion.modelIdentifier,
-          latencyMs: result.completion.latencyMs,
-        });
-
         await refreshRowsAndContinuations({
           ...session,
           activeNodeId: result.assistantNodeId,
@@ -434,12 +439,6 @@ export const useLoomTreeChatController = () => {
           ...session,
           activeNodeId: result.editedNodeId,
         });
-
-        console.info('[chat] edited node', {
-          editedNodeId: result.editedNodeId,
-          editedFromNodeId: result.editedFromNodeId,
-          parentNodeId: result.parentNodeId,
-        });
         return;
       }
 
@@ -465,25 +464,6 @@ export const useLoomTreeChatController = () => {
         onAssistantTextDelta: async ({ delta }) => {
           appendStreamingAssistantDelta(delta);
         },
-      });
-
-      console.info('[chat] assembled context', {
-        systemContextLength: turnResult.systemContextLength,
-        messageCount: turnResult.contextMessageCount,
-      });
-
-      console.info(`[chat] ${session.provider} completion`, {
-        modelIdentifier: turnResult.completion.modelIdentifier,
-        latencyMs: turnResult.completion.latencyMs,
-        finishReason: turnResult.completion.finishReason,
-        interruptionReason: turnResult.completion.interruptionReason,
-        usage: turnResult.completion.usage,
-      });
-
-      console.info('[chat] model provenance verified', {
-        nodeId: turnResult.assistantNodeId,
-        rawApiResponseId: turnResult.provenance.rawApiResponseId,
-        parentNodeCount: turnResult.provenance.parentNodeCount,
       });
 
       await refreshRowsAndContinuations({
@@ -652,6 +632,13 @@ export const useLoomTreeChatController = () => {
       onMakeCurrent: rewindToNode,
       onMenuAction: onContinuationMenuAction,
       error: continuations.error,
+    },
+    dialogueSettings: {
+      visible: dialogueSettingsVisible,
+      treeId: session?.treeId ?? activeTreeIdRef.current,
+      open: () => setDialogueSettingsVisible(true),
+      close: () => setDialogueSettingsVisible(false),
+      onSessionInvalidated: reinitializeSession,
     },
     scrollRef,
     inputRef,
