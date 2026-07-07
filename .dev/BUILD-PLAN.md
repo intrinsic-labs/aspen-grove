@@ -43,33 +43,33 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 ---
 
-## Milestone A — Finish the plumbing (before any new features)
+## Milestone A — Finish the plumbing (before any new features) ✅ (2026-07-07)
 
 **Goal**: everything already started gets finished or removed. No half-built layers under new construction.
 
-### A1. Agent-centric pivot, phases 4–6 (from `.dev/agent-centric-dialogue-settings.md`) — *top priority*
-- [ ] DialogueSettingsSheet: per-tree agent tweaks from the chat screen (shared-agent fork prompt: "edit shared" vs "customize for this tree")
-- [ ] Settings → Agents library: real CRUD (create/edit shared agents), replacing the "Agents (placeholder)" section
-- [ ] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/MCP/auto-load **only** — provider connection config, nothing agent-shaped
-- [ ] Remove ProviderPickerSection, `upsertOpenRouterAssistantAgent`/`upsertLMStudioAssistantAgent` singleton helpers, and the implicit create-agent-on-settings-save hack (`useSettingsController.ts` TODO)
-- [ ] Wire the already-built use cases: `CreateSharedAgent`, `UpdateAgentConfiguration`, `ForkAgentForTree`, `UpdateTreeDefaultAgent`
-- [ ] Tree agent is changeable after creation (agent picker on tree; `LoomTreeListView` TODO)
-- [ ] Slim `useSettingsController` (634 lines, ~20 useStates) — split per section; kill the temperature dual-write (agent config vs userPreferences)
+### A1. Agent-centric pivot, phases 4–6 (from `.dev/agent-centric-dialogue-settings.md`) — *top priority* ✅
+- [x] DialogueSettingsSheet: per-tree agent tweaks from the chat screen (shared-agent fork prompt: "edit shared" vs "customize for this tree") — `chat/dialogue-settings/`, spec in `docs/architecture/specs/dialogue-settings-ui.md`
+- [x] Settings → Agents library: real CRUD (create/edit shared agents), replacing the "Agents (placeholder)" section — `settings/agents/` with editor sheet, templates, catalog picker
+- [x] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/MCP/auto-load **only** — `settings/connections/` with "Test connection"
+- [x] Removed ProviderPickerSection, singleton assistant helpers, and the implicit create-agent-on-settings-save hack
+- [x] Wired `CreateSharedAgent`, `UpdateAgentConfiguration`, `ForkAgentForTree`, `UpdateTreeDefaultAgent`
+- [x] Tree agent changeable after creation (chat ⚙️ → Switch agent)
+- [x] `useSettingsController` split into `useConnectionsController` / `useAppearanceController` / `useAgentsLibraryController`; temperature dual-write gone
 
-### A2. Context assembly hardening
-- [ ] Exclusion filtering (pruned/excluded metadata) in `assemble-dialogue-context`
-- [ ] Truncation: `truncateMiddle` default + token estimation + response buffer (per `docs/architecture/specs/context-assembly.md`). Unbounded context is a daily-use blocker on long trees
-- [ ] Respect agent `maxTokens`/`stopSequences` end-to-end
+### A2. Context assembly hardening ✅
+- [x] Exclusion filtering (pruned/excluded) — verified already present; covered by new tests
+- [x] Truncation: `truncateMiddle` default + ~4 chars/token estimation + 1024-token response buffer + min 4 recent messages; system context never truncated (`application/services/context/`). `rollingWindow`/`stopAtLimit` are stubbed strategies for later
+- [x] Agent `maxTokens`/`stopSequences` verified flowing end-to-end (was already plumbed; now tested). Note: per-model context window comes from `configuration.customParameters.maxContextTokens` when set, else a documented 128k default
 
-### A3. Error handling & reliability
-- [ ] `onSetUpError` in the Watermelon adapter: surface DB setup failure to the user (currently silent empty handler)
-- [ ] Retry-with-backoff for `retryable` provider errors (the flag is plumbed everywhere and used nowhere)
-- [ ] Strip/gate `console.info` debug remnants (chat controller, collect-completion, startup orchestrator)
-- [ ] Resolve hardcoded `jsi: true` (platform guard is commented out — verify on Android or restore the guard)
+### A3. Error handling & reliability ✅
+- [x] `onSetUpError` captured via `persistence/watermelon/setup-error.ts` and surfaced through the AppBootstrapGate
+- [x] Retry-with-backoff (`services/llm/retry.ts`): retryable errors only, max 2 retries, 500ms/1500ms, honors provider `retryAfterMs`; streaming retries only before the first chunk
+- [x] `console.info` remnants stripped (chat controller, collect-completion, ephemeral-tree hook); startup orchestrator routes through `__DEV__`-gated `dev-log`
+- [x] `jsi: true` kept intentionally on both platforms — watermelondb 0.28 supports Android JSI and falls back to the async dispatcher if JSI init fails
 
-### A4. Model selection UX (plumbing half of it)
-- [ ] OpenRouter model catalog fetch + 24h cache (`ModelCatalogService` per contract) — free-text model IDs are hostile to beta users
-- [ ] LM Studio model list already works; unify both behind one picker data source
+### A4. Model selection UX (plumbing half of it) ✅
+- [x] `OpenRouterModelCatalog`: public catalog fetch, 24h cache in WatermelonDB LocalStorage, stale-on-error fallback
+- [x] Unified picker data source (`useModelPickerData`) feeding the agent editor for both OpenRouter (searchable + custom ids) and LM Studio (live discovery)
 
 ---
 

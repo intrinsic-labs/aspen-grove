@@ -27,6 +27,7 @@ import {
 } from '@infrastructure/llm';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
 import database from '@infrastructure/persistence/watermelon/index.native';
+import { subscribeToDatabaseSetupError } from '@infrastructure/persistence/watermelon/setup-error';
 import {
   WatermelonAgentRepository,
   WatermelonEdgeRepository,
@@ -216,6 +217,18 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
   useEffect(() => {
     let isCancelled = false;
 
+    // A corrupted/unopenable database would otherwise fail silently inside
+    // the SQLite adapter; surface it through the bootstrap gate instead.
+    // Replays an already-recorded error on subscribe.
+    const unsubscribeSetupError = subscribeToDatabaseSetupError((error) => {
+      if (!isCancelled) {
+        setBootstrap({
+          status: 'error',
+          message: `Database failed to load: ${error.message}`,
+        });
+      }
+    });
+
     const runBootstrap = async () => {
       try {
         const startupResult = await runStartupOrchestrator(database, {
@@ -264,6 +277,7 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
 
     return () => {
       isCancelled = true;
+      unsubscribeSetupError();
     };
   }, [services]);
 
