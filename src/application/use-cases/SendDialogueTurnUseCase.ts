@@ -7,7 +7,10 @@ import type {
   IPathStateRepository,
   IRawApiResponseRepository,
 } from '@application/repositories';
-import { assembleDialogueContext } from '@application/services/assemble-dialogue-context';
+import {
+  assembleDialogueContext,
+  resolveAgentMaxContextTokens,
+} from '@application/services/context';
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
   collectCompletion,
@@ -179,6 +182,9 @@ export class SendDialogueTurnUseCase {
       nodes: contextNodes,
       agentSystemPrompt: modelAgent.configuration.systemPrompt,
       treeSystemContext: tree?.systemContext,
+      truncation: {
+        maxContextTokens: resolveAgentMaxContextTokens(modelAgent),
+      },
     });
 
     // Provider is determined by the agent's modelRef, not by any global
