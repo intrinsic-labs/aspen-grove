@@ -5,6 +5,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import {
   ActivityIndicator,
@@ -337,6 +338,13 @@ const ContextMenuWrapper = ({
   ) => void;
   readonly children: ReactNode;
 }) => {
+  // On iOS, actions are deferred until the context menu's dismissal
+  // animation has fully completed (onDismiss — our patch to
+  // react-native-context-menu-view exposing UIKit's animator completion).
+  // Mutating the row tree while the menu is still dismissing strands the
+  // gray preview platter over the list. Android's menu is a plain popup
+  // with no platter and never fires onDismiss, so it acts immediately.
+  const pendingActionRef = useRef<ChatMessageMenuAction | null>(null);
   const menuItems = buildMessageMenuItems(row.bookmarked, row.authorType);
   const actions: ContextMenuAction[] = menuItems.map((item) => ({
     title: item.title,
@@ -350,8 +358,20 @@ const ContextMenuWrapper = ({
       actions={actions}
       onPress={(event) => {
         const menuItem = menuItems[event.nativeEvent.index];
-        if (menuItem) {
+        if (!menuItem) {
+          return;
+        }
+        if (Platform.OS === 'ios') {
+          pendingActionRef.current = menuItem.action;
+        } else {
           onMessageAction(row.id, menuItem.action);
+        }
+      }}
+      onDismiss={() => {
+        const pending = pendingActionRef.current;
+        pendingActionRef.current = null;
+        if (pending) {
+          onMessageAction(row.id, pending);
         }
       }}
     >
