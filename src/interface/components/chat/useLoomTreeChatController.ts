@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   TextInput,
@@ -14,6 +15,11 @@ import { useAppServices } from '@interface/composition';
 import type { ContinuationMenuAction } from './ContinuationRail';
 import type { ChatMessageMenuAction } from './ChatMessageList';
 import { getProviderApiKey } from './provider-key';
+import {
+  getDialogueDraft,
+  setDialogueDraft,
+  subscribeDialogueDraft,
+} from './dialogue-draft-store';
 import { toDialogueRouteParams } from './route-params';
 import {
   initializeDialogueChatSession,
@@ -66,6 +72,7 @@ export const useLoomTreeChatController = () => {
     Awaited<ReturnType<typeof loadDialogueRowsForPath>>['rows']
   >([]);
   const [session, setSession] = useState<ChatSession | null>(null);
+  const [treeTitle, setTreeTitle] = useState('');
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [editTarget, setEditTarget] = useState<{
     readonly nodeId: ULID;
@@ -73,6 +80,7 @@ export const useLoomTreeChatController = () => {
   } | null>(null);
   const [dialogueSettingsVisible, setDialogueSettingsVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
+  const [titleEditorVisible, setTitleEditorVisible] = useState(false);
   const {
     streamingText: streamingAssistantText,
     appendDelta: appendStreamingAssistantDelta,
@@ -87,6 +95,21 @@ export const useLoomTreeChatController = () => {
   const displayPreferences = useDialogueDisplayPreferences({
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
+  const draftTreeId = session?.treeId ?? activeTreeIdRef.current ?? treeIdParam;
+
+  useEffect(() => {
+    if (!draftTreeId) {
+      return undefined;
+    }
+    return subscribeDialogueDraft(draftTreeId, () => {
+      const nextDraft = getDialogueDraft(draftTreeId);
+      setInput((current) => (current === nextDraft ? current : nextDraft));
+    });
+  }, [draftTreeId]);
+
+  useEffect(() => {
+    setDialogueDraft(draftTreeId, input);
+  }, [draftTreeId, input]);
 
   const markAsNonEphemeral = useCallback(() => {
     hasUserSentMessageRef.current = true;
@@ -159,6 +182,7 @@ export const useLoomTreeChatController = () => {
         }
         activeTreeIdRef.current = initialized.treeId;
 
+        setTreeTitle(initialized.treeTitle);
         navigation.setOptions({ title: initialized.treeTitle });
 
         const initializedSession: ChatSession = initialized.session;
@@ -195,6 +219,30 @@ export const useLoomTreeChatController = () => {
   const reinitializeSession = useCallback(async () => {
     await initializeSession({ preserveEphemeralState: true });
   }, [initializeSession]);
+
+  const saveTreeTitle = useCallback(
+    async (title: string) => {
+      const treeId = session?.treeId ?? activeTreeIdRef.current;
+      if (!treeId) {
+        throw new Error('No active Loom Tree to rename.');
+      }
+
+      const trimmedTitle = title.trim();
+      if (trimmedTitle.length === 0) {
+        throw new Error('Title is required.');
+      }
+
+      const updated = await repositories.treeRepo.update({
+        id: treeId,
+        changes: { title: trimmedTitle },
+      });
+
+      setTreeTitle(updated.title);
+      navigation.setOptions({ title: updated.title });
+      setTitleEditorVisible(false);
+    },
+    [navigation, repositories.treeRepo, session?.treeId]
+  );
 
   useEffect(() => {
     if (!shouldAutoScrollRef.current) {
@@ -268,6 +316,18 @@ export const useLoomTreeChatController = () => {
     },
     [router, session?.treeId]
   );
+
+  const openExpandedComposer = useCallback(() => {
+    const treeId = session?.treeId ?? activeTreeIdRef.current ?? treeIdParam;
+    if (!treeId) {
+      return;
+    }
+    setDialogueDraft(treeId, input);
+    router.push({
+      pathname: '/tree/[treeId]/compose',
+      params: { treeId },
+    });
+  }, [input, router, session?.treeId, treeIdParam]);
 
   const toggleBookmark = useCallback(
     async (nodeId: ULID) => {
@@ -648,6 +708,7 @@ export const useLoomTreeChatController = () => {
           await regenerateFromNode(targetNodeId);
           break;
         case 'continuations':
+          Keyboard.dismiss();
           await continuations.showForNode(targetNodeId);
           break;
         case 'edit':
@@ -686,6 +747,7 @@ export const useLoomTreeChatController = () => {
   // Tapping the already-open source closes it.
   const onNodeTap = useCallback(
     (nodeId: ULID) => {
+      Keyboard.dismiss();
       if (continuations.visible && continuations.sourceNodeId === nodeId) {
         continuations.hide();
         return;
@@ -796,6 +858,7 @@ export const useLoomTreeChatController = () => {
       setEditTarget(null);
       setInput('');
     },
+    onExpandComposer: openExpandedComposer,
     isEditing: Boolean(editTarget),
     editLabel: editTarget ? `Editing ${editTarget.localId}` : undefined,
     onNodeTap,
@@ -831,6 +894,13 @@ export const useLoomTreeChatController = () => {
       open: () => setDialogueSettingsVisible(true),
       close: () => setDialogueSettingsVisible(false),
       onSessionInvalidated: reinitializeSession,
+    },
+    titleEditor: {
+      visible: titleEditorVisible,
+      title: treeTitle,
+      open: () => setTitleEditorVisible(true),
+      close: () => setTitleEditorVisible(false),
+      save: saveTreeTitle,
     },
     scrollRef,
     inputRef,

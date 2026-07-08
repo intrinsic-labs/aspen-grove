@@ -5,18 +5,22 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import {
   ActivityIndicator,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type NativeSyntheticEvent as NSE,
   Platform,
   Pressable,
+  type StyleProp,
   StyleSheet,
   Text,
   type TextLayoutEventData,
   View,
+  type ViewStyle,
 } from 'react-native';
 import ContextMenu, {
   type ContextMenuAction,
@@ -122,6 +126,24 @@ export const ChatMessageList = memo(
     displayPreferences,
   }: ChatMessageListProps) => {
     const { colors } = useAspenGroveTheme();
+    const scrollMetricsRef = useRef({
+      offsetY: 0,
+      viewportHeight: 0,
+    });
+    const rowLayoutsRef = useRef(
+      new Map<string, { y: number; height: number }>()
+    );
+    const railLayoutsRef = useRef(
+      new Map<string, { y: number; height: number }>()
+    );
+    const suppressTapUntilByNodeRef = useRef(new Map<string, number>());
+    const revealRailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
+    const activeRailNodeId =
+      continuationRail.visible && continuationRail.sourceNodeId
+        ? continuationRail.sourceNodeId
+        : null;
     const messageTextStyle = {
       fontSize: displayPreferences.messageFontSize,
       lineHeight: displayPreferences.messageLineHeight,
@@ -131,6 +153,136 @@ export const ChatMessageList = memo(
           }
         : {}),
     };
+
+    const revealContinuationRail = useCallback(
+      (nodeId: ULID) => {
+        const rowLayout = rowLayoutsRef.current.get(nodeId);
+        const railLayout = railLayoutsRef.current.get(nodeId);
+        const { offsetY, viewportHeight } = scrollMetricsRef.current;
+        if (!rowLayout || !railLayout || viewportHeight <= 0) {
+          return;
+        }
+
+        const railTop = rowLayout.y + railLayout.y;
+        const railBottom = railTop + railLayout.height;
+        const visibleTop =
+          offsetY + headerHeight + loomUiTokens.messageList.topPadding;
+        const visibleBottom =
+          offsetY +
+          viewportHeight -
+          composerHeight -
+          loomUiTokens.messageList.composerClearancePadding;
+
+        if (railBottom > visibleBottom) {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, offsetY + railBottom - visibleBottom),
+            animated: true,
+          });
+          return;
+        }
+
+        if (railTop < visibleTop) {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, railTop - headerHeight),
+            animated: true,
+          });
+        }
+      },
+      [composerHeight, headerHeight, scrollRef]
+    );
+
+    const scheduleRailReveal = useCallback(
+      (nodeId: ULID) => {
+        if (revealRailTimeoutRef.current) {
+          clearTimeout(revealRailTimeoutRef.current);
+        }
+
+        requestAnimationFrame(() => {
+          revealRailTimeoutRef.current = setTimeout(() => {
+            revealContinuationRail(nodeId);
+          }, 210);
+        });
+      },
+      [revealContinuationRail]
+    );
+
+    useEffect(
+      () => () => {
+        if (revealRailTimeoutRef.current) {
+          clearTimeout(revealRailTimeoutRef.current);
+        }
+      },
+      []
+    );
+
+    useEffect(() => {
+      if (!activeRailNodeId) {
+        return;
+      }
+      scheduleRailReveal(activeRailNodeId);
+    }, [
+      activeRailNodeId,
+      continuationRail.items.length,
+      continuationRail.loading,
+      scheduleRailReveal,
+    ]);
+
+    const handleScroll = useCallback(
+      (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { contentOffset, layoutMeasurement } = event.nativeEvent;
+        scrollMetricsRef.current = {
+          offsetY: contentOffset.y,
+          viewportHeight: layoutMeasurement.height,
+        };
+        onScroll(event);
+      },
+      [onScroll]
+    );
+
+    const handleScrollLayout = useCallback((event: LayoutChangeEvent) => {
+      scrollMetricsRef.current = {
+        ...scrollMetricsRef.current,
+        viewportHeight: event.nativeEvent.layout.height,
+      };
+    }, []);
+
+    const recordRowLayout = useCallback(
+      (nodeId: ULID, event: LayoutChangeEvent) => {
+        const { y, height } = event.nativeEvent.layout;
+        rowLayoutsRef.current.set(nodeId, { y, height });
+        if (activeRailNodeId === nodeId) {
+          scheduleRailReveal(nodeId);
+        }
+      },
+      [activeRailNodeId, scheduleRailReveal]
+    );
+
+    const recordRailLayout = useCallback(
+      (nodeId: ULID, event: LayoutChangeEvent) => {
+        const { y, height } = event.nativeEvent.layout;
+        railLayoutsRef.current.set(nodeId, { y, height });
+        if (activeRailNodeId === nodeId) {
+          scheduleRailReveal(nodeId);
+        }
+      },
+      [activeRailNodeId, scheduleRailReveal]
+    );
+
+    const suppressNextNodeTap = useCallback((nodeId: ULID) => {
+      suppressTapUntilByNodeRef.current.set(nodeId, Date.now() + 900);
+    }, []);
+
+    const handleNodePress = useCallback(
+      (nodeId: ULID) => {
+        const suppressUntil = suppressTapUntilByNodeRef.current.get(nodeId);
+        if (suppressUntil && suppressUntil > Date.now()) {
+          return;
+        }
+        suppressTapUntilByNodeRef.current.delete(nodeId);
+        onNodeTap(nodeId);
+      },
+      [onNodeTap]
+    );
 
     if (loading) {
       return (
@@ -161,7 +313,8 @@ export const ChatMessageList = memo(
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         alwaysBounceVertical
         overScrollMode="always"
-        onScroll={onScroll}
+        onLayout={handleScrollLayout}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         {rows.map((row) => (
@@ -169,42 +322,67 @@ export const ChatMessageList = memo(
             key={row.id}
             layout={railLayoutTransition}
             style={styles.rowBlock}
+            onLayout={(event) => recordRowLayout(row.id, event)}
           >
-            <ContextMenuWrapper row={row} onMessageAction={onMessageAction}>
-              <Pressable
-                onPress={() => onNodeTap(row.id)}
-                style={[
-                  styles.row,
+            <View
+              style={[
+                styles.row,
+                row.authorType === 'human'
+                  ? styles.userRow
+                  : styles.assistantRow,
+                row.pruned ? styles.prunedRow : null,
+              ]}
+            >
+              <ContextMenuWrapper
+                row={row}
+                onMessageAction={onMessageAction}
+                onContextMenuGestureStart={suppressNextNodeTap}
+                previewBorderRadius={
                   row.authorType === 'human'
-                    ? styles.userRow
-                    : styles.assistantRow,
-                  row.pruned ? styles.prunedRow : null,
-                ]}
+                    ? displayPreferences.userNodeCornerRadius
+                    : 0
+                }
+                style={
+                  row.authorType === 'human'
+                    ? styles.userMenuHost
+                    : styles.assistantMenuHost
+                }
               >
-                {row.authorType === 'human' ? (
-                  <UserBubble
-                    text={row.text}
-                    cornerRadius={displayPreferences.userNodeCornerRadius}
-                    viewStyle={displayPreferences.userNodeViewStyle}
-                    messageTextStyle={messageTextStyle}
-                  />
-                ) : (
-                  <MarkdownText
-                    baseStyle={{
-                      ...messageTextStyle,
-                      opacity: loomUiTokens.messageList.messageTextOpacity,
-                    }}
-                  >
-                    {row.text}
-                  </MarkdownText>
-                )}
-                <NodeCaption
-                  row={row}
-                  iconColor={colors.tertiary}
-                  textColor={colors.secondaryVariant}
-                />
-              </Pressable>
-            </ContextMenuWrapper>
+                <Pressable
+                  onPress={() => handleNodePress(row.id)}
+                  onLongPress={() => suppressNextNodeTap(row.id)}
+                  style={[
+                    styles.messageTarget,
+                    row.authorType === 'model'
+                      ? styles.assistantMessageTarget
+                      : null,
+                  ]}
+                >
+                  {row.authorType === 'human' ? (
+                    <UserBubble
+                      text={row.text}
+                      cornerRadius={displayPreferences.userNodeCornerRadius}
+                      viewStyle={displayPreferences.userNodeViewStyle}
+                      messageTextStyle={messageTextStyle}
+                    />
+                  ) : (
+                    <MarkdownText
+                      baseStyle={{
+                        ...messageTextStyle,
+                        opacity: loomUiTokens.messageList.messageTextOpacity,
+                      }}
+                    >
+                      {row.text}
+                    </MarkdownText>
+                  )}
+                </Pressable>
+              </ContextMenuWrapper>
+              <NodeCaption
+                row={row}
+                iconColor={colors.tertiary}
+                textColor={colors.secondaryVariant}
+              />
+            </View>
 
             {continuationRail.sourceNodeId === row.id ? (
               <Animated.View
@@ -213,6 +391,7 @@ export const ChatMessageList = memo(
                 exiting={railExiting}
                 layout={railLayoutTransition}
                 style={styles.inlineRail}
+                onLayout={(event) => recordRailLayout(row.id, event)}
               >
                 <ContinuationRail
                   visible={continuationRail.visible}
@@ -443,14 +622,20 @@ const UserBubble = memo(
 const ContextMenuWrapper = ({
   row,
   onMessageAction,
+  onContextMenuGestureStart,
   children,
+  previewBorderRadius,
+  style,
 }: {
   readonly row: ChatRow;
   readonly onMessageAction: (
     nodeId: string,
     action: ChatMessageMenuAction
   ) => void;
+  readonly onContextMenuGestureStart: (nodeId: ULID) => void;
   readonly children: ReactNode;
+  readonly previewBorderRadius: number;
+  readonly style: StyleProp<ViewStyle>;
 }) => {
   const menuItems = buildMessageMenuItems(
     row.bookmarked,
@@ -467,6 +652,9 @@ const ContextMenuWrapper = ({
     <ContextMenu
       title={row.localId}
       actions={actions}
+      borderRadius={previewBorderRadius}
+      previewBackgroundColor="transparent"
+      style={style}
       onPress={(event) => {
         const menuItem = menuItems[event.nativeEvent.index];
         if (menuItem) {
@@ -508,6 +696,17 @@ const styles = StyleSheet.create({
   prunedRow: {
     opacity: 0.45,
   },
+  userMenuHost: {
+    alignSelf: 'flex-end',
+    maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
+  },
+  assistantMenuHost: {
+    alignSelf: 'stretch',
+  },
+  messageTarget: {},
+  assistantMessageTarget: {
+    width: '100%',
+  },
   nodeCaption: {
     marginTop: 6,
     flexDirection: 'row',
@@ -526,7 +725,7 @@ const styles = StyleSheet.create({
     marginTop: loomUiTokens.messageList.rowGap / 2,
   },
   userBubbleWrapper: {
-    maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
+    maxWidth: '100%',
     alignItems: 'flex-end',
   },
   userBubble: {

@@ -57,6 +57,12 @@ const RootLayout = () => {
                   headerShown: false,
                 }}
               />
+              <Stack.Screen
+                name="tree/[treeId]/compose"
+                options={{
+                  headerShown: false,
+                }}
+              />
             </Stack>
           </AppBootstrapGate>
         </AppServicesProvider>

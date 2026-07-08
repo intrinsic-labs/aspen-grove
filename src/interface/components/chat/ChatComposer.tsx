@@ -1,12 +1,15 @@
 import { memo, type RefObject, useState } from 'react';
 import {
   type LayoutChangeEvent,
+  type NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   TextInput,
+  type TextInputContentSizeChangeEventData,
   View,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppInput, AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
@@ -28,6 +31,7 @@ type ChatComposerProps = {
   readonly inputRef: RefObject<TextInput | null>;
   readonly onInputFocus: () => void;
   readonly onComposerLayout: (height: number) => void;
+  readonly onExpandInput: () => void;
   readonly bottomInset: number;
   readonly displayPreferences: ChatDisplayPreferences;
 };
@@ -47,14 +51,32 @@ export const ChatComposer = memo(
     inputRef,
     onInputFocus,
     onComposerLayout,
+    onExpandInput,
     bottomInset,
     displayPreferences,
   }: ChatComposerProps) => {
     const [isFocused, setIsFocused] = useState(false);
+    const [contentHeight, setContentHeight] = useState(0);
 
     const onLayout = (event: LayoutChangeEvent) => {
       onComposerLayout(event.nativeEvent.layout.height);
     };
+    const collapsedInputMaxHeight =
+      displayPreferences.messageLineHeight *
+        loomUiTokens.composer.inputCollapsedMaxLines +
+      loomUiTokens.composer.inputVerticalPadding * 2;
+    const inputIsOverflowing =
+      input.length > 0 &&
+      contentHeight >
+        collapsedInputMaxHeight -
+          displayPreferences.messageLineHeight * 0.25;
+
+    const onContentSizeChange = (
+      event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>
+    ) => {
+      setContentHeight(event.nativeEvent.contentSize.height);
+    };
+
     const inputTextStyle = {
       fontSize: displayPreferences.messageFontSize,
       lineHeight: displayPreferences.messageLineHeight,
@@ -70,7 +92,7 @@ export const ChatComposer = memo(
     return (
       <KeyboardStickyView
         enabled
-        offset={{ closed: 0, opened: 0 }}
+        offset={{ closed: 0, opened: bottomInset }}
         style={[
           styles.composerSticky,
           {
@@ -137,41 +159,73 @@ export const ChatComposer = memo(
               placeholder={placeholder}
               multiline
               editable={!sending && !loading}
-              numberOfLines={5}
+              numberOfLines={loomUiTokens.composer.inputCollapsedMaxLines}
+              scrollEnabled
               textAlignVertical="top"
+              onContentSizeChange={onContentSizeChange}
               onFocus={() => {
                 setIsFocused(true);
                 onInputFocus();
               }}
               onBlur={() => setIsFocused(false)}
-              style={[styles.input, inputTextStyle]}
-            />
-            <Pressable
-              onPress={onSend}
-              disabled={!canSend}
-              style={({ pressed }) => [
-                styles.sendButton,
+              style={[
+                styles.input,
+                inputTextStyle,
                 {
-                  backgroundColor: canSend ? colors.green : colors.secondary,
-                  opacity: pressed ? 0.8 : 1,
-                  width: loomUiTokens.composer.buttonSize,
-                  height: loomUiTokens.composer.buttonSize,
-                  margin: 10,
+                  maxHeight: collapsedInputMaxHeight,
                 },
               ]}
+            />
+            <View
+              style={[
+                styles.inputControls,
+                inputIsOverflowing ? styles.inputControlsExpanded : null,
+              ]}
             >
-              <Ionicons
-                name={
-                  sending
-                    ? 'ellipsis-horizontal'
-                    : sendLabel === 'Save'
-                      ? 'checkmark'
-                      : 'arrow-up'
-                }
-                size={loomUiTokens.composer.sendIconSize}
-                color={colors.primary}
-              />
-            </Pressable>
+              {inputIsOverflowing ? (
+                <Pressable
+                  onPress={onExpandInput}
+                  hitSlop={loomUiTokens.composer.closeHitSlop}
+                  accessibilityLabel="Expand message input"
+                  style={({ pressed }) => [
+                    styles.expandButton,
+                    { opacity: pressed ? 0.65 : 1 },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="open-in-full"
+                    size={loomUiTokens.composer.expandIconSize}
+                    color={colors.secondary}
+                  />
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={onSend}
+                disabled={!canSend}
+                accessibilityLabel={sendLabel}
+                style={({ pressed }) => [
+                  styles.sendButton,
+                  {
+                    backgroundColor: canSend ? colors.green : colors.secondary,
+                    opacity: pressed ? 0.8 : 1,
+                    width: loomUiTokens.composer.buttonSize,
+                    height: loomUiTokens.composer.buttonSize,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    sending
+                      ? 'ellipsis-horizontal'
+                      : sendLabel === 'Save'
+                        ? 'checkmark'
+                        : 'arrow-up'
+                  }
+                  size={loomUiTokens.composer.sendIconSize}
+                  color={colors.primary}
+                />
+              </Pressable>
+            </View>
           </MaterialView>
         </View>
       </KeyboardStickyView>
@@ -215,13 +269,12 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     // gap: loomUiTokens.composer.inputRowGap,
   },
   input: {
     flex: 1,
     minHeight: loomUiTokens.composer.inputMinHeight,
-    maxHeight: loomUiTokens.composer.inputMaxHeight,
     // borderRadius: 20,
     fontSize: loomUiTokens.composer.inputTextSize,
     lineHeight: loomUiTokens.composer.inputTextLineHeight,
@@ -229,6 +282,26 @@ const styles = StyleSheet.create({
     paddingBottom: loomUiTokens.composer.inputVerticalPadding,
     borderWidth: 0,
     backgroundColor: 'transparent',
+  },
+  inputControls: {
+    alignSelf: 'stretch',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    paddingTop: loomUiTokens.composer.inputControlEdgePadding,
+    paddingRight: loomUiTokens.composer.inputControlEdgePadding,
+    paddingBottom: loomUiTokens.composer.inputControlEdgePadding,
+    width:
+      loomUiTokens.composer.buttonSize +
+      loomUiTokens.composer.inputControlEdgePadding * 2,
+  },
+  inputControlsExpanded: {
+    justifyContent: 'space-between',
+  },
+  expandButton: {
+    width: loomUiTokens.composer.buttonSize,
+    height: loomUiTokens.composer.buttonSize,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButton: {
     borderRadius: 999,

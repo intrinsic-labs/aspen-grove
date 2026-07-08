@@ -70,10 +70,6 @@ export const ContinuationRail = memo(
           </AppText>
         ) : (
           <>
-            <AppText variant="meta" tone="muted" style={styles.hintText}>
-              Tap for details. Double tap to retrace branch. Long press for
-              options.
-            </AppText>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -145,6 +141,10 @@ export const ContinuationRail = memo(
                 );
               })}
             </ScrollView>
+            <AppText variant="meta" tone="muted" style={styles.hintText}>
+              Tap for details. Double tap to retrace branch. Long press for
+              options.
+            </AppText>
           </>
         )}
       </View>
@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    paddingVertical: loomUiTokens.continuationRail.headerVerticalPadding,
     marginBottom: loomUiTokens.continuationRail.headerBottomMargin,
   },
   headerTitle: {
@@ -200,7 +201,8 @@ const styles = StyleSheet.create({
   },
   hintText: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
-    marginBottom: loomUiTokens.continuationRail.hintBottomMargin,
+    paddingVertical: loomUiTokens.continuationRail.hintVerticalPadding,
+    marginTop: loomUiTokens.continuationRail.hintTopMargin,
     textAlign: 'center',
   },
   emptyText: {
