@@ -21,6 +21,9 @@ export type ChatRow = {
   readonly authorType: 'human' | 'model';
   readonly text: string;
   readonly bookmarked: boolean;
+  readonly pruned: boolean;
+  /** Number of outgoing continuation edges (children in the loom). */
+  readonly continuationCount: number;
 };
 
 export type ContinuationPreview = {

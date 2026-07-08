@@ -73,18 +73,18 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 ---
 
-## Milestone B — Loom UX to prototype parity
+## Milestone B — Loom UX to prototype parity ✅ (2026-07-08)
 
 **Goal**: the dialogue surface earns the "mobile loom" title. Reference: Swift prototype + `docs/architecture/specs/loom-ui-rebuild-implementation-plan.md`. Functionality-first; visual polish only where it *is* the functionality.
 
-- [ ] **Inline continuation rail**: rail renders inside the message scrollview directly under the tapped node (pushes content down), not as a fixed band above the composer. This is the prototype's defining interaction and the plan's Phase 2 — currently violated
-- [ ] Node tap affordances: single-tap opens/clears rail; inline `Continuations: N` caption + bookmark indicator under nodes (currently the wrapping Pressable has no onPress)
-- [ ] **Node detail sheet** (replaces `Alert.alert` Node Info): metadata, author/model, editedFrom, **provenance panel** (hash-chain status, request id, token usage — the data is already returned by `SendDialogueTurnUseCase` and dumped to console today)
-- [ ] Continuation card single-tap = preview/detail sheet, double-tap = make current (spec gestures; today all paths collapse to `rewindToNode`)
-- [ ] Bookmarks browse screen (toggle exists; nowhere to see them — prototype had BookmarkSheet)
-- [ ] Prune/restore actions in node menu (schema columns already exist)
-- [ ] **Consolidate design tokens**: one source of truth (merge `loomUiTokens` vs `theme.styles` duplicates; reconcile drifted values against the transfer audit doc); one theme-access pattern (hook, not prop-drilling)
-- [ ] Decide dark-only vs restoring light mode (`isDark = true` is hardcoded; light palette is authored but dead — for beta, shipping dark-only is fine, just make it explicit)
+- [x] **Inline continuation rail**: renders inside the message scrollview directly under the rail's source node (`ChatMessageList` hosts `ContinuationRail`, pushes content down)
+- [x] Node tap affordances: single-tap toggles the rail for that node; inline caption under nodes with `Continuations: N` + bookmark + pruned indicators (`ChatRow` now carries `continuationCount`/`pruned`, batch edge lookup in `loadDialogueRowsForPath`)
+- [x] **Node detail sheet** (`chat/node-detail/`): full text, metadata, generation info (provider/model/request id/latency/token usage from `rawApiResponseRepo.findByNodeId`), and a live provenance panel that runs `verifyModelNodeProvenance` per node — works for any model node, not just the latest turn. Replaces the `Alert.alert` Node Info
+- [x] Continuation card single-tap = detail sheet (deferred past the double-tap window), double-tap = make current
+- [x] Bookmarks browse: `BookmarksSheet` (prototype's BookmarkSheet shape) from a chat-header bookmark button; `nodeRepo.findBookmarked`, tap = rewind, Details = node detail sheet
+- [x] Prune/restore in node context menu + detail sheet (`updateMetadata({ pruned })`); pruned rows render dimmed with caption
+- [x] Design tokens: `theme.styles` merged into `loomUiTokens` (single source, values marked provisional — auto-extracted and drifted; reconcile against the Swift prototype in the design pass); `colors` prop-drilling removed, hook-only access
+- [x] Dark-only for beta made explicit in `useAspenGroveTheme` (dead light palette removed; lives in git history)
 
 **Explicitly deferred styling**: the "unique/out-there" cross-platform visual identity. Keep the current serif+mono dark vibe (it's already 70% of the prototype's feel); do the real design pass after beta feedback.
 

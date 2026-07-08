@@ -1,5 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
-import type { IEdgeRepository, INodeRepository, IPathRepository } from '@application/repositories';
+import type {
+  IEdgeRepository,
+  INodeRepository,
+  IPathRepository,
+} from '@application/repositories';
 import type { Node } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { ContinuationPreview } from './types';
@@ -24,7 +28,10 @@ const toContinuationPreview = (input: {
   return {
     nodeId: node.id,
     localId: String(node.localId),
-    previewText: node.content.type === 'text' ? node.content.text : `[${node.content.type}]`,
+    previewText:
+      node.content.type === 'text'
+        ? node.content.text
+        : `[${node.content.type}]`,
     isOnActivePath: activeIndex !== undefined,
     onBranchCount: Math.max(1, onBranchCount),
     isBookmarked: node.metadata.bookmarked,
@@ -35,11 +42,12 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
   const { edgeRepo, nodeRepo, pathRepo, pathId } = input;
 
   const [sourceNodeId, setSourceNodeId] = useState<ULID | null>(null);
-  const [sourceLocalId, setSourceLocalId] = useState<string | undefined>(undefined);
+  const [sourceLocalId, setSourceLocalId] = useState<string | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ContinuationPreview[]>([]);
-  const [selectedNodeId, setSelectedNodeId] = useState<ULID | undefined>(undefined);
 
   const visible = useMemo(() => Boolean(sourceNodeId), [sourceNodeId]);
 
@@ -47,7 +55,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     setSourceNodeId(null);
     setSourceLocalId(undefined);
     setItems([]);
-    setSelectedNodeId(undefined);
     setLoading(false);
     setError(null);
   }, []);
@@ -56,6 +63,13 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     async (nextSourceNodeId: ULID) => {
       if (!pathId) {
         return;
+      }
+
+      const isChangingSource = nextSourceNodeId !== sourceNodeId;
+      if (isChangingSource) {
+        setSourceNodeId(nextSourceNodeId);
+        setSourceLocalId(undefined);
+        setItems([]);
       }
 
       setLoading(true);
@@ -77,8 +91,12 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         const targetNodes = await Promise.all(
           continuationTargets.map((nodeId) => nodeRepo.findById(nodeId, true))
         );
-        const resolved = targetNodes.filter((node): node is Node => Boolean(node));
-        resolved.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
+        const resolved = targetNodes.filter((node): node is Node =>
+          Boolean(node)
+        );
+        resolved.sort(
+          (left, right) => left.createdAt.getTime() - right.createdAt.getTime()
+        );
 
         const activePathNodeIds = pathNodes.map((node) => node.nodeId);
         const activeIndexByNodeId = new Map<ULID, number>();
@@ -94,7 +112,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
           })
         );
         setItems(nextItems);
-        setSelectedNodeId(nextItems[0]?.nodeId);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
         setItems([]);
@@ -102,7 +119,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         setLoading(false);
       }
     },
-    [edgeRepo, nodeRepo, pathId, pathRepo]
+    [edgeRepo, nodeRepo, pathId, pathRepo, sourceNodeId]
   );
 
   const toggleBookmark = useCallback(
@@ -135,8 +152,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     loading,
     error,
     items,
-    selectedNodeId,
-    setSelectedNodeId,
     showForNode: reload,
     reloadForCurrentNode: sourceNodeId ? () => reload(sourceNodeId) : undefined,
     hide,

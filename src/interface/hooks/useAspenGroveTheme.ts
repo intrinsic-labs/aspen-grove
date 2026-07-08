@@ -1,85 +1,45 @@
 import { blurVariants } from '../ui/value-objects/blur';
+import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
 
+/**
+ * The app theme hook — the single access pattern for colors, tokens, and
+ * blur variants. Components call this directly; do not prop-drill `colors`.
+ *
+ * Beta ships dark-only (explicit decision, BUILD-PLAN Milestone B): the
+ * prototype was forced dark at the app level and all "dynamic" colors were
+ * only ever observed in dark runtime. A light palette lives in git history;
+ * reintroduce it via `useColorScheme` post-beta if wanted.
+ */
 export const useAspenGroveTheme = () => {
-  // TODO: Remove this override and restore useColorScheme when ready
-  // const colorScheme = useColorScheme();
-  // const isDark = colorScheme === 'dark';
-  const isDark = true; // Force dark mode
+  const isDark = true as const;
 
   const colors = {
-    universal: {
-      green: '#6CBA78',
-      accentColor: '#C7B686',
-      lightOrange: '#beae7f',
-    },
+    // Universal accents
+    green: '#6CBA78',
+    accentColor: '#C7B686',
+    lightOrange: '#beae7f',
 
-    dark: {
-      primary: '#fff',
-      textColor: 'rgba(255, 255, 255, 0.9)',
-      systemMessage: 'rgba(255, 255, 255, 0.6)',
-      oppositePrimary: '#000',
-      continuationCardText: 'rgba(0, 0, 0, 0.8)',
-      secondary: '#999999',
-      secondaryVariant: 'rgba(153, 153, 153, 0.8)',
-      codeBackground: 'rgba(153, 153, 155, 0.08)',
-      // Additional colors for settings and UI components
-      line: 'rgba(255, 255, 255, 0.2)',
-      surface: 'rgba(255, 255, 255, 0.15)',
-      backgroundMuted: 'rgba(255, 255, 255, 0.05)',
-      tertiary: 'rgba(255, 255, 255, 0.4)',
-      red: '#FF3B30',
-      onSurface: 'rgba(255, 255, 255, 0.9)',
-    },
-
-    light: {
-      primary: '#000',
-      textColor: 'rgba(0, 0, 0, 0.9)',
-      systemMessage: 'rgba(0, 0, 0, 0.6)',
-      oppositePrimary: '#fff',
-      continuationCardText: 'rgba(255, 255, 255, 0.8)',
-      secondary: '#8b8b8b',
-      secondaryVariant: 'rgba(139, 139, 139, 0.8)',
-      codeBackground: 'rgba(139, 139, 139, 0.08)',
-      // Additional colors for settings and UI components
-      line: 'rgba(0, 0, 0, 0.2)',
-      surface: 'rgba(0, 0, 0, 0.1)',
-      backgroundMuted: 'rgba(0, 0, 0, 0.05)',
-      tertiary: 'rgba(0, 0, 0, 0.4)',
-      red: '#FF3B30',
-      onSurface: 'rgba(0, 0, 0, 0.9)',
-    },
-  };
-
-  const palette = isDark ? colors.dark : colors.light;
-
-  const styles = {
-    nodeTextPadding: 8,
-
-    continuationRail: {
-      descriptiveTextSize: 14,
-      cardCornerRaduis: 4,
-      cardWidth: 275,
-      elementSpacing: 22,
-      bottomPadding: 18,
-      dividerBottomPadding: 22,
-    },
-
-    composer: {
-      borderRadius: 26,
-      padding: 8,
-      shadowRadius: 15,
-      borderWidth: 0.5,
-      buttonSize: 28,
-    },
+    // Dark palette
+    primary: '#fff',
+    textColor: 'rgba(255, 255, 255, 0.9)',
+    systemMessage: 'rgba(255, 255, 255, 0.6)',
+    oppositePrimary: '#000',
+    continuationCardText: 'rgba(0, 0, 0, 0.8)',
+    secondary: '#999999',
+    secondaryVariant: 'rgba(153, 153, 153, 0.8)',
+    codeBackground: 'rgba(153, 153, 155, 0.08)',
+    line: 'rgba(255, 255, 255, 0.2)',
+    surface: 'rgba(255, 255, 255, 0.15)',
+    backgroundMuted: 'rgba(255, 255, 255, 0.05)',
+    tertiary: 'rgba(255, 255, 255, 0.4)',
+    red: '#FF3B30',
+    onSurface: 'rgba(255, 255, 255, 0.9)',
   };
 
   return {
     isDark,
-    colors: {
-      ...colors.universal,
-      ...palette,
-    },
-    styles,
+    colors,
+    tokens: loomUiTokens,
     blur: blurVariants,
   };
 };

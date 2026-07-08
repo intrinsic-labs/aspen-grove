@@ -65,8 +65,7 @@ export const ChatComposer = memo(
         : {}),
     };
 
-    const theme = useAspenGroveTheme();
-    const { colors } = theme;
+    const { colors } = useAspenGroveTheme();
 
     return (
       <KeyboardStickyView
@@ -127,7 +126,7 @@ export const ChatComposer = memo(
               {
                 borderWidth: 1,
                 borderColor: isFocused ? colors.green : 'dark-grey',
-                borderRadius: theme.styles.composer.borderRadius,
+                borderRadius: loomUiTokens.composer.inputRowRadius,
               },
             ]}
           >
@@ -155,8 +154,8 @@ export const ChatComposer = memo(
                 {
                   backgroundColor: canSend ? colors.green : colors.secondary,
                   opacity: pressed ? 0.8 : 1,
-                  width: theme.styles.composer.buttonSize,
-                  height: theme.styles.composer.buttonSize,
+                  width: loomUiTokens.composer.buttonSize,
+                  height: loomUiTokens.composer.buttonSize,
                   margin: 10,
                 },
               ]}

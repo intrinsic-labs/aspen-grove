@@ -14,20 +14,38 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   type TextLayoutEventData,
   View,
 } from 'react-native';
 import ContextMenu, {
   type ContextMenuAction,
 } from 'react-native-context-menu-view';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
+import Animated, {
+  Easing,
+  LinearTransition,
+  StretchInY,
+  StretchOutY,
+} from 'react-native-reanimated';
+import type { ULID } from '@domain/value-objects';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+import {
+  ContinuationRail,
+  type ContinuationMenuAction,
+} from './ContinuationRail';
 import { MarkdownText } from './MarkdownText';
-import type { ChatDisplayPreferences, ChatRow } from './types';
+import type {
+  ChatDisplayPreferences,
+  ChatRow,
+  ContinuationPreview,
+} from './types';
 
 export type ChatMessageMenuAction =
   | 'regenerate'
@@ -36,7 +54,22 @@ export type ChatMessageMenuAction =
   | 'rewind'
   | 'copy'
   | 'info'
-  | 'bookmark';
+  | 'bookmark'
+  | 'prune';
+
+export type ContinuationRailState = {
+  readonly visible: boolean;
+  readonly loading: boolean;
+  readonly sourceNodeId: ULID | null;
+  readonly sourceLocalId?: string;
+  readonly items: readonly ContinuationPreview[];
+  readonly error?: string | null;
+  readonly onSelect: (nodeId: ULID) => void;
+  readonly onMenuAction: (
+    nodeId: ULID,
+    action: ContinuationMenuAction
+  ) => void;
+};
 
 type ChatMessageMenuItem = {
   readonly action: ChatMessageMenuAction;
@@ -59,11 +92,18 @@ type ChatMessageListProps = {
     nodeId: string,
     action: ChatMessageMenuAction
   ) => void;
+  readonly onNodeTap: (nodeId: ULID) => void;
+  readonly continuationRail: ContinuationRailState;
   readonly displayPreferences: ChatDisplayPreferences;
-  readonly colors: {
-    readonly primary: string;
-  };
 };
+
+const railLayoutTransition = LinearTransition.duration(180).easing(
+  Easing.out(Easing.cubic)
+);
+const railEntering = StretchInY.duration(180).easing(
+  Easing.out(Easing.cubic)
+);
+const railExiting = StretchOutY.duration(150).easing(Easing.in(Easing.cubic));
 
 export const ChatMessageList = memo(
   ({
@@ -77,9 +117,11 @@ export const ChatMessageList = memo(
     scrollRef,
     onScroll,
     onMessageAction,
+    onNodeTap,
+    continuationRail,
     displayPreferences,
-    colors,
   }: ChatMessageListProps) => {
+    const { colors } = useAspenGroveTheme();
     const messageTextStyle = {
       fontSize: displayPreferences.messageFontSize,
       lineHeight: displayPreferences.messageLineHeight,
@@ -123,38 +165,67 @@ export const ChatMessageList = memo(
         scrollEventThrottle={16}
       >
         {rows.map((row) => (
-          <ContextMenuWrapper
+          <Animated.View
             key={row.id}
-            row={row}
-            onMessageAction={onMessageAction}
+            layout={railLayoutTransition}
+            style={styles.rowBlock}
           >
-            <Pressable
-              style={[
-                styles.row,
-                row.authorType === 'human'
-                  ? styles.userRow
-                  : styles.assistantRow,
-              ]}
-            >
-              {row.authorType === 'human' ? (
-                <UserBubble
-                  text={row.text}
-                  cornerRadius={displayPreferences.userNodeCornerRadius}
-                  viewStyle={displayPreferences.userNodeViewStyle}
-                  messageTextStyle={messageTextStyle}
+            <ContextMenuWrapper row={row} onMessageAction={onMessageAction}>
+              <Pressable
+                onPress={() => onNodeTap(row.id)}
+                style={[
+                  styles.row,
+                  row.authorType === 'human'
+                    ? styles.userRow
+                    : styles.assistantRow,
+                  row.pruned ? styles.prunedRow : null,
+                ]}
+              >
+                {row.authorType === 'human' ? (
+                  <UserBubble
+                    text={row.text}
+                    cornerRadius={displayPreferences.userNodeCornerRadius}
+                    viewStyle={displayPreferences.userNodeViewStyle}
+                    messageTextStyle={messageTextStyle}
+                  />
+                ) : (
+                  <MarkdownText
+                    baseStyle={{
+                      ...messageTextStyle,
+                      opacity: loomUiTokens.messageList.messageTextOpacity,
+                    }}
+                  >
+                    {row.text}
+                  </MarkdownText>
+                )}
+                <NodeCaption
+                  row={row}
+                  iconColor={colors.tertiary}
+                  textColor={colors.secondaryVariant}
                 />
-              ) : (
-                <MarkdownText
-                  baseStyle={{
-                    ...messageTextStyle,
-                    opacity: loomUiTokens.messageList.messageTextOpacity,
-                  }}
-                >
-                  {row.text}
-                </MarkdownText>
-              )}
-            </Pressable>
-          </ContextMenuWrapper>
+              </Pressable>
+            </ContextMenuWrapper>
+
+            {continuationRail.sourceNodeId === row.id ? (
+              <Animated.View
+                collapsable={false}
+                entering={railEntering}
+                exiting={railExiting}
+                layout={railLayoutTransition}
+                style={styles.inlineRail}
+              >
+                <ContinuationRail
+                  visible={continuationRail.visible}
+                  loading={continuationRail.loading}
+                  sourceLocalId={continuationRail.sourceLocalId}
+                  continuations={continuationRail.items}
+                  error={continuationRail.error}
+                  onSelect={continuationRail.onSelect}
+                  onMenuAction={continuationRail.onMenuAction}
+                />
+              </Animated.View>
+            ) : null}
+          </Animated.View>
         ))}
 
         {sending && streamingAssistantText.length > 0 ? (
@@ -182,8 +253,46 @@ export const ChatMessageList = memo(
   }
 );
 
+/**
+ * Inline affordance line under a node: a filled bookmark glyph (when
+ * bookmarked), branch count, and pruned indicator. Rendered only when there is
+ * something to say.
+ */
+const NodeCaption = ({
+  row,
+  iconColor,
+  textColor,
+}: {
+  readonly row: ChatRow;
+  readonly iconColor: string;
+  readonly textColor: string;
+}) => {
+  const parts = [
+    row.continuationCount > 1 ? `Continuations: ${row.continuationCount}` : null,
+    row.pruned ? 'Pruned' : null,
+  ].filter(Boolean);
+
+  if (parts.length === 0 && !row.bookmarked) {
+    return null;
+  }
+
+  return (
+    <View style={styles.nodeCaption}>
+      {row.bookmarked ? (
+        <Ionicons name="bookmark" size={11} color={iconColor} />
+      ) : null}
+      {parts.length > 0 ? (
+        <Text style={[styles.nodeCaptionText, { color: textColor }]}>
+          {parts.join('  ·  ')}
+        </Text>
+      ) : null}
+    </View>
+  );
+};
+
 const buildMessageMenuItems = (
   bookmarked: boolean,
+  pruned: boolean,
   authorType: ChatRow['authorType']
 ): readonly ChatMessageMenuItem[] =>
   [
@@ -230,6 +339,12 @@ const buildMessageMenuItems = (
       action: 'bookmark',
       title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
       systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
+    },
+    {
+      action: 'prune',
+      title: pruned ? 'Restore' : 'Prune',
+      systemIcon: pruned ? 'arrow.uturn.backward.circle' : 'scissors',
+      destructive: !pruned,
     },
   ] as const;
 
@@ -337,7 +452,11 @@ const ContextMenuWrapper = ({
   ) => void;
   readonly children: ReactNode;
 }) => {
-  const menuItems = buildMessageMenuItems(row.bookmarked, row.authorType);
+  const menuItems = buildMessageMenuItems(
+    row.bookmarked,
+    row.pruned,
+    row.authorType
+  );
   const actions: ContextMenuAction[] = menuItems.map((item) => ({
     title: item.title,
     systemIcon: item.systemIcon,
@@ -374,6 +493,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
   },
+  rowBlock: {
+    width: '100%',
+  },
   row: {
     width: '100%',
   },
@@ -382,6 +504,26 @@ const styles = StyleSheet.create({
   },
   assistantRow: {
     alignItems: 'flex-start',
+  },
+  prunedRow: {
+    opacity: 0.45,
+  },
+  nodeCaption: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  nodeCaptionText: {
+    fontStyle: 'italic',
+    fontSize: 11,
+    letterSpacing: 0,
+  },
+  inlineRail: {
+    // The rail manages its own horizontal insets; cancel the list's padding
+    // so it spans the full width like the prototype's inline band.
+    marginHorizontal: -loomUiTokens.layout.horizontalInset,
+    marginTop: loomUiTokens.messageList.rowGap / 2,
   },
   userBubbleWrapper: {
     maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,

@@ -51,6 +51,12 @@ const RootLayout = () => {
                   headerBackButtonDisplayMode: 'minimal',
                 }}
               />
+              <Stack.Screen
+                name="tree/[treeId]/node/[nodeId]"
+                options={{
+                  headerShown: false,
+                }}
+              />
             </Stack>
           </AppBootstrapGate>
         </AppServicesProvider>

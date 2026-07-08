@@ -1,6 +1,7 @@
 import { selectableProviderFromModelRef } from '@application/services/llm';
 import type {
   IAgentRepository,
+  IEdgeRepository,
   IGroveRepository,
   ILoomTreeRepository,
   INodeRepository,
@@ -156,7 +157,9 @@ const modelRefIdentifier = (modelRef: string | undefined): string => {
 
 export const loadDialogueRowsForPath = async (
   pathId: ULID,
-  repositories: Pick<ChatSessionRepositories, 'pathRepo' | 'nodeRepo'>
+  repositories: Pick<ChatSessionRepositories, 'pathRepo' | 'nodeRepo'> & {
+    readonly edgeRepo: Pick<IEdgeRepository, 'findBySourceNodeId'>;
+  }
 ): Promise<{
   readonly rows: readonly ChatRow[];
   readonly activeNodeId?: ULID;
@@ -169,8 +172,16 @@ export const loadDialogueRowsForPath = async (
   );
   const nodes = resolved.filter((node): node is Node => Boolean(node));
 
+  const continuationCounts = await Promise.all(
+    nodes.map(async (node) => {
+      const outgoing = await repositories.edgeRepo.findBySourceNodeId(node.id);
+      return outgoing.filter((edge) => edge.edgeType === 'continuation')
+        .length;
+    })
+  );
+
   const rows: ChatRow[] = [];
-  for (const node of nodes) {
+  for (const [index, node] of nodes.entries()) {
     const text =
       node.content.type === 'text'
         ? node.content.text
@@ -185,6 +196,8 @@ export const loadDialogueRowsForPath = async (
       authorType: node.authorType,
       text,
       bookmarked: node.metadata.bookmarked,
+      pruned: node.metadata.pruned,
+      continuationCount: continuationCounts[index] ?? 0,
     });
   }
 

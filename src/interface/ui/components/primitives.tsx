@@ -76,6 +76,7 @@ type AppTextProps = {
   readonly variant?: TextVariant;
   readonly tone?: TextTone;
   readonly numberOfLines?: number;
+  readonly selectable?: boolean;
   readonly style?: TextStyle | TextStyle[];
   readonly onTextLayout?: (
     event: NativeSyntheticEvent<TextLayoutEventData>
@@ -87,6 +88,7 @@ export const AppText = ({
   variant = 'mono',
   tone = 'primary',
   numberOfLines,
+  selectable,
   style,
   onTextLayout,
 }: AppTextProps) => {
@@ -95,6 +97,7 @@ export const AppText = ({
   return (
     <Text
       numberOfLines={numberOfLines}
+      selectable={selectable}
       onTextLayout={onTextLayout}
       style={[
         getTextVariantStyle(variant),

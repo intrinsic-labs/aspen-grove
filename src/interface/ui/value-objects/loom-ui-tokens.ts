@@ -1,6 +1,11 @@
 /**
- * Shared dialogue-surface UI tokens extracted from the Loom prototype rhythm.
- * Keep all hard values centralized here to make global visual refactors cheap.
+ * Shared dialogue-surface UI tokens. Single source of truth for the loom UI
+ * (the old `theme.styles` duplicates were merged in here).
+ *
+ * NOTE: values are provisional — auto-extracted from the Swift prototype and
+ * known to have drifted. Reconcile against the prototype source
+ * (~/dev/ai/Loom) during the post-beta design pass; keep everything
+ * centralized here so that pass stays cheap.
  */
 export const loomUiTokens = {
   colors: {
@@ -55,9 +60,11 @@ export const loomUiTokens = {
     sendIconSize: 18,
     editIconSize: 14,
     closeIconSize: 16,
+    // Merged from the old theme.styles.composer (the values in active use).
+    inputRowRadius: 26,
+    buttonSize: 28,
   },
   continuationRail: {
-    truncateLimit: 220,
     verticalPadding: 8,
     headerBottomMargin: 4,
     hintBottomMargin: 8,
@@ -65,12 +72,14 @@ export const loomUiTokens = {
     headerLetterSpacing: 0.6,
     contentGap: 10,
     cardWidth: 260,
+    cardHeight: 212,
     cardRadius: 10,
     cardPadding: 12,
     cardGap: 8,
     metaLetterSpacing: 0.4,
     previewTextSize: 16,
     previewTextLineHeight: 23,
+    previewTextMaxLines: 7,
     useButtonMarginTop: 2,
     useButtonHitSlop: 8,
     closeHitSlop: 10,

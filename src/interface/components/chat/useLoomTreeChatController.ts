@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   TextInput,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import * as Clipboard from 'expo-clipboard';
@@ -27,6 +26,7 @@ import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
 
 export const useLoomTreeChatController = () => {
+  const router = useRouter();
   const navigation = useNavigation();
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   const inputRef = useRef<TextInput>(null);
@@ -37,15 +37,26 @@ export const useLoomTreeChatController = () => {
     readonly nodeId: ULID;
     readonly atMs: number;
   } | null>(null);
+  const continuationTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const handledEditRequestRef = useRef<string | null>(null);
   const { repositories, adapters, useCases } = useAppServices();
 
   const routeParams = useLocalSearchParams<{
     treeId?: string | string[];
     autofocus?: string | string[];
     ephemeral?: string | string[];
+    editNodeId?: string | string[];
+    editRequestId?: string | string[];
   }>();
-  const { treeIdParam, shouldAutofocus, shouldDeleteEmptyOnBlur } =
-    toDialogueRouteParams(routeParams);
+  const {
+    treeIdParam,
+    shouldAutofocus,
+    shouldDeleteEmptyOnBlur,
+    editNodeId,
+    editRequestId,
+  } = toDialogueRouteParams(routeParams);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -60,8 +71,8 @@ export const useLoomTreeChatController = () => {
     readonly nodeId: ULID;
     readonly localId: string;
   } | null>(null);
-  const [dialogueSettingsVisible, setDialogueSettingsVisible] =
-    useState(false);
+  const [dialogueSettingsVisible, setDialogueSettingsVisible] = useState(false);
+  const [bookmarksVisible, setBookmarksVisible] = useState(false);
   const {
     streamingText: streamingAssistantText,
     appendDelta: appendStreamingAssistantDelta,
@@ -102,6 +113,7 @@ export const useLoomTreeChatController = () => {
       const nextRows = await loadDialogueRowsForPath(nextSession.pathId, {
         pathRepo: repositories.pathRepo,
         nodeRepo: repositories.nodeRepo,
+        edgeRepo: repositories.edgeRepo,
       });
       setRows(nextRows.rows);
       setSession({
@@ -109,7 +121,7 @@ export const useLoomTreeChatController = () => {
         activeNodeId: nextRows.activeNodeId ?? nextSession.activeNodeId,
       });
     },
-    [repositories.nodeRepo, repositories.pathRepo]
+    [repositories.edgeRepo, repositories.nodeRepo, repositories.pathRepo]
   );
 
   const refreshRowsAndContinuations = useCallback(
@@ -165,6 +177,17 @@ export const useLoomTreeChatController = () => {
   useEffect(() => {
     void initializeSession();
   }, [initializeSession]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (!session) {
+        return;
+      }
+      void refreshRowsAndContinuations(session);
+    });
+
+    return unsubscribe;
+  }, [navigation, refreshRowsAndContinuations, session]);
 
   // Re-resolve the session after the ⚙️ sheet mutates the tree's agent or
   // system context. Preserves the ephemeral flag so an in-progress
@@ -232,25 +255,18 @@ export const useLoomTreeChatController = () => {
     [getRowById, repositories.nodeRepo]
   );
 
-  const showNodeInfo = useCallback(
+  const openNodeDetail = useCallback(
     (nodeId: ULID) => {
-      const row = getRowById(nodeId);
-      if (!row) {
+      const treeId = session?.treeId ?? activeTreeIdRef.current;
+      if (!treeId) {
         return;
       }
-
-      Alert.alert(
-        'Node Info',
-        [
-          `Local ID: ${row.localId}`,
-          `Author: ${row.authorType}`,
-          row.editedFrom ? `Edited From: ${row.editedFrom}` : null,
-        ]
-          .filter(Boolean)
-          .join('\n')
-      );
+      router.push({
+        pathname: '/tree/[treeId]/node/[nodeId]',
+        params: { treeId, nodeId },
+      });
     },
-    [getRowById]
+    [router, session?.treeId]
   );
 
   const toggleBookmark = useCallback(
@@ -267,6 +283,22 @@ export const useLoomTreeChatController = () => {
     [refreshRowsAndContinuations, repositories.nodeRepo, session]
   );
 
+  // Pruned nodes stay on the tree (and any path) but are excluded from
+  // generation context by the context assembler.
+  const togglePrune = useCallback(
+    async (nodeId: ULID) => {
+      const node = await repositories.nodeRepo.findById(nodeId, true);
+      if (!node || !session) {
+        return;
+      }
+      await repositories.nodeRepo.updateMetadata(nodeId, {
+        pruned: !node.metadata.pruned,
+      });
+      await refreshRowsAndContinuations(session);
+    },
+    [refreshRowsAndContinuations, repositories.nodeRepo, session]
+  );
+
   const rewindToNode = useCallback(
     async (targetNodeId: ULID) => {
       if (!session || sending) {
@@ -276,12 +308,15 @@ export const useLoomTreeChatController = () => {
         setSending(true);
         setError(null);
         shouldAutoScrollRef.current = true;
+        // Making a node current is a completed interaction: the rail closes
+        // rather than lingering over the freshly switched path.
+        continuations.hide();
         const result = await useCases.switchDialoguePathUseCase.execute({
           pathId: session.pathId,
           ownerAgentId: session.ownerAgentId,
           targetNodeId,
         });
-        await refreshRowsAndContinuations({
+        await refreshRows({
           ...session,
           activeNodeId: result.targetNodeId,
         });
@@ -292,7 +327,8 @@ export const useLoomTreeChatController = () => {
       }
     },
     [
-      refreshRowsAndContinuations,
+      continuations,
+      refreshRows,
       sending,
       session,
       useCases.switchDialoguePathUseCase,
@@ -300,17 +336,33 @@ export const useLoomTreeChatController = () => {
   );
 
   const startEditForNode = useCallback(
-    (targetNodeId: ULID) => {
+    async (targetNodeId: ULID) => {
+      // Prefer the already-loaded row; fall back to the repo so edits can
+      // start from nodes that aren't on the active path (detail sheet).
+      let localId: string;
+      let text: string;
       const row = getRowById(targetNodeId);
-      if (!row) {
-        return;
+      if (row) {
+        localId = row.localId;
+        text = row.text;
+      } else {
+        const node = await repositories.nodeRepo.findById(targetNodeId, true);
+        if (!node) {
+          return;
+        }
+        localId = String(node.localId);
+        text =
+          node.content.type === 'text'
+            ? node.content.text
+            : `[${node.content.type}]`;
       }
 
       setEditTarget({
         nodeId: targetNodeId,
-        localId: row.localId,
+        localId,
       });
-      setInput(row.text);
+      setInput(text);
+      continuations.hide();
       shouldAutoScrollRef.current = true;
 
       requestAnimationFrame(() => {
@@ -318,8 +370,22 @@ export const useLoomTreeChatController = () => {
         scrollRef.current?.scrollToEnd({ animated: true });
       });
     },
-    [getRowById]
+    [continuations, getRowById, repositories.nodeRepo]
   );
+
+  useEffect(() => {
+    if (!editNodeId || !session) {
+      return;
+    }
+
+    const requestKey = editRequestId ?? editNodeId;
+    if (handledEditRequestRef.current === requestKey) {
+      return;
+    }
+
+    handledEditRequestRef.current = requestKey;
+    void startEditForNode(editNodeId as ULID);
+  }, [editNodeId, editRequestId, session, startEditForNode]);
 
   const regenerateFromNode = useCallback(
     async (targetNodeId: ULID) => {
@@ -585,7 +651,7 @@ export const useLoomTreeChatController = () => {
           await continuations.showForNode(targetNodeId);
           break;
         case 'edit':
-          startEditForNode(targetNodeId);
+          await startEditForNode(targetNodeId);
           break;
         case 'rewind':
           await rewindToNode(targetNodeId);
@@ -594,45 +660,84 @@ export const useLoomTreeChatController = () => {
           await copyNodeText(targetNodeId);
           break;
         case 'info':
-          showNodeInfo(targetNodeId);
+          openNodeDetail(targetNodeId);
           break;
         case 'bookmark':
           await toggleBookmark(targetNodeId);
+          break;
+        case 'prune':
+          await togglePrune(targetNodeId);
           break;
       }
     },
     [
       continuations,
       copyNodeText,
+      openNodeDetail,
       regenerateFromNode,
       rewindToNode,
-      showNodeInfo,
       startEditForNode,
       toggleBookmark,
+      togglePrune,
     ]
   );
 
+  // Message-row gestures: single-tap opens that node's continuation rail.
+  // Tapping the already-open source closes it.
+  const onNodeTap = useCallback(
+    (nodeId: ULID) => {
+      if (continuations.visible && continuations.sourceNodeId === nodeId) {
+        continuations.hide();
+        return;
+      }
+      void continuations.showForNode(nodeId);
+    },
+    [continuations]
+  );
+
+  // Continuation-card gestures: single-tap opens node details; double-tap
+  // retraces that branch (makes it current). The single-tap action is deferred
+  // just past the double-tap window so a double never opens details first.
   const onContinuationSelect = useCallback(
-    async (nodeId: ULID) => {
-      continuations.setSelectedNodeId(nodeId);
+    (nodeId: ULID) => {
       const nowMs = Date.now();
       const lastTap = continuationLastTapRef.current;
-      if (lastTap && lastTap.nodeId === nodeId && nowMs - lastTap.atMs < 260) {
+      if (lastTap && lastTap.nodeId === nodeId && nowMs - lastTap.atMs < 300) {
         continuationLastTapRef.current = null;
-        await rewindToNode(nodeId);
+        if (continuationTapTimerRef.current) {
+          clearTimeout(continuationTapTimerRef.current);
+          continuationTapTimerRef.current = null;
+        }
+        void rewindToNode(nodeId);
         return;
       }
       continuationLastTapRef.current = {
         nodeId,
         atMs: nowMs,
       };
+      if (continuationTapTimerRef.current) {
+        clearTimeout(continuationTapTimerRef.current);
+      }
+      continuationTapTimerRef.current = setTimeout(() => {
+        continuationTapTimerRef.current = null;
+        openNodeDetail(nodeId);
+      }, 320);
     },
-    [continuations, rewindToNode]
+    [openNodeDetail, rewindToNode]
+  );
+
+  useEffect(
+    () => () => {
+      if (continuationTapTimerRef.current) {
+        clearTimeout(continuationTapTimerRef.current);
+      }
+    },
+    []
   );
 
   const onContinuationMenuAction = useCallback(
     async (targetNodeId: ULID, action: ContinuationMenuAction) => {
-      if (action === 'makeCurrent' || action === 'retrace') {
+      if (action === 'makeCurrent') {
         await rewindToNode(targetNodeId);
         return;
       }
@@ -693,17 +798,32 @@ export const useLoomTreeChatController = () => {
     },
     isEditing: Boolean(editTarget),
     editLabel: editTarget ? `Editing ${editTarget.localId}` : undefined,
+    onNodeTap,
     continuationRail: {
       visible: continuations.visible,
       loading: continuations.loading,
+      sourceNodeId: continuations.sourceNodeId,
       sourceLocalId: continuations.sourceLocalId,
-      selectedNodeId: continuations.selectedNodeId,
       items: continuations.items,
-      onClose: continuations.hide,
       onSelect: onContinuationSelect,
-      onMakeCurrent: rewindToNode,
       onMenuAction: onContinuationMenuAction,
       error: continuations.error,
+    },
+    bookmarks: {
+      visible: bookmarksVisible,
+      treeId: session?.treeId ?? activeTreeIdRef.current,
+      open: () => setBookmarksVisible(true),
+      close: () => setBookmarksVisible(false),
+      onSelectNode: async (nodeId: ULID) => {
+        setBookmarksVisible(false);
+        await rewindToNode(nodeId);
+      },
+      // iOS can't reliably present two sibling RN Modals at once, so the
+      // bookmarks sheet closes before the detail route opens.
+      onShowDetail: (nodeId: ULID) => {
+        setBookmarksVisible(false);
+        openNodeDetail(nodeId);
+      },
     },
     dialogueSettings: {
       visible: dialogueSettingsVisible,

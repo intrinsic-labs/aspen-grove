@@ -7,9 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen } from '../ui/value-objects';
+import { BookmarksSheet } from './chat/bookmarks/BookmarksSheet';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
-import { ContinuationRail } from './chat/ContinuationRail';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 
@@ -22,25 +22,42 @@ const LoomTreeChatView = () => {
   const [composerHeight, setComposerHeight] = useState(72);
 
   const openDialogueSettings = controller.dialogueSettings.open;
+  const openBookmarks = controller.bookmarks.open;
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRightContainerStyle: {
         paddingRight: 14,
       },
       headerRight: () => (
-        <Pressable
-          onPress={openDialogueSettings}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.headerSettingsButton,
-            { opacity: pressed ? 0.65 : 1 },
-          ]}
-        >
-          <Ionicons name="options-outline" size={20} color={colors.primary} />
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable
+            onPress={openBookmarks}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.headerSettingsButton,
+              { opacity: pressed ? 0.65 : 1 },
+            ]}
+          >
+            <Ionicons
+              name="bookmark-outline"
+              size={20}
+              color={colors.primary}
+            />
+          </Pressable>
+          <Pressable
+            onPress={openDialogueSettings}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.headerSettingsButton,
+              { opacity: pressed ? 0.65 : 1 },
+            ]}
+          >
+            <Ionicons name="options-outline" size={20} color={colors.primary} />
+          </Pressable>
+        </View>
       ),
     });
-  }, [colors.primary, navigation, openDialogueSettings]);
+  }, [colors.primary, navigation, openBookmarks, openDialogueSettings]);
 
   return (
     <AppScreen style={styles.container}>
@@ -55,22 +72,9 @@ const LoomTreeChatView = () => {
         scrollRef={controller.scrollRef}
         onScroll={controller.onMessageListScroll}
         onMessageAction={controller.onMessageAction}
+        onNodeTap={controller.onNodeTap}
+        continuationRail={controller.continuationRail}
         displayPreferences={controller.displayPreferences}
-        colors={colors}
-      />
-
-      <ContinuationRail
-        visible={controller.continuationRail.visible}
-        loading={controller.continuationRail.loading}
-        sourceLocalId={controller.continuationRail.sourceLocalId}
-        selectedNodeId={controller.continuationRail.selectedNodeId}
-        continuations={controller.continuationRail.items}
-        error={controller.continuationRail.error}
-        onSelect={controller.continuationRail.onSelect}
-        onMakeCurrent={controller.continuationRail.onMakeCurrent}
-        onMenuAction={controller.continuationRail.onMenuAction}
-        onClose={controller.continuationRail.onClose}
-        colors={colors}
       />
 
       <View
@@ -107,6 +111,14 @@ const LoomTreeChatView = () => {
         onClose={controller.dialogueSettings.close}
         onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
       />
+
+      <BookmarksSheet
+        visible={controller.bookmarks.visible}
+        treeId={controller.bookmarks.treeId}
+        onClose={controller.bookmarks.close}
+        onSelectNode={controller.bookmarks.onSelectNode}
+        onShowDetail={controller.bookmarks.onShowDetail}
+      />
     </AppScreen>
   );
 };
@@ -121,6 +133,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   headerSettingsButton: {
     height: 36,

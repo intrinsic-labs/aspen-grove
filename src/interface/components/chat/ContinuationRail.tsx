@@ -1,46 +1,25 @@
 import { memo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import ContextMenu, { type ContextMenuAction } from 'react-native-context-menu-view';
+import ContextMenu, {
+  type ContextMenuAction,
+} from 'react-native-context-menu-view';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ULID } from '@domain/value-objects';
+import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import type { ContinuationPreview } from './types';
 
-export type ContinuationMenuAction =
-  | 'makeCurrent'
-  | 'retrace'
-  | 'copy'
-  | 'bookmark';
+export type ContinuationMenuAction = 'makeCurrent' | 'copy' | 'bookmark';
 
 type ContinuationRailProps = {
   readonly visible: boolean;
   readonly loading: boolean;
   readonly sourceLocalId?: string;
-  readonly selectedNodeId?: ULID;
   readonly continuations: readonly ContinuationPreview[];
   readonly error?: string | null;
   readonly onSelect: (nodeId: ULID) => void;
-  readonly onMakeCurrent: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
-  readonly onClose: () => void;
-  readonly colors: {
-    readonly line: string;
-    readonly surface: string;
-    readonly backgroundMuted: string;
-    readonly primary: string;
-    readonly secondary: string;
-    readonly tertiary: string;
-    readonly red: string;
-  };
-};
-
-const truncateText = (value: string): string => {
-  if (value.length <= loomUiTokens.continuationRail.truncateLimit) {
-    return value;
-  }
-  return `${value
-    .slice(0, loomUiTokens.continuationRail.truncateLimit - 1)
-    .trimEnd()}…`;
 };
 
 export const ContinuationRail = memo(
@@ -48,15 +27,13 @@ export const ContinuationRail = memo(
     visible,
     loading,
     sourceLocalId,
-    selectedNodeId,
     continuations,
     error,
     onSelect,
-    onMakeCurrent,
     onMenuAction,
-    onClose,
-    colors,
   }: ContinuationRailProps) => {
+    const { colors } = useAspenGroveTheme();
+
     if (!visible) {
       return null;
     }
@@ -68,19 +45,15 @@ export const ContinuationRail = memo(
           {
             borderTopColor: colors.line,
             borderBottomColor: colors.line,
-            backgroundColor: colors.backgroundMuted,
           },
         ]}
       >
         <View style={styles.header}>
           <AppText variant="meta" tone="secondary" style={styles.headerTitle}>
-            {sourceLocalId ? `Continuations for ${sourceLocalId}` : 'Continuations'}
+            {sourceLocalId
+              ? `Continuations for ${sourceLocalId}`
+              : 'Continuations'}
           </AppText>
-          <Pressable onPress={onClose} hitSlop={loomUiTokens.continuationRail.closeHitSlop}>
-            <AppText variant="meta" tone="muted">
-              Close
-            </AppText>
-          </Pressable>
         </View>
 
         {loading ? (
@@ -98,7 +71,8 @@ export const ContinuationRail = memo(
         ) : (
           <>
             <AppText variant="meta" tone="muted" style={styles.hintText}>
-              Tap to preview. Double tap to make current. Long press for options.
+              Tap for details. Double tap to retrace branch. Long press for
+              options.
             </AppText>
             <ScrollView
               horizontal
@@ -106,12 +80,13 @@ export const ContinuationRail = memo(
               contentContainerStyle={styles.content}
             >
               {continuations.map((item) => {
-                const isSelected = selectedNodeId === item.nodeId;
                 const menuItems = buildContinuationMenuItems(item.isBookmarked);
-                const menuActions: ContextMenuAction[] = menuItems.map((menuItem) => ({
-                  title: menuItem.title,
-                  systemIcon: menuItem.systemIcon,
-                }));
+                const menuActions: ContextMenuAction[] = menuItems.map(
+                  (menuItem) => ({
+                    title: menuItem.title,
+                    systemIcon: menuItem.systemIcon,
+                  })
+                );
                 return (
                   <ContextMenu
                     key={item.nodeId}
@@ -130,45 +105,41 @@ export const ContinuationRail = memo(
                         styles.card,
                         {
                           backgroundColor: colors.surface,
-                          borderColor: isSelected ? colors.red : colors.line,
+                          borderColor: colors.line,
                         },
                       ]}
                     >
-                      <View style={styles.inner}>
-                        <AppText variant="meta" tone="secondary" style={styles.metaLine}>
+                      <View style={styles.metaRow}>
+                        <AppText
+                          variant="meta"
+                          tone="secondary"
+                          style={
+                            item.isOnActivePath
+                              ? [styles.metaLine, { color: colors.green }]
+                              : styles.metaLine
+                          }
+                        >
                           {item.localId} [{item.onBranchCount}]
+                          {item.isOnActivePath ? '  ●' : ''}
                         </AppText>
-                        <AppText variant="mono" tone="primary" style={styles.previewText}>
-                          {truncateText(item.previewText)}
-                        </AppText>
-                        <View style={styles.footer}>
-                          {item.isOnActivePath ? (
-                            <AppText
-                              variant="meta"
-                              tone="primary"
-                              style={{ color: loomUiTokens.colors.green }}
-                            >
-                              Current Branch
-                            </AppText>
-                          ) : (
-                            <View />
-                          )}
-                          {item.isBookmarked ? (
-                            <AppText variant="meta" tone="secondary">
-                              Bookmarked
-                            </AppText>
-                          ) : null}
-                        </View>
+                        {item.isBookmarked ? (
+                          <Ionicons
+                            name="bookmark"
+                            size={11}
+                            color={colors.secondary}
+                          />
+                        ) : null}
                       </View>
-                      <Pressable
-                        onPress={() => onMakeCurrent(item.nodeId)}
-                        hitSlop={loomUiTokens.continuationRail.useButtonHitSlop}
-                        style={styles.makeCurrentButton}
+                      <AppText
+                        variant="mono"
+                        tone="primary"
+                        numberOfLines={
+                          loomUiTokens.continuationRail.previewTextMaxLines
+                        }
+                        style={styles.previewText}
                       >
-                        <AppText variant="meta" tone="secondary">
-                          Use
-                        </AppText>
-                      </Pressable>
+                        {item.previewText}
+                      </AppText>
                     </Pressable>
                   </ContextMenu>
                 );
@@ -197,11 +168,6 @@ const buildContinuationMenuItems = (
       systemIcon: 'checkmark.circle',
     },
     {
-      action: 'retrace',
-      title: 'Retrace Branch',
-      systemIcon: 'arrow.uturn.backward',
-    },
-    {
       action: 'copy',
       title: 'Copy Text',
       systemIcon: 'doc.on.doc',
@@ -223,21 +189,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
     marginBottom: loomUiTokens.continuationRail.headerBottomMargin,
   },
   headerTitle: {
     letterSpacing: loomUiTokens.continuationRail.headerLetterSpacing,
+    textAlign: 'center',
     textTransform: 'uppercase',
   },
   hintText: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
     marginBottom: loomUiTokens.continuationRail.hintBottomMargin,
+    textAlign: 'center',
   },
   emptyText: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
     paddingVertical: loomUiTokens.continuationRail.emptyVerticalPadding,
+    textAlign: 'center',
   },
   content: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
@@ -245,13 +214,16 @@ const styles = StyleSheet.create({
   },
   card: {
     width: loomUiTokens.continuationRail.cardWidth,
+    height: loomUiTokens.continuationRail.cardHeight,
     borderRadius: loomUiTokens.continuationRail.cardRadius,
     borderWidth: StyleSheet.hairlineWidth,
     padding: loomUiTokens.continuationRail.cardPadding,
     gap: loomUiTokens.continuationRail.cardGap,
   },
-  inner: {
-    gap: loomUiTokens.continuationRail.cardGap,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   metaLine: {
     letterSpacing: loomUiTokens.continuationRail.metaLetterSpacing,
@@ -259,13 +231,5 @@ const styles = StyleSheet.create({
   previewText: {
     fontSize: loomUiTokens.continuationRail.previewTextSize,
     lineHeight: loomUiTokens.continuationRail.previewTextLineHeight,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  makeCurrentButton: {
-    alignSelf: 'flex-end',
-    marginTop: loomUiTokens.continuationRail.useButtonMarginTop,
   },
 });
