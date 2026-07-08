@@ -17,26 +17,26 @@ index 25c92fd..0269e1f 100644
     * The background color of the preview. This is displayed underneath your view. Set this to transparent (or another color) if the default causes issues.
     */
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenu.m b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
-index f1b3603..4a1486e 100644
+index f1b3603..4f15cb7 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenu.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
 @@ -14,6 +14,7 @@ - (UIView *) view {
  RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
  RCT_EXPORT_VIEW_PROPERTY(onPreviewPress, RCTBubblingEventBlock)
  RCT_EXPORT_VIEW_PROPERTY(onCancel, RCTBubblingEventBlock)
-+RCT_EXPORT_VIEW_PROPERTY(onDismiss, RCTBubblingEventBlock)
++RCT_EXPORT_VIEW_PROPERTY(onDismiss, RCTDirectEventBlock)
  RCT_EXPORT_VIEW_PROPERTY(actions, NSArray<ContextMenuAction>)
  RCT_EXPORT_VIEW_PROPERTY(disabled, BOOL)
  RCT_CUSTOM_VIEW_PROPERTY(previewBackgroundColor, UIColor, ContextMenuView) {
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
-index 63964b2..4d0be5c 100644
+index 63964b2..e055438 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
 @@ -16,6 +16,7 @@
  @property (nullable, nonatomic, copy) RCTBubblingEventBlock onPress;
  @property (nullable, nonatomic, copy) RCTBubblingEventBlock onPreviewPress;
  @property (nullable, nonatomic, copy) RCTBubblingEventBlock onCancel;
-+@property (nullable, nonatomic, copy) RCTBubblingEventBlock onDismiss;
++@property (nullable, nonatomic, copy) RCTDirectEventBlock onDismiss;
  @property (nullable, nonatomic, copy) NSArray<ContextMenuAction*>* actions;
  @property (nullable, nonatomic, copy) UIColor* previewBackgroundColor;
  @property (nonatomic, assign) BOOL disabled;
