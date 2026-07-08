@@ -4,6 +4,7 @@ import {
   type RefObject,
   useState,
   useCallback,
+  useEffect,
 } from 'react';
 import {
   ActivityIndicator,
@@ -233,19 +234,44 @@ const UserBubble = memo(
   ({ text, cornerRadius, viewStyle, messageTextStyle }: UserBubbleProps) => {
     const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
 
-    const onTextLayout = useCallback((event: NSE<TextLayoutEventData>) => {
-      const { lines } = event.nativeEvent;
-      if (lines.length === 0) return;
+    // Re-measure from scratch whenever the text or style changes — a width
+    // measured under one style is invalid under the other (see below).
+    useEffect(() => {
+      setMeasuredWidth(null);
+    }, [text, viewStyle]);
 
-      // Find the maximum line width
-      const maxLineWidth = Math.max(...lines.map((line) => line.width));
+    const onTextLayout = useCallback(
+      (event: NSE<TextLayoutEventData>) => {
+        const { lines } = event.nativeEvent;
+        if (lines.length === 0) return;
 
-      // Add padding to get the bubble width
-      const bubbleWidth =
-        maxLineWidth + loomUiTokens.messageList.userBubblePaddingHorizontal * 2;
+        // Find the maximum line width
+        const maxLineWidth = Math.max(...lines.map((line) => line.width));
 
-      setMeasuredWidth(bubbleWidth);
-    }, []);
+        // RN draws borders INSIDE the box width, so the outlined style must
+        // budget for them or the text's content box comes up 2×border too
+        // narrow, re-wraps, re-measures smaller, and the bubble collapses in
+        // a feedback loop. Ceil to avoid fractional-width boundary re-wraps.
+        const borderAllowance =
+          viewStyle === 'outlined'
+            ? loomUiTokens.messageList.userBubbleOutlineWidth * 2
+            : 0;
+        const bubbleWidth = Math.ceil(
+          maxLineWidth +
+            loomUiTokens.messageList.userBubblePaddingHorizontal * 2 +
+            borderAllowance
+        );
+
+        // Ignore sub-pixel remeasurements so no styling change can ever
+        // re-open the measure → re-wrap → measure oscillation.
+        setMeasuredWidth((current) =>
+          current !== null && Math.abs(current - bubbleWidth) <= 1
+            ? current
+            : bubbleWidth
+        );
+      },
+      [viewStyle]
+    );
 
     return (
       <View style={styles.userBubbleWrapper}>
