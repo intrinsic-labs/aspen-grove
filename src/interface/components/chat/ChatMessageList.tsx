@@ -183,14 +183,24 @@ export const ChatMessageList = memo(
 );
 
 const buildMessageMenuItems = (
-  bookmarked: boolean
+  bookmarked: boolean,
+  authorType: ChatRow['authorType']
 ): readonly ChatMessageMenuItem[] =>
   [
-    {
-      action: 'regenerate',
-      title: 'Regenerate Response',
-      systemIcon: 'arrow.clockwise',
-    },
+    // Regenerate only makes sense on model rows ("replace this response
+    // with a new sibling"). On user rows it read as "regenerate the reply
+    // to this", which both confused the target and triggered an iOS
+    // context-menu dismissal artifact when the rows below the still-mounted
+    // pressed row reflowed mid-animation.
+    ...(authorType === 'model'
+      ? [
+          {
+            action: 'regenerate',
+            title: 'Regenerate Response',
+            systemIcon: 'arrow.clockwise',
+          } as const,
+        ]
+      : []),
     {
       action: 'continuations',
       title: 'Continuations',
@@ -327,7 +337,7 @@ const ContextMenuWrapper = ({
   ) => void;
   readonly children: ReactNode;
 }) => {
-  const menuItems = buildMessageMenuItems(row.bookmarked);
+  const menuItems = buildMessageMenuItems(row.bookmarked, row.authorType);
   const actions: ContextMenuAction[] = menuItems.map((item) => ({
     title: item.title,
     systemIcon: item.systemIcon,
