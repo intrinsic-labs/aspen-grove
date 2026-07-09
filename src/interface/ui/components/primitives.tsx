@@ -15,7 +15,7 @@ import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import type { ReactNode } from 'react';
 
 type TextTone = 'primary' | 'secondary' | 'muted' | 'accent' | 'inverse';
-type TextVariant = 'display' | 'title' | 'body' | 'mono' | 'meta';
+type TextVariant = 'display' | 'title' | 'body' | 'ui' | 'mono' | 'meta';
 
 const getTextToneColor = (
   tone: TextTone,
@@ -55,6 +55,12 @@ const getTextVariantStyle = (variant: TextVariant): TextStyle => {
         fontSize: 20,
         lineHeight: 30,
       };
+    case 'ui':
+      return {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: '400',
+      };
     case 'meta':
       return {
         fontFamily: 'IBMPlexMono-Regular',
@@ -85,7 +91,7 @@ type AppTextProps = {
 
 export const AppText = ({
   children,
-  variant = 'mono',
+  variant = 'ui',
   tone = 'primary',
   numberOfLines,
   selectable,

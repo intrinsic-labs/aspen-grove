@@ -63,7 +63,7 @@ const SettingsHomeView = () => {
             >
               <Ionicons name={link.icon} size={20} color={colors.primary} />
               <View style={styles.rowText}>
-                <AppText variant="mono" tone="primary" style={styles.rowTitle}>
+                <AppText variant="ui" tone="primary" style={styles.rowTitle}>
                   {link.title}
                 </AppText>
                 <AppText
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    letterSpacing: 0.3,
+    fontWeight: '600',
   },
   rowSubtitle: {
     fontSize: 11,

@@ -18,8 +18,8 @@ const SettingsStackLayout = () => {
         },
         headerTitleStyle: {
           color: colors.primary,
-          fontFamily: 'IBMPlexMono-Medium',
           fontSize: 19,
+          fontWeight: '600',
         },
         headerTintColor: colors.accentColor,
         headerBackButtonDisplayMode: 'minimal',

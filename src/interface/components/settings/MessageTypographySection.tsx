@@ -61,7 +61,7 @@ const OptionSelector = <T extends string>({
           ]}
         >
           <AppText
-            variant="meta"
+            variant="ui"
             tone={selected ? 'inverse' : 'secondary'}
             style={styles.optionLabel}
           >
@@ -150,10 +150,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   optionLabel: {
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 12,
     lineHeight: 15,
-    letterSpacing: 0.3,
+    fontWeight: '600',
     textTransform: 'uppercase',
   },
 });

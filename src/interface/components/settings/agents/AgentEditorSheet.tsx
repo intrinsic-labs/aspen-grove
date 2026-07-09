@@ -92,7 +92,7 @@ export const AgentEditorSheet = ({
               Cancel
             </AppText>
           </Pressable>
-          <AppText variant="mono" style={styles.headerTitle}>
+          <AppText variant="ui" style={styles.headerTitle}>
             {title}
           </AppText>
           <Pressable onPress={onSave} hitSlop={8} disabled={saving}>

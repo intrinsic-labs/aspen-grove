@@ -17,6 +17,7 @@ type ContinuationRailProps = {
   readonly loading: boolean;
   readonly sourceLocalId?: string;
   readonly continuations: readonly ContinuationPreview[];
+  readonly previewFontFamily?: string;
   readonly error?: string | null;
   readonly onSelect: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
@@ -28,6 +29,7 @@ export const ContinuationRail = memo(
     loading,
     sourceLocalId,
     continuations,
+    previewFontFamily,
     error,
     onSelect,
     onMenuAction,
@@ -100,20 +102,14 @@ export const ContinuationRail = memo(
                       style={[
                         styles.card,
                         {
-                          backgroundColor: colors.surface,
-                          borderColor: colors.line,
+                          backgroundColor: loomUiTokens.colors.accentColor,
                         },
                       ]}
                     >
                       <View style={styles.metaRow}>
                         <AppText
                           variant="meta"
-                          tone="secondary"
-                          style={
-                            item.isOnActivePath
-                              ? [styles.metaLine, { color: colors.green }]
-                              : styles.metaLine
-                          }
+                          style={[styles.metaLine, styles.cardText]}
                         >
                           {item.localId} [{item.onBranchCount}]
                           {item.isOnActivePath ? '  ●' : ''}
@@ -122,17 +118,22 @@ export const ContinuationRail = memo(
                           <Ionicons
                             name="bookmark"
                             size={11}
-                            color={colors.secondary}
+                            color="#000"
                           />
                         ) : null}
                       </View>
                       <AppText
-                        variant="mono"
-                        tone="primary"
+                        variant="ui"
                         numberOfLines={
                           loomUiTokens.continuationRail.previewTextMaxLines
                         }
-                        style={styles.previewText}
+                        style={[
+                          styles.previewText,
+                          previewFontFamily
+                            ? { fontFamily: previewFontFamily }
+                            : null,
+                          styles.cardText,
+                        ]}
                       >
                         {item.previewText}
                       </AppText>
@@ -218,7 +219,6 @@ const styles = StyleSheet.create({
     width: loomUiTokens.continuationRail.cardWidth,
     height: loomUiTokens.continuationRail.cardHeight,
     borderRadius: loomUiTokens.continuationRail.cardRadius,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: loomUiTokens.continuationRail.cardPadding,
     gap: loomUiTokens.continuationRail.cardGap,
   },
@@ -229,6 +229,9 @@ const styles = StyleSheet.create({
   },
   metaLine: {
     letterSpacing: loomUiTokens.continuationRail.metaLetterSpacing,
+  },
+  cardText: {
+    color: '#000',
   },
   previewText: {
     fontSize: loomUiTokens.continuationRail.previewTextSize,

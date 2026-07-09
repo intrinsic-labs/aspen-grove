@@ -398,6 +398,7 @@ export const ChatMessageList = memo(
                   loading={continuationRail.loading}
                   sourceLocalId={continuationRail.sourceLocalId}
                   continuations={continuationRail.items}
+                  previewFontFamily={displayPreferences.messageFontFamily}
                   error={continuationRail.error}
                   onSelect={continuationRail.onSelect}
                   onMenuAction={continuationRail.onMenuAction}

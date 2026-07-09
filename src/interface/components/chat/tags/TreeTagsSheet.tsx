@@ -129,7 +129,7 @@ export const TreeTagsSheet = ({
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
           <View style={styles.headerSide} />
-          <AppText variant="mono" style={styles.headerTitle}>
+          <AppText variant="ui" style={styles.headerTitle}>
             Tags
           </AppText>
           <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
@@ -195,7 +195,7 @@ export const TreeTagsSheet = ({
                     { opacity: pressed ? 0.65 : 1 },
                   ]}
                 >
-                  <AppText variant="mono" tone="primary" style={styles.tagName}>
+                  <AppText variant="ui" tone="primary" style={styles.tagName}>
                     {tag.name}
                   </AppText>
                   <Ionicons
@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
   },
   newTagInput: {
     flex: 1,
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 14,
     padding: 0,
   },

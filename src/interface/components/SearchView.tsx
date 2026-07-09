@@ -182,7 +182,7 @@ const SearchView = () => {
         </View>
         {inputFocused ? (
           <Pressable hitSlop={8} onPress={() => Keyboard.dismiss()}>
-            <AppText variant="mono" tone="accent" style={styles.doneButton}>
+            <AppText variant="ui" tone="accent" style={styles.doneButton}>
               Done
             </AppText>
           </Pressable>
@@ -205,7 +205,7 @@ const SearchView = () => {
               style={styles.sectionHeader}
             >
               <AppText
-                variant="mono"
+                variant="ui"
                 tone="primary"
                 style={styles.sectionTitle}
               >
@@ -285,7 +285,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 14,
     padding: 0,
   },

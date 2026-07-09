@@ -131,7 +131,7 @@ export const AppDrawerContent = (props: DrawerContentComponentProps) => {
                 color={focused ? colors.accentColor : colors.primary}
               />
               <AppText
-                variant="mono"
+                variant="ui"
                 style={[
                   styles.navLabel,
                   { color: focused ? colors.accentColor : colors.primary },
@@ -161,7 +161,7 @@ export const AppDrawerContent = (props: DrawerContentComponentProps) => {
             ]}
           >
             <AppText
-              variant="mono"
+              variant="ui"
               tone="primary"
               numberOfLines={1}
               style={styles.treeTitle}

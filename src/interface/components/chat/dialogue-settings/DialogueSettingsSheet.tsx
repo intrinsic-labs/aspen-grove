@@ -319,7 +319,7 @@ export const DialogueSettingsSheet = ({
           ) : (
             <View style={styles.headerSide} />
           )}
-          <AppText variant="mono" style={styles.headerTitle}>
+          <AppText variant="ui" style={styles.headerTitle}>
             {controller.mode === 'editAgent'
               ? 'Edit Agent'
               : controller.mode === 'switchAgent'

@@ -224,7 +224,7 @@ const LoomTreeListView = () => {
   const renderTree = ({ item }: { item: LoomTree }) => {
     return (
       <Pressable onPress={() => onOpenTree(item)} style={styles.treeRow}>
-        <AppText variant="mono" tone="primary" style={styles.treeTitle}>
+        <AppText variant="ui" tone="primary" style={styles.treeTitle}>
           {item.title}
         </AppText>
         <AppText variant="meta" tone="secondary" style={styles.treeMeta}>

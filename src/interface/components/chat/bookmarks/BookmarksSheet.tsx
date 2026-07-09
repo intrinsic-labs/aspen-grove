@@ -115,7 +115,7 @@ export const BookmarksSheet = ({
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
           <View style={styles.headerSide} />
-          <AppText variant="mono" style={styles.headerTitle}>
+          <AppText variant="ui" style={styles.headerTitle}>
             Bookmarks
           </AppText>
           <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>

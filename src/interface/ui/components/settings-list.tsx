@@ -21,7 +21,7 @@ type SettingsSectionProps = {
 };
 
 /**
- * A flat settings section: uppercase mono header, rows separated by hairline
+ * A flat settings section: system-font header, rows separated by hairline
  * dividers, optional footer. Deliberately boring — no cards, no outlines.
  */
 export const SettingsSection = ({
@@ -39,7 +39,7 @@ export const SettingsSection = ({
   return (
     <View style={[styles.section, style]}>
       {title ? (
-        <AppText variant="meta" tone="secondary" style={styles.sectionHeader}>
+        <AppText variant="ui" tone="secondary" style={styles.sectionHeader}>
           {title}
         </AppText>
       ) : null}
@@ -78,7 +78,7 @@ export const SettingsStackRow = ({
   style,
 }: SettingsStackRowProps) => (
   <View style={[styles.row, style]}>
-    <AppText variant="meta" tone="secondary" style={styles.rowLabel}>
+    <AppText variant="ui" tone="secondary" style={styles.rowLabel}>
       {label}
     </AppText>
     {children}
@@ -97,7 +97,7 @@ export const SettingsInlineRow = ({
   style,
 }: SettingsInlineRowProps) => (
   <View style={[styles.inlineRow, style]}>
-    <AppText variant="mono" tone="primary" style={styles.inlineLabel}>
+    <AppText variant="ui" tone="primary" style={styles.inlineLabel}>
       {label}
     </AppText>
     {trailing}
@@ -131,7 +131,7 @@ export const SettingsSliderRow = ({
   return (
     <View style={[styles.row, style]}>
       <View style={styles.sliderHeader}>
-        <AppText variant="meta" tone="secondary" style={styles.rowLabel}>
+        <AppText variant="ui" tone="secondary" style={styles.rowLabel}>
           {label}
         </AppText>
         <AppText variant="meta" tone="primary">
@@ -168,7 +168,7 @@ export const SettingsSwitchRow = ({
   style,
 }: SettingsSwitchRowProps) => (
   <View style={[styles.switchRow, style]}>
-    <AppText variant="mono" tone="primary" style={styles.switchLabel}>
+    <AppText variant="ui" tone="primary" style={styles.switchLabel}>
       {label}
     </AppText>
     <Switch
@@ -190,10 +190,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionHeader: {
-    fontFamily: 'IBMPlexMono-Semibold',
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.7,
+    fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -209,10 +208,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   rowLabel: {
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.35,
+    fontWeight: '600',
     textTransform: 'uppercase',
   },
   rowDivider: {
@@ -236,7 +234,6 @@ const styles = StyleSheet.create({
   },
   inlineLabel: {
     flex: 1,
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 16,
     lineHeight: 22,
   },
@@ -249,7 +246,6 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     flex: 1,
-    fontFamily: 'IBMPlexMono-Regular',
     fontSize: 16,
     lineHeight: 22,
   },
