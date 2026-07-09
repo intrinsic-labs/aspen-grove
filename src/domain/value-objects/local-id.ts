@@ -21,12 +21,15 @@ export const createLocalId = (
   ulid: ULID,
   existingLocalIds: Set<LocalId>
 ): LocalId => {
+  // Derive from the ULID's random tail, not its head: the first 10 chars are
+  // a millisecond timestamp, shared by every ULID minted in the same instant
+  // (e.g. batch imports), so head prefixes collide immediately.
   for (let length = 6; length <= 8; length++) {
-    const candidate = ulid.substring(0, length) as LocalId;
+    const candidate = ulid.substring(ulid.length - length) as LocalId;
     if (!existingLocalIds.has(candidate)) {
       return candidate;
     }
   }
-  
-  throw new Error('Unable to satisfy uniqueness for localId')
+
+  throw new Error('Unable to satisfy uniqueness for localId');
 };

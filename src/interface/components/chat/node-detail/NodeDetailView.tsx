@@ -1,3 +1,4 @@
+import { useCallback, useLayoutEffect } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,11 +10,12 @@ import ContextMenu, {
   type ContextMenuAction,
 } from 'react-native-context-menu-view';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useNavigation } from '@react-navigation/native';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
-import { AppText } from '@/interface/ui/value-objects';
+import { AppText, HeaderIconButton } from '@/interface/ui/value-objects';
 import type { ModelNodeProvenanceStatus } from '@application/services/provenance';
 import { useNodeDetailData } from './useNodeDetailData';
 
@@ -26,7 +28,6 @@ export type NodeDetailAction =
 
 type NodeDetailViewProps = {
   readonly nodeId: ULID | null;
-  readonly onClose: () => void;
   readonly actionError?: string | null;
   /**
    * Invoked with the action and the node id. `makeCurrent` and `edit`
@@ -98,12 +99,12 @@ const buildDetailMenuItems = (state: {
  */
 export const NodeDetailView = ({
   nodeId,
-  onClose,
   actionError,
   onAction,
 }: NodeDetailViewProps) => {
   const { colors } = useAspenGroveTheme();
-  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const navigation = useNavigation();
   const { repositories } = useAppServices();
   const { loading, error, data, reload } = useNodeDetailData({
     nodeId,
@@ -112,15 +113,52 @@ export const NodeDetailView = ({
     rawApiResponseRepo: repositories.rawApiResponseRepo,
   });
 
-  const runAction = async (action: NodeDetailAction) => {
-    if (!data) {
-      return;
-    }
-    await onAction(data.nodeId, action);
-    if (action === 'bookmark' || action === 'prune') {
-      await reload();
-    }
-  };
+  const runAction = useCallback(
+    async (action: NodeDetailAction) => {
+      if (!data) {
+        return;
+      }
+      await onAction(data.nodeId, action);
+      if (action === 'bookmark' || action === 'prune') {
+        await reload();
+      }
+    },
+    [data, onAction, reload]
+  );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: data ? `Node ${data.localId}` : 'Node',
+      headerRightContainerStyle: {
+        paddingRight: 14,
+      },
+      headerRight: () =>
+        data ? (
+          <ContextMenu
+            dropdownMenuMode
+            actions={buildDetailMenuItems(data).map(
+              (item): ContextMenuAction => ({
+                title: item.title,
+                systemIcon: item.systemIcon,
+                destructive: item.destructive,
+              })
+            )}
+            onPress={(event) => {
+              const menuItem =
+                buildDetailMenuItems(data)[event.nativeEvent.index];
+              if (menuItem) {
+                void runAction(menuItem.action);
+              }
+            }}
+          >
+            <HeaderIconButton
+              icon="ellipsis-horizontal"
+              accessibilityLabel="Node menu"
+            />
+          </ContextMenu>
+        ) : null,
+    });
+  }, [data, navigation, runAction]);
 
   const renderRow = (label: string, value: string | undefined | null) =>
     value ? (
@@ -145,61 +183,23 @@ export const NodeDetailView = ({
     <View
       style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
     >
-      <View
-        style={[
-          styles.header,
-          { borderBottomColor: colors.line, paddingTop: insets.top + 12 },
-        ]}
-      >
-        <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
-        </Pressable>
-        <AppText variant="mono" style={styles.headerTitle}>
-          {data ? `Node ${data.localId}` : 'Node'}
-        </AppText>
-        <View style={[styles.headerSide, styles.headerRight]}>
-          {data ? (
-            <ContextMenu
-              dropdownMenuMode
-              actions={buildDetailMenuItems(data).map(
-                (item): ContextMenuAction => ({
-                  title: item.title,
-                  systemIcon: item.systemIcon,
-                  destructive: item.destructive,
-                })
-              )}
-              onPress={(event) => {
-                const menuItem =
-                  buildDetailMenuItems(data)[event.nativeEvent.index];
-                if (menuItem) {
-                  void runAction(menuItem.action);
-                }
-              }}
-            >
-              <Pressable hitSlop={8} style={styles.menuButton}>
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={20}
-                  color={colors.primary}
-                />
-              </Pressable>
-            </ContextMenu>
-          ) : null}
-        </View>
-      </View>
-
       {loading ? (
-        <View style={styles.centerWrap}>
+        <View style={[styles.centerWrap, { paddingTop: headerHeight }]}>
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : error ? (
-        <View style={styles.centerWrap}>
+        <View style={[styles.centerWrap, { paddingTop: headerHeight }]}>
           <AppText variant="meta" tone="accent">
             {error}
           </AppText>
         </View>
       ) : data ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: headerHeight + 16 },
+          ]}
+        >
           {actionError ? (
             <AppText variant="meta" tone="accent" style={styles.actionError}>
               {actionError}
@@ -320,7 +320,7 @@ export const NodeDetailView = ({
           ) : null}
         </ScrollView>
       ) : (
-        <View style={styles.centerWrap}>
+        <View style={[styles.centerWrap, { paddingTop: headerHeight }]}>
           <AppText variant="meta" tone="accent">
             Node not found.
           </AppText>
@@ -333,30 +333,6 @@ export const NodeDetailView = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerSide: {
-    width: 48,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  menuButton: {
-    height: 32,
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 14,
-    letterSpacing: 0.5,
   },
   centerWrap: {
     paddingVertical: 40,

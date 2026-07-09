@@ -90,16 +90,25 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 ---
 
-## Milestone C — What loom nerds need on day one
+## Milestone C — What loom nerds need on day one ✅ (2026-07-08)
 
 **Goal**: the features the goals doc calls "paramount" for the actual audience.
 
-- [ ] **Import/export** — elevated from a Phase-5 line item to a pillar:
-  - [ ] Export tree as JSON (full fidelity: nodes, edges, provenance) + export active path as Markdown
-  - [ ] Import from common loom formats (research what the community actually uses — old Swift prototype had OpenLoom import/export to crib from at `/Users/asherpope/dev/ai/Loom`)
-  - [ ] Share sheet integration
-- [ ] Search across trees (full-text over node content; simple LIKE query is fine for v1)
-- [ ] Tag repository impl + minimal tag/filter UI (schema + interfaces exist) — *beta-optional, cut first if squeezed*
+**Direction locked in during build**: Aspen Grove imports from *any* loom format (adapter registry), but exports *only* Open Loom (+ Markdown path for humans).
+
+- [x] **Import/export** — elevated from a Phase-5 line item to a pillar:
+  - [x] **Open Loom v2 spec authored** at `docs/open-loom/spec.md` — versioned, hypergraph-native (flat node map + explicit hyperedge list), multi-root, content-block unions, 3-tier provenance (descriptive/integrity/evidence), namespaced extensions. Informed by a survey of socketteer loom, Loomsidian, MiniLoom, ExoLoom, and the Swift prototype's v1
+  - [x] Export tree as Open Loom JSON (full fidelity: nodes, edges, agents, hash chain, raw-response evidence, with privacy toggles) + export active path as Markdown — `application/services/open-loom/`, `ExportLoomTreeUseCase`, `ExportPathMarkdownUseCase`
+  - [x] Import adapters: Open Loom v2, Open Loom v1 (Swift prototype), socketteer/loom (incl. bare-node leniency + `model_responses` provenance), Loomsidian (plugin data.json, multi-note). MiniLoom detected but deferred (needs diff-match-patch materialization). `ImportLoomTreeUseCase` re-mints ULIDs, recomputes local hashes, synthesizes roots for multi-root trees, rebuilds the active path
+  - [x] Share sheet integration (expo-sharing/file-system/document-picker): export via chat header menu, import via tree-list header button
+- [x] Search across trees (`nodeRepo.searchByContent` LIKE query; Search tab replaces the Documents placeholder tab; results grouped by tree, tap → node detail)
+- [x] Tag repository impl (`WatermelonTagRepository`, schema v8 `tags`/`tag_assignments`) + minimal tag UI (chat menu → Tags sheet to assign/create; tree list filter chips)
+
+Also shipped in this pass (user-requested):
+- [x] Tree list sorted by most-recent message (`loom_trees.last_message_at`, touched by send/continuation use cases — metadata edits no longer reorder the list)
+- [x] AI conversation titles: one extra call to the tree's agent model after the first response (`GenerateTreeTitleUseCase`), gated by new `UserPreferences.autoTitleEnabled` toggle (Settings → Behavior), only ever replaces default timestamp titles
+- [x] Settings restructured from one flat scroll into a nested stack (Settings home → Agents / Connections / Typography / Behavior with native push/pop)
+- [x] Schema v8 migration: `last_message_at`, `auto_title_enabled`, tag tables, index on `nodes.loom_tree_id`
 
 ---
 
@@ -107,7 +116,7 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 **Goal**: approvable builds, honest first-run experience.
 
-- [ ] Hide or replace the Documents placeholder tab (a visibly dead tab is a review-quality smell)
+- [x] Hide or replace the Documents placeholder tab (a visibly dead tab is a review-quality smell) — replaced with the Search tab in Milestone C
 - [ ] First-run onboarding-lite: what a loom is (3 screens max), connect OpenRouter or LM Studio, create first tree. The full Field Guide (Sanity CMS) stays post-beta; a static "what is this" screen is enough
 - [ ] Empty states (no API key, no trees, LM Studio unreachable) with actionable guidance
 - [ ] Error-handling audit: every provider/DB failure has a user-visible, non-technical surface

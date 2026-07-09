@@ -139,7 +139,6 @@ const NodeDetailRoute = () => {
   return (
     <NodeDetailView
       nodeId={nodeId}
-      onClose={() => router.back()}
       onAction={onAction}
       actionError={actionError}
     />

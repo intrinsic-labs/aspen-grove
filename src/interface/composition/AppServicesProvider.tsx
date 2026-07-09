@@ -12,8 +12,12 @@ import {
   CreateSharedAgentUseCase,
   DeleteAgentUseCase,
   EditDialogueNodeUseCase,
+  ExportLoomTreeUseCase,
+  ExportPathMarkdownUseCase,
   ForkAgentForTreeUseCase,
   GenerateDialogueContinuationUseCase,
+  GenerateTreeTitleUseCase,
+  ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
   UpdateAgentConfigurationUseCase,
@@ -37,6 +41,7 @@ import {
   WatermelonPathRepository,
   WatermelonPathStateRepository,
   WatermelonRawApiResponseRepository,
+  WatermelonTagRepository,
   WatermelonUserPreferencesRepository,
 } from '@infrastructure/persistence/watermelon/repositories';
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
@@ -54,6 +59,7 @@ type AppServices = {
     readonly pathRepo: WatermelonPathRepository;
     readonly pathStateRepo: WatermelonPathStateRepository;
     readonly rawApiResponseRepo: WatermelonRawApiResponseRepository;
+    readonly tagRepo: WatermelonTagRepository;
     readonly userPreferencesRepo: WatermelonUserPreferencesRepository;
   };
   readonly adapters: {
@@ -66,8 +72,12 @@ type AppServices = {
     readonly createSharedAgentUseCase: CreateSharedAgentUseCase;
     readonly deleteAgentUseCase: DeleteAgentUseCase;
     readonly editDialogueNodeUseCase: EditDialogueNodeUseCase;
+    readonly exportLoomTreeUseCase: ExportLoomTreeUseCase;
+    readonly exportPathMarkdownUseCase: ExportPathMarkdownUseCase;
     readonly forkAgentForTreeUseCase: ForkAgentForTreeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
+    readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
+    readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
     readonly updateAgentConfigurationUseCase: UpdateAgentConfigurationUseCase;
@@ -107,6 +117,7 @@ const buildAppServices = (): AppServices => {
     pathRepo: new WatermelonPathRepository(database),
     pathStateRepo: new WatermelonPathStateRepository(database),
     rawApiResponseRepo: new WatermelonRawApiResponseRepository(database),
+    tagRepo: new WatermelonTagRepository(database),
     userPreferencesRepo: new WatermelonUserPreferencesRepository(database),
   } as const;
 
@@ -182,6 +193,35 @@ const buildAppServices = (): AppServices => {
     deleteAgentUseCase: new DeleteAgentUseCase({
       agentRepository: repositories.agentRepo,
       loomTreeRepository: repositories.treeRepo,
+    }),
+    // Import/export (Open Loom — docs/open-loom/spec.md)
+    exportLoomTreeUseCase: new ExportLoomTreeUseCase({
+      loomTreeRepository: repositories.treeRepo,
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
+      agentRepository: repositories.agentRepo,
+      rawApiResponseRepository: repositories.rawApiResponseRepo,
+    }),
+    exportPathMarkdownUseCase: new ExportPathMarkdownUseCase({
+      loomTreeRepository: repositories.treeRepo,
+      nodeRepository: repositories.nodeRepo,
+      pathRepository: repositories.pathRepo,
+      agentRepository: repositories.agentRepo,
+    }),
+    importLoomTreeUseCase: new ImportLoomTreeUseCase({
+      loomTreeRepository: repositories.treeRepo,
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
+      agentRepository: repositories.agentRepo,
+      pathRepository: repositories.pathRepo,
+      pathStateRepository: repositories.pathStateRepo,
+      userPreferencesRepository: repositories.userPreferencesRepo,
+    }),
+    generateTreeTitleUseCase: new GenerateTreeTitleUseCase({
+      loomTreeRepository: repositories.treeRepo,
+      agentRepository: repositories.agentRepo,
+      userPreferencesRepository: repositories.userPreferencesRepo,
+      providerRegistry: adapters.providerRegistry,
     }),
   } as const;
 

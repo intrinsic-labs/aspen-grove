@@ -27,6 +27,12 @@ export interface LoomTree {
    * agent's own use cases.
    */
   readonly defaultModelAgentId?: ULID;
+  /**
+   * When the latest dialogue turn (user send or model continuation) landed on
+   * this tree. Unlike `updatedAt`, metadata edits (title, agent switch) do not
+   * move it. Unset for trees with no recorded conversation activity.
+   */
+  readonly lastMessageAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly archivedAt?: Date;

@@ -40,6 +40,13 @@ export interface INodeRepository {
   /** Get all localIds from a tree */
   getAllLocalIds(loomTreeId: ULID): Promise<Set<LocalId>>;
 
+  /**
+   * Full-text search over node content across all trees (substring match,
+   * case-insensitive). Pruned nodes are excluded. Results ordered newest
+   * first.
+   */
+  searchByContent(term: string, limit?: number): Promise<Node[]>;
+
   /** Create a new Node. Returns a Node with `localId` populated, `summary` null */
   create(input: CreateNodeInput): Promise<Node>;
 

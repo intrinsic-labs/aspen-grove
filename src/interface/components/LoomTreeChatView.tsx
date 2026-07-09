@@ -12,6 +12,7 @@ import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
+import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 
 const LoomTreeChatView = () => {
@@ -25,6 +26,9 @@ const LoomTreeChatView = () => {
   const openDialogueSettings = controller.dialogueSettings.open;
   const openBookmarks = controller.bookmarks.open;
   const openTitleEditor = controller.titleEditor.open;
+  const exportTree = controller.exports.exportTree;
+  const exportPath = controller.exports.exportPathMarkdown;
+  const openTags = controller.tags.open;
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRightContainerStyle: {
@@ -35,6 +39,9 @@ const LoomTreeChatView = () => {
           onOpenBookmarks={openBookmarks}
           onOpenDialogueSettings={openDialogueSettings}
           onEditTitle={openTitleEditor}
+          onOpenTags={openTags}
+          onExportTree={() => void exportTree()}
+          onExportPath={() => void exportPath()}
         />
       ),
     });
@@ -44,6 +51,9 @@ const LoomTreeChatView = () => {
     openBookmarks,
     openDialogueSettings,
     openTitleEditor,
+    openTags,
+    exportTree,
+    exportPath,
   ]);
 
   return (
@@ -113,6 +123,12 @@ const LoomTreeChatView = () => {
         initialTitle={controller.titleEditor.title}
         onCancel={controller.titleEditor.close}
         onSubmit={controller.titleEditor.save}
+      />
+
+      <TreeTagsSheet
+        visible={controller.tags.visible}
+        treeId={controller.tags.treeId}
+        onClose={controller.tags.close}
       />
     </AppScreen>
   );

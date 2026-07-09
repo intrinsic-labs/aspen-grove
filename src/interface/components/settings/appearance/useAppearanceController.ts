@@ -26,6 +26,7 @@ type AppearanceDraft = {
   readonly nodeViewStyle: NodeViewStyle;
   readonly nodeViewCornerRadiusInput: string;
   readonly verboseErrorAlerts: boolean;
+  readonly autoTitleEnabled: boolean;
 };
 
 const toDraftKey = (draft: AppearanceDraft): string => JSON.stringify(draft);
@@ -51,6 +52,7 @@ export const useAppearanceController = () => {
   const [nodeViewCornerRadiusInput, setNodeViewCornerRadiusInput] =
     useState('8');
   const [verboseErrorAlerts, setVerboseErrorAlerts] = useState(false);
+  const [autoTitleEnabled, setAutoTitleEnabled] = useState(true);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -64,6 +66,7 @@ export const useAppearanceController = () => {
         nodeViewStyle: userPreferences.nodeViewStyle,
         nodeViewCornerRadiusInput: String(userPreferences.nodeViewCornerRadius),
         verboseErrorAlerts: userPreferences.verboseErrorAlerts,
+        autoTitleEnabled: userPreferences.autoTitleEnabled,
       };
 
       setFontFace(draft.fontFace);
@@ -71,6 +74,7 @@ export const useAppearanceController = () => {
       setNodeViewStyle(draft.nodeViewStyle);
       setNodeViewCornerRadiusInput(draft.nodeViewCornerRadiusInput);
       setVerboseErrorAlerts(draft.verboseErrorAlerts);
+      setAutoTitleEnabled(draft.autoTitleEnabled);
 
       lastSavedDraftKeyRef.current = toDraftKey(draft);
     } catch (caught) {
@@ -129,6 +133,7 @@ export const useAppearanceController = () => {
           nodeViewStyle: draft.nodeViewStyle,
           nodeViewCornerRadius: parsedNodeCornerRadius,
           verboseErrorAlerts: draft.verboseErrorAlerts,
+          autoTitleEnabled: draft.autoTitleEnabled,
         });
 
         lastSavedDraftKeyRef.current = toDraftKey(draft);
@@ -152,6 +157,7 @@ export const useAppearanceController = () => {
       nodeViewStyle,
       nodeViewCornerRadiusInput,
       verboseErrorAlerts,
+      autoTitleEnabled,
     };
     if (toDraftKey(draft) === lastSavedDraftKeyRef.current) {
       return;
@@ -170,6 +176,7 @@ export const useAppearanceController = () => {
     nodeViewStyle,
     nodeViewCornerRadiusInput,
     verboseErrorAlerts,
+    autoTitleEnabled,
     loading,
     persistDraft,
   ]);
@@ -189,5 +196,7 @@ export const useAppearanceController = () => {
     setNodeViewCornerRadiusInput,
     verboseErrorAlerts,
     setVerboseErrorAlerts,
+    autoTitleEnabled,
+    setAutoTitleEnabled,
   };
 };

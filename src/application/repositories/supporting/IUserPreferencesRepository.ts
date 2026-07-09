@@ -37,6 +37,7 @@ export type UserPreferencesChanges = {
   readonly defaultVoiceModeEnabled?: boolean;
   readonly defaultTemperature?: number;
   readonly verboseErrorAlerts?: boolean;
+  readonly autoTitleEnabled?: boolean;
   readonly nodeViewStyle?: NodeViewStyle;
   readonly nodeViewCornerRadius?: number;
   readonly lmstudioSettings?: Partial<LMStudioSettings>;

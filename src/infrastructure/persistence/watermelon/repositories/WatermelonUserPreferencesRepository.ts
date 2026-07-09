@@ -23,6 +23,7 @@ const DEFAULT_FONT_SIZE: FontSize = 16;
 const DEFAULT_VOICE_MODE = false;
 const DEFAULT_TEMPERATURE = 1.0;
 const DEFAULT_VERBOSE_ERROR_ALERTS = false;
+const DEFAULT_AUTO_TITLE_ENABLED = true;
 const DEFAULT_NODE_VIEW_STYLE: NodeViewStyle = 'filled';
 const DEFAULT_NODE_CORNER_RADIUS = 8;
 
@@ -110,6 +111,9 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
         if (changes.verboseErrorAlerts !== undefined) {
           record.verboseErrorAlerts = changes.verboseErrorAlerts;
         }
+        if (changes.autoTitleEnabled !== undefined) {
+          record.autoTitleEnabled = changes.autoTitleEnabled;
+        }
 
         if (changes.nodeViewStyle !== undefined) {
           record.nodeViewStyle = changes.nodeViewStyle;
@@ -174,6 +178,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.defaultVoiceModeEnabled = DEFAULT_VOICE_MODE;
       record.defaultTemperature = DEFAULT_TEMPERATURE;
       record.verboseErrorAlerts = DEFAULT_VERBOSE_ERROR_ALERTS;
+      record.autoTitleEnabled = DEFAULT_AUTO_TITLE_ENABLED;
       record.nodeViewStyle = DEFAULT_NODE_VIEW_STYLE;
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
@@ -196,6 +201,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       defaultTemperature: model.defaultTemperature,
       verboseErrorAlerts:
         model.verboseErrorAlerts ?? DEFAULT_VERBOSE_ERROR_ALERTS,
+      autoTitleEnabled: model.autoTitleEnabled ?? DEFAULT_AUTO_TITLE_ENABLED,
       nodeViewStyle: model.nodeViewStyle as NodeViewStyle,
       nodeViewCornerRadius: model.nodeViewCornerRadius,
       lmstudioSettings: parseLMStudioSettings(model.lmstudioSettings),

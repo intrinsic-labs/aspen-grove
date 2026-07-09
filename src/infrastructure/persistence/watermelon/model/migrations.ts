@@ -2,6 +2,7 @@ import {
   addColumns,
   schemaMigrations,
   createTable,
+  unsafeExecuteSql,
 } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
@@ -124,6 +125,55 @@ export default schemaMigrations({
             },
           ],
         }),
+      ],
+    },
+    {
+      // v8: Milestone C.
+      // - `loom_trees.last_message_at` tracks the latest dialogue turn for
+      //   recency sorting (updated_at also moves on metadata edits).
+      // - `user_preferences.auto_title_enabled` gates the AI-generated
+      //   conversation title after the first model response.
+      // - `tags` / `tag_assignments` tables back the (previously
+      //   interface-only) ITagRepository.
+      // - Index on `nodes.loom_tree_id` for per-tree queries (search, export,
+      //   latest-message lookups). Name matches WatermelonDB's
+      //   `{table}_{column}` convention so fresh installs and migrated
+      //   databases converge on the same index.
+      toVersion: 8,
+      steps: [
+        addColumns({
+          table: 'loom_trees',
+          columns: [
+            { name: 'last_message_at', type: 'number', isOptional: true },
+          ],
+        }),
+        addColumns({
+          table: 'user_preferences',
+          columns: [
+            { name: 'auto_title_enabled', type: 'boolean', isOptional: true },
+          ],
+        }),
+        createTable({
+          name: 'tags',
+          columns: [
+            { name: 'grove_id', type: 'string', isIndexed: true },
+            { name: 'name', type: 'string' },
+            { name: 'color', type: 'string', isOptional: true },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'tag_assignments',
+          columns: [
+            { name: 'tag_id', type: 'string', isIndexed: true },
+            { name: 'target_type', type: 'string' },
+            { name: 'target_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+        unsafeExecuteSql(
+          'create index if not exists "nodes_loom_tree_id" on "nodes" ("loom_tree_id");'
+        ),
       ],
     },
   ],

@@ -48,6 +48,12 @@ export default class LoomTree extends Model {
    */
   @field('default_model_agent_id') defaultModelAgentId!: string | null;
 
+  /**
+   * Latest dialogue-turn timestamp (send/continuation). Null until the first
+   * recorded turn; drives recency sorting in the tree list.
+   */
+  @date('last_message_at') lastMessageAt!: Date | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
   @date('archived_at') archivedAt!: Date | null;

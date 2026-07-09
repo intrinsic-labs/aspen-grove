@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 7,
+  version: 8,
   tables: [
     /**
      * Grove table schema
@@ -33,6 +33,11 @@ export const aspenGroveSchema = appSchema({
         { name: 'default_voice_mode_enabled', type: 'boolean' },
         { name: 'default_temperature', type: 'number' },
         { name: 'verbose_error_alerts', type: 'boolean', isOptional: true },
+
+        // Generate a conversation title via one extra model call after the
+        // first model response in a tree. Optional at storage level; the
+        // repository defaults it to true.
+        { name: 'auto_title_enabled', type: 'boolean', isOptional: true },
 
         { name: 'node_view_style', type: 'string' },
         { name: 'node_view_corner_radius', type: 'number' },
@@ -136,6 +141,12 @@ export const aspenGroveSchema = appSchema({
           isIndexed: true,
         },
 
+        // When the latest dialogue turn (user send or model continuation)
+        // landed on this tree. Distinct from `updated_at`, which also moves on
+        // metadata edits (title, agent switch). Drives recency sorting in the
+        // tree list. Null for trees with no recorded activity yet.
+        { name: 'last_message_at', type: 'number', isOptional: true },
+
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'archived_at', type: 'number', isOptional: true },
@@ -164,7 +175,7 @@ export const aspenGroveSchema = appSchema({
       name: 'nodes',
       columns: [
         { name: 'local_id', type: 'string' },
-        { name: 'loom_tree_id', type: 'string' },
+        { name: 'loom_tree_id', type: 'string', isIndexed: true },
 
         // Stored as JSON string
         { name: 'content', type: 'string' },
@@ -260,6 +271,38 @@ export const aspenGroveSchema = appSchema({
         { name: 'edge_id', type: 'string' },
         { name: 'source_node_id', type: 'string' },
         { name: 'role', type: 'string' },
+      ],
+    }),
+
+    /**
+     * Tag table schema
+     *
+     * Labels for organization. Name uniqueness within a grove (case-sensitive)
+     * is enforced at the repository level.
+     */
+    tableSchema({
+      name: 'tags',
+      columns: [
+        { name: 'grove_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'color', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+      ],
+    }),
+
+    /**
+     * TagAssignment join table schema
+     *
+     * One row per (tag, target) pair. `target_type` is 'node' | 'loomTree' |
+     * 'document'; `target_id` is the tagged item's id.
+     */
+    tableSchema({
+      name: 'tag_assignments',
+      columns: [
+        { name: 'tag_id', type: 'string', isIndexed: true },
+        { name: 'target_type', type: 'string' },
+        { name: 'target_id', type: 'string', isIndexed: true },
+        { name: 'created_at', type: 'number' },
       ],
     }),
 

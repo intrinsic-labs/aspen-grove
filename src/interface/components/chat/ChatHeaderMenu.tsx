@@ -1,11 +1,15 @@
-import { Pressable, StyleSheet } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import ContextMenu, {
   type ContextMenuAction,
 } from 'react-native-context-menu-view';
-import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { HeaderIconButton } from '@/interface/ui/value-objects';
 
-type ChatHeaderMenuAction = 'bookmarks' | 'settings' | 'editTitle';
+type ChatHeaderMenuAction =
+  | 'bookmarks'
+  | 'settings'
+  | 'editTitle'
+  | 'tags'
+  | 'exportTree'
+  | 'exportPath';
 
 type ChatHeaderMenuItem = {
   readonly action: ChatHeaderMenuAction;
@@ -29,20 +33,40 @@ const MENU_ITEMS: readonly ChatHeaderMenuItem[] = [
     title: 'Edit Title',
     systemIcon: 'pencil',
   },
+  {
+    action: 'tags',
+    title: 'Tags',
+    systemIcon: 'tag',
+  },
+  {
+    action: 'exportTree',
+    title: 'Export Tree (OpenLoom)',
+    systemIcon: 'square.and.arrow.up',
+  },
+  {
+    action: 'exportPath',
+    title: 'Export Path (Markdown)',
+    systemIcon: 'doc.plaintext',
+  },
 ];
 
 type ChatHeaderMenuProps = {
   readonly onOpenBookmarks: () => void;
   readonly onOpenDialogueSettings: () => void;
   readonly onEditTitle: () => void;
+  readonly onOpenTags: () => void;
+  readonly onExportTree: () => void;
+  readonly onExportPath: () => void;
 };
 
 export const ChatHeaderMenu = ({
   onOpenBookmarks,
   onOpenDialogueSettings,
   onEditTitle,
+  onOpenTags,
+  onExportTree,
+  onExportPath,
 }: ChatHeaderMenuProps) => {
-  const { colors } = useAspenGroveTheme();
   const actions: ContextMenuAction[] = MENU_ITEMS.map((item) => ({
     title: item.title,
     systemIcon: item.systemIcon,
@@ -67,33 +91,22 @@ export const ChatHeaderMenu = ({
           case 'editTitle':
             onEditTitle();
             break;
+          case 'tags':
+            onOpenTags();
+            break;
+          case 'exportTree':
+            onExportTree();
+            break;
+          case 'exportPath':
+            onExportPath();
+            break;
         }
       }}
     >
-      <Pressable
-        hitSlop={8}
-        accessibilityRole="button"
+      <HeaderIconButton
+        icon="ellipsis-horizontal"
         accessibilityLabel="Dialogue menu"
-        style={({ pressed }) => [
-          styles.menuButton,
-          { opacity: pressed ? 0.65 : 1 },
-        ]}
-      >
-        <Ionicons
-          name="ellipsis-horizontal"
-          size={22}
-          color={colors.primary}
-        />
-      </Pressable>
+      />
     </ContextMenu>
   );
 };
-
-const styles = StyleSheet.create({
-  menuButton: {
-    height: 36,
-    width: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

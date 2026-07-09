@@ -143,6 +143,32 @@ export class WatermelonNodeRepository implements INodeRepository {
     return new Set(models.map((model) => model.localId as LocalId));
   }
 
+  async searchByContent(
+    term: string,
+    limit: number = 100
+  ): Promise<NodeEntity[]> {
+    const trimmed = term.trim();
+    if (trimmed.length === 0) {
+      return [];
+    }
+
+    // `content` is a JSON string; text lives inside it, so a substring LIKE
+    // finds it. JSON-escaped characters (quotes, backslashes) in the search
+    // term can miss — acceptable for v1 search.
+    const models = await this.nodes
+      .query(
+        Q.where(
+          'content',
+          Q.like(`%${Q.sanitizeLikeString(trimmed)}%`)
+        ),
+        Q.where('pruned', Q.notEq(true)),
+        Q.sortBy('created_at', Q.desc),
+        Q.take(limit)
+      )
+      .fetch();
+    return models.map((model) => this.toDomain(model));
+  }
+
   async create(input: CreateNodeInput): Promise<NodeEntity> {
     const id = input.id ?? createULID();
     const createdAt = input.createdAt ?? this.now();

@@ -89,6 +89,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
         record.mode = input.mode;
         record.systemContext = input.systemContext ?? null;
         record.defaultModelAgentId = input.defaultModelAgentId ?? null;
+        record.lastMessageAt = null;
         record.createdAt = createdAt;
         record.updatedAt = createdAt;
         record.archivedAt = null;
@@ -119,6 +120,15 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
       });
 
       return this.toDomain(model);
+    });
+  }
+
+  async touchLastMessage(id: ULID, at: Date): Promise<void> {
+    await this.db.write(async () => {
+      const model = await this.loomTrees.find(id);
+      await model.update((record) => {
+        record.lastMessageAt = at;
+      });
     });
   }
 
@@ -328,6 +338,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
       defaultModelAgentId: model.defaultModelAgentId
         ? (model.defaultModelAgentId as ULID)
         : undefined,
+      lastMessageAt: toOptionalDate(model.lastMessageAt),
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       archivedAt: toOptionalDate(model.archivedAt),

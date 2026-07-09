@@ -1,19 +1,42 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
   View,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import ContextMenu from 'react-native-context-menu-view';
 import { useRouter } from 'expo-router';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
-import type { LoomTree } from '@domain/entities';
+import type { LoomTree, Tag } from '@domain/entities';
+import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
+import { pickAndReadTextFile } from '@interface/services/loom-file-sharing';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
-import { AppScreen, AppText, Hairline } from '../ui/value-objects';
+import { useCreateLoomTree } from '../hooks/useCreateLoomTree';
+import {
+  AppScreen,
+  AppText,
+  Hairline,
+  HeaderIconButton,
+} from '../ui/value-objects';
+
+type ListMenuAction = 'create' | 'import';
+
+const LIST_MENU_ITEMS: readonly {
+  readonly action: ListMenuAction;
+  readonly title: string;
+  readonly systemIcon: string;
+}[] = [
+  { action: 'create', title: 'New Tree', systemIcon: 'plus' },
+  {
+    action: 'import',
+    title: 'Import Tree',
+    systemIcon: 'square.and.arrow.down',
+  },
+];
 
 const LoomTreeListView = () => {
   const { colors } = useAspenGroveTheme();
@@ -25,9 +48,14 @@ const LoomTreeListView = () => {
     bootstrapState.status === 'ready' ? bootstrapState.result : null;
 
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trees, setTrees] = useState<LoomTree[]>([]);
+  const [groveTags, setGroveTags] = useState<readonly Tag[]>([]);
+  const [activeTagId, setActiveTagId] = useState<ULID | null>(null);
+  const [taggedTreeIds, setTaggedTreeIds] = useState<ReadonlySet<ULID> | null>(
+    null
+  );
 
   const loadTrees = useCallback(async () => {
     if (!bootstrap) {
@@ -39,11 +67,46 @@ const LoomTreeListView = () => {
       'dialogue',
       true
     );
-    const sorted = [...found].sort(
-      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-    );
+    // Most recently conversed-with tree first. `lastMessageAt` only moves on
+    // dialogue turns; fall back to `updatedAt` for trees predating the field.
+    const recency = (tree: LoomTree) =>
+      (tree.lastMessageAt ?? tree.updatedAt).getTime();
+    const sorted = [...found].sort((a, b) => recency(b) - recency(a));
     setTrees(sorted);
-  }, [bootstrap, repositories.treeRepo]);
+
+    const tags = await repositories.tagRepo.findTagsByGroveId(
+      bootstrap.groveId
+    );
+    setGroveTags(tags);
+  }, [bootstrap, repositories.tagRepo, repositories.treeRepo]);
+
+  // Tag filter: resolve the selected tag to its tagged tree ids.
+  useEffect(() => {
+    if (!activeTagId) {
+      setTaggedTreeIds(null);
+      return;
+    }
+    let cancelled = false;
+    void repositories.tagRepo
+      .findItemsByTag(activeTagId, 'loomTree')
+      .then((assignments) => {
+        if (!cancelled) {
+          setTaggedTreeIds(new Set(assignments.map((a) => a.targetId)));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTaggedTreeIds(new Set());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTagId, repositories.tagRepo]);
+
+  const visibleTrees = taggedTreeIds
+    ? trees.filter((tree) => taggedTreeIds.has(tree.id))
+    : trees;
 
   useEffect(() => {
     const refresh = async () => {
@@ -74,96 +137,80 @@ const LoomTreeListView = () => {
     }, [bootstrap, loadTrees])
   );
 
-  const onCreateTree = useCallback(async () => {
-    if (!bootstrap || creating) {
+  const { creating, createTree: onCreateTree } = useCreateLoomTree(setError);
+
+  const onImportTree = useCallback(async () => {
+    if (!bootstrap || importing) {
       return;
     }
 
     try {
-      setCreating(true);
       setError(null);
-
-      // Pinned default first; fall back to the first available shared agent.
-      // Stale pins are cleared inside the helper. The pin is managed in
-      // Settings → Agents ("Make default"); per-tree switching happens in
-      // the chat ⚙️ sheet after creation.
-      const defaultAgent = await resolveDefaultModelAgent({
-        agentRepository: repositories.agentRepo,
-        userPreferencesRepository: repositories.userPreferencesRepo,
-      });
-      if (!defaultAgent) {
-        throw new Error(
-          'No agents yet. Create one in Settings → Agents, then come back to start a tree.'
-        );
+      const picked = await pickAndReadTextFile();
+      if (!picked) {
+        return;
       }
+      setImporting(true);
 
-      const created = await useCases.createDialogueLoomTreeUseCase.execute({
+      const result = await useCases.importLoomTreeUseCase.execute({
         groveId: bootstrap.groveId,
         ownerAgentId: bootstrap.ownerAgentId,
-        defaultModelAgentId: defaultAgent.id,
-        initialContent: {
-          type: 'text',
-          text: '',
-        },
-        pathName: 'Main',
+        raw: picked.content,
       });
 
-      router.push({
-        pathname: '/tree/[treeId]',
-        params: {
-          treeId: created.tree.id,
-          autofocus: '1',
-          ephemeral: '1',
-        },
-      });
+      await loadTrees();
+
+      const summary = result.trees
+        .map((tree) => `“${tree.title}” (${tree.nodeCount} nodes)`)
+        .join(', ');
+      Alert.alert(
+        'Import complete',
+        [`Imported ${summary} from ${result.sourceFormat}.`, ...result.warnings]
+          .join('\n\n')
+          .trim()
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setCreating(false);
+      setImporting(false);
     }
-  }, [
-    bootstrap,
-    creating,
-    repositories.agentRepo,
-    repositories.userPreferencesRepo,
-    router,
-    useCases.createDialogueLoomTreeUseCase,
-  ]);
+  }, [bootstrap, importing, loadTrees, useCases.importLoomTreeUseCase]);
 
+  const busy = loading || creating || importing || !bootstrap;
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRightContainerStyle: {
-        paddingRight: 14,
-      },
       headerRight: () => (
-        <Pressable
-          onPress={onCreateTree}
-          disabled={loading || creating || !bootstrap}
-          style={({ pressed }) => [
-            styles.headerAddButton,
-            {
-              borderColor: colors.primary,
-              opacity: pressed || creating ? 0.65 : 1,
-            },
-          ]}
+        <ContextMenu
+          dropdownMenuMode
+          actions={LIST_MENU_ITEMS.map((item) => ({
+            title: item.title,
+            systemIcon: item.systemIcon,
+            disabled: busy,
+          }))}
+          onPress={(event) => {
+            const menuItem = LIST_MENU_ITEMS[event.nativeEvent.index];
+            if (!menuItem || busy) {
+              return;
+            }
+            if (menuItem.action === 'create') {
+              void onCreateTree();
+            } else {
+              void onImportTree();
+            }
+          }}
         >
-          <Ionicons
-            name={creating ? 'ellipsis-horizontal' : 'add'}
-            size={20}
-            color={colors.primary}
+          <HeaderIconButton
+            icon={
+              creating || importing
+                ? 'hourglass-outline'
+                : 'ellipsis-horizontal'
+            }
+            accessibilityLabel="Loom trees menu"
           />
-        </Pressable>
+        </ContextMenu>
       ),
     });
-  }, [
-    bootstrap,
-    colors.primary,
-    colors.primary,
-    creating,
-    loading,
-    navigation,
-    onCreateTree,
-  ]);
+  }, [busy, creating, importing, navigation, onCreateTree, onImportTree]);
 
   const onOpenTree = (tree: LoomTree) => {
     router.push({
@@ -181,7 +228,9 @@ const LoomTreeListView = () => {
           {item.title}
         </AppText>
         <AppText variant="meta" tone="secondary" style={styles.treeMeta}>
-          Last updated {item.updatedAt.toLocaleString()}
+          {item.lastMessageAt
+            ? `Last message ${item.lastMessageAt.toLocaleString()}`
+            : `Last updated ${item.updatedAt.toLocaleString()}`}
         </AppText>
       </Pressable>
     );
@@ -194,18 +243,59 @@ const LoomTreeListView = () => {
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : (
-        <FlatList
-          data={trees}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTree}
-          ItemSeparatorComponent={() => <Hairline style={styles.separator} />}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <AppText variant="meta" tone="secondary" style={styles.emptyText}>
-              No dialogue trees yet. Press + to create one.
-            </AppText>
-          }
-        />
+        <>
+          {groveTags.length > 0 ? (
+            <View style={styles.tagFilterRow}>
+              {groveTags.map((tag) => {
+                const active = tag.id === activeTagId;
+                return (
+                  <Pressable
+                    key={tag.id}
+                    onPress={() =>
+                      setActiveTagId((current) =>
+                        current === tag.id ? null : tag.id
+                      )
+                    }
+                    style={[
+                      styles.tagChip,
+                      {
+                        borderColor: active
+                          ? colors.accentColor
+                          : colors.surface,
+                        backgroundColor: active
+                          ? colors.surface
+                          : 'transparent',
+                      },
+                    ]}
+                  >
+                    <AppText
+                      variant="meta"
+                      style={{
+                        color: active ? colors.accentColor : colors.secondary,
+                      }}
+                    >
+                      {tag.name}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+          <FlatList
+            data={visibleTrees}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTree}
+            ItemSeparatorComponent={() => <Hairline style={styles.separator} />}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <AppText variant="meta" tone="secondary" style={styles.emptyText}>
+                {activeTagId
+                  ? 'No trees with this tag.'
+                  : 'No dialogue trees yet. Open the ··· menu to create one.'}
+              </AppText>
+            }
+          />
+        </>
       )}
 
       {error ? (
@@ -236,13 +326,18 @@ const styles = StyleSheet.create({
   separator: {
     marginVertical: 1,
   },
-  headerAddButton: {
-    height: 36,
-    width: 36,
-    borderWidth: StyleSheet.hairlineWidth,
+  tagFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+  },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   treeTitle: {
     fontSize: 18,

@@ -27,6 +27,11 @@ export interface UserPreferences {
   readonly defaultVoiceModeEnabled: boolean;
   readonly defaultTemperature: number;
   readonly verboseErrorAlerts: boolean;
+  /**
+   * Generate a conversation title with one extra model call after the first
+   * model response in a tree (replaces the default timestamp title).
+   */
+  readonly autoTitleEnabled: boolean;
 
   // LM Studio connection settings (token lives in secure store)
   readonly lmstudioSettings: LMStudioSettings;

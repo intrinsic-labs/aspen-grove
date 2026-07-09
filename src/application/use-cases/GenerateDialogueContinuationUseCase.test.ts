@@ -182,6 +182,7 @@ describe('GenerateDialogueContinuationUseCase', () => {
       },
       loomTreeRepository: {
         findById: async (id) => (id === treeId ? tree : null),
+        touchLastMessage: async () => {},
       },
       nodeRepository: {
         findById: async (id) => nodesById.get(id) ?? null,

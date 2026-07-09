@@ -6,4 +6,5 @@ export * from './WatermelonNodeRepository';
 export * from './WatermelonPathRepository';
 export * from './WatermelonPathStateRepository';
 export * from './WatermelonRawApiResponseRepository';
+export * from './WatermelonTagRepository';
 export * from './WatermelonUserPreferencesRepository';

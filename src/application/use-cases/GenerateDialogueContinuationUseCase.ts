@@ -63,7 +63,10 @@ export type GenerateDialogueContinuationResult = {
 
 export type GenerateDialogueContinuationDependencies = {
   readonly agentRepository: Pick<IAgentRepository, 'findById'>;
-  readonly loomTreeRepository: Pick<ILoomTreeRepository, 'findById'>;
+  readonly loomTreeRepository: Pick<
+    ILoomTreeRepository,
+    'findById' | 'touchLastMessage'
+  >;
   readonly nodeRepository: Pick<
     INodeRepository,
     'findById' | 'create' | 'getAllLocalIds' | 'hardDelete'
@@ -208,6 +211,11 @@ export class GenerateDialogueContinuationUseCase {
       edgeRepository: this.edgeRepository,
       rawApiResponseRepository: this.rawApiResponseRepository,
     });
+
+    await this.loomTreeRepository.touchLastMessage(
+      input.session.treeId,
+      new Date()
+    );
 
     if (activateGeneratedNode) {
       await this.activatePathAtNode(

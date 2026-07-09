@@ -65,7 +65,10 @@ export type SendDialogueTurnResult = {
 
 export type SendDialogueTurnDependencies = {
   readonly agentRepository: Pick<IAgentRepository, 'findById'>;
-  readonly loomTreeRepository: Pick<ILoomTreeRepository, 'findById'>;
+  readonly loomTreeRepository: Pick<
+    ILoomTreeRepository,
+    'findById' | 'touchLastMessage'
+  >;
   readonly nodeRepository: Pick<
     INodeRepository,
     'findById' | 'create' | 'getAllLocalIds' | 'hardDelete'
@@ -166,6 +169,11 @@ export class SendDialogueTurnUseCase {
       input.session.ownerAgentId,
       userNode.id,
       'dialogue'
+    );
+
+    await this.loomTreeRepository.touchLastMessage(
+      input.session.treeId,
+      userCreatedAt
     );
 
     await input.onUserNodeCommitted?.({ userNodeId: userNode.id });

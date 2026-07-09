@@ -60,6 +60,13 @@ export interface ILoomTreeRepository {
     modelAgentId: ULID,
     onlyActive?: boolean
   ): Promise<LoomTree[]>;
+
+  /**
+   * Record that a dialogue turn (user send or model continuation) landed on
+   * this tree at `at`. Sets `lastMessageAt` without moving `updatedAt`, so
+   * conversation recency stays distinct from metadata edits.
+   */
+  touchLastMessage(id: ULID, at: Date): Promise<void>;
 }
 
 /** Input for creating a new LoomTree. */

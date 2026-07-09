@@ -10,8 +10,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import * as Clipboard from 'expo-clipboard';
 import { LlmProviderError } from '@application/services/llm';
+import type { Content } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
+import { shareTextAsFile } from '@interface/services/loom-file-sharing';
 import type { ContinuationMenuAction } from './ContinuationRail';
 import type { ChatMessageMenuAction } from './ChatMessageList';
 import { getProviderApiKey } from './provider-key';
@@ -30,6 +32,17 @@ import { useDeleteEphemeralTreeOnBack } from './useDeleteEphemeralTreeOnBack';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
+
+const contentToPlainText = (content: Content): string => {
+  switch (content.type) {
+    case 'text':
+      return content.text;
+    case 'mixed':
+      return content.blocks.map(contentToPlainText).join('\n');
+    default:
+      return '';
+  }
+};
 
 export const useLoomTreeChatController = () => {
   const router = useRouter();
@@ -81,6 +94,7 @@ export const useLoomTreeChatController = () => {
   const [dialogueSettingsVisible, setDialogueSettingsVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
   const [titleEditorVisible, setTitleEditorVisible] = useState(false);
+  const [tagsVisible, setTagsVisible] = useState(false);
   const {
     streamingText: streamingAssistantText,
     appendDelta: appendStreamingAssistantDelta,
@@ -243,6 +257,98 @@ export const useLoomTreeChatController = () => {
     },
     [navigation, repositories.treeRepo, session?.treeId]
   );
+
+  // Fire-and-forget: one extra model call that replaces the default
+  // timestamp title after the first exchange. The use case itself skips
+  // when the toggle is off or the tree is already titled; failures are
+  // silent (titling must never disturb the conversation).
+  const maybeGenerateTreeTitle = useCallback(
+    (userText: string, assistantNodeId: ULID) => {
+      if (!session) {
+        return;
+      }
+      const currentSession = session;
+      void (async () => {
+        try {
+          const assistantNode = await repositories.nodeRepo.findById(
+            assistantNodeId,
+            true
+          );
+          const assistantText = assistantNode
+            ? contentToPlainText(assistantNode.content)
+            : '';
+          if (!assistantText) {
+            return;
+          }
+          const providerApiKey = await getProviderApiKey(
+            adapters.credentialStore,
+            currentSession.provider
+          );
+          const result = await useCases.generateTreeTitleUseCase.execute({
+            treeId: currentSession.treeId,
+            modelAgentId: currentSession.modelAgentId,
+            modelIdentifier: currentSession.modelIdentifier,
+            providerApiKey,
+            providerAppName: 'Aspen Grove RN',
+            userText,
+            assistantText,
+          });
+          if (result.title) {
+            setTreeTitle(result.title);
+            navigation.setOptions({ title: result.title });
+          }
+        } catch {
+          // Silent: keep the default title on any failure.
+        }
+      })();
+    },
+    [
+      adapters.credentialStore,
+      navigation,
+      repositories.nodeRepo,
+      session,
+      useCases.generateTreeTitleUseCase,
+    ]
+  );
+
+  const exportTree = useCallback(async () => {
+    const treeId = session?.treeId ?? activeTreeIdRef.current;
+    if (!treeId) {
+      return;
+    }
+    try {
+      const result = await useCases.exportLoomTreeUseCase.execute({
+        treeId,
+        currentNodeId: session?.activeNodeId,
+      });
+      await shareTextAsFile({
+        content: result.json,
+        fileName: result.suggestedFileName,
+        mimeType: 'application/json',
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, [session, useCases.exportLoomTreeUseCase]);
+
+  const exportPathMarkdown = useCallback(async () => {
+    if (!session) {
+      return;
+    }
+    try {
+      const result = await useCases.exportPathMarkdownUseCase.execute({
+        treeId: session.treeId,
+        pathId: session.pathId,
+      });
+      await shareTextAsFile({
+        content: result.markdown,
+        fileName: result.suggestedFileName,
+        mimeType: 'text/markdown',
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, [session, useCases.exportPathMarkdownUseCase]);
 
   useEffect(() => {
     if (!shouldAutoScrollRef.current) {
@@ -669,6 +775,8 @@ export const useLoomTreeChatController = () => {
       // `rows` — leaving it set rendered the response twice until remount.
       resetStreamingAssistantRow();
 
+      maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
+
       if (turnResult.completion.interruptionReason) {
         setError(
           `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
@@ -691,6 +799,7 @@ export const useLoomTreeChatController = () => {
     editTarget,
     input,
     markAsNonEphemeral,
+    maybeGenerateTreeTitle,
     refreshRowsAndContinuations,
     sending,
     session,
@@ -901,6 +1010,16 @@ export const useLoomTreeChatController = () => {
       open: () => setTitleEditorVisible(true),
       close: () => setTitleEditorVisible(false),
       save: saveTreeTitle,
+    },
+    exports: {
+      exportTree,
+      exportPathMarkdown,
+    },
+    tags: {
+      visible: tagsVisible,
+      treeId: session?.treeId ?? activeTreeIdRef.current,
+      open: () => setTagsVisible(true),
+      close: () => setTagsVisible(false),
     },
     scrollRef,
     inputRef,
