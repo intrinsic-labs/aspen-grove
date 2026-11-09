@@ -6,6 +6,8 @@
 
 **Last Updated**: Based on pre-development documentation review  
 
+> **Feature map:** [FEATURE_MAP.md](FEATURE_MAP.md) lists every user-visible feature: where it is, how to reach it, its `testID`, its code and its backend. If you change a route, a screen or a feature, update its entry in the same change, then run `npm run check:map`. Bump `revision:` only after re-reading the entries its drift warnings name, and bump `reconciled:` only after walking every entry.
+
 ---
 
 ## Table of Contents
