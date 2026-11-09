@@ -7,19 +7,14 @@ import type {
   IPathStateRepository,
   IRawApiResponseRepository,
 } from '@application/repositories';
-import {
-  assembleDialogueContext,
-  resolveAgentMaxContextTokens,
-} from '@application/services/context';
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
   collectCompletion,
   type CompletionResponse,
   type IProviderRegistry,
 } from '@application/services/llm';
-import { resolveContinuationPathToNode } from '@application/services/resolve-continuation-path';
+import { prepareDialogueContinuation } from '@application/services/dialogue-continuation';
 import { type ULID } from '@domain/value-objects';
-import type { Node } from '@domain/entities';
 
 export type GenerateDialogueContinuationSession = {
   readonly ownerAgentId: ULID;
@@ -121,82 +116,38 @@ export class GenerateDialogueContinuationUseCase {
   ): Promise<GenerateDialogueContinuationResult> {
     const activateGeneratedNode = input.activateGeneratedNode ?? true;
 
-    const [path, sourceNode] = await Promise.all([
-      this.pathRepository.findById(input.session.pathId),
-      this.nodeRepository.findById(input.sourceNodeId, true),
-    ]);
-
-    if (!path) {
-      throw new Error(`Path not found: ${input.session.pathId}`);
-    }
-    if (!sourceNode) {
-      throw new Error(`Source node not found: ${input.sourceNodeId}`);
-    }
-    if (path.loomTreeId !== sourceNode.loomTreeId) {
-      throw new Error('Source node does not belong to the selected path tree.');
-    }
-    if (path.loomTreeId !== input.session.treeId) {
-      throw new Error('Session treeId does not match the selected path.');
-    }
-
-    const sourcePathNodeIds = await resolveContinuationPathToNode(
-      sourceNode.id,
+    const {
+      path,
+      sourceNode,
+      sourcePathNodeIds,
+      llmProvider,
+      request,
+      contextMessageCount,
+      systemContextLength,
+    } = await prepareDialogueContinuation(
       {
+        modelAgentId: input.session.modelAgentId,
+        modelIdentifier: input.session.modelIdentifier,
+        treeId: input.session.treeId,
+        pathId: input.session.pathId,
+        sourceNodeId: input.sourceNodeId,
+        providerApiKey: input.providerApiKey,
+        providerAppName: input.providerAppName,
+      },
+      {
+        agentRepository: this.agentRepository,
+        loomTreeRepository: this.loomTreeRepository,
         nodeRepository: this.nodeRepository,
         edgeRepository: this.edgeRepository,
+        pathRepository: this.pathRepository,
+        providerRegistry: this.providerRegistry,
       }
     );
-
-    const sourcePathNodes = await Promise.all(
-      sourcePathNodeIds.map((nodeId) =>
-        this.nodeRepository.findById(nodeId, true)
-      )
-    );
-    const contextNodes = sourcePathNodes.filter((node): node is Node =>
-      Boolean(node)
-    );
-
-    const modelAgent = await this.agentRepository.findById(
-      input.session.modelAgentId
-    );
-    if (!modelAgent) {
-      throw new Error(`Model agent not found: ${input.session.modelAgentId}`);
-    }
-    const tree = await this.loomTreeRepository.findById(input.session.treeId);
-    const assembled = assembleDialogueContext({
-      nodes: contextNodes,
-      agentSystemPrompt: modelAgent.configuration.systemPrompt,
-      treeSystemContext: tree?.systemContext,
-      truncation: {
-        maxContextTokens: resolveAgentMaxContextTokens(modelAgent),
-      },
-    });
-
-    // Provider is determined by the agent's modelRef. Branching from a single
-    // node may invoke whichever provider is bound to this tree's agent.
-    const llmProvider = this.providerRegistry.getProviderForAgent(modelAgent);
-
-    const initialized = await llmProvider.initialize(
-      { apiKey: input.providerApiKey },
-      {
-        appName: input.providerAppName,
-      }
-    );
-    if (!initialized) {
-      throw new Error('Failed to initialize LLM provider.');
-    }
 
     const completion = await collectCompletion({
       llmProvider,
       stream: input.stream ?? false,
-      request: {
-        model: input.session.modelIdentifier,
-        messages: assembled.messages,
-        systemPrompt: assembled.systemContext,
-        temperature: modelAgent.configuration.temperature,
-        maxTokens: modelAgent.configuration.maxTokens,
-        stopSequences: modelAgent.configuration.stopSequences,
-      },
+      request,
       onTextDelta: input.onAssistantTextDelta,
     });
 
@@ -229,8 +180,8 @@ export class GenerateDialogueContinuationUseCase {
     return {
       assistantNodeId: continuationResult.assistantNodeId,
       sourceNodeId: sourceNode.id,
-      contextMessageCount: assembled.messages.length,
-      systemContextLength: assembled.systemContext?.length ?? 0,
+      contextMessageCount,
+      systemContextLength,
       completion: {
         finishReason: completion.finishReason,
         interruptionReason: completion.interruptionReason,
