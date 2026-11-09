@@ -294,7 +294,7 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
           await services.repositories.userPreferencesRepo.get();
 
         // Initialize LM Studio adapter with stored connection settings.
-        // This is connection-level config (endpoint, MCP toggle) — NOT a
+        // This is connection-level config (endpoint, auto-load) — NOT a
         // declaration that LM Studio is the active provider.
         const lmSettings = userPreferences.lmstudioSettings;
         if (lmSettings) {
@@ -305,7 +305,6 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
             { endpoint: lmSettings.endpoint }
           );
           lmAdapter.configure({
-            useMcpTools: lmSettings.useMcpTools,
             autoLoadModels: lmSettings.autoLoadModels,
           });
         }

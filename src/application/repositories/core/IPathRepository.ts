@@ -12,8 +12,7 @@ export type PathMode = 'dialogue' | 'buffer';
  *
  * A persisted, agent-owned "view" through a LoomTree.
  *
- * - Changes often (navigation), but is stored as durable state so it can survive restarts
- *   and later be synced/shared.
+ * - Changes often (navigation), but is stored as durable state so it can survive restarts.
  * - Path is mode-agnostic and shared across modes.
  */
 export interface Path {
@@ -61,7 +60,7 @@ export interface PathSelection {
 /**
  * PathState
  *
- * Fast-changing cursor state for a Path. Persisted so it survives restarts and can later be synced.
+ * Fast-changing cursor state for a Path. Persisted so it survives restarts.
  *
  * Mode is optional — if provided, you can keep separate cursors per mode while sharing the same Path.
  */

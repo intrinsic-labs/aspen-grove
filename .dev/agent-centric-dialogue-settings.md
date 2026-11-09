@@ -228,7 +228,7 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ### Settings restructure
 
-- [x] **Connections section** (`settings/connections/`): OpenRouter API key; LM Studio endpoint, optional token, useMcpTools, autoLoadModels + "Test connection". The only credential-bearing surface.
+- [x] **Connections section** (`settings/connections/`): OpenRouter API key; LM Studio endpoint, optional token, autoLoadModels (a `useMcpTools` switch was here until it was cut) + "Test connection". The only credential-bearing surface.
 - [x] **Agents section** (`settings/agents/`):
   - Lists shared agents with name, modelRef, temperature/max tokens.
   - Tap → `AgentEditorSheet` (same form internals as the chat ⚙️ sheet).
@@ -272,7 +272,6 @@ These are intentionally deferred. Worth noting so we don't accidentally design t
 
 - **Multi-agent participation in a tree.** Today: `defaultModelAgentId` (one model agent + the human owner). Future: `participatingAgentIds: ULID[]` for the two-role pattern and beyond. The schema can accept a new junction table without disturbing the current design.
 - **Renaming "Agent" → "Profile" in user-facing copy.** Internal type names stay `Agent` (matches all the docs and existing code); UI strings can shift to "Profile" later as a copy pass.
-- **Local model agents** (`local:{ulid}`) — depends on `LocalModel` entity getting fully implemented.
 
 ---
 

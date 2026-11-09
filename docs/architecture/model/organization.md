@@ -64,7 +64,7 @@ Junction entity connecting Tags to items.
 
 - **id** — ULID, primary identifier
 - **tagId** — ULID, reference to Tag
-- **targetType** — enum: `node` | `loomTree` (the code's `TaggableType` also lists `document`, a leftover from the cut documents feature)
+- **targetType** — enum: `node` | `loomTree`
 - **targetId** — ULID, reference to tagged item
 - **createdAt** — timestamp
 

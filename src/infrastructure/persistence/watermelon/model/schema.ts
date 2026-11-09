@@ -47,7 +47,9 @@ export const aspenGroveSchema = appSchema({
         // driven by each Agent's `modelRef`. The column may still exist in
         // existing SQLite databases (WatermelonDB cannot drop columns); it is
         // intentionally not declared here and not read/written by the repo.
-        // LM Studio connection settings (endpoint, useMcpTools, etc.) live here.
+        // LM Studio connection settings (JSON: endpoint, autoLoadModels,
+        // idleTtlSeconds) live here. Older installs may also carry a
+        // `useMcpTools` key; it is no longer read and is dropped on next save.
         { name: 'lmstudio_settings', type: 'string', isOptional: true },
 
         // The model Agent that new LoomTrees are pinned to by default.
@@ -293,8 +295,8 @@ export const aspenGroveSchema = appSchema({
     /**
      * TagAssignment join table schema
      *
-     * One row per (tag, target) pair. `target_type` is 'node' | 'loomTree' |
-     * 'document'; `target_id` is the tagged item's id.
+     * One row per (tag, target) pair. `target_type` is 'node' | 'loomTree';
+     * `target_id` is the tagged item's id.
      */
     tableSchema({
       name: 'tag_assignments',

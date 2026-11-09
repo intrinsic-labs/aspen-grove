@@ -24,7 +24,6 @@ import {
 } from './lmstudio/types';
 
 export type LMStudioAdapterOptions = {
-  readonly useMcpTools?: boolean;
   readonly autoLoadModels?: boolean;
   readonly timeoutMs?: number;
 };
@@ -55,14 +54,13 @@ export class LMStudioAdapter implements ILlmProvider {
     // LM Studio doesn't always require an API key
     const apiToken = credentials.apiKey?.trim() || undefined;
 
-    // Preserve existing config if already initialized (endpoint, MCP settings, etc.)
+    // Preserve existing config if already initialized (endpoint, auto-load)
     // This allows the settings controller to configure the adapter once,
     // and use cases can re-initialize just to update credentials.
     this.config = {
       endpoint:
         options.endpoint ?? this.config?.endpoint ?? DEFAULT_LMSTUDIO_ENDPOINT,
       apiToken,
-      useMcpTools: this.config?.useMcpTools ?? true,
       autoLoadModels: this.config?.autoLoadModels ?? true,
     };
 
@@ -73,7 +71,6 @@ export class LMStudioAdapter implements ILlmProvider {
    * Configure LM Studio-specific options after initialization.
    */
   configure(options: {
-    readonly useMcpTools?: boolean;
     readonly autoLoadModels?: boolean;
     readonly endpoint?: string;
   }): void {
@@ -83,7 +80,6 @@ export class LMStudioAdapter implements ILlmProvider {
 
     this.config = {
       ...this.config,
-      useMcpTools: options.useMcpTools ?? this.config.useMcpTools,
       autoLoadModels: options.autoLoadModels ?? this.config.autoLoadModels,
       endpoint: options.endpoint ?? this.config.endpoint,
     };
