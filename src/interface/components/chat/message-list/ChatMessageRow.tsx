@@ -24,7 +24,7 @@ import { MessageContextMenu } from './MessageContextMenu';
 import { NodeCaption } from './NodeCaption';
 import { UserBubble } from './UserBubble';
 
-export const railLayoutTransition = LinearTransition.duration(180).easing(
+const railLayoutTransition = LinearTransition.duration(180).easing(
   Easing.out(Easing.cubic)
 );
 const railEntering = StretchInY.duration(180).easing(Easing.out(Easing.cubic));
@@ -34,8 +34,6 @@ export type ChatMessageRowProps = {
   readonly row: ChatRow;
   /** The open rail, passed only to the row it hangs under. */
   readonly rail: ContinuationRailState | null;
-  /** Animate moves, such as a rail opening above this row. */
-  readonly animateLayout: boolean;
   readonly messageTextStyle: TextStyle;
   readonly displayPreferences: ChatDisplayPreferences;
   /** Voice Mode: the row being read takes the voice's color. */
@@ -61,7 +59,6 @@ export type ChatMessageRowProps = {
 const ChatMessageRowView = ({
   row,
   rail,
-  animateLayout,
   messageTextStyle,
   displayPreferences,
   speakingColor,
@@ -86,8 +83,7 @@ const ChatMessageRowView = ({
   );
 
   return (
-    <Animated.View
-      layout={animateLayout ? railLayoutTransition : undefined}
+    <View
       style={styles.rowBlock}
       onLayout={(event) => onRowLayout(row.id, event)}
     >
@@ -155,7 +151,7 @@ const ChatMessageRowView = ({
           />
         </Animated.View>
       ) : null}
-    </Animated.View>
+    </View>
   );
 };
 
@@ -165,7 +161,6 @@ const sameRowProps = (
 ): boolean =>
   sameChatRow(previous.row, next.row) &&
   previous.rail === next.rail &&
-  previous.animateLayout === next.animateLayout &&
   previous.messageTextStyle === next.messageTextStyle &&
   previous.displayPreferences === next.displayPreferences &&
   previous.speakingColor === next.speakingColor &&

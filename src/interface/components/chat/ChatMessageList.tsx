@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import {
   ActivityIndicator,
@@ -55,8 +56,9 @@ type ChatMessageListProps = {
 };
 
 /**
- * Prepending earlier rows (tail-first mounting) keeps whatever is on screen
- * in place instead of pushing it down.
+ * While earlier rows are prepended (tail-first mounting), keep whatever is on
+ * screen in place instead of pushing it down. Only then: left on, it fights
+ * the animated scrolls and row moves of a continuation rail opening.
  */
 const keepVisibleContentInPlace = { minIndexForVisible: 0 } as const;
 
@@ -79,6 +81,8 @@ export const ChatMessageList = memo(
   }: ChatMessageListProps) => {
     const { colors } = useAspenGroveTheme();
     const settled = useScreenSettled();
+    // Earlier rows are still being mounted above the visible ones.
+    const [filling, setFilling] = useState(false);
     const scrollMetricsRef = useRef({
       offsetY: 0,
       viewportHeight: 0,
@@ -278,7 +282,9 @@ export const ChatMessageList = memo(
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         alwaysBounceVertical
         overScrollMode="always"
-        maintainVisibleContentPosition={keepVisibleContentInPlace}
+        maintainVisibleContentPosition={
+          filling ? keepVisibleContentInPlace : undefined
+        }
         onLayout={handleScrollLayout}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -286,6 +292,7 @@ export const ChatMessageList = memo(
         <ChatMessageRows
           rows={rows}
           settled={settled}
+          onFillingChange={setFilling}
           railSourceNodeId={continuationRail.sourceNodeId}
           continuationRail={continuationRail}
           messageTextStyle={messageTextStyle}
