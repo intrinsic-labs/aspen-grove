@@ -55,6 +55,26 @@ When it's done the app opens on the simulator and `.verify/metro.log` shows the 
 loading. `expo run:ios` stays running as the Metro server; leave it up while you drive the
 app. (`.verify/` is gitignored.)
 
+**If `expo run:ios` fails with "Can't determine id of Simulator app"**, your Xcode ships
+without a separate Simulator.app (Xcode 27 does), which the Expo CLI looks for. By then it has
+already generated `ios/` and installed pods, so build, install and serve in three steps
+instead, keeping the build products inside `.verify/`:
+
+```sh
+UDID=<booted device UDID>
+xcodebuild -workspace ios/AspenGrove.xcworkspace -scheme AspenGrove -configuration Debug \
+  -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath .verify/DerivedData \
+  build > .verify/xcodebuild.log 2>&1
+xcrun simctl install "$UDID" .verify/DerivedData/Build/Products/Debug-iphonesimulator/AspenGrove.app
+npx expo start --dev-client --port 8081 > .verify/metro.log 2>&1 &
+echo $! > .verify/metro.pid
+```
+
+The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
+first: tap the `http://localhost:8081` server. On a cleared install the dev menu then shows a
+one-time intro (**Continue**) and stays open (close it with ✕). The Maestro flows handle all
+of this in [open-app.yaml](.maestro/open-app.yaml).
+
 A fresh install opens on **Home**: a greeting, a leaf and **New Loom Tree**
 (`home-welcome`). There is no account and no sign-in: the app is local-first, and every
 install is its own synthetic user.
@@ -91,9 +111,14 @@ Two Maestro flows prove the base:
 
 ```sh
 SHOTS=.verify/shots/$(git rev-parse --short HEAD); mkdir -p "$SHOTS"
-maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
-maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
+maestro --device "$UDID" test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
+maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
 ```
+
+`--device` is required whenever more than one simulator or emulator is running, and harmless
+otherwise. Both flows start with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
+the dev launcher to Home) and open the drawer through
+[open-drawer.yaml](.maestro/open-drawer.yaml), which retries a tap that lands mid-transition.
 
 - [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, the drawer, the empty
   tree list, Search, Settings, Connections, the empty Agents library and the agent editor.
@@ -107,6 +132,9 @@ For a one-off screenshot or deep link without Maestro:
 xcrun simctl io booted screenshot "$SHOTS/<name>.png"
 xcrun simctl openurl booted "aspengrove://settings/connections"   # expo-router paths; (drawer) groups are dropped
 ```
+
+In a development build, `openurl` raises a system "Open in Aspen Grove?" alert that stays up
+until answered and blocks every tap behind it; Maestro flows navigate by taps instead.
 
 Name screenshots by what they show (`13-first-reply.png`), keep them under `.verify/`, and
 label them as iOS Simulator captures wherever you report them.
@@ -138,9 +166,10 @@ kill "$pid"                               # ends expo run:ios and its Metro
 xcrun simctl shutdown "<device name>"     # if you booted it
 ```
 
-Then remove what you created: `rm -rf .verify dist ios` in your checkout, and the app's
-build products under `~/Library/Developer/Xcode/DerivedData/` (the folder whose name starts
-with the generated Xcode project's name). Disk on the shared Mac is watched. Never `pkill -f`
+Then remove what you created: `rm -rf .verify dist ios` in your checkout (that includes
+`.verify/DerivedData` if you built with `xcodebuild`), and, if you used `expo run:ios`, the
+app's build products under `~/Library/Developer/Xcode/DerivedData/` (the folder whose name
+starts with `AspenGrove-`). Disk on the shared Mac is watched. Never `pkill -f`
 and never kill a PID you didn't record.
 
 ## 8. Known gotchas
@@ -151,6 +180,11 @@ and never kill a PID you didn't record.
   "CoreSimulatorService connection became invalid". That is the sandbox, not the app: the
   build-and-drive steps need a shell with full access to CoreSimulator. CI and every check in
   step 6 run fine in the sandbox.
+- **Maestro's `back` does nothing on iOS** (it's Android's back key). Tap the stack header's
+  back button, `id: BackButton`, as [smoke.yaml](.maestro/smoke.yaml) does.
+- **A tap right after a screen transition can be dropped**, the first one after the dev menu
+  closes most of all. Wait for the animation and retry until the target screen shows
+  (`repeat` … `while: notVisible`), as the flows do, rather than asserting straight away.
 - **WatermelonDB on iOS** needs the `simdjson` pod; [app.json](app.json) adds it through
   `expo-build-properties`. If a pod install fails on simdjson, check that block survived.
 - **Native dependency changed?** A JS reload won't pick it up: rerun `npx expo run:ios`.

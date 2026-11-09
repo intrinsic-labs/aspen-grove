@@ -4,18 +4,10 @@
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
 appId: com.intrinsiclabs.aspengrove
 ---
-- launchApp:
-    clearState: true
-- extendedWaitUntil:
-    visible:
-      id: home-welcome
-    timeout: 30000
+- runFlow: open-app.yaml
 - takeScreenshot: 01-home
 
-- tapOn:
-    id: drawer-menu-button
-- assertVisible:
-    id: drawer-root
+- runFlow: open-drawer.yaml
 - takeScreenshot: 02-drawer
 
 - tapOn:
@@ -24,16 +16,14 @@ appId: com.intrinsiclabs.aspengrove
     id: trees-screen
 - takeScreenshot: 03-trees-empty
 
-- tapOn:
-    id: drawer-menu-button
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-search
 - assertVisible:
     id: search-screen
 - takeScreenshot: 04-search
 
-- tapOn:
-    id: drawer-menu-button
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-settings
 - assertVisible:
@@ -47,7 +37,19 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible:
     id: connections-lmstudio-endpoint-input
 - takeScreenshot: 06-connections
-- back
+# `back` is Android-only in Maestro; tap the stack header's back button, and
+# retry, since a tap during the push transition can be dropped.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: settings-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+- assertVisible:
+    id: settings-screen
 
 - tapOn:
     id: settings-link-agents
