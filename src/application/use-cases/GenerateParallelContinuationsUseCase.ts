@@ -9,7 +9,10 @@ import type {
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
   createSerialQueue,
+  isValidContinuationCount,
   linkAbortSignals,
+  MAX_PARALLEL_CONTINUATIONS,
+  MIN_PARALLEL_CONTINUATIONS,
   prepareDialogueContinuation,
   runContinuationSlot,
   type ContinuationSlotEvent,
@@ -25,9 +28,6 @@ import type {
   RetryOptions,
 } from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
-
-export const MIN_PARALLEL_CONTINUATIONS = 1;
-export const MAX_PARALLEL_CONTINUATIONS = 4;
 
 export type GenerateParallelContinuationsInput = DialogueContinuationTarget & {
   /** How many continuations to start at once (1 to 4). */
@@ -75,11 +75,7 @@ export type GenerateParallelContinuationsDependencies = {
 };
 
 const assertCount = (count: number): void => {
-  if (
-    !Number.isInteger(count) ||
-    count < MIN_PARALLEL_CONTINUATIONS ||
-    count > MAX_PARALLEL_CONTINUATIONS
-  ) {
+  if (!isValidContinuationCount(count)) {
     throw new Error(
       `Parallel continuation count must be an integer from ${MIN_PARALLEL_CONTINUATIONS} to ${MAX_PARALLEL_CONTINUATIONS}; got ${count}.`
     );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { ULID } from '@domain/value-objects';
-import type { ContinuationMenuAction } from '../ContinuationRail';
+import type { ContinuationMenuAction } from '../continuation-menu';
 import type { useNodeContinuations } from '../useNodeContinuations';
 import { SINGLE_TAP_DELAY_MS, isDoubleTap, type NodeTap } from './double-tap';
 
