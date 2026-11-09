@@ -72,6 +72,7 @@ Contributors and coding agents should start with [AGENTS.md](./AGENTS.md); [FEAT
 | [AGENTS.md](./AGENTS.md) | How to work in the codebase |
 | [VERIFY.md](./VERIFY.md) | Run the app and verify changes |
 | [FEATURE_MAP.md](./FEATURE_MAP.md) | Routes, screens and features |
+| [Shipping](./docs/shipping.md) | EAS build profiles and TestFlight |
 | [Open Loom spec](./docs/open-loom/spec.md) | The open file format for loom trees |
 | [Domain Language](./docs/domain-language/README.md) | Core concepts and terminology |
 | [Use Cases](./docs/use-cases/README.md) | How people use a loom |
