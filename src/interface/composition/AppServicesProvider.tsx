@@ -16,6 +16,7 @@ import {
   ExportPathMarkdownUseCase,
   ForkAgentForTreeUseCase,
   GenerateDialogueContinuationUseCase,
+  GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
   ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
@@ -76,6 +77,7 @@ type AppServices = {
     readonly exportPathMarkdownUseCase: ExportPathMarkdownUseCase;
     readonly forkAgentForTreeUseCase: ForkAgentForTreeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
+    readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
     readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
@@ -166,6 +168,16 @@ const buildAppServices = (): AppServices => {
         edgeRepository: repositories.edgeRepo,
         pathRepository: repositories.pathRepo,
         pathStateRepository: repositories.pathStateRepo,
+        rawApiResponseRepository: repositories.rawApiResponseRepo,
+        providerRegistry: adapters.providerRegistry,
+      }),
+    generateParallelContinuationsUseCase:
+      new GenerateParallelContinuationsUseCase({
+        agentRepository: repositories.agentRepo,
+        loomTreeRepository: repositories.treeRepo,
+        nodeRepository: repositories.nodeRepo,
+        edgeRepository: repositories.edgeRepo,
+        pathRepository: repositories.pathRepo,
         rawApiResponseRepository: repositories.rawApiResponseRepo,
         providerRegistry: adapters.providerRegistry,
       }),
