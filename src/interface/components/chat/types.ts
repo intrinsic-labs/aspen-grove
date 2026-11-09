@@ -3,15 +3,27 @@ import type { NodeViewStyle, SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
 /**
- * Chat session state carried by the controller.
- *
- * Extends `DialogueTurnSession` (the use-case input) with `provider`, which
- * the controller uses to fetch the right per-provider API key from the
- * credential store. The use cases themselves resolve the provider from the
- * agent's `modelRef` and do not need this field on their input.
+ * The model agent a session generates with. `provider` picks the API key
+ * from the credential store; the use cases resolve the provider from the
+ * agent's `modelRef` themselves.
  */
-export type ChatSession = DialogueTurnSession & {
+export type ChatSessionModel = {
+  readonly modelAgentId: ULID;
+  readonly modelIdentifier: string;
   readonly provider: SelectableProvider;
+};
+
+/**
+ * Chat session state carried by the controller: the path being read, and
+ * the model it generates with. `model` is null when the tree has no usable
+ * agent (see `resolveTreeModelAgent`): the dialogue still reads, rewinds and
+ * edits, but anything that generates needs one picked first.
+ */
+export type ChatSession = Omit<
+  DialogueTurnSession,
+  'modelAgentId' | 'modelIdentifier'
+> & {
+  readonly model: ChatSessionModel | null;
 };
 
 export type ChatRow = {

@@ -4,51 +4,9 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: ../open-app.yaml
-
 # An agent first, so the imported tree has one to continue with.
-- runFlow: ../open-drawer.yaml
-- tapOn:
-    id: drawer-nav-settings
-- tapOn:
-    id: settings-link-agents
-- tapOn:
-    id: settings-agents-new
-- tapOn:
-    id: agent-editor-template-claude-sonnet-balanced
-- tapOn:
-    id: agent-editor-submit
-- extendedWaitUntil:
-    visible:
-      id: settings-agents-list
-    timeout: 10000
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: settings-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
-
-- runFlow: ../open-drawer.yaml
-- tapOn:
-    id: drawer-nav-trees
-- tapOn:
-    id: trees-menu-button
-- tapOn: Import Tree
-- tapOn: Browse
-- waitForAnimationToEnd
-# The picker reopens where it was last left: from the Browse root, step into
-# "On My iPhone".
-- tapOn:
-    text: 'On My iPhone'
-    optional: true
-- waitForAnimationToEnd
-- evalScript: ${output.t0 = Date.now()}
-- tapOn: '${TREE_FILE}, openloom.*'
-- extendedWaitUntil:
-    visible: 'Import complete'
-    timeout: 180000
-- evalScript: ${console.log('PERF import_ms=' + (Date.now() - output.t0))}
-- tapOn: OK
+- runFlow: ../create-agent.yaml
+- runFlow:
+    file: ../import-tree.yaml
+    env:
+      TREE_FILE: ${TREE_FILE}

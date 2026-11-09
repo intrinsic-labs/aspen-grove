@@ -136,11 +136,16 @@ export const useChatSessionLoader = ({
       if (!session) {
         return;
       }
+      // Back from creating an agent elsewhere: the tree can adopt it now.
+      if (!session.model) {
+        void initializeSession({ preserveEphemeralState: true });
+        return;
+      }
       void refreshRowsAndContinuations(session);
     });
 
     return unsubscribe;
-  }, [navigation, refreshRowsAndContinuations, session]);
+  }, [initializeSession, navigation, refreshRowsAndContinuations, session]);
 
   // Re-resolve the session after the ⚙️ sheet mutates the tree's agent or
   // system context. Preserves the ephemeral flag so an in-progress

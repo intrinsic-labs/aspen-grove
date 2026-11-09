@@ -8,6 +8,7 @@ import type { ULID } from '@domain/value-objects';
 import type { EditTarget } from '../composer/composer-mode';
 import { toGenerationErrorMessage } from '../error-message';
 import { getProviderApiKey } from '../provider-key';
+import { NEEDS_AGENT_MESSAGE, toTurnSession } from '../session/session-model';
 import type { ChatSession } from '../types';
 import type { useStreamingAssistantRow } from '../useStreamingAssistantRow';
 import {
@@ -76,6 +77,12 @@ export const useSendTurn = ({
     if (!prompt) {
       return;
     }
+    // Saving an edit generates nothing; a new turn needs the tree's agent.
+    const model = session.model;
+    if (!editTarget && !model) {
+      setError(NEEDS_AGENT_MESSAGE);
+      return;
+    }
 
     try {
       setSending(true);
@@ -104,15 +111,18 @@ export const useSendTurn = ({
         return;
       }
 
+      if (!model) {
+        return;
+      }
       // Provider is bound to this session's agent (via tree.defaultModelAgentId).
       // Fetch the matching API key from secure storage.
       const providerApiKey = await getProviderApiKey(
         credentialStore,
-        session.provider
+        model.provider
       );
       const diagnostics = createStreamDiagnostics();
       const turnResult = await sendDialogueTurnUseCase.execute({
-        session,
+        session: toTurnSession(session, model),
         prompt,
         providerApiKey,
         providerAppName: 'Aspen Grove RN',

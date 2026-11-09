@@ -555,9 +555,30 @@ state across relaunches.
   `dialogue-settings-switch-agent` → `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** At least two shared agents. Otherwise it says "No other shared agents".
 - **Selector:** working — `dialogue-settings-switch-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`, `dialogue-settings-back`
-- **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderSwitchAgent`, `src/application/use-cases/UpdateTreeDefaultAgentUseCase.ts`
+- **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderSwitchAgent`, `src/interface/components/chat/dialogue-settings/AgentCandidateList.tsx`, `src/application/use-cases/UpdateTreeDefaultAgentUseCase.ts`
 - **Backend:** WatermelonDB `loom_trees` (default agent) via `WatermelonLoomTreeRepository`
 - **Status:** live
+
+### Tree without an agent
+- **ID:** `chat.needs-agent`
+- **Purpose:** A tree with no usable model agent (imported before any agent existed, or its
+  agent since deleted or archived) still opens and reads normally. On open it adopts the
+  user's default model agent if there is one. Otherwise the composer says the tree needs an
+  agent to continue, with a button that opens Dialogue Settings to pick one.
+- **Where:** In place of the composer input on the Dialogue screen, and at the top of
+  Dialogue Settings.
+- **Reach:** Cold start → import a tree before creating any agent (`trees.import`) →
+  `trees-list-row-<treeId>` → `chat-needs-agent-choose` →
+  `dialogue-settings-switch-agent-row-<agentId>`.
+- **Requires:** A tree without a usable agent, and no default model agent to adopt.
+- **Selector:** working — `chat-needs-agent` (the message), `chat-needs-agent-choose`, `dialogue-settings-needs-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`
+- **Code:** `src/application/services/resolve-tree-model-agent.ts`, `src/interface/components/chat/session-helpers.ts#initializeDialogueChatSession`, `src/interface/components/chat/session/session-model.ts`, `src/interface/components/chat/composer/NeedsAgentNotice.tsx`, `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderNeedsAgent`
+- **Backend:** WatermelonDB `loom_trees` (default agent), `agents`, `user_preferences`
+  (default agent)
+- **Status:** live
+- **Notes:** Editing a message still works (it generates nothing). Regenerate and the rail's
+  Generate wait for an agent. Coming back to the tree from creating an agent in Settings
+  makes it adopt that agent.
 
 ### Tree tags
 - **ID:** `chat.tags`

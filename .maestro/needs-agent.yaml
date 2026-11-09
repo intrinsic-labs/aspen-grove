@@ -1,0 +1,70 @@
+# A tree imported before any agent exists opens, reads normally and asks for
+# an agent; once one exists, the tree adopts it. Copy
+# .maestro/perf/fixtures/perf-tiny.openloom into the simulator's Files
+# ("On My iPhone") first. No key needed: nothing is sent.
+#   maestro test .maestro/needs-agent.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow:
+    file: import-tree.yaml
+    env:
+      TREE_FILE: perf-tiny.openloom
+
+# Opens with its messages and, in place of the input, the notice.
+- tapOn:
+    id: trees-list-row-.*
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+    timeout: 30000
+- assertVisible: 'The lantern is lit.'
+- assertVisible:
+    id: chat-needs-agent
+- assertNotVisible:
+    id: chat-composer-input
+- takeScreenshot: 21-needs-agent
+
+# The notice's button opens Dialogue Settings, which says the same.
+- tapOn:
+    id: chat-needs-agent-choose
+- extendedWaitUntil:
+    visible:
+      id: dialogue-settings-needs-agent
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 22-needs-agent-settings
+# Retry a Done tap that lands mid-presentation.
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: dialogue-settings-sheet
+    commands:
+      - tapOn:
+          id: dialogue-settings-done
+      - waitForAnimationToEnd
+
+# Create an agent elsewhere; back on the tree, it has adopted it.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: trees-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+- runFlow: create-agent.yaml
+- runFlow: open-drawer.yaml
+- tapOn:
+    id: drawer-nav-trees
+- tapOn:
+    id: trees-list-row-.*
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-input
+    timeout: 30000
+- assertNotVisible:
+    id: chat-needs-agent
+- takeScreenshot: 23-agent-adopted

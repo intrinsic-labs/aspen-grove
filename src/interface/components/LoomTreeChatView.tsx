@@ -108,6 +108,8 @@ const LoomTreeChatView = () => {
         onExpandInput={controller.onExpandComposer}
         bottomInset={insets.bottom}
         displayPreferences={controller.displayPreferences}
+        needsAgent={controller.needsAgent}
+        onChooseAgent={controller.onChooseAgent}
       />
 
       <DialogueSettingsSheet

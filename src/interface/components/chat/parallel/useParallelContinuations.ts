@@ -84,7 +84,8 @@ export const useParallelContinuations = (
       sourceNodeId: ULID,
       count: number
     ): Promise<GenerateParallelContinuationsResult | null> => {
-      if (!session || controlsRef.current) {
+      const model = session?.model;
+      if (!session || !model || controlsRef.current) {
         return null;
       }
       const controls: RunControls = {
@@ -98,11 +99,11 @@ export const useParallelContinuations = (
       try {
         const providerApiKey = await getProviderApiKey(
           credentialStore,
-          session.provider
+          model.provider
         );
         const result = await generateParallelContinuationsUseCase.execute({
-          modelAgentId: session.modelAgentId,
-          modelIdentifier: session.modelIdentifier,
+          modelAgentId: model.modelAgentId,
+          modelIdentifier: model.modelIdentifier,
           treeId: session.treeId,
           pathId: session.pathId,
           sourceNodeId,

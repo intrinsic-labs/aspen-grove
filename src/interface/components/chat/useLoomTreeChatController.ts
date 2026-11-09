@@ -259,6 +259,8 @@ export const useLoomTreeChatController = () => {
     onSessionInvalidated: reinitializeSession,
   });
   const composerMode = toComposerMode(editTarget);
+  // Loaded, but the tree has no agent to generate with.
+  const needsAgent = !loading && session !== null && session.model === null;
 
   return {
     loading,
@@ -313,7 +315,9 @@ export const useLoomTreeChatController = () => {
     tags: sheets.tags,
     scrollRef,
     inputRef,
-    canSend: !generating && !loading && input.trim().length > 0,
+    canSend: !generating && !loading && !needsAgent && input.trim().length > 0,
+    needsAgent,
+    onChooseAgent: sheets.dialogueSettings.open,
     composerPlaceholder: composerMode.composerPlaceholder,
     sendLabel: composerMode.sendLabel,
     displayPreferences,

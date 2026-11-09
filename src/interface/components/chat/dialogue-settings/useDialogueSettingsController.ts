@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { DEFAULT_AGENT_SYSTEM_PROMPT } from '@application/services/agent-defaults';
+import { isUsableTreeModelAgent } from '@application/services/resolve-tree-model-agent';
 import type { Agent, LoomTree } from '@domain/entities';
 import { parseModelRef, type ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
@@ -47,6 +48,8 @@ export const useDialogueSettingsController = ({
   const [savedSystemContext, setSavedSystemContext] = useState('');
 
   const isTreeOwned = Boolean(agent?.ownerTreeId);
+  /** False when the tree has no agent it can generate with. */
+  const agentUsable = tree !== null && isUsableTreeModelAgent(agent, tree.id);
 
   const load = useCallback(async () => {
     if (!treeId) {
@@ -248,6 +251,7 @@ export const useDialogueSettingsController = ({
     tree,
     agent,
     isTreeOwned,
+    agentUsable,
     sharedAgents,
     referencingTreeCount,
     onEditAgent,

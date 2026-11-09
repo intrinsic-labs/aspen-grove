@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppInput, AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
+import { NeedsAgentNotice } from './composer/NeedsAgentNotice';
 import type { ChatDisplayPreferences } from './types';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { MaterialView } from '@/interface/ui/components/MaterialView';
@@ -34,6 +35,9 @@ type ChatComposerProps = {
   readonly onExpandInput: () => void;
   readonly bottomInset: number;
   readonly displayPreferences: ChatDisplayPreferences;
+  /** The tree has no agent: say so in place of the input (unless editing). */
+  readonly needsAgent: boolean;
+  readonly onChooseAgent: () => void;
 };
 
 export const ChatComposer = memo(
@@ -54,6 +58,8 @@ export const ChatComposer = memo(
     onExpandInput,
     bottomInset,
     displayPreferences,
+    needsAgent,
+    onChooseAgent,
   }: ChatComposerProps) => {
     const [isFocused, setIsFocused] = useState(false);
     const [contentHeight, setContentHeight] = useState(0);
@@ -68,8 +74,7 @@ export const ChatComposer = memo(
     const inputIsOverflowing =
       input.length > 0 &&
       contentHeight >
-        collapsedInputMaxHeight -
-          displayPreferences.messageLineHeight * 0.25;
+        collapsedInputMaxHeight - displayPreferences.messageLineHeight * 0.25;
 
     const onContentSizeChange = (
       event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>
@@ -144,95 +149,101 @@ export const ChatComposer = memo(
             </View>
           ) : null}
 
-          <MaterialView
-            variant="regular"
-            style={[
-              styles.inputRow,
-              {
-                borderWidth: 1,
-                borderColor: isFocused ? colors.green : 'dark-grey',
-                borderRadius: loomUiTokens.composer.inputRowRadius,
-              },
-            ]}
-          >
-            <AppInput
-              testID="chat-composer-input"
-              ref={inputRef}
-              value={input}
-              onChangeText={onChangeInput}
-              placeholder={placeholder}
-              multiline
-              editable={!sending && !loading}
-              numberOfLines={loomUiTokens.composer.inputCollapsedMaxLines}
-              scrollEnabled
-              textAlignVertical="top"
-              onContentSizeChange={onContentSizeChange}
-              onFocus={() => {
-                setIsFocused(true);
-                onInputFocus();
-              }}
-              onBlur={() => setIsFocused(false)}
+          {needsAgent && !editLabel ? (
+            <NeedsAgentNotice onChooseAgent={onChooseAgent} />
+          ) : (
+            <MaterialView
+              variant="regular"
               style={[
-                styles.input,
-                inputTextStyle,
+                styles.inputRow,
                 {
-                  maxHeight: collapsedInputMaxHeight,
+                  borderWidth: 1,
+                  borderColor: isFocused ? colors.green : 'dark-grey',
+                  borderRadius: loomUiTokens.composer.inputRowRadius,
                 },
               ]}
-            />
-            <View
-              style={[
-                styles.inputControls,
-                inputIsOverflowing ? styles.inputControlsExpanded : null,
-              ]}
             >
-              {inputIsOverflowing ? (
-                <Pressable
-                  testID="chat-composer-expand"
-                  onPress={onExpandInput}
-                  hitSlop={loomUiTokens.composer.closeHitSlop}
-                  accessibilityLabel="Expand message input"
-                  style={({ pressed }) => [
-                    styles.expandButton,
-                    { opacity: pressed ? 0.65 : 1 },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="open-in-full"
-                    size={loomUiTokens.composer.expandIconSize}
-                    color={colors.secondary}
-                  />
-                </Pressable>
-              ) : null}
-              <Pressable
-                testID="chat-composer-send"
-                onPress={onSend}
-                disabled={!canSend}
-                accessibilityLabel={sendLabel}
-                style={({ pressed }) => [
-                  styles.sendButton,
+              <AppInput
+                testID="chat-composer-input"
+                ref={inputRef}
+                value={input}
+                onChangeText={onChangeInput}
+                placeholder={placeholder}
+                multiline
+                editable={!sending && !loading}
+                numberOfLines={loomUiTokens.composer.inputCollapsedMaxLines}
+                scrollEnabled
+                textAlignVertical="top"
+                onContentSizeChange={onContentSizeChange}
+                onFocus={() => {
+                  setIsFocused(true);
+                  onInputFocus();
+                }}
+                onBlur={() => setIsFocused(false)}
+                style={[
+                  styles.input,
+                  inputTextStyle,
                   {
-                    backgroundColor: canSend ? colors.green : colors.secondary,
-                    opacity: pressed ? 0.8 : 1,
-                    width: loomUiTokens.composer.buttonSize,
-                    height: loomUiTokens.composer.buttonSize,
+                    maxHeight: collapsedInputMaxHeight,
                   },
                 ]}
+              />
+              <View
+                style={[
+                  styles.inputControls,
+                  inputIsOverflowing ? styles.inputControlsExpanded : null,
+                ]}
               >
-                <Ionicons
-                  name={
-                    sending
-                      ? 'ellipsis-horizontal'
-                      : sendLabel === 'Save'
-                        ? 'checkmark'
-                        : 'arrow-up'
-                  }
-                  size={loomUiTokens.composer.sendIconSize}
-                  color={colors.primary}
-                />
-              </Pressable>
-            </View>
-          </MaterialView>
+                {inputIsOverflowing ? (
+                  <Pressable
+                    testID="chat-composer-expand"
+                    onPress={onExpandInput}
+                    hitSlop={loomUiTokens.composer.closeHitSlop}
+                    accessibilityLabel="Expand message input"
+                    style={({ pressed }) => [
+                      styles.expandButton,
+                      { opacity: pressed ? 0.65 : 1 },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="open-in-full"
+                      size={loomUiTokens.composer.expandIconSize}
+                      color={colors.secondary}
+                    />
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  testID="chat-composer-send"
+                  onPress={onSend}
+                  disabled={!canSend}
+                  accessibilityLabel={sendLabel}
+                  style={({ pressed }) => [
+                    styles.sendButton,
+                    {
+                      backgroundColor: canSend
+                        ? colors.green
+                        : colors.secondary,
+                      opacity: pressed ? 0.8 : 1,
+                      width: loomUiTokens.composer.buttonSize,
+                      height: loomUiTokens.composer.buttonSize,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      sending
+                        ? 'ellipsis-horizontal'
+                        : sendLabel === 'Save'
+                          ? 'checkmark'
+                          : 'arrow-up'
+                    }
+                    size={loomUiTokens.composer.sendIconSize}
+                    color={colors.primary}
+                  />
+                </Pressable>
+              </View>
+            </MaterialView>
+          )}
         </View>
       </KeyboardStickyView>
     );

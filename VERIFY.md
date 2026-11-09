@@ -109,6 +109,12 @@ a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>`
 the run's `maestro.log`. The numbers are Maestro wall clock: compare runs on one machine
 and simulator, three runs or more, by median. No key needed.
 
+[needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
+`perf-tiny.openloom` before any agent exists: the tree opens with its messages and the
+"needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
+reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
+live in `open-app.yaml`, `create-agent.yaml` and `import-tree.yaml`.
+
 For a one-off screenshot or deep link without Maestro:
 
 ```sh

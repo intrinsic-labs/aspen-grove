@@ -78,7 +78,7 @@ export const useParallelRail = (input: UseParallelRailInput) => {
   const { running, phase, start, reset } = parallel;
 
   const canGenerate =
-    Boolean(session) &&
+    Boolean(session?.model) &&
     Boolean(continuations.sourceNodeId) &&
     !sending &&
     !running;
