@@ -10,7 +10,6 @@ import {
   toFinishReason,
   toLMStudioMessages,
   toTokenUsage,
-  toToolCalls,
 } from './helpers';
 import { toAbortedRequestError } from '../shared/interruption';
 import { createRequestAbort } from '../shared/request-abort';
@@ -53,17 +52,6 @@ export const requestLMStudioCompletion = async (input: {
       stream: false,
     };
 
-    if (request.tools && request.tools.length > 0) {
-      body.tools = request.tools.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      }));
-    }
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -102,7 +90,6 @@ export const requestLMStudioCompletion = async (input: {
       content: toCompletionText(choice?.message?.content),
       finishReason: toFinishReason(choice?.finish_reason),
       usage: toTokenUsage(payload.usage, payload.stats),
-      toolCalls: toToolCalls(choice?.message?.tool_calls),
       rawResponse: {
         rawBytes,
         rawBytesHash,

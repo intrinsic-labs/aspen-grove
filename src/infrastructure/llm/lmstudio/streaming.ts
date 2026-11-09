@@ -85,17 +85,6 @@ export const streamLMStudioCompletion = async function* (input: {
       stream: true,
     };
 
-    if (request.tools && request.tools.length > 0) {
-      body.tools = request.tools.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      }));
-    }
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
