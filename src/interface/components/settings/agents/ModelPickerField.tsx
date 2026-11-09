@@ -23,6 +23,11 @@ type ModelPickerFieldProps = {
     readonly primary: string;
     readonly secondary: string;
   };
+  /**
+   * Prefix for this field's testIDs (`<prefix>-model-…`), so the same field
+   * stays addressable in the agent editor and the dialogue settings sheet.
+   */
+  readonly testIDPrefix: string;
 };
 
 /**
@@ -37,6 +42,7 @@ export const ModelPickerField = ({
   modelIdentifier,
   onChangeModelIdentifier,
   colors,
+  testIDPrefix,
 }: ModelPickerFieldProps) => {
   const picker = useModelPickerData(provider);
   const [search, setSearch] = useState('');
@@ -60,13 +66,14 @@ export const ModelPickerField = ({
     !picker.options.some((option) => option.id === trimmedSearch);
 
   return (
-    <View style={styles.container}>
+    <View testID={`${testIDPrefix}-model`} style={styles.container}>
       <View style={styles.providerRow}>
         {SELECTABLE_PROVIDERS.map((candidate) => {
           const isSelected = candidate === provider;
           return (
             <Pressable
               key={candidate}
+              testID={`${testIDPrefix}-model-provider-${candidate}`}
               onPress={() => {
                 if (candidate !== provider) {
                   onChangeProvider(candidate);
@@ -99,7 +106,10 @@ export const ModelPickerField = ({
       </View>
 
       {modelIdentifier.length > 0 ? (
-        <View style={styles.selectedModelRow}>
+        <View
+          testID={`${testIDPrefix}-model-selected`}
+          style={styles.selectedModelRow}
+        >
           <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
           <AppText
             variant="meta"
@@ -109,6 +119,7 @@ export const ModelPickerField = ({
             {modelIdentifier}
           </AppText>
           <Pressable
+            testID={`${testIDPrefix}-model-clear`}
             onPress={() => onChangeModelIdentifier('')}
             hitSlop={8}
             style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
@@ -120,6 +131,7 @@ export const ModelPickerField = ({
 
       <View style={styles.searchRow}>
         <AppInput
+          testID={`${testIDPrefix}-model-search-input`}
           value={search}
           onChangeText={setSearch}
           placeholder={
@@ -132,6 +144,7 @@ export const ModelPickerField = ({
           style={[styles.searchInput, styles.flexInput]}
         />
         <Pressable
+          testID={`${testIDPrefix}-model-refresh`}
           onPress={picker.refresh}
           disabled={picker.loading}
           hitSlop={6}
@@ -149,13 +162,19 @@ export const ModelPickerField = ({
           <ActivityIndicator size="small" color={colors.primary} />
         </View>
       ) : picker.error ? (
-        <AppText variant="meta" tone="accent" style={styles.statusText}>
+        <AppText
+          testID={`${testIDPrefix}-model-error`}
+          variant="meta"
+          tone="accent"
+          style={styles.statusText}
+        >
           {picker.error}
         </AppText>
       ) : (
         <View>
           {showCustomRow ? (
             <Pressable
+              testID={`${testIDPrefix}-model-custom`}
               onPress={() => onChangeModelIdentifier(trimmedSearch)}
               style={({ pressed }) => [
                 styles.optionRow,
@@ -174,6 +193,7 @@ export const ModelPickerField = ({
             return (
               <Pressable
                 key={option.id}
+                testID={`${testIDPrefix}-model-option-${option.id}`}
                 onPress={() => onChangeModelIdentifier(option.id)}
                 style={({ pressed }) => [
                   styles.optionRow,

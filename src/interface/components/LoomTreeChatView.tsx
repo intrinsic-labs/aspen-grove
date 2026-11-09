@@ -57,7 +57,7 @@ const LoomTreeChatView = () => {
   ]);
 
   return (
-    <AppScreen style={styles.container}>
+    <AppScreen testID="chat-screen" style={styles.container}>
       <ChatMessageList
         loading={controller.loading}
         sending={controller.sending}

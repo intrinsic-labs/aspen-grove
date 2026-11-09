@@ -53,7 +53,7 @@ export const ExpandedDialogueComposerView = () => {
   }, []);
 
   return (
-    <AppScreen style={styles.screen}>
+    <AppScreen testID="compose-screen" style={styles.screen}>
       <KeyboardAvoidingView behavior="padding" style={styles.avoidingView}>
         <View
           style={[
@@ -68,6 +68,7 @@ export const ExpandedDialogueComposerView = () => {
             Draft
           </AppText>
           <Pressable
+            testID="compose-collapse"
             onPress={() => router.back()}
             hitSlop={loomUiTokens.composer.closeHitSlop}
             accessibilityLabel="Collapse message input"
@@ -85,6 +86,7 @@ export const ExpandedDialogueComposerView = () => {
         </View>
 
         <TextInput
+          testID="compose-input"
           ref={inputRef}
           value={draft}
           onChangeText={(value) => setDialogueDraft(treeId, value)}

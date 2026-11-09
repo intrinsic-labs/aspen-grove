@@ -106,6 +106,7 @@ export const ChatHeaderMenu = ({
       <HeaderIconButton
         icon="ellipsis-horizontal"
         accessibilityLabel="Dialogue menu"
+        testID="chat-menu-button"
       />
     </ContextMenu>
   );

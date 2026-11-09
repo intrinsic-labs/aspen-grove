@@ -8,6 +8,7 @@ export const DrawerMenuButton = () => {
   return (
     <HeaderIconButton
       icon="menu"
+      testID="drawer-menu-button"
       accessibilityLabel="Open navigation menu"
       onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
     />

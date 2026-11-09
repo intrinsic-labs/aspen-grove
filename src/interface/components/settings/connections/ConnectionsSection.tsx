@@ -48,10 +48,15 @@ export const ConnectionsSection = ({
 
   return (
     <>
-      <SettingsSection title="OpenRouter" footer={controller.apiKeyStatusText}>
+      <SettingsSection
+        testID="connections-openrouter"
+        title="OpenRouter"
+        footer={controller.apiKeyStatusText}
+      >
         <SettingsStackRow label="API Key">
           <View style={styles.inputRow}>
             <AppInput
+              testID="connections-openrouter-key-input"
               value={controller.apiKeyInput}
               onChangeText={controller.setApiKeyInput}
               placeholder="sk-or-..."
@@ -61,6 +66,7 @@ export const ConnectionsSection = ({
               style={[styles.input, styles.flexInput]}
             />
             <Pressable
+              testID="connections-openrouter-key-reveal"
               onPress={() => controller.setShowApiKey((visible) => !visible)}
               style={({ pressed }) => [
                 styles.iconButton,
@@ -78,12 +84,14 @@ export const ConnectionsSection = ({
       </SettingsSection>
 
       <SettingsSection
+        testID="connections-lmstudio"
         title="LM Studio"
         footer="Connect to your LM Studio server for local inference with MCP tool support. Models are picked when you create an agent."
       >
         <SettingsStackRow label="Server Address">
           <View style={styles.inputRow}>
             <AppInput
+              testID="connections-lmstudio-endpoint-input"
               value={controller.lmstudioEndpointInput}
               onChangeText={controller.setLmstudioEndpointInput}
               placeholder="http://localhost:1234"
@@ -93,6 +101,7 @@ export const ConnectionsSection = ({
               style={[styles.input, styles.flexInput]}
             />
             <View
+              testID="connections-lmstudio-status-dot"
               style={[styles.statusDot, { backgroundColor: statusColor }]}
             />
           </View>
@@ -101,6 +110,7 @@ export const ConnectionsSection = ({
         <SettingsStackRow label="API Token (optional)">
           <View style={styles.inputRow}>
             <AppInput
+              testID="connections-lmstudio-token-input"
               value={controller.lmstudioApiTokenInput}
               onChangeText={controller.setLmstudioApiTokenInput}
               placeholder="Leave blank if not required"
@@ -110,6 +120,7 @@ export const ConnectionsSection = ({
               style={[styles.input, styles.flexInput]}
             />
             <Pressable
+              testID="connections-lmstudio-token-reveal"
               onPress={() =>
                 controller.setShowLmstudioToken((visible) => !visible)
               }
@@ -132,6 +143,7 @@ export const ConnectionsSection = ({
         </SettingsStackRow>
 
         <SettingsSwitchRow
+          testID="connections-lmstudio-mcp-tools"
           label="Enable MCP Tools"
           value={controller.lmstudioUseMcpTools}
           onValueChange={controller.setLmstudioUseMcpTools}
@@ -139,6 +151,7 @@ export const ConnectionsSection = ({
         />
 
         <SettingsSwitchRow
+          testID="connections-lmstudio-auto-load"
           label="Auto-load Models"
           value={controller.lmstudioAutoLoadModels}
           onValueChange={controller.setLmstudioAutoLoadModels}
@@ -146,10 +159,15 @@ export const ConnectionsSection = ({
         />
 
         <View style={styles.statusRow}>
-          <AppText variant="meta" style={{ color: colors.secondary }}>
+          <AppText
+            testID="connections-lmstudio-status"
+            variant="meta"
+            style={{ color: colors.secondary }}
+          >
             Status: {statusText}
           </AppText>
           <Pressable
+            testID="connections-lmstudio-test"
             onPress={controller.testLmstudioConnection}
             disabled={status === 'checking'}
             hitSlop={6}

@@ -102,6 +102,7 @@ export const ChatComposer = memo(
         ]}
       >
         <View
+          testID="chat-composer"
           onLayout={onLayout}
           style={[
             styles.composerWrap,
@@ -112,6 +113,7 @@ export const ChatComposer = memo(
         >
           {editLabel ? (
             <View
+              testID="chat-composer-edit-banner"
               style={[styles.editBanner, { borderColor: colors.secondary }]}
             >
               <View style={styles.editBannerTextWrap}>
@@ -129,6 +131,7 @@ export const ChatComposer = memo(
                 </AppText>
               </View>
               <Pressable
+                testID="chat-composer-edit-cancel"
                 onPress={onCancelEdit}
                 hitSlop={loomUiTokens.composer.closeHitSlop}
               >
@@ -153,6 +156,7 @@ export const ChatComposer = memo(
             ]}
           >
             <AppInput
+              testID="chat-composer-input"
               ref={inputRef}
               value={input}
               onChangeText={onChangeInput}
@@ -184,6 +188,7 @@ export const ChatComposer = memo(
             >
               {inputIsOverflowing ? (
                 <Pressable
+                  testID="chat-composer-expand"
                   onPress={onExpandInput}
                   hitSlop={loomUiTokens.composer.closeHitSlop}
                   accessibilityLabel="Expand message input"
@@ -200,6 +205,7 @@ export const ChatComposer = memo(
                 </Pressable>
               ) : null}
               <Pressable
+                testID="chat-composer-send"
                 onPress={onSend}
                 disabled={!canSend}
                 accessibilityLabel={sendLabel}

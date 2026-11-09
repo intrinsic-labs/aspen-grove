@@ -39,19 +39,26 @@ const OptionSelector = <T extends string>({
   options,
   onChange,
   colors,
+  testID,
 }: {
   readonly value: T;
   readonly options: readonly { label: string; value: T }[];
   readonly onChange: (next: T) => void;
   readonly colors: MessageTypographySectionProps['colors'];
+  /** Host View id; each option gets `<testID>-<option value>`. */
+  readonly testID: string;
 }) => (
-  <View style={[styles.optionSelector, { borderColor: colors.line }]}>
+  <View
+    testID={testID}
+    style={[styles.optionSelector, { borderColor: colors.line }]}
+  >
     {options.map((option) => {
       const selected = option.value === value;
 
       return (
         <Pressable
           key={option.value}
+          testID={`${testID}-${option.value}`}
           onPress={() => onChange(option.value)}
           style={[
             styles.optionButton,
@@ -86,11 +93,13 @@ export const MessageTypographySection = ({
 }: MessageTypographySectionProps) => {
   return (
     <SettingsSection
+      testID="settings-typography-section"
       title="Message & Typography"
       footer="Applies to dialogue text and user message bubble appearance."
     >
       <SettingsStackRow label="Font">
         <OptionSelector
+          testID="settings-typography-font"
           value={fontFace}
           options={FONT_OPTIONS}
           onChange={onChangeFontFace}
@@ -99,6 +108,7 @@ export const MessageTypographySection = ({
       </SettingsStackRow>
 
       <SettingsSliderRow
+        testID="settings-typography-font-size"
         label="Font Size"
         value={Number(fontSizeInput) || 17}
         minimumValue={12}
@@ -109,6 +119,7 @@ export const MessageTypographySection = ({
 
       <SettingsStackRow label="Message Style">
         <OptionSelector
+          testID="settings-typography-message-style"
           value={nodeViewStyle}
           options={NODE_STYLE_OPTIONS}
           onChange={onChangeNodeViewStyle}
@@ -117,6 +128,7 @@ export const MessageTypographySection = ({
       </SettingsStackRow>
 
       <SettingsSliderRow
+        testID="settings-typography-corner-radius"
         label="Message Corner Radius"
         value={
           Number.isFinite(Number(nodeViewCornerRadiusInput))

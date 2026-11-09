@@ -84,10 +84,16 @@ export const AgentEditorSheet = ({
       onRequestClose={onCancel}
     >
       <View
+        testID="agent-editor-sheet"
         style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
-          <Pressable onPress={onCancel} hitSlop={8} disabled={saving}>
+          <Pressable
+            testID="agent-editor-cancel"
+            onPress={onCancel}
+            hitSlop={8}
+            disabled={saving}
+          >
             <AppText variant="meta" tone="secondary">
               Cancel
             </AppText>
@@ -95,7 +101,12 @@ export const AgentEditorSheet = ({
           <AppText variant="ui" style={styles.headerTitle}>
             {title}
           </AppText>
-          <Pressable onPress={onSave} hitSlop={8} disabled={saving}>
+          <Pressable
+            testID="agent-editor-submit"
+            onPress={onSave}
+            hitSlop={8}
+            disabled={saving}
+          >
             {saving ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
@@ -113,7 +124,7 @@ export const AgentEditorSheet = ({
           keyboardShouldPersistTaps="handled"
         >
           {showTemplates ? (
-            <View style={styles.templatesBlock}>
+            <View testID="agent-editor-templates" style={styles.templatesBlock}>
               <AppText variant="meta" tone="secondary" style={styles.blockLabel}>
                 START FROM A TEMPLATE
               </AppText>
@@ -121,6 +132,7 @@ export const AgentEditorSheet = ({
                 {AGENT_TEMPLATES.map((template) => (
                   <Pressable
                     key={template.key}
+                    testID={`agent-editor-template-${template.key}`}
                     onPress={() => {
                       setDraft(template.draft);
                       setError(null);
@@ -150,6 +162,7 @@ export const AgentEditorSheet = ({
                   patchDraft({ modelIdentifier })
                 }
                 colors={colors}
+                testIDPrefix="agent-editor"
               />
             </View>
           ) : (
@@ -182,11 +195,17 @@ export const AgentEditorSheet = ({
               onChangeSystemPrompt={(systemPrompt) =>
                 patchDraft({ systemPrompt })
               }
+              testIDPrefix="agent-editor"
             />
           </View>
 
           {error ? (
-            <AppText variant="meta" tone="accent" style={styles.errorText}>
+            <AppText
+              testID="agent-editor-error"
+              variant="meta"
+              tone="accent"
+              style={styles.errorText}
+            >
               {error}
             </AppText>
           ) : null}

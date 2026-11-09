@@ -17,19 +17,34 @@ export const SettingsStatus = ({
   return (
     <>
       {saving ? (
-        <AppText variant="meta" tone="secondary" style={styles.statusText}>
+        <AppText
+          testID="settings-status-saving"
+          variant="meta"
+          tone="secondary"
+          style={styles.statusText}
+        >
           Saving changes...
         </AppText>
       ) : null}
 
       {notice && !hasValidationError ? (
-        <AppText variant="meta" tone="secondary" style={styles.statusText}>
+        <AppText
+          testID="settings-status-notice"
+          variant="meta"
+          tone="secondary"
+          style={styles.statusText}
+        >
           {notice}
         </AppText>
       ) : null}
 
       {error ? (
-        <AppText variant="meta" tone="accent" style={styles.statusText}>
+        <AppText
+          testID="settings-status-error"
+          variant="meta"
+          tone="accent"
+          style={styles.statusText}
+        >
           {error}
         </AppText>
       ) : null}

@@ -286,7 +286,7 @@ export const ChatMessageList = memo(
 
     if (loading) {
       return (
-        <View style={styles.loadingWrap}>
+        <View testID="chat-message-list-loading" style={styles.loadingWrap}>
           <ActivityIndicator color={colors.primary} />
         </View>
       );
@@ -294,6 +294,7 @@ export const ChatMessageList = memo(
 
     return (
       <KeyboardAwareScrollView
+        testID="chat-message-list"
         ref={scrollRef}
         enabled
         extraKeyboardSpace={composerHeight}
@@ -349,6 +350,7 @@ export const ChatMessageList = memo(
                 }
               >
                 <Pressable
+                  testID={`chat-message-row-${row.id}`}
                   onPress={() => handleNodePress(row.id)}
                   onLongPress={() => suppressNextNodeTap(row.id)}
                   style={[
@@ -409,7 +411,10 @@ export const ChatMessageList = memo(
         ))}
 
         {sending && streamingAssistantText.length > 0 ? (
-          <View style={[styles.row, styles.assistantRow]}>
+          <View
+            testID="chat-streaming-message"
+            style={[styles.row, styles.assistantRow]}
+          >
             <MarkdownText
               baseStyle={{
                 ...messageTextStyle,
@@ -422,7 +427,12 @@ export const ChatMessageList = memo(
         ) : null}
 
         {error ? (
-          <AppText variant="meta" tone="accent" style={styles.errorText}>
+          <AppText
+            testID="chat-error"
+            variant="meta"
+            tone="accent"
+            style={styles.errorText}
+          >
             {error}
           </AppText>
         ) : null}

@@ -5,7 +5,7 @@ import { SettingsScreenScaffold } from '../SettingsScreenScaffold';
 const AgentsSettingsScreen = () => {
   const { colors } = useAspenGroveTheme();
   return (
-    <SettingsScreenScaffold>
+    <SettingsScreenScaffold testID="settings-agents-screen">
       <AgentsSection colors={colors} />
     </SettingsScreenScaffold>
   );

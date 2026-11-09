@@ -31,6 +31,7 @@ export const AppBehaviorSection = ({
         label="Auto-Title Conversations"
         trailing={
           <Switch
+            testID="settings-behavior-auto-title"
             value={autoTitleEnabled}
             onValueChange={onChangeAutoTitleEnabled}
             trackColor={{
@@ -45,6 +46,7 @@ export const AppBehaviorSection = ({
         label="Verbose Error Alerts"
         trailing={
           <Switch
+            testID="settings-behavior-verbose-errors"
             value={verboseErrorAlerts}
             onValueChange={onChangeVerboseErrorAlerts}
             trackColor={{

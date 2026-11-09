@@ -206,6 +206,7 @@ const LoomTreeListView = () => {
                 : 'ellipsis-horizontal'
             }
             accessibilityLabel="Loom trees menu"
+            testID="trees-menu-button"
           />
         </ContextMenu>
       ),
@@ -223,7 +224,11 @@ const LoomTreeListView = () => {
 
   const renderTree = ({ item }: { item: LoomTree }) => {
     return (
-      <Pressable onPress={() => onOpenTree(item)} style={styles.treeRow}>
+      <Pressable
+        testID={`trees-list-row-${item.id}`}
+        onPress={() => onOpenTree(item)}
+        style={styles.treeRow}
+      >
         <AppText variant="ui" tone="primary" style={styles.treeTitle}>
           {item.title}
         </AppText>
@@ -237,7 +242,7 @@ const LoomTreeListView = () => {
   };
 
   return (
-    <AppScreen>
+    <AppScreen testID="trees-screen">
       {loading ? (
         <View style={styles.centerWrap}>
           <ActivityIndicator color={colors.primary} />
@@ -245,12 +250,13 @@ const LoomTreeListView = () => {
       ) : (
         <>
           {groveTags.length > 0 ? (
-            <View style={styles.tagFilterRow}>
+            <View testID="trees-tag-filter" style={styles.tagFilterRow}>
               {groveTags.map((tag) => {
                 const active = tag.id === activeTagId;
                 return (
                   <Pressable
                     key={tag.id}
+                    testID={`trees-tag-filter-chip-${tag.id}`}
                     onPress={() =>
                       setActiveTagId((current) =>
                         current === tag.id ? null : tag.id
@@ -282,6 +288,7 @@ const LoomTreeListView = () => {
             </View>
           ) : null}
           <FlatList
+            testID="trees-list"
             data={visibleTrees}
             keyExtractor={(item) => item.id}
             renderItem={renderTree}
@@ -299,7 +306,12 @@ const LoomTreeListView = () => {
       )}
 
       {error ? (
-        <AppText variant="meta" tone="accent" style={styles.errorText}>
+        <AppText
+          testID="trees-error"
+          variant="meta"
+          tone="accent"
+          style={styles.errorText}
+        >
           {error}
         </AppText>
       ) : null}
