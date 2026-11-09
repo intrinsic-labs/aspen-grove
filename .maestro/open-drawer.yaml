@@ -1,0 +1,17 @@
+# Open the navigation drawer from any top-level screen. A tap that lands while a
+# screen transition is still settling can be dropped, so retry until the drawer
+# is really open. Run from another flow with `- runFlow: open-drawer.yaml`.
+appId: com.intrinsiclabs.aspengrove
+---
+- waitForAnimationToEnd
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: drawer-root
+    commands:
+      - tapOn:
+          id: drawer-menu-button
+      - waitForAnimationToEnd
+- assertVisible:
+    id: drawer-root
