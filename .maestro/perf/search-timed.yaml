@@ -1,0 +1,19 @@
+# (d) Search every tree for a common word. In the seed, about 260 of 520 nodes
+# hold "lantern" (the repository caps results at 100). Timed from starting to
+# type to the first result row, so it includes Maestro's typing and the 250 ms
+# debounce: compare against the same search on the tiny tree (perf-floor.yaml).
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: ../open-drawer.yaml
+- tapOn:
+    id: drawer-nav-search
+- tapOn:
+    id: search-input
+- waitForAnimationToEnd
+- evalScript: ${output.t0 = Date.now()}
+- inputText: lantern
+- extendedWaitUntil:
+    visible:
+      id: 'search-results-row-.*'
+    timeout: 30000
+- evalScript: ${console.log('PERF search_ms=' + (Date.now() - output.t0))}

@@ -101,6 +101,14 @@ maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
   tree, sends one message, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.
 
+A third, [perf/](.maestro/perf/), times a big tree: opening it, opening a continuation
+rail, switching branch and searching. Copy the seed tree (`scripts/seed-perf-tree`) and
+`.maestro/perf/fixtures/perf-tiny.openloom` into the simulator's Files ("On My iPhone")
+first. `perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
+a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>` lines into
+the run's `maestro.log`. The numbers are Maestro wall clock: compare runs on one machine
+and simulator, three runs or more, by median. No key needed.
+
 For a one-off screenshot or deep link without Maestro:
 
 ```sh

@@ -1,0 +1,47 @@
+# Perf protocol for the 520-node seed tree (scripts/seed-perf-tree). Before running,
+# copy the .openloom file into the simulator's Files ("On My iPhone"); see
+# scripts/seed-perf-tree/README.md. Timings print as `PERF <name>_ms=<n>` lines in
+# ~/.maestro/tests/<run>/maestro.log (Maestro wall clock, so compare runs on the same
+# machine and simulator, never absolute numbers across machines). perf-floor.yaml
+# runs the same steps on a two-node tree: Maestro's own overhead.
+appId: com.intrinsiclabs.aspengrove
+env:
+  TREE_FILE: perf-tree-1-fake.openloom
+  # n-0036, three children; its second card (n-0126) opens with this paragraph.
+  RAIL_ROW_TEXT: 'Draft a SQL query.*'
+  SWITCH_TEXT: '.*Juniper glimmer anchor drift anchor valley.*'
+---
+- runFlow:
+    file: setup-import.yaml
+    env:
+      TREE_FILE: ${TREE_FILE}
+
+# Open the tree three times (the first is cold).
+- runFlow: open-tree-timed.yaml
+- runFlow: open-tree-timed.yaml
+- runFlow: open-tree-timed.yaml
+- takeScreenshot: perf-tree-list
+
+# Open it again (untimed), then the bushy node's rail and a branch switch.
+- tapOn:
+    id: trees-list-row-.*
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+    timeout: 60000
+- runFlow: open-rail-timed.yaml
+- takeScreenshot: perf-tree-rail
+- runFlow: switch-branch-timed.yaml
+- takeScreenshot: perf-tree-switched
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: trees-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+
+- runFlow: search-timed.yaml
+- takeScreenshot: perf-tree-search
