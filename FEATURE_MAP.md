@@ -384,19 +384,62 @@ state across relaunches.
 - **ID:** `chat.continuation-rail`
 - **Purpose:** Shows a node's continuations (its child branches) inline as a horizontal row of
   cards. A tap opens a card's node detail, a double-tap retraces that branch, and a long-press
-  gives Make Current Node, Copy Text and Bookmark.
+  gives Make Current Node, Copy Text and Bookmark. Its header also holds the generate control
+  (`chat.parallel-continuations`).
 - **Where:** A band directly under the tapped message, inside the message list.
 - **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
   half a second before asserting on `node-detail-screen`. A double-tap needs two taps less than
   300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
   a tap on a message row waits the same 320 ms before the rail opens.
+
+### Generate several continuations at once
+- **ID:** `chat.parallel-continuations`
+- **Purpose:** From any node, starts 1 to 4 continuations with one action. Each streams at the
+  same time into its own card in that node's continuation rail, after the node's existing
+  siblings. A card can be stopped on its own; one failing or being stopped doesn't stop the
+  others. Each finished (or stopped-with-text) card is saved as a sibling model node with its
+  own raw response and hash chain, and a double-tap on it makes it current like any sibling.
+- **Where:** The control row under the rail's "Continuations for …" title: `−` count `+` and
+  "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
+  the rail's card row.
+- **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
+  `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
+  `chat-continuation-generate-button`. Stop one card with `chat-continuation-slot-stop-<slot>`,
+  all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
+  `chat-continuation-card-<nodeId>`.
+- **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
+  server). Generate is disabled while a single send or regenerate runs; send and regenerate
+  wait while several stream.
+- **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>`; once saved, the card's pressable is `chat-continuation-card-<nodeId>`
+- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
+- **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
+  or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
+  `edge_sources` and `raw_api_responses` per saved card and touches
+  `loom_trees.last_message_at`; the active path changes only when a card is made current. The
+  count is remembered app-wide in WatermelonDB local storage
+  (`aspen_grove.parallel_continuations.count`, default 1).
+- **Status:** live
+- **Notes:** Card states: `pending` ("Waiting for the model…", request sent, no text yet),
+  `streaming` (text plus a character count), `stopping`, `done`, `stopped`, `interrupted
+  (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
+  convention: a stop or interruption after text saves the partial text with a
+  `[stream interrupted: <reason>]` line appended (so a stopped node stays marked after a
+  restart); a failure or stop before any text saves nothing. A finished run's cards stay while
+  the rail shows that node; once the rail closes or moves, the saved ones show as ordinary
+  sibling cards. Closing the rail, or making a card current (which closes it), leaves the
+  others streaming; leaving the Dialogue screen stops them all. LM Studio gets N concurrent
+  requests; a server that runs one prediction at a time queues them, so cards sit in
+  `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
+  late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
+  point the tree's agent at a model id that doesn't exist (`agent-editor-model-custom`).
+  Parallel continuations are not read aloud.
 
 ### Bookmark a node
 - **ID:** `chat.bookmark`

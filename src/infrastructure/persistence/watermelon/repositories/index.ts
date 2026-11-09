@@ -1,4 +1,5 @@
 export * from './WatermelonAgentRepository';
+export * from './WatermelonContinuationCountPreferenceRepository';
 export * from './WatermelonEdgeRepository';
 export * from './WatermelonGroveRepository';
 export * from './WatermelonLoomTreeRepository';

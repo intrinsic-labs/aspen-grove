@@ -1,44 +1,63 @@
-import { memo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import ContextMenu, {
-  type ContextMenuAction,
-} from 'react-native-context-menu-view';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { memo, useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
-import type { ContinuationPreview } from './types';
-
-export type ContinuationMenuAction = 'makeCurrent' | 'copy' | 'bookmark';
+import type { ContinuationMenuAction } from './continuation-menu';
+import {
+  ContinuationGenerateControl,
+  type ContinuationGenerateControlProps,
+} from './parallel/ContinuationGenerateControl';
+import { railCardKey, type RailCard } from './parallel/rail-cards';
+import { StreamingContinuationCard } from './parallel/StreamingContinuationCard';
+import { SavedContinuationCard } from './SavedContinuationCard';
 
 type ContinuationRailProps = {
   readonly visible: boolean;
   readonly loading: boolean;
   readonly sourceLocalId?: string;
-  readonly continuations: readonly ContinuationPreview[];
+  readonly cards: readonly RailCard[];
+  readonly generation: ContinuationGenerateControlProps;
   readonly previewFontFamily?: string;
   readonly error?: string | null;
   readonly onSelect: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
+  readonly onStopSlot: (slot: number) => void;
 };
+
+const countSlots = (cards: readonly RailCard[]) =>
+  cards.filter((card) => card.kind === 'slot').length;
 
 export const ContinuationRail = memo(
   ({
     visible,
     loading,
     sourceLocalId,
-    continuations,
+    cards,
+    generation,
     previewFontFamily,
     error,
     onSelect,
     onMenuAction,
+    onStopSlot,
   }: ContinuationRailProps) => {
     const { colors } = useAspenGroveTheme();
+    const listRef = useRef<ScrollView>(null);
+    const slotCount = countSlots(cards);
+
+    // New streaming cards join the end of the row: bring them into view.
+    useEffect(() => {
+      if (slotCount > 0) {
+        listRef.current?.scrollToEnd({ animated: true });
+      }
+    }, [slotCount]);
 
     if (!visible) {
       return null;
     }
+
+    const showList = cards.length > 0 && (!loading || slotCount > 0);
 
     return (
       <View
@@ -59,7 +78,45 @@ export const ContinuationRail = memo(
           </AppText>
         </View>
 
-        {loading ? (
+        <ContinuationGenerateControl {...generation} />
+
+        {showList ? (
+          <>
+            <ScrollView
+              ref={listRef}
+              testID="chat-continuation-rail-list"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.content}
+            >
+              {cards.map((card) =>
+                card.kind === 'saved' ? (
+                  <SavedContinuationCard
+                    key={railCardKey(card)}
+                    item={card.preview}
+                    previewFontFamily={previewFontFamily}
+                    onSelect={onSelect}
+                    onMenuAction={onMenuAction}
+                  />
+                ) : (
+                  <StreamingContinuationCard
+                    key={railCardKey(card)}
+                    view={card.view}
+                    preview={card.preview}
+                    previewFontFamily={previewFontFamily}
+                    onStop={onStopSlot}
+                    onSelect={onSelect}
+                    onMenuAction={onMenuAction}
+                  />
+                )
+              )}
+            </ScrollView>
+            <AppText variant="meta" tone="muted" style={styles.hintText}>
+              Tap for details. Double tap to retrace branch. Long press for
+              options.
+            </AppText>
+          </>
+        ) : loading ? (
           <AppText
             testID="chat-continuation-rail-loading"
             variant="meta"
@@ -77,7 +134,7 @@ export const ContinuationRail = memo(
           >
             {error}
           </AppText>
-        ) : continuations.length === 0 ? (
+        ) : (
           <AppText
             testID="chat-continuation-rail-empty"
             variant="meta"
@@ -86,117 +143,11 @@ export const ContinuationRail = memo(
           >
             No continuations yet.
           </AppText>
-        ) : (
-          <>
-            <ScrollView
-              testID="chat-continuation-rail-list"
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.content}
-            >
-              {continuations.map((item) => {
-                const menuItems = buildContinuationMenuItems(item.isBookmarked);
-                const menuActions: ContextMenuAction[] = menuItems.map(
-                  (menuItem) => ({
-                    title: menuItem.title,
-                    systemIcon: menuItem.systemIcon,
-                  })
-                );
-                return (
-                  <ContextMenu
-                    key={item.nodeId}
-                    title={item.localId}
-                    actions={menuActions}
-                    onPress={(event) => {
-                      const menuItem = menuItems[event.nativeEvent.index];
-                      if (menuItem) {
-                        onMenuAction(item.nodeId, menuItem.action);
-                      }
-                    }}
-                  >
-                    <Pressable
-                      testID={`chat-continuation-card-${item.nodeId}`}
-                      onPress={() => onSelect(item.nodeId)}
-                      style={[
-                        styles.card,
-                        {
-                          backgroundColor: loomUiTokens.colors.accentColor,
-                        },
-                      ]}
-                    >
-                      <View style={styles.metaRow}>
-                        <AppText
-                          variant="meta"
-                          style={[styles.metaLine, styles.cardText]}
-                        >
-                          {item.localId} [{item.onBranchCount}]
-                          {item.isOnActivePath ? '  ●' : ''}
-                        </AppText>
-                        {item.isBookmarked ? (
-                          <Ionicons
-                            name="bookmark"
-                            size={11}
-                            color="#000"
-                          />
-                        ) : null}
-                      </View>
-                      <AppText
-                        variant="ui"
-                        numberOfLines={
-                          loomUiTokens.continuationRail.previewTextMaxLines
-                        }
-                        style={[
-                          styles.previewText,
-                          previewFontFamily
-                            ? { fontFamily: previewFontFamily }
-                            : null,
-                          styles.cardText,
-                        ]}
-                      >
-                        {item.previewText}
-                      </AppText>
-                    </Pressable>
-                  </ContextMenu>
-                );
-              })}
-            </ScrollView>
-            <AppText variant="meta" tone="muted" style={styles.hintText}>
-              Tap for details. Double tap to retrace branch. Long press for
-              options.
-            </AppText>
-          </>
         )}
       </View>
     );
   }
 );
-
-type ContinuationMenuItem = {
-  readonly action: ContinuationMenuAction;
-  readonly title: string;
-  readonly systemIcon?: string;
-};
-
-const buildContinuationMenuItems = (
-  bookmarked: boolean
-): readonly ContinuationMenuItem[] =>
-  [
-    {
-      action: 'makeCurrent',
-      title: 'Make Current Node',
-      systemIcon: 'checkmark.circle',
-    },
-    {
-      action: 'copy',
-      title: 'Copy Text',
-      systemIcon: 'doc.on.doc',
-    },
-    {
-      action: 'bookmark',
-      title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
-      systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
-    },
-  ] as const;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -232,27 +183,5 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
     gap: loomUiTokens.continuationRail.contentGap,
-  },
-  card: {
-    width: loomUiTokens.continuationRail.cardWidth,
-    height: loomUiTokens.continuationRail.cardHeight,
-    borderRadius: loomUiTokens.continuationRail.cardRadius,
-    padding: loomUiTokens.continuationRail.cardPadding,
-    gap: loomUiTokens.continuationRail.cardGap,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  metaLine: {
-    letterSpacing: loomUiTokens.continuationRail.metaLetterSpacing,
-  },
-  cardText: {
-    color: '#000',
-  },
-  previewText: {
-    fontSize: loomUiTokens.continuationRail.previewTextSize,
-    lineHeight: loomUiTokens.continuationRail.previewTextLineHeight,
   },
 });
