@@ -16,3 +16,4 @@ export * from './raw-api-response';
 export * from './tag';
 export * from './timestamp-certificate';
 export * from './user-preferences';
+export * from './voice-preferences';
