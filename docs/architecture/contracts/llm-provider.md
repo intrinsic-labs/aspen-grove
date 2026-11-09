@@ -136,7 +136,7 @@ Each StreamChunk contains:
 
 Aspen Grove passes **no provider tools**: no web search, code execution, connectors or MCP. A loom, not a harness.
 
-The interface still carries optional `tools` / `toolCalls` fields (and a leftover `useMcpTools` toggle in the LM Studio adapter and Settings → Connections); no use case sends tools, and the toggle is to be removed.
+The interface still carries optional `tools` / `toolCalls` fields; no use case sends tools.
 
 Loom-aware tools (view, continue, annotate, etc., after v1) are **not** provider tools. They use the custom `→` syntax parsed client-side, which avoids provider tool system prompts that conflict with the natural-language approach. See [Loom Tools Spec](../specs/loom-tools/README.md).
 

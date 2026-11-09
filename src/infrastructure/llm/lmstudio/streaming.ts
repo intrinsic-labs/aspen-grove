@@ -85,8 +85,7 @@ export const streamLMStudioCompletion = async function* (input: {
       stream: true,
     };
 
-    // Only include tools if MCP is enabled and tools are provided
-    if (config.useMcpTools && request.tools && request.tools.length > 0) {
+    if (request.tools && request.tools.length > 0) {
       body.tools = request.tools.map((tool) => ({
         type: 'function',
         function: {

@@ -228,7 +228,7 @@ The domain docs already canonize the Agent abstraction: configuration lives at t
 
 ### Settings restructure
 
-- [x] **Connections section** (`settings/connections/`): OpenRouter API key; LM Studio endpoint, optional token, useMcpTools, autoLoadModels + "Test connection". The only credential-bearing surface.
+- [x] **Connections section** (`settings/connections/`): OpenRouter API key; LM Studio endpoint, optional token, autoLoadModels (a `useMcpTools` switch was here until it was cut) + "Test connection". The only credential-bearing surface.
 - [x] **Agents section** (`settings/agents/`):
   - Lists shared agents with name, modelRef, temperature/max tokens.
   - Tap → `AgentEditorSheet` (same form internals as the chat ⚙️ sheet).

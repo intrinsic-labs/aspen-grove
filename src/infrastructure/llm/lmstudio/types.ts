@@ -4,7 +4,6 @@ export const DEFAULT_TIMEOUT_MS = 60000;
 export type LMStudioConfig = {
   readonly endpoint: string;
   readonly apiToken?: string;
-  readonly useMcpTools: boolean;
   readonly autoLoadModels: boolean;
 };
 

@@ -86,7 +86,7 @@ export const ConnectionsSection = ({
       <SettingsSection
         testID="connections-lmstudio"
         title="LM Studio"
-        footer="Connect to your LM Studio server for local inference with MCP tool support. Models are picked when you create an agent."
+        footer="Connect to your LM Studio server for local inference. Models are picked when you create an agent."
       >
         <SettingsStackRow label="Server Address">
           <View style={styles.inputRow}>
@@ -141,14 +141,6 @@ export const ConnectionsSection = ({
             </Pressable>
           </View>
         </SettingsStackRow>
-
-        <SettingsSwitchRow
-          testID="connections-lmstudio-mcp-tools"
-          label="Enable MCP Tools"
-          value={controller.lmstudioUseMcpTools}
-          onValueChange={controller.setLmstudioUseMcpTools}
-          trackColor={{ false: switchOffTrack, true: colors.primary }}
-        />
 
         <SettingsSwitchRow
           testID="connections-lmstudio-auto-load"

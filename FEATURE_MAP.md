@@ -650,14 +650,14 @@ state across relaunches.
 
 ### LM Studio connection
 - **ID:** `settings.connections.lmstudio`
-- **Purpose:** Sets the LM Studio server address and an optional API token, toggles MCP tools
-  and model auto-load, and tests the connection.
+- **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
+  auto-load, and tests the connection.
 - **Where:** Settings → Connections, in the LM Studio section.
 - **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-mcp-tools`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`
 - **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to

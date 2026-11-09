@@ -28,11 +28,6 @@ import type { LMStudioConfig, LMStudioResponsePayload } from './types';
  *   assistant turns.
  * - OpenAI-compat accepts the same shape we already send to OpenRouter, so
  *   one body builder covers both providers.
- *
- * Trade-off: LM Studio's pre-configured MCP integrations are only available
- * through the native endpoint. The `useMcpTools` config flag is effectively
- * a no-op here — it's retained for forward compatibility if/when we add a
- * hybrid path for MCP-enabled requests.
  */
 export const requestLMStudioCompletion = async (input: {
   readonly config: LMStudioConfig;
@@ -58,8 +53,7 @@ export const requestLMStudioCompletion = async (input: {
       stream: false,
     };
 
-    // Only include tools if MCP is enabled and tools are provided
-    if (config.useMcpTools && request.tools && request.tools.length > 0) {
+    if (request.tools && request.tools.length > 0) {
       body.tools = request.tools.map((tool) => ({
         type: 'function',
         function: {

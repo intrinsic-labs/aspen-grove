@@ -100,8 +100,6 @@ export type NodeViewStyle = 'filled' | 'outlined';
 export interface LMStudioSettings {
   /** Server endpoint (e.g., "http://192.168.1.100:1234") */
   readonly endpoint: string;
-  /** Enable server-side MCP tools */
-  readonly useMcpTools: boolean;
   /** Auto-load models on first request */
   readonly autoLoadModels: boolean;
   /** Auto-unload after idle (seconds, 0 = disabled) */
@@ -110,7 +108,6 @@ export interface LMStudioSettings {
 
 export const DEFAULT_LMSTUDIO_SETTINGS: LMStudioSettings = {
   endpoint: 'http://localhost:1234',
-  useMcpTools: true,
   autoLoadModels: true,
   idleTtlSeconds: 0,
 };
