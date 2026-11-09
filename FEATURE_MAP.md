@@ -351,18 +351,19 @@ state across relaunches.
   for the reply to finish (it is read aloud) → double-tap `chat-message-row-<nodeId>` to hear
   it again → tap any row to stop.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
-  up; on an iOS device the silent switch mutes it (see Notes).
+  up; it plays with the iOS silent switch on, as in Latent Spaces.
 - **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
 - **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
-- **Backend:** none — on-device text-to-speech (`expo-speech`: AVSpeechSynthesizer on iOS,
+- **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
 - **Status:** live
 - **Notes:** With Voice Mode on, a single tap waits 320 ms (the double-tap window) before it
   opens the rail; with it off taps are immediate. Each voice uses its Latent Spaces iOS voice
   when installed, otherwise a voice with the same name and language, then any voice in that
   language (en-GB, en-AU, en-IE), then the system default. Leaving the Dialogue screen stops
-  speech. Parallel continuations are not read aloud. expo-speech does not set the iOS audio
-  session category, so on a device with the silent switch on, speech is muted.
+  speech. Parallel continuations are not read aloud. The first utterance sets the shared audio
+  session to playback with duck-others (expo-audio, no microphone permission), so the silent
+  switch doesn't mute it.
 
 ### Rewind to a node
 - **ID:** `chat.rewind`
