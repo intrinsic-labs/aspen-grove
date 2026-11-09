@@ -43,3 +43,6 @@ yarn-error.*
 
 # local verification runs (VERIFY.md)
 /.verify/
+
+# generated perf-test trees and reply cache (scripts/seed-perf-tree)
+/scripts/seed-perf-tree/out/
