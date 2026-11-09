@@ -37,6 +37,8 @@ type UseRegenerateFromNodeInput = {
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
   readonly edgeRepo: Pick<IEdgeRepository, 'findContinuationsByTargetNodeId'>;
   readonly credentialStore: ICredentialStore;
+  /** A model response finished generating uninterrupted (Voice Mode reads it). */
+  readonly onModelNodeCompleted: (nodeId: ULID) => void;
   readonly generateDialogueContinuationUseCase: Pick<
     GenerateDialogueContinuationUseCase,
     'execute'
@@ -62,6 +64,7 @@ export const useRegenerateFromNode = ({
   refreshRowsAndContinuations,
   edgeRepo,
   credentialStore,
+  onModelNodeCompleted,
   generateDialogueContinuationUseCase,
 }: UseRegenerateFromNodeInput) => {
   const { appendDelta, reset } = streaming;
@@ -140,6 +143,8 @@ export const useRegenerateFromNode = ({
           setError(
             `Stream interrupted (${result.completion.interruptionReason}). Saved partial response.`
           );
+        } else {
+          onModelNodeCompleted(result.assistantNodeId);
         }
       } catch (caught) {
         setError(toGenerationErrorMessage(caught));
@@ -158,6 +163,7 @@ export const useRegenerateFromNode = ({
       edgeRepo,
       generateDialogueContinuationUseCase,
       getRowById,
+      onModelNodeCompleted,
       refreshRows,
       refreshRowsAndContinuations,
       reset,

@@ -23,7 +23,7 @@ What the original phased plan called for vs. what actually exists:
 | 5 Tree Ops | ◐ Edit + path switching + bookmark *toggle* done. No prune UI, no tags, no links, no search, no bookmarks browse, no export |
 | 6 Loom-Aware | ❌ Not started |
 | 7 Buffer Mode | ❌ Not started (spec complete) |
-| 8 Voice | ❌ Not started. Hands-free voice mode cut; Latent Spaces-style character voices (read-aloud) are in v1 |
+| 8 Voice | ◐ Latent Spaces-style character voices built (read-aloud, Settings → Voice Mode); simulator walk pending. iOS silent-switch playback not yet. Hands-free voice mode cut |
 | 9 Summaries | ❌ Not started (only needed for loom tools, post-v1) |
 | 10 Documents | ✂️ Cut (documents editor out of scope) |
 | 11 Provenance | ◐ **Over-delivered early (good)**: hash-chain verification implemented, tested, runs live on every model turn. RFC 3161 and other extras cut |

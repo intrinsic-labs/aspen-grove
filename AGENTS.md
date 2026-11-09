@@ -29,11 +29,11 @@ The Beta 1 loop, which is built:
 - Provenance as it stands: hash chains plus stored raw responses, verified on every model turn and shown in the node detail sheet
 - Open Loom import and export (plus Markdown export of the active path)
 - Per-tree agents (shared library agents or tree-owned copies), streaming, auto titles
+- Latent Spaces' character voices (Lily, Jefferson, Eve): Voice Mode reads model responses aloud on device (`expo-speech`), double-tap to listen, tap to stop
 
 Still to build for v1:
 
 - **Several continuations at once, compared side by side.** Today each generate makes one continuation.
-- **Latent Spaces' character voices:** named voices that read nodes aloud (Jefferson, Lily, Eve in the Swift app). Read-aloud, not dictation. `UserPreferences.defaultVoiceModeEnabled` exists but nothing reads it yet.
 - **Latent Spaces' UI and UX brought over exactly.**
 
 The Beta 1 milestones and v1 list live in [.dev/BUILD-PLAN.md](./.dev/BUILD-PLAN.md).

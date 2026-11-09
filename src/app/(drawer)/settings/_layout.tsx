@@ -39,6 +39,7 @@ const SettingsStackLayout = () => {
       <Stack.Screen name="connections" options={{ title: 'Connections' }} />
       <Stack.Screen name="typography" options={{ title: 'Typography' }} />
       <Stack.Screen name="behavior" options={{ title: 'Behavior' }} />
+      <Stack.Screen name="voice" options={{ title: 'Voice Mode' }} />
     </Stack>
   );
 };

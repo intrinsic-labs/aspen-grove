@@ -14,6 +14,8 @@ import { useContinuationGestures } from './node-actions/useContinuationGestures'
 import { useMessageActions } from './node-actions/useMessageActions';
 import { useNodeActions } from './node-actions/useNodeActions';
 import { useRewindToNode } from './node-actions/useRewindToNode';
+import { useChatReadAloud } from './read-aloud/useChatReadAloud';
+import { useReadAloudTaps } from './read-aloud/useReadAloudTaps';
 import { toDialogueRouteParams } from './route-params';
 import { useChatAutoScroll } from './scroll/useChatAutoScroll';
 import { useChatSessionLoader } from './session/useChatSessionLoader';
@@ -149,6 +151,10 @@ export const useLoomTreeChatController = () => {
     nodeRepo: repositories.nodeRepo,
     refreshRowsAndContinuations,
   });
+  const readAloud = useChatReadAloud({
+    getRowById: nodeActions.getRowById,
+    nodeRepo: repositories.nodeRepo,
+  });
   const rewindToNode = useRewindToNode({
     session,
     sending,
@@ -186,6 +192,7 @@ export const useLoomTreeChatController = () => {
     refreshRowsAndContinuations,
     edgeRepo: repositories.edgeRepo,
     credentialStore: adapters.credentialStore,
+    onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
     generateDialogueContinuationUseCase:
       useCases.generateDialogueContinuationUseCase,
   });
@@ -204,11 +211,12 @@ export const useLoomTreeChatController = () => {
     refreshRowsAndContinuations,
     maybeGenerateTreeTitle,
     credentialStore: adapters.credentialStore,
+    onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
     editDialogueNodeUseCase: useCases.editDialogueNodeUseCase,
     sendDialogueTurnUseCase: useCases.sendDialogueTurnUseCase,
   });
 
-  const { onMessageAction, onNodeTap } = useMessageActions({
+  const { onMessageAction, onNodeTap: toggleRailForNode } = useMessageActions({
     continuations,
     regenerateFromNode,
     startEditForNode,
@@ -217,6 +225,10 @@ export const useLoomTreeChatController = () => {
     openNodeDetail: nodeActions.openNodeDetail,
     toggleBookmark: nodeActions.toggleBookmark,
     togglePrune: nodeActions.togglePrune,
+  });
+  const onNodeTap = useReadAloudTaps({
+    onSingleTap: toggleRailForNode,
+    ...readAloud.tapOptions,
   });
   const { onContinuationSelect, onContinuationMenuAction } =
     useContinuationGestures({
@@ -254,6 +266,7 @@ export const useLoomTreeChatController = () => {
     isEditing: composerMode.isEditing,
     editLabel: composerMode.editLabel,
     onNodeTap,
+    speakingRow: readAloud.speakingRow,
     continuationRail: {
       visible: continuations.visible,
       loading: continuations.loading,

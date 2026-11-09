@@ -1,30 +1,24 @@
 import { describe, expect, it } from '@jest/globals';
 import type { ULID } from '@domain/value-objects';
-import { isContinuationDoubleTap } from './continuation-tap';
+import { isDoubleTap } from './double-tap';
 
 const a = 'A' as ULID;
 const b = 'B' as ULID;
 
-describe('isContinuationDoubleTap', () => {
+describe('isDoubleTap', () => {
   it('is false for a first tap', () => {
-    expect(isContinuationDoubleTap(null, a, 1000)).toBe(false);
+    expect(isDoubleTap(null, a, 1000)).toBe(false);
   });
 
-  it('is true for a second tap on the same card inside the window', () => {
-    expect(isContinuationDoubleTap({ nodeId: a, atMs: 1000 }, a, 1299)).toBe(
-      true
-    );
+  it('is true for a second tap on the same node inside the window', () => {
+    expect(isDoubleTap({ nodeId: a, atMs: 1000 }, a, 1299)).toBe(true);
   });
 
   it('is false at or past the window', () => {
-    expect(isContinuationDoubleTap({ nodeId: a, atMs: 1000 }, a, 1300)).toBe(
-      false
-    );
+    expect(isDoubleTap({ nodeId: a, atMs: 1000 }, a, 1300)).toBe(false);
   });
 
-  it('is false for a tap on a different card', () => {
-    expect(isContinuationDoubleTap({ nodeId: a, atMs: 1000 }, b, 1100)).toBe(
-      false
-    );
+  it('is false for a tap on a different node', () => {
+    expect(isDoubleTap({ nodeId: a, atMs: 1000 }, b, 1100)).toBe(false);
   });
 });

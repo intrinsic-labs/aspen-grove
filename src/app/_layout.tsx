@@ -9,6 +9,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { AppBootstrapGate, AppServicesProvider } from '@interface/composition';
+import { VoiceModeProvider } from '@interface/components/voice';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
 const RootLayout = () => {
@@ -35,41 +36,43 @@ const RootLayout = () => {
         <ThemeProvider value={navigationTheme}>
           <AppServicesProvider>
             <AppBootstrapGate>
-              <Stack>
-                <Stack.Screen
-                  name="(drawer)"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="tree/[treeId]"
-                  options={{
-                    title: 'Dialogue',
-                    headerTransparent: true,
-                    headerShadowVisible: false,
-                    headerBackTitle: '',
-                    // headerBackVisible: false,
-                    headerBackButtonDisplayMode: 'minimal',
-                  }}
-                />
-                <Stack.Screen
-                  name="tree/[treeId]/node/[nodeId]"
-                  options={{
-                    title: 'Node',
-                    headerTransparent: true,
-                    headerShadowVisible: false,
-                    headerBackTitle: '',
-                    headerBackButtonDisplayMode: 'minimal',
-                  }}
-                />
-                <Stack.Screen
-                  name="tree/[treeId]/compose"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
+              <VoiceModeProvider>
+                <Stack>
+                  <Stack.Screen
+                    name="(drawer)"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="tree/[treeId]"
+                    options={{
+                      title: 'Dialogue',
+                      headerTransparent: true,
+                      headerShadowVisible: false,
+                      headerBackTitle: '',
+                      // headerBackVisible: false,
+                      headerBackButtonDisplayMode: 'minimal',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="tree/[treeId]/node/[nodeId]"
+                    options={{
+                      title: 'Node',
+                      headerTransparent: true,
+                      headerShadowVisible: false,
+                      headerBackTitle: '',
+                      headerBackButtonDisplayMode: 'minimal',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="tree/[treeId]/compose"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
+                </Stack>
+              </VoiceModeProvider>
             </AppBootstrapGate>
           </AppServicesProvider>
         </ThemeProvider>

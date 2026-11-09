@@ -30,6 +30,7 @@ import {
   OpenRouterModelCatalog,
   ProviderRegistry,
 } from '@infrastructure/llm';
+import { ReadAloudService } from '@application/services/speech';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
 import database from '@infrastructure/persistence/watermelon/index.native';
 import { subscribeToDatabaseSetupError } from '@infrastructure/persistence/watermelon/setup-error';
@@ -44,8 +45,10 @@ import {
   WatermelonRawApiResponseRepository,
   WatermelonTagRepository,
   WatermelonUserPreferencesRepository,
+  WatermelonVoicePreferencesRepository,
 } from '@infrastructure/persistence/watermelon/repositories';
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
+import { ExpoSpeechSynthesizer } from '@infrastructure/speech';
 import { parseULID, type ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
@@ -62,11 +65,15 @@ type AppServices = {
     readonly rawApiResponseRepo: WatermelonRawApiResponseRepository;
     readonly tagRepo: WatermelonTagRepository;
     readonly userPreferencesRepo: WatermelonUserPreferencesRepository;
+    readonly voicePreferencesRepo: WatermelonVoicePreferencesRepository;
   };
   readonly adapters: {
     readonly providerRegistry: ProviderRegistry;
     readonly credentialStore: ExpoSecureCredentialStore;
     readonly openRouterCatalog: OpenRouterModelCatalog;
+  };
+  readonly speech: {
+    readonly readAloud: ReadAloudService;
   };
   readonly useCases: {
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
@@ -110,6 +117,7 @@ const AppCompositionContext = createContext<AppCompositionContextValue | null>(
 );
 
 const buildAppServices = (): AppServices => {
+  const userPreferencesRepo = new WatermelonUserPreferencesRepository(database);
   const repositories = {
     agentRepo: new WatermelonAgentRepository(database),
     edgeRepo: new WatermelonEdgeRepository(database),
@@ -120,7 +128,11 @@ const buildAppServices = (): AppServices => {
     pathStateRepo: new WatermelonPathStateRepository(database),
     rawApiResponseRepo: new WatermelonRawApiResponseRepository(database),
     tagRepo: new WatermelonTagRepository(database),
-    userPreferencesRepo: new WatermelonUserPreferencesRepository(database),
+    userPreferencesRepo,
+    voicePreferencesRepo: new WatermelonVoicePreferencesRepository(
+      database,
+      userPreferencesRepo
+    ),
   } as const;
 
   const openRouterAdapter = new OpenRouterAdapter();
@@ -237,10 +249,15 @@ const buildAppServices = (): AppServices => {
     }),
   } as const;
 
+  const speech = {
+    readAloud: new ReadAloudService(new ExpoSpeechSynthesizer()),
+  } as const;
+
   return {
     repositories,
     adapters,
     useCases,
+    speech,
   };
 };
 

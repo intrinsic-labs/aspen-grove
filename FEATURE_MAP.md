@@ -255,6 +255,7 @@ state across relaunches.
 - **Status:** live
 - **Notes:** Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
+  With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
 
 ### Compose and send
 - **ID:** `chat.composer`
@@ -338,6 +339,31 @@ state across relaunches.
 - **Notes:** Edit from node detail navigates back to `tree/[treeId]` with
   `editNodeId` / `editRequestId` params, which start the same flow.
 
+### Read a message aloud (Voice Mode)
+- **ID:** `chat.read-aloud`
+- **Purpose:** With Voice Mode on, reads messages aloud in the chosen character voice (Latent
+  Spaces' voices): a double-tap on a message reads it, each new model response is read once it
+  has finished generating, and a tap on any message stops speech. The message being read is
+  drawn in its voice's color. Fenced code blocks are read as "You can see the code on this loom
+  tree branch." The `···` menu's "Voice Mode" item (checked when on) toggles Voice Mode app-wide.
+- **Where:** Message rows on the Dialogue screen; "Voice Mode" in the Dialogue `···` menu.
+- **Reach:** P2 → `chat-menu-button` → "Voice Mode" (or `settings.voice`) → send once → wait
+  for the reply to finish (it is read aloud) → double-tap `chat-message-row-<nodeId>` to hear
+  it again → tap any row to stop.
+- **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
+  up; on an iOS device the silent switch mutes it (see Notes).
+- **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
+- **Backend:** none — on-device text-to-speech (`expo-speech`: AVSpeechSynthesizer on iOS,
+  TextToSpeech on Android). Reads `nodes` for the finished response.
+- **Status:** live
+- **Notes:** With Voice Mode on, a single tap waits 320 ms (the double-tap window) before it
+  opens the rail; with it off taps are immediate. Each voice uses its Latent Spaces iOS voice
+  when installed, otherwise a voice with the same name and language, then any voice in that
+  language (en-GB, en-AU, en-IE), then the system default. Leaving the Dialogue screen stops
+  speech. Parallel continuations are not read aloud. expo-speech does not set the iOS audio
+  session category, so on a device with the silent switch on, speech is muted.
+
 ### Rewind to a node
 - **ID:** `chat.rewind`
 - **Purpose:** Makes an earlier node, or a node on another branch, the current one, so the
@@ -368,7 +394,8 @@ state across relaunches.
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
   half a second before asserting on `node-detail-screen`. A double-tap needs two taps less than
-  300 ms apart.
+  300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
+  a tap on a message row waits the same 320 ms before the rail opens.
 
 ### Bookmark a node
 - **ID:** `chat.bookmark`
@@ -575,12 +602,12 @@ state across relaunches.
 
 ### Settings home
 - **ID:** `settings.home`
-- **Purpose:** Lists the settings sub-screens: Agents, Connections, Message Typography and App
-  Behavior.
+- **Purpose:** Lists the settings sub-screens: Agents, Connections, Message Typography, App
+  Behavior and Voice Mode.
 - **Where:** Drawer → Settings, a nested stack with its own header and drawer button.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
 - **Requires:** none
-- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`
+- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`
 - **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
@@ -703,6 +730,40 @@ state across relaunches.
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
 - **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
 - **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
+
+### Voice Mode setting
+- **ID:** `settings.voice`
+- **Purpose:** Turns Voice Mode (beta) on or off, shows the current voice and opens the voice
+  chooser. The footer explains double-tap to listen and tap to stop.
+- **Where:** Settings → Voice Mode, the "Voice Mode" section.
+- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+  `settings-link-voice` → `settings-voice-mode-toggle`.
+- **Requires:** none
+- **Selector:** working — `settings-voice-screen`, `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
+- **Backend:** WatermelonDB `user_preferences.default_voice_mode_enabled` (on/off) and the
+  WatermelonDB local key `aspen_grove.voice_mode.voice_name` (the voice), via
+  `WatermelonVoicePreferencesRepository`
+- **Status:** live
+- **Notes:** Saves on each change (no debounce). The same on/off state drives the Dialogue
+  `···` menu's "Voice Mode" item. The default voice is Jefferson.
+
+### Voice chooser
+- **ID:** `settings.voice.chooser`
+- **Purpose:** Picks the character voice (Lily, Jefferson, Eve). Swipe between voice cards;
+  each card plays its sample line as it comes into view, a tap on the colored circle stops or
+  replays it, and Select saves the voice shown.
+- **Where:** A page sheet over Settings → Voice Mode, titled "Choose a voice".
+- **Reach:** `settings-link-voice` → `settings-voice-choose` → swipe `settings-voice-pager` →
+  `settings-voice-select`.
+- **Requires:** none. Sound needs media volume up.
+- **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles), `settings-voice-select`
+- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
+- **Backend:** none for the demo (on-device `expo-speech`); Select writes the WatermelonDB local
+  key `aspen_grove.voice_mode.voice_name`
+- **Status:** live
+- **Notes:** Opening the sheet plays the saved voice; closing it (swipe down) stops speech
+  without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
 
 ## Coverage
 - `src/app/_layout.tsx` — root stack, providers and theme (the Startup gate references it); no feature of its own

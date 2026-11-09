@@ -45,6 +45,7 @@ import {
   type ContinuationMenuAction,
 } from './ContinuationRail';
 import { MarkdownText } from './MarkdownText';
+import type { SpeakingRow } from './read-aloud/useChatReadAloud';
 import type {
   ChatDisplayPreferences,
   ChatRow,
@@ -97,6 +98,8 @@ type ChatMessageListProps = {
     action: ChatMessageMenuAction
   ) => void;
   readonly onNodeTap: (nodeId: ULID) => void;
+  /** The row being read aloud (Voice Mode), drawn in its voice's color. */
+  readonly speakingRow: SpeakingRow | null;
   readonly continuationRail: ContinuationRailState;
   readonly displayPreferences: ChatDisplayPreferences;
 };
@@ -122,6 +125,7 @@ export const ChatMessageList = memo(
     onScroll,
     onMessageAction,
     onNodeTap,
+    speakingRow,
     continuationRail,
     displayPreferences,
   }: ChatMessageListProps) => {
@@ -136,6 +140,8 @@ export const ChatMessageList = memo(
     const railLayoutsRef = useRef(
       new Map<string, { y: number; height: number }>()
     );
+    const speakingColorFor = (nodeId: ULID) =>
+      speakingRow?.nodeId === nodeId ? speakingRow.color : undefined;
     const suppressTapUntilByNodeRef = useRef(new Map<string, number>());
     const revealRailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
       null
@@ -366,13 +372,22 @@ export const ChatMessageList = memo(
                       cornerRadius={displayPreferences.userNodeCornerRadius}
                       viewStyle={displayPreferences.userNodeViewStyle}
                       messageTextStyle={messageTextStyle}
+                      speakingColor={speakingColorFor(row.id)}
                     />
                   ) : (
                     <MarkdownText
-                      baseStyle={{
-                        ...messageTextStyle,
-                        opacity: loomUiTokens.messageList.messageTextOpacity,
-                      }}
+                      baseStyle={
+                        speakingColorFor(row.id)
+                          ? {
+                              ...messageTextStyle,
+                              color: speakingColorFor(row.id),
+                            }
+                          : {
+                              ...messageTextStyle,
+                              opacity:
+                                loomUiTokens.messageList.messageTextOpacity,
+                            }
+                      }
                     >
                       {row.text}
                     </MarkdownText>
@@ -543,10 +558,18 @@ type UserBubbleProps = {
   readonly cornerRadius: number;
   readonly viewStyle: 'filled' | 'outlined';
   readonly messageTextStyle: object;
+  /** Voice Mode: the text takes the reading voice's color. */
+  readonly speakingColor?: string;
 };
 
 const UserBubble = memo(
-  ({ text, cornerRadius, viewStyle, messageTextStyle }: UserBubbleProps) => {
+  ({
+    text,
+    cornerRadius,
+    viewStyle,
+    messageTextStyle,
+    speakingColor,
+  }: UserBubbleProps) => {
     const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
 
     // Re-measure from scratch whenever the text or style changes — a width
@@ -620,6 +643,7 @@ const UserBubble = memo(
               viewStyle === 'filled'
                 ? styles.userFilledText
                 : styles.standardText,
+              speakingColor ? { color: speakingColor, opacity: 1 } : null,
             ]}
           >
             {text}
