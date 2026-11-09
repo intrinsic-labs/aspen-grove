@@ -46,4 +46,6 @@ export type UserPreferencesChanges = {
    * clear the pin (e.g., when the referenced agent has been deleted).
    */
   readonly defaultModelAgentId?: ULID | null;
+  /** Record that first-run setup was finished or skipped. */
+  readonly onboardingCompletedAt?: Date | null;
 };

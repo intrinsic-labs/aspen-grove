@@ -35,6 +35,9 @@ export default class UserPreferences extends Model {
    */
   @field('default_model_agent_id') defaultModelAgentId!: string | null;
 
+  /** First-run setup finished or skipped (schema v9). */
+  @date('onboarding_completed_at') onboardingCompletedAt!: Date | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
 }

@@ -112,6 +112,10 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
           record.defaultModelAgentId = changes.defaultModelAgentId;
         }
 
+        if (changes.onboardingCompletedAt !== undefined) {
+          record.onboardingCompletedAt = changes.onboardingCompletedAt;
+        }
+
         record.updatedAt = this.now();
       });
 
@@ -158,6 +162,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
       record.defaultModelAgentId = null;
+      record.onboardingCompletedAt = null;
       record.createdAt = createdAt;
       record.updatedAt = createdAt;
     });
@@ -183,6 +188,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       defaultModelAgentId: model.defaultModelAgentId
         ? (model.defaultModelAgentId as ULID)
         : undefined,
+      onboardingCompletedAt: model.onboardingCompletedAt ?? undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     };

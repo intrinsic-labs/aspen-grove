@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 8,
+  version: 9,
   tables: [
     /**
      * Grove table schema
@@ -59,6 +59,14 @@ export const aspenGroveSchema = appSchema({
         {
           name: 'default_model_agent_id',
           type: 'string',
+          isOptional: true,
+        },
+
+        // When first-run setup was finished or skipped (v9). Unset on a
+        // fresh install, which is what shows onboarding.
+        {
+          name: 'onboarding_completed_at',
+          type: 'number',
           isOptional: true,
         },
 

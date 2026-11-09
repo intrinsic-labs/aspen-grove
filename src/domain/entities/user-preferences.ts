@@ -45,6 +45,14 @@ export interface UserPreferences {
    */
   readonly defaultModelAgentId?: ULID;
 
+  /**
+   * When the first-run setup (connect a provider, pick an agent) was finished
+   * or skipped. Unset on a fresh install. See
+   * `application/services/onboarding/first-run.ts` for what counts as
+   * onboarded.
+   */
+  readonly onboardingCompletedAt?: Date;
+
   // Node display
   readonly nodeViewStyle: NodeViewStyle;
   readonly nodeViewCornerRadius: number;
