@@ -62,16 +62,15 @@ Binary files are stored in a dedicated directory structure:
 
 ```
 media/
-├── loomtrees/{loomTreeId}/...
-├── documents/{documentId}/...
+└── loomtrees/{loomTreeId}/...
 ```
 
-- Organized by parent entity ID (LoomTree or Document) for easy cleanup on deletion
+- Organized by LoomTree ID for easy cleanup on deletion
 - Filenames use content hash for deduplication
 - Thumbnails/previews generated and stored alongside originals
 - Cleanup handled when Nodes are pruned or deleted
 
-**Note**: Documents also support multimodal content (ImageBlock, AudioBlock) and follow the same storage pattern. See [media-storage.md](../contracts/media-storage.md) for the full specification.
+See [media-storage.md](../contracts/media-storage.md) for the full specification. **Status:** accepted, not yet implemented.
 
 ---
 
@@ -81,7 +80,7 @@ media/
 
 - **Memory** — Loading a Loom Tree with 50 images inline would consume hundreds of MB
 - **Performance** — Tree traversal stays fast; images load on-demand
-- **Flexibility** — Can swap storage backends (local → cloud) without changing Node schema
+- **Flexibility** — Can swap storage backends without changing Node schema
 - **Deduplication** — Same image used twice references same file
 
 ### Why Not Base64 in JSON?
@@ -123,6 +122,5 @@ media/
 
 ## Future Considerations
 
-- Cloud sync will need to handle binary files separately from database sync
-- May want tiered storage (keep recent media local, archive old to cloud)
+- Media stays on device: Aspen Grove is local-first with no sync or cloud storage
 - Video support would follow same pattern but with more metadata

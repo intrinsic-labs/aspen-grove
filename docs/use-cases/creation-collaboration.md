@@ -1,10 +1,12 @@
 # Creation & Collaboration Use Cases
 
-> Working with models to produce meaningful output — writing, thinking, problem-solving. Voice Mode can enhance several of these workflows for hands-free use.
+> Working with models to produce meaningful output — writing, thinking, problem-solving.
 
 ---
 
 ## 2.1 Buffer Mode Writing
+
+**Status**: after v1 (buffer mode with base models).
 
 **Goal**: Write collaboratively with a model in a non-conversational format.
 
@@ -18,7 +20,7 @@
 7. User navigates between branches, comparing directions
 8. User pulls good ideas from different branches into the active line
 9. Eventually, user settles on a final Path
-10. User Exports the Path as a clean document
+10. User Exports the Path as Markdown
 
 **Value**: Writing becomes exploration rather than commitment. Seamless co-authorship rather than turn-taking. Users can try risky directions knowing they can always backtrack.
 
@@ -30,29 +32,21 @@
 
 ## 2.2 Collaborative Problem-Solving
 
-**Goal**: Work through a complex problem with model assistance.
+**Goal**: Work through a complex problem with a model, keeping the alternatives.
 
 **Flow**:
-1. User creates a Loom Tree describing the problem
-2. User toggles Voice Mode ON (from menu bar or settings)
-3. User creates a Loom in Dialogue Mode
-4. User describes the problem via speech — app transcribes and sends after 4-second pause
-5. Model offers initial analysis or solution, using **web search tools** to gather relevant information
-6. Response is read aloud; node text changes color during speech
-7. Speech finishes → app listens for user's follow-up
-8. User pushes back, asks clarifying questions, or requests alternatives — all via voice
-9. At key junctures, user stops to generate multiple Continuations (manual interaction)
-10. User follows multiple branches in parallel, comparing where they lead
-11. User Annotates dead ends with why they failed
-12. User converges on a solution, documented across the successful Path
+1. User creates a Loom Tree in Dialogue Mode describing the problem
+2. Model offers an initial analysis or solution
+3. User pushes back, asks clarifying questions, or requests alternatives
+4. At key junctures, user generates several Continuations and compares where they lead
+5. User Annotates or prunes dead ends
+6. User converges on a solution along the successful Path
 
-**Required Tools**:
-- **Web Search**: Model can search the web for current information, documentation, research. Essential for real-world problem-solving.
-- **Voice Mode**: Hands-free interaction via native platform APIs. Speech-to-text for input (auto-sends after 4s pause), text-to-speech for output. Critical for mobile/in-motion use. See [Interaction Modes](../domain-language/interaction-modes.md#voice-mode) for full specification.
+With character voices on, each response is read aloud in the chosen voice, which suits thinking on a walk.
 
-**Value**: Complex problems rarely have one right answer. Branching lets users explore the solution space systematically rather than getting stuck on the first idea. Voice Mode enables problem-solving while driving, walking, or otherwise occupied — the conversational loop continues hands-free until the user needs to branch or navigate.
+**Value**: Complex problems rarely have one right answer. Branching lets users explore the solution space instead of getting stuck on the first idea.
 
-**Agents Involved**: Human (Loom-Aware), Model (not Loom-Aware or Loom-Aware depending on need)
+**Agents Involved**: Human (Loom-Aware), Model (not Loom-Aware)
 
 ---
 
@@ -86,7 +80,7 @@
 3. User switches to Model B for critique (analytical, precise)
 4. User generates alternatives with Model C (different perspective)
 5. Each Node is tagged with its generating Agent
-6. User synthesizes the best elements via manual editing (maybe into a document or asks a loom-aware agent to synthesize)
+6. User synthesizes the best elements by editing a node into a new branch
 
 **Value**: Models have different strengths. Multi-model workflows let users compose those strengths intentionally.
 
@@ -96,8 +90,7 @@
 
 ## Related Documentation
 
-- [Domain Language: Interaction Modes](../domain-language/interaction-modes.md) — Voice Mode, Buffer Mode
+- [Domain Language: Interaction Modes](../domain-language/interaction-modes.md) — Buffer Mode, character voices
 - [Domain Language: Agents](../domain-language/agents.md) — Agent abstraction
 - [Buffer Mode Spec](../architecture/specs/buffer-mode.md) — Detailed Buffer Mode specification
 - [Exploration & Study](./exploration-study.md) — Related use cases
-- [Knowledge Management](./knowledge-management.md) — Organizing outputs

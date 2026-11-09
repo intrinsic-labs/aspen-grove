@@ -32,9 +32,9 @@
 2. User configures multiple Agents backed by different Models (e.g., Claude, GPT-4, Llama)
 3. User generates Continuations from the same Node using each Agent
 4. System creates sibling Nodes, each tagged with its generating Agent
-5. User compares responses side-by-side
+5. User compares responses side by side (several-at-once comparison is v1 work; today siblings are browsed in the inline continuation rail)
 6. User continues promising branches with the same or different models
-7. User documents findings via Annotations or linked Documents
+7. User notes findings via bookmarks, tags or annotations
 
 **Value**: Direct comparison reveals model personalities, strengths, and blind spots. Over time, users develop preferences and intuitions for which models suit which tasks.
 
@@ -69,17 +69,18 @@
 1. User explores a model using any of the above patterns
 2. User identifies an interesting behavior (e.g., "Claude tends to hedge when asked about X")
 3. User Annotates the relevant Node(s) with observations
-4. User creates a Document in the Grove summarizing the finding
-5. User Links the Document to the relevant Nodes and pages/articles from the Field Guide
-6. User Tags the Document for later retrieval (e.g., `#claude`, `#hedging`, `#uncertainty`)
+4. User Bookmarks the Node with a label and Tags the tree for later retrieval (e.g., `#claude`, `#hedging`, `#uncertainty`)
+5. User exports the tree as Open Loom, so the finding travels with its evidence
 
-**Value**: Transforms ephemeral observations into persistent knowledge. Users build a personal research archive that grows over time.
+**Value**: Turns passing observations into something you can find again, with the tree that produced them.
 
 **Agents Involved**: Human (Loom-Aware)
 
 ---
 
 ## 1.5 Assisted Exploration (Two-Role Pattern)
+
+**Status**: after v1 (needs the `→` loom tools).
 
 **Goal**: Use a Loom-Aware model to help analyze a non-Loom-Aware model within a Loom Tree.
 
@@ -108,26 +109,31 @@
 **Flow**:
 1. User generates content from a model
 2. System automatically:
-   - Computes and stores content hash (chained to parents)
-   - Submits hash to RFC 3161 timestamp authority
-   - Stores compressed raw API response
+   - Hashes the raw API response bytes before parsing them
+   - Computes and stores the node's content hash (chained to its parents and the raw-response hash)
+   - Stores the compressed raw API response
 3. Later, user (or third party) wants to verify authenticity
-4. User invokes "View Provenance" on the Node
+4. User opens the Node's detail sheet
 5. System displays:
-   - Hash chain validation status
-   - RFC 3161 timestamp certificate
-   - Raw API response with metadata (request ID, headers, timestamps)
-6. User exports provenance data for external verification if needed
-7. User can generate a **Provenance QR Code** for sharing:
-   - QR encodes provenance data directly (hash, timestamp certificate, summary)
-   - Scanned by another Aspen Grove instance, which verifies locally
-   - No web service required — verification is device-to-device
-   - Useful for in-person verification, presentations, or sharing research findings
-   - *Note: Post-MVP feature*
+   - Hash chain validation status, re-verified live
+   - Generation info from the stored raw response (provider, model, request ID, latency, token usage)
+6. User exports the tree as Open Loom, which carries the hash chain and raw-response evidence for anyone to re-verify
 
-**Value**: Research credibility. Users can demonstrate that outputs are genuine, not fabricated. QR codes make verification accessible to anyone with a phone.
+**Value**: Evidence that a node is what the model actually returned and hasn't been altered since. It is tamper evidence, not proof of origin: a provider signature would be needed for that.
 
-**Extends With** (Future): TLS Notary integration for cryptographic proof
+---
+
+## 1.7 Exporting and Importing
+
+**Goal**: Take a tree out of Aspen Grove, or bring one in from another loom.
+
+**Flow**:
+1. From the chat menu, user exports the whole tree as Open Loom JSON, or the active path as Markdown
+2. The system share sheet hands the file to wherever the user wants it
+3. From the tree list, user imports an Open Loom (v1 or v2), socketteer/loom or Loomsidian file
+4. The imported tree opens with its branches, agents and provenance intact
+
+**Value**: Looms aren't locked in. Files go where the user sends them; nothing passes through a server.
 
 ---
 

@@ -2,16 +2,18 @@
 
 > Abstract interfaces for storing and retrieving multimodal content (images, audio, etc.). Infrastructure layer implements these contracts.
 
+**Status:** not yet implemented. Nodes are text today; this is the design for when multimodal nodes arrive.
+
 ---
 
 ## Overview
 
 The media storage abstraction handles binary content separately from the database:
 
-- Nodes and Documents contain references to media, not the media itself
+- Nodes contain references to media, not the media itself
 - Binary files stored in filesystem for efficient access
 - Thumbnails and previews generated for fast UI rendering
-- Cleanup coordinated with Node and Document lifecycle
+- Cleanup coordinated with Node and Loom Tree lifecycle
 
 ---
 
@@ -22,21 +24,21 @@ The core interface for media operations.
 ### Store Operations
 
 **storeImage**
-- Input: imageData (binary), mimeType, parentType (`loomTree` | `document`), parentId
+- Input: imageData (binary), mimeType, loomTreeId
 - Generates unique filename from content hash
 - Stores in organized directory structure based on parent type
 - Generates thumbnail
 - Returns: ImageReference object
 
 **storeAudio**
-- Input: audioData (binary), mimeType, parentType (`loomTree` | `document`), parentId
+- Input: audioData (binary), mimeType, loomTreeId
 - Generates unique filename from content hash
 - Stores in organized directory structure based on parent type
 - Extracts duration metadata
 - Returns: AudioReference object
 
 **storeFromUri**
-- Input: uri (local file or picked from gallery), parentType (`loomTree` | `document`), parentId
+- Input: uri (local file or picked from gallery), loomTreeId
 - Determines media type from uri or content inspection
 - Copies to managed storage
 - Returns: ImageReference or AudioReference
@@ -81,12 +83,12 @@ The core interface for media operations.
 - Returns: boolean success
 
 **deleteByParent**
-- Input: parentType (`loomTree` | `document`), parentId
-- Removes all media files associated with this Loom Tree or Document
+- Input: loomTreeId
+- Removes all media files associated with this Loom Tree
 - Returns: count of files deleted
 
 **findOrphaned**
-- Scans storage for files not referenced by any Node or Document
+- Scans storage for files not referenced by any Node
 - Returns: array of orphaned file references
 
 **cleanupOrphaned**
@@ -140,34 +142,24 @@ The core interface for media operations.
 
 ### Organization
 
-Media files are organized by parent entity type and ID for easy bulk operations:
+Media files are organized by Loom Tree ID for easy bulk operations:
 
 ```
 app_data/
 └── media/
-    ├── loomtrees/
-    │   └── {loomTreeId}/
-    │       ├── images/
-    │       │   ├── {hash}.png
-    │       │   ├── {hash}.jpg
-    │       │   └── ...
-    │       ├── thumbnails/
-    │       │   ├── {hash}_thumb.jpg
-    │       │   └── ...
-    │       └── audio/
-    │           ├── {hash}.mp3
-    │           └── ...
-    └── documents/
-        └── {documentId}/
+    └── loomtrees/
+        └── {loomTreeId}/
             ├── images/
+            │   ├── {hash}.png
+            │   ├── {hash}.jpg
             │   └── ...
             ├── thumbnails/
+            │   ├── {hash}_thumb.jpg
             │   └── ...
             └── audio/
+                ├── {hash}.mp3
                 └── ...
 ```
-
-This structure supports media storage for both Loom Tree Nodes and Documents. The parent type (`loomtrees` or `documents`) determines which directory tree is used.
 
 ### Naming Conventions
 
@@ -179,9 +171,8 @@ This structure supports media storage for both Loom Tree Nodes and Documents. Th
 ### Path Resolution
 
 - References are relative to media root
-- Format: `loomtrees/{loomTreeId}/images/{hash}.{ext}` or `documents/{documentId}/images/{hash}.{ext}`
+- Format: `loomtrees/{loomTreeId}/images/{hash}.{ext}`
 - Absolute path computed at runtime based on app data directory
-- Parent type prefix ensures no ID collisions between Loom Trees and Documents
 
 ---
 
@@ -288,7 +279,7 @@ This structure supports media storage for both Loom Tree Nodes and Documents. Th
 ### iOS
 
 - Store in app's Documents or Library directory
-- Files included in iCloud backup by default (can be excluded)
+- Files included in the device's own iCloud backup by default (can be excluded)
 - Use FileManager for operations
 
 ### Android
