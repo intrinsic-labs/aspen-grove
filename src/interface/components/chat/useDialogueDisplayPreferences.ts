@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import type { IUserPreferencesRepository } from '@application/repositories';
+import { sameDisplayPreferences } from './display-preferences-equality';
 import type { ChatDisplayPreferences } from './types';
 
 const DEFAULT_FONT_SIZE = 17;
@@ -45,7 +46,7 @@ export const useDialogueDisplayPreferences = ({
   userPreferencesRepo,
 }: UseDialogueDisplayPreferencesInput): ChatDisplayPreferences => {
   const [preferences, setPreferences] =
-    useState<ChatDisplayPreferences>(createDefaults());
+    useState<ChatDisplayPreferences>(createDefaults);
 
   const load = useCallback(async () => {
     try {
@@ -56,7 +57,7 @@ export const useDialogueDisplayPreferences = ({
         MAX_FONT_SIZE
       );
 
-      setPreferences({
+      const next: ChatDisplayPreferences = {
         userNodeViewStyle: userPreferences.nodeViewStyle,
         userNodeCornerRadius: clamp(
           userPreferences.nodeViewCornerRadius ?? DEFAULT_CORNER_RADIUS,
@@ -66,7 +67,12 @@ export const useDialogueDisplayPreferences = ({
         messageFontSize,
         messageLineHeight: toMessageLineHeight(messageFontSize),
         messageFontFamily: normalizeFontFamily(userPreferences.fontFace),
-      });
+      };
+      // Every focus reloads; keep the same object when nothing changed so
+      // the message list doesn't re-render.
+      setPreferences((current) =>
+        sameDisplayPreferences(current, next) ? current : next
+      );
     } catch {
       // Keep existing preferences on load failure.
     }

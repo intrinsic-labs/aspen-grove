@@ -1,10 +1,9 @@
 import {
   memo,
-  type ReactNode,
   type RefObject,
-  useState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
 } from 'react';
 import {
@@ -12,72 +11,27 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  type NativeSyntheticEvent as NSE,
   Platform,
-  Pressable,
-  type StyleProp,
   StyleSheet,
-  Text,
-  type TextLayoutEventData,
+  type TextStyle,
   View,
-  type ViewStyle,
 } from 'react-native';
-import ContextMenu, {
-  type ContextMenuAction,
-} from 'react-native-context-menu-view';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
-import Animated, {
-  Easing,
-  LinearTransition,
-  StretchInY,
-  StretchOutY,
-} from 'react-native-reanimated';
 import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { useLatestCallback } from '@/interface/hooks/useLatestCallback';
+import { useScreenSettled } from '@/interface/hooks/useScreenSettled';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
-import type { ContinuationMenuAction } from './continuation-menu';
-import { ContinuationRail } from './ContinuationRail';
-import type { ContinuationGenerateControlProps } from './parallel/ContinuationGenerateControl';
-import type { RailCard } from './parallel/rail-cards';
 import { MarkdownText } from './MarkdownText';
+import { ChatMessageRows } from './message-list/ChatMessageRows';
+import type { ContinuationRailState } from './message-list/continuation-rail-state';
+import type { ChatMessageMenuAction } from './message-list/message-menu';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
 import type { ChatDisplayPreferences, ChatRow } from './types';
-
-export type ChatMessageMenuAction =
-  | 'regenerate'
-  | 'continuations'
-  | 'edit'
-  | 'rewind'
-  | 'copy'
-  | 'info'
-  | 'bookmark'
-  | 'prune';
-
-export type ContinuationRailState = {
-  readonly visible: boolean;
-  readonly loading: boolean;
-  readonly sourceNodeId: ULID | null;
-  readonly sourceLocalId?: string;
-  /** Existing siblings, then the cards of a run started from this node. */
-  readonly cards: readonly RailCard[];
-  readonly generation: ContinuationGenerateControlProps;
-  readonly error?: string | null;
-  readonly onSelect: (nodeId: ULID) => void;
-  readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
-  readonly onStopSlot: (slot: number) => void;
-};
-
-type ChatMessageMenuItem = {
-  readonly action: ChatMessageMenuAction;
-  readonly title: string;
-  readonly systemIcon?: string;
-  readonly destructive?: boolean;
-};
 
 type ChatMessageListProps = {
   readonly loading: boolean;
@@ -100,13 +54,11 @@ type ChatMessageListProps = {
   readonly displayPreferences: ChatDisplayPreferences;
 };
 
-const railLayoutTransition = LinearTransition.duration(180).easing(
-  Easing.out(Easing.cubic)
-);
-const railEntering = StretchInY.duration(180).easing(
-  Easing.out(Easing.cubic)
-);
-const railExiting = StretchOutY.duration(150).easing(Easing.in(Easing.cubic));
+/**
+ * Prepending earlier rows (tail-first mounting) keeps whatever is on screen
+ * in place instead of pushing it down.
+ */
+const keepVisibleContentInPlace = { minIndexForVisible: 0 } as const;
 
 export const ChatMessageList = memo(
   ({
@@ -126,6 +78,7 @@ export const ChatMessageList = memo(
     displayPreferences,
   }: ChatMessageListProps) => {
     const { colors } = useAspenGroveTheme();
+    const settled = useScreenSettled();
     const scrollMetricsRef = useRef({
       offsetY: 0,
       viewportHeight: 0,
@@ -136,8 +89,6 @@ export const ChatMessageList = memo(
     const railLayoutsRef = useRef(
       new Map<string, { y: number; height: number }>()
     );
-    const speakingColorFor = (nodeId: ULID) =>
-      speakingRow?.nodeId === nodeId ? speakingRow.color : undefined;
     const suppressTapUntilByNodeRef = useRef(new Map<string, number>());
     const revealRailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
       null
@@ -146,15 +97,27 @@ export const ChatMessageList = memo(
       continuationRail.visible && continuationRail.sourceNodeId
         ? continuationRail.sourceNodeId
         : null;
-    const messageTextStyle = {
-      fontSize: displayPreferences.messageFontSize,
-      lineHeight: displayPreferences.messageLineHeight,
-      ...(displayPreferences.messageFontFamily
-        ? {
-            fontFamily: displayPreferences.messageFontFamily,
-          }
-        : {}),
-    };
+    const messageTextStyle = useMemo<TextStyle>(
+      () => ({
+        fontSize: displayPreferences.messageFontSize,
+        lineHeight: displayPreferences.messageLineHeight,
+        ...(displayPreferences.messageFontFamily
+          ? { fontFamily: displayPreferences.messageFontFamily }
+          : {}),
+      }),
+      [
+        displayPreferences.messageFontFamily,
+        displayPreferences.messageFontSize,
+        displayPreferences.messageLineHeight,
+      ]
+    );
+    const streamingTextStyle = useMemo<TextStyle>(
+      () => ({
+        ...messageTextStyle,
+        opacity: loomUiTokens.messageList.messageTextOpacity,
+      }),
+      [messageTextStyle]
+    );
 
     const revealContinuationRail = useCallback(
       (nodeId: ULID) => {
@@ -248,43 +211,42 @@ export const ChatMessageList = memo(
       };
     }, []);
 
-    const recordRowLayout = useCallback(
+    // Rows get stable handlers so a new closure here (on every rail or
+    // composer change) doesn't re-render every message.
+    const recordRowLayout = useLatestCallback(
       (nodeId: ULID, event: LayoutChangeEvent) => {
         const { y, height } = event.nativeEvent.layout;
         rowLayoutsRef.current.set(nodeId, { y, height });
         if (activeRailNodeId === nodeId) {
           scheduleRailReveal(nodeId);
         }
-      },
-      [activeRailNodeId, scheduleRailReveal]
+      }
     );
 
-    const recordRailLayout = useCallback(
+    const recordRailLayout = useLatestCallback(
       (nodeId: ULID, event: LayoutChangeEvent) => {
         const { y, height } = event.nativeEvent.layout;
         railLayoutsRef.current.set(nodeId, { y, height });
         if (activeRailNodeId === nodeId) {
           scheduleRailReveal(nodeId);
         }
-      },
-      [activeRailNodeId, scheduleRailReveal]
+      }
     );
 
     const suppressNextNodeTap = useCallback((nodeId: ULID) => {
       suppressTapUntilByNodeRef.current.set(nodeId, Date.now() + 900);
     }, []);
 
-    const handleNodePress = useCallback(
-      (nodeId: ULID) => {
-        const suppressUntil = suppressTapUntilByNodeRef.current.get(nodeId);
-        if (suppressUntil && suppressUntil > Date.now()) {
-          return;
-        }
-        suppressTapUntilByNodeRef.current.delete(nodeId);
-        onNodeTap(nodeId);
-      },
-      [onNodeTap]
-    );
+    const handleNodePress = useLatestCallback((nodeId: ULID) => {
+      const suppressUntil = suppressTapUntilByNodeRef.current.get(nodeId);
+      if (suppressUntil && suppressUntil > Date.now()) {
+        return;
+      }
+      suppressTapUntilByNodeRef.current.delete(nodeId);
+      onNodeTap(nodeId);
+    });
+
+    const handleMessageAction = useLatestCallback(onMessageAction);
 
     if (loading) {
       return (
@@ -316,124 +278,31 @@ export const ChatMessageList = memo(
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         alwaysBounceVertical
         overScrollMode="always"
+        maintainVisibleContentPosition={keepVisibleContentInPlace}
         onLayout={handleScrollLayout}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {rows.map((row) => (
-          <Animated.View
-            key={row.id}
-            layout={railLayoutTransition}
-            style={styles.rowBlock}
-            onLayout={(event) => recordRowLayout(row.id, event)}
-          >
-            <View
-              style={[
-                styles.row,
-                row.authorType === 'human'
-                  ? styles.userRow
-                  : styles.assistantRow,
-                row.pruned ? styles.prunedRow : null,
-              ]}
-            >
-              <ContextMenuWrapper
-                row={row}
-                onMessageAction={onMessageAction}
-                onContextMenuGestureStart={suppressNextNodeTap}
-                previewBorderRadius={
-                  row.authorType === 'human'
-                    ? displayPreferences.userNodeCornerRadius
-                    : 0
-                }
-                style={
-                  row.authorType === 'human'
-                    ? styles.userMenuHost
-                    : styles.assistantMenuHost
-                }
-              >
-                <Pressable
-                  testID={`chat-message-row-${row.id}`}
-                  onPress={() => handleNodePress(row.id)}
-                  onLongPress={() => suppressNextNodeTap(row.id)}
-                  style={[
-                    styles.messageTarget,
-                    row.authorType === 'model'
-                      ? styles.assistantMessageTarget
-                      : null,
-                  ]}
-                >
-                  {row.authorType === 'human' ? (
-                    <UserBubble
-                      text={row.text}
-                      cornerRadius={displayPreferences.userNodeCornerRadius}
-                      viewStyle={displayPreferences.userNodeViewStyle}
-                      messageTextStyle={messageTextStyle}
-                      speakingColor={speakingColorFor(row.id)}
-                    />
-                  ) : (
-                    <MarkdownText
-                      baseStyle={
-                        speakingColorFor(row.id)
-                          ? {
-                              ...messageTextStyle,
-                              color: speakingColorFor(row.id),
-                            }
-                          : {
-                              ...messageTextStyle,
-                              opacity:
-                                loomUiTokens.messageList.messageTextOpacity,
-                            }
-                      }
-                    >
-                      {row.text}
-                    </MarkdownText>
-                  )}
-                </Pressable>
-              </ContextMenuWrapper>
-              <NodeCaption
-                row={row}
-                iconColor={colors.tertiary}
-                textColor={colors.secondaryVariant}
-              />
-            </View>
-
-            {continuationRail.sourceNodeId === row.id ? (
-              <Animated.View
-                collapsable={false}
-                entering={railEntering}
-                exiting={railExiting}
-                layout={railLayoutTransition}
-                style={styles.inlineRail}
-                onLayout={(event) => recordRailLayout(row.id, event)}
-              >
-                <ContinuationRail
-                  visible={continuationRail.visible}
-                  loading={continuationRail.loading}
-                  sourceLocalId={continuationRail.sourceLocalId}
-                  cards={continuationRail.cards}
-                  generation={continuationRail.generation}
-                  previewFontFamily={displayPreferences.messageFontFamily}
-                  error={continuationRail.error}
-                  onSelect={continuationRail.onSelect}
-                  onMenuAction={continuationRail.onMenuAction}
-                  onStopSlot={continuationRail.onStopSlot}
-                />
-              </Animated.View>
-            ) : null}
-          </Animated.View>
-        ))}
+        <ChatMessageRows
+          rows={rows}
+          settled={settled}
+          railSourceNodeId={continuationRail.sourceNodeId}
+          continuationRail={continuationRail}
+          messageTextStyle={messageTextStyle}
+          displayPreferences={displayPreferences}
+          speakingRow={speakingRow}
+          captionIconColor={colors.tertiary}
+          captionTextColor={colors.secondaryVariant}
+          onPress={handleNodePress}
+          onLongPress={suppressNextNodeTap}
+          onMessageAction={handleMessageAction}
+          onRowLayout={recordRowLayout}
+          onRailLayout={recordRailLayout}
+        />
 
         {sending && streamingAssistantText.length > 0 ? (
-          <View
-            testID="chat-streaming-message"
-            style={[styles.row, styles.assistantRow]}
-          >
-            <MarkdownText
-              baseStyle={{
-                ...messageTextStyle,
-                opacity: loomUiTokens.messageList.messageTextOpacity,
-              }}
-            >
+          <View testID="chat-streaming-message" style={styles.streamingRow}>
+            <MarkdownText baseStyle={streamingTextStyle} transient>
               {streamingAssistantText}
             </MarkdownText>
           </View>
@@ -456,250 +325,6 @@ export const ChatMessageList = memo(
   }
 );
 
-/**
- * Inline affordance line under a node: a filled bookmark glyph (when
- * bookmarked), branch count, and pruned indicator. Rendered only when there is
- * something to say.
- */
-const NodeCaption = ({
-  row,
-  iconColor,
-  textColor,
-}: {
-  readonly row: ChatRow;
-  readonly iconColor: string;
-  readonly textColor: string;
-}) => {
-  const parts = [
-    row.continuationCount > 1 ? `Continuations: ${row.continuationCount}` : null,
-    row.pruned ? 'Pruned' : null,
-  ].filter(Boolean);
-
-  if (parts.length === 0 && !row.bookmarked) {
-    return null;
-  }
-
-  return (
-    <View style={styles.nodeCaption}>
-      {row.bookmarked ? (
-        <Ionicons name="bookmark" size={11} color={iconColor} />
-      ) : null}
-      {parts.length > 0 ? (
-        <Text style={[styles.nodeCaptionText, { color: textColor }]}>
-          {parts.join('  ·  ')}
-        </Text>
-      ) : null}
-    </View>
-  );
-};
-
-const buildMessageMenuItems = (
-  bookmarked: boolean,
-  pruned: boolean,
-  authorType: ChatRow['authorType']
-): readonly ChatMessageMenuItem[] =>
-  [
-    // Regenerate only makes sense on model rows ("replace this response
-    // with a new sibling"). On user rows it read as "regenerate the reply
-    // to this", which both confused the target and triggered an iOS
-    // context-menu dismissal artifact when the rows below the still-mounted
-    // pressed row reflowed mid-animation.
-    ...(authorType === 'model'
-      ? [
-          {
-            action: 'regenerate',
-            title: 'Regenerate',
-            systemIcon: 'arrow.clockwise',
-          } as const,
-        ]
-      : []),
-    {
-      action: 'continuations',
-      title: 'Continuations',
-      systemIcon: 'point.topleft.down.curvedto.point.bottomright.up',
-    },
-    {
-      action: 'edit',
-      title: 'Edit',
-      systemIcon: 'pencil',
-    },
-    {
-      action: 'rewind',
-      title: 'Rewind To Node',
-      systemIcon: 'backward.end.alt',
-    },
-    {
-      action: 'copy',
-      title: 'Copy Text',
-      systemIcon: 'doc.on.doc',
-    },
-    {
-      action: 'info',
-      title: 'Node Info',
-      systemIcon: 'info.circle',
-    },
-    {
-      action: 'bookmark',
-      title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
-      systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
-    },
-    {
-      action: 'prune',
-      title: pruned ? 'Restore' : 'Prune',
-      systemIcon: pruned ? 'arrow.uturn.backward.circle' : 'scissors',
-      destructive: !pruned,
-    },
-  ] as const;
-
-type UserBubbleProps = {
-  readonly text: string;
-  readonly cornerRadius: number;
-  readonly viewStyle: 'filled' | 'outlined';
-  readonly messageTextStyle: object;
-  /** Voice Mode: the text takes the reading voice's color. */
-  readonly speakingColor?: string;
-};
-
-const UserBubble = memo(
-  ({
-    text,
-    cornerRadius,
-    viewStyle,
-    messageTextStyle,
-    speakingColor,
-  }: UserBubbleProps) => {
-    const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-
-    // Re-measure from scratch whenever the text or style changes — a width
-    // measured under one style is invalid under the other (see below).
-    useEffect(() => {
-      setMeasuredWidth(null);
-    }, [text, viewStyle]);
-
-    const onTextLayout = useCallback(
-      (event: NSE<TextLayoutEventData>) => {
-        const { lines } = event.nativeEvent;
-        if (lines.length === 0) return;
-
-        // Find the maximum line width
-        const maxLineWidth = Math.max(...lines.map((line) => line.width));
-
-        // RN draws borders INSIDE the box width, so the outlined style must
-        // budget for them or the text's content box comes up 2×border too
-        // narrow, re-wraps, re-measures smaller, and the bubble collapses in
-        // a feedback loop. Ceil to avoid fractional-width boundary re-wraps.
-        const borderAllowance =
-          viewStyle === 'outlined'
-            ? loomUiTokens.messageList.userBubbleOutlineWidth * 2
-            : 0;
-        const bubbleWidth = Math.ceil(
-          maxLineWidth +
-            loomUiTokens.messageList.userBubblePaddingHorizontal * 2 +
-            borderAllowance
-        );
-
-        // Ignore sub-pixel remeasurements so no styling change can ever
-        // re-open the measure → re-wrap → measure oscillation.
-        setMeasuredWidth((current) =>
-          current !== null && Math.abs(current - bubbleWidth) <= 1
-            ? current
-            : bubbleWidth
-        );
-      },
-      [viewStyle]
-    );
-
-    return (
-      <View style={styles.userBubbleWrapper}>
-        <View
-          style={[
-            styles.userBubble,
-            {
-              borderRadius: cornerRadius,
-              // Apply measured width if available
-              ...(measuredWidth !== null && { width: measuredWidth }),
-            },
-            viewStyle === 'filled'
-              ? {
-                  backgroundColor: loomUiTokens.colors.userBubbleFill,
-                  borderWidth: 0,
-                }
-              : {
-                  backgroundColor: 'transparent',
-                  borderColor: loomUiTokens.colors.userBubbleOutline,
-                  borderWidth: loomUiTokens.messageList.userBubbleOutlineWidth,
-                },
-          ]}
-        >
-          <AppText
-            variant="body"
-            tone={viewStyle === 'filled' ? 'inverse' : 'primary'}
-            onTextLayout={onTextLayout}
-            style={[
-              styles.messageText,
-              messageTextStyle,
-              viewStyle === 'filled'
-                ? styles.userFilledText
-                : styles.standardText,
-              speakingColor ? { color: speakingColor, opacity: 1 } : null,
-            ]}
-          >
-            {text}
-          </AppText>
-        </View>
-      </View>
-    );
-  }
-);
-
-const ContextMenuWrapper = ({
-  row,
-  onMessageAction,
-  onContextMenuGestureStart,
-  children,
-  previewBorderRadius,
-  style,
-}: {
-  readonly row: ChatRow;
-  readonly onMessageAction: (
-    nodeId: string,
-    action: ChatMessageMenuAction
-  ) => void;
-  readonly onContextMenuGestureStart: (nodeId: ULID) => void;
-  readonly children: ReactNode;
-  readonly previewBorderRadius: number;
-  readonly style: StyleProp<ViewStyle>;
-}) => {
-  const menuItems = buildMessageMenuItems(
-    row.bookmarked,
-    row.pruned,
-    row.authorType
-  );
-  const actions: ContextMenuAction[] = menuItems.map((item) => ({
-    title: item.title,
-    systemIcon: item.systemIcon,
-    destructive: item.destructive,
-  }));
-
-  return (
-    <ContextMenu
-      title={row.localId}
-      actions={actions}
-      borderRadius={previewBorderRadius}
-      previewBackgroundColor="transparent"
-      style={style}
-      onPress={(event) => {
-        const menuItem = menuItems[event.nativeEvent.index];
-        if (menuItem) {
-          onMessageAction(row.id, menuItem.action);
-        }
-      }}
-    >
-      {children}
-    </ContextMenu>
-  );
-};
-
 const styles = StyleSheet.create({
   loadingWrap: {
     flex: 1,
@@ -714,68 +339,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
   },
-  rowBlock: {
+  streamingRow: {
     width: '100%',
-  },
-  row: {
-    width: '100%',
-  },
-  userRow: {
-    alignItems: 'flex-end',
-  },
-  assistantRow: {
     alignItems: 'flex-start',
-  },
-  prunedRow: {
-    opacity: 0.45,
-  },
-  userMenuHost: {
-    alignSelf: 'flex-end',
-    maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
-  },
-  assistantMenuHost: {
-    alignSelf: 'stretch',
-  },
-  messageTarget: {},
-  assistantMessageTarget: {
-    width: '100%',
-  },
-  nodeCaption: {
-    marginTop: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  nodeCaptionText: {
-    fontStyle: 'italic',
-    fontSize: 11,
-    letterSpacing: 0,
-  },
-  inlineRail: {
-    // The rail manages its own horizontal insets; cancel the list's padding
-    // so it spans the full width like the prototype's inline band.
-    marginHorizontal: -loomUiTokens.layout.horizontalInset,
-    marginTop: loomUiTokens.messageList.rowGap / 2,
-  },
-  userBubbleWrapper: {
-    maxWidth: '100%',
-    alignItems: 'flex-end',
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: loomUiTokens.messageList.userBubblePaddingHorizontal,
-    paddingVertical: loomUiTokens.messageList.userBubblePaddingVertical,
-  },
-  standardText: {
-    opacity: loomUiTokens.messageList.messageTextOpacity,
-  },
-  userFilledText: {
-    color: loomUiTokens.colors.userBubbleFillText,
-    opacity: loomUiTokens.messageList.messageTextOpacity,
-  },
-  messageText: {
-    fontSize: loomUiTokens.messageList.textSize,
-    lineHeight: loomUiTokens.messageList.textLineHeight,
   },
   errorText: {
     marginTop: loomUiTokens.messageList.errorTopMargin,
