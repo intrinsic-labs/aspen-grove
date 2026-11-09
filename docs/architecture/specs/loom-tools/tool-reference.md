@@ -33,7 +33,7 @@ Inspect a node's content and metadata.
 [a7x2] human · 3m ago · depth:7
 "Marie's reluctance stems from her childhood, not the immediate conflict."
 
-3 continuations · 1 annotation · 1 link
+3 continuations · 1 annotation
 ```
 
 **Full Return:**
@@ -44,7 +44,7 @@ the summer her father left. The immediate conflict with Thomas is just
 triggering that old wound. She's not really angry at him; she's angry at 
 the pattern repeating.
 
-3 continuations · 1 annotation · 1 link
+3 continuations · 1 annotation
 ```
 
 **With Annotations:**
@@ -56,7 +56,7 @@ Annotations:
   [ann-1] "Key turning point—character motivation established"
   [ann-2] "Revisit if branch 3 doesn't work out"
 
-3 continuations · 1 link
+3 continuations
 ```
 
 ---
@@ -69,12 +69,11 @@ See what's connected to a node.
 ```
 → list [localId] continuations
 → list [localId] annotations
-→ list [localId] links
 ```
 
 **Parameters:**
 - `localId` — Required. The node to inspect.
-- What to list — Required. One of: `continuations`, `annotations`, `links`.
+- What to list — Required. One of: `continuations`, `annotations`.
 
 **Return (continuations):**
 ```
@@ -89,13 +88,6 @@ See what's connected to a node.
 [a7x2] annotations:
   [ann-1] collaborator · "Key turning point—character motivation established"
   [ann-2] human · "Revisit if branch 3 doesn't work out"
-```
-
-**Return (links):**
-```
-[a7x2] links:
-  → doc:"character notes" §motivation
-  → [x9y3] in tree:"earlier draft" (note: "same scene, different approach")
 ```
 
 ---
@@ -167,7 +159,7 @@ Move active context to a different node.
 
 ## Content Tools
 
-Tools for creating nodes, annotations, and links.
+Tools for creating nodes and annotations, and managing branches.
 
 ---
 
@@ -263,32 +255,6 @@ Add an annotation to a node.
 - Annotations are excluded from subject model context by default.
 - Visible to humans and loom-aware collaborators.
 - Creates a node with annotation edge.
-
----
-
-### link
-
-Create a link between a node and another node, tree, or document.
-
-**Syntax:**
-```
-→ link [localId] to [target]
-→ link [localId] to [target] note:"[description]"
-```
-
-**Parameters:**
-- `localId` — Required. Source node.
-- `target` — Required. Target: another `localId`, `doc:"name"`, `tree:"name"`, or `tree:"name" node:[id]`.
-- `note` — Optional. Description of the relationship.
-
-**Return:**
-```
-✓ linked [a7x2] ↔ doc:"character notes"
-```
-
-**Notes:**
-- Links are bidirectional references.
-- Cross-tree links require appropriate permissions.
 
 ---
 
@@ -419,226 +385,6 @@ Restore a pruned branch.
 
 ---
 
-## Document Tools
-
-Tools for reading and writing linked documents.
-
----
-
-### read
-
-View a document's contents.
-
-**Syntax:**
-```
-→ read doc:"[name]"
-→ read doc:"[name]" summary
-→ read doc:"[name]" lines:[start]-[end]
-→ read doc:"[name]" section:[id]
-```
-
-**Parameters:**
-- `doc` — Required. Document name or ID.
-- `summary` — Optional flag. Return summary only.
-- `lines` — Optional. Line range to return.
-- `section` — Optional. Specific section identifier.
-
-**Return (summary):**
-```
-doc:"character notes" (1,247 words · updated 2h ago)
-"Background notes on Marie and Thomas, covering childhood history, 
-relationship dynamics, and key character beats for Act 2."
-```
-
-**Return (full or section):**
-```
-doc:"character notes" §motivation
-
-## Marie's Core Motivation
-
-Her reluctance isn't about Thomas—it's about the pattern. Every significant 
-relationship in her life has followed the same arc: trust, dependence, 
-abandonment. Thomas represents safety, which is precisely why she's afraid.
-
-Key beats:
-- Summer 1987: Father leaves
-- College: First serious relationship ends similarly
-- Present: Thomas proposes, triggering the pattern
-```
-
----
-
-### write
-
-Edit a document.
-
-**Syntax:**
-```
-→ write doc:"[name]" append "[content]"
-→ write doc:"[name]" at:[location] "[content]"
-→ write doc:"[name]" replace:[section] "[content]"
-```
-
-**Parameters:**
-- `doc` — Required. Document name or ID.
-- `append` — Add to end of document.
-- `at` — Insert at location (`start`, `end`, line number, or section).
-- `replace` — Replace a section.
-- `content` — Required. The content to write.
-
-**Return:**
-```
-✓ appended to doc:"character notes" (now 1,312 words)
-```
-
-**Notes:**
-- Requires `doc_write` permission.
-- Document summary regenerates on next close.
-
----
-
-## Memory Tools
-
-Tools for managing what stays in working context.
-
----
-
-### pin
-
-Keep content in working memory across turns.
-
-**Syntax:**
-```
-→ pin [localId]
-→ pin doc:"[name]"
-→ pin doc:"[name]" section:[id]
-```
-
-**Parameters:**
-- Reference to pin — A node localId or document reference.
-
-**Return:**
-```
-✓ pinned [a7x2] to working memory
-```
-
-**Notes:**
-- Pinned content survives context pruning.
-- Appears in operational memory block each turn.
-- Use sparingly—pins consume context space.
-
----
-
-### stash
-
-Save content to medium-term memory, removed from active context.
-
-**Syntax:**
-```
-→ stash "[label]" "[content]"
-→ stash "[label]" content-of:[localId]
-→ stash "[label]" summary-of:[range]
-```
-
-**Parameters:**
-- `label` — Required. Name for later retrieval.
-- `content` — The content to stash (literal, from node, or summarized range).
-
-**Return:**
-```
-✓ stashed "marie insight" (47 tokens)
-```
-
-**Notes:**
-- Stashed content is not in active context until recalled.
-- Survives across turns.
-- Useful for preserving insights without consuming context.
-
----
-
-### recall
-
-Retrieve stashed content back into working context.
-
-**Syntax:**
-```
-→ recall "[label]"
-```
-
-**Parameters:**
-- `label` — Required. The stash label.
-
-**Return:**
-```
-✓ recalled "marie insight":
-"Marie's reluctance stems from pattern recognition—she's seen this 
-story before and knows how it ends. Her fear isn't of Thomas but 
-of her own predictable response to safety."
-```
-
----
-
-### drop
-
-Explicitly remove something from operational memory.
-
-**Syntax:**
-```
-→ drop pin:[localId]
-→ drop stash:"[label]"
-```
-
-**Parameters:**
-- What to drop — A pinned reference or stash label.
-
-**Return:**
-```
-✓ dropped pin [a7x2]
-```
-
----
-
-### memory
-
-Review current operational memory state.
-
-**Syntax:**
-```
-→ memory
-→ memory trace
-→ memory stashed
-```
-
-**Parameters:**
-- `trace` — Optional. Show action history.
-- `stashed` — Optional. Show stashed items.
-
-**Return (default):**
-```
-Working Memory:
-  pinned: [a7x2], [r001], doc:"character notes" §motivation
-  stashed: "marie insight", "theme notes", "act 2 outline"
-
-Context: 12,847 tokens used · 37,153 available
-```
-
-**Return (trace):**
-```
-Action Trace (last 10):
-  → view a7x2
-  → list a7x2 continuations
-  → switch to b3k9
-  → view b3k9 full
-  → annotate b3k9 "promising direction"
-  → pin b3k9
-  → continue from b3k9 n:2
-  → view c4m2
-  → stash "alternative" content-of:c4m2
-  → memory
-```
-
----
-
 ## Meta Tools
 
 Tools for help and private reasoning.
@@ -657,12 +403,10 @@ Get information about available tools.
 
 **Return (overview):**
 ```
-Available tools (your permissions: loom_aware, loom_write, doc_read):
+Available tools (your permissions: loom_aware, loom_write):
 
 Navigation: view, list, tree, switch
-Content: respond, annotate, link, edit, continue*
-Documents: read
-Memory: pin, stash, recall, drop, memory
+Content: respond, annotate, edit, bookmark, prune, continue*
 Meta: help, think
 
 * requires loom_generate permission (you don't have this)
@@ -711,69 +455,10 @@ Let me try option 3 first.
 ```
 
 **Notes:**
-- Everything between `→ think` and `←` is preserved in collaborator memory.
+- Everything between `→ think` and `←` stays with the collaborator's turn.
 - Collapsed by default in UI (expandable).
 - Excluded from subject model context.
 - Useful for reasoning, planning, and self-reflection.
-
----
-
-### search
-
-Search the web for current information.
-
-**Syntax:**
-```
-→ search "[query]"
-→ search "[query]" depth:[basic|deep]
-→ search "[query]" topic:[general|news]
-→ search "[query]" max:[n]
-→ search "[query]" include:[domains] exclude:[domains]
-```
-
-**Parameters:**
-- `query` — Required. The search query (in quotes).
-- `depth` — Optional. `basic` (fast, snippets) or `deep` (full content extraction).
-- `topic` — Optional. `general` (default) or `news`.
-- `max` — Optional. Number of results (default: 5, max: 10).
-- `include` / `exclude` — Optional. Comma-separated domains to prefer or exclude.
-
-**Return:**
-```
-Search: "Marie character archetype literary analysis"
-5 results (234ms)
-
-[1] "Character Archetypes in Modern Fiction" — literarydevices.net
-    "The reluctant hero archetype often manifests as characters who..."
-    
-[2] "Understanding Marie as a Literary Figure" — jstor.org
-    "Marie represents the classic 'threshold guardian' archetype..."
-
-[3] ...
-```
-
-**Return (deep):**
-```
-Search: "Marie character archetype literary analysis" (deep)
-3 results (1,247ms)
-
-## Result 1: Character Archetypes in Modern Fiction
-Source: https://literarydevices.net/archetypes
-Published: 2024-08-12
-
-The reluctant hero archetype often manifests as characters who resist 
-their calling. This resistance typically stems from...
-
----
-
-## Result 2: ...
-```
-
-**Notes:**
-- Requires web search API key (Tavily or Brave) configured in settings.
-- `basic` depth returns snippets; `deep` extracts full page content.
-- Results are formatted for context efficiency.
-- See [Web Search Contract](../../contracts/web-search.md) for full specification.
 
 ---
 
@@ -788,19 +473,10 @@ their calling. This resistance typically stems from...
 | `continue` | loom_generate | Invoke subject model |
 | `respond` | loom_write | Add own content as node |
 | `annotate` | loom_write | Add annotation to node |
-| `link` | loom_write | Create cross-references |
 | `edit` | loom_write | Create edited node (version in Buffer, branch in Dialogue) |
 | `bookmark` | loom_write | Mark node for easy retrieval |
 | `unbookmark` | loom_write | Remove bookmark |
 | `prune` | loom_write | Hide branch (soft delete) |
 | `restore` | loom_write | Restore pruned branch |
-| `read` | doc_read | View document contents |
-| `write` | doc_write | Edit document |
-| `pin` | loom_aware | Keep in working memory |
-| `stash` | loom_aware | Save to medium-term memory |
-| `recall` | loom_aware | Retrieve stashed content |
-| `drop` | loom_aware | Remove from memory |
-| `memory` | loom_aware | Review memory state |
 | `help` | loom_aware | Tool documentation |
 | `think` | loom_aware | Private reasoning scratchpad |
-| `search` | loom_aware | Search the web |

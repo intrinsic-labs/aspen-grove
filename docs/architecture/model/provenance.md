@@ -1,6 +1,6 @@
 # Provenance Entities Model Specification
 
-> Specification for RawApiResponse, TimestampCertificate, and hash chain computation — the provenance and verification structures of Aspen Grove.
+> Specification for RawApiResponse and hash chain computation — the provenance and verification structures of Aspen Grove. This is provenance as it stands in v1; RFC 3161 timestamps, TLS Notary and other extras are out of scope.
 
 ---
 
@@ -62,45 +62,6 @@ Complete, unmodified API response stored for model-generated Nodes.
 
 ---
 
-## TimestampCertificate
-
-RFC 3161 timestamp authority certificate proving a hash existed at a specific time.
-
-### Properties
-
-- **id** — ULID, primary identifier
-- **nodeId** — ULID, reference to the Node this timestamp certifies
-- **contentHash** — string, the hash that was timestamped (should match Node.contentHash)
-- **timestampAuthority** — string, URL of the timestamp authority used
-- **certificate** — string, base64-encoded timestamp certificate
-- **timestamp** — timestamp, the certified time from the authority
-- **verified** — boolean, whether the certificate has been verified locally
-- **verifiedAt** — optional timestamp, when verification was performed
-- **createdAt** — timestamp
-
-### Constraints
-
-- One TimestampCertificate per Node (optional — depends on network availability)
-- contentHash must match the Node's contentHash at time of creation
-- Certificates are obtained asynchronously after Node creation
-- Failed timestamp attempts should be logged but not block Node creation
-
-### Indexes
-
-- Primary: id
-- By nodeId (for lookup from Node — unique)
-- By verified = false (for retry queue)
-- By timestampAuthority (for authority-specific queries)
-
-### Verification Process
-
-1. Extract timestamp and hash from certificate
-2. Verify certificate signature against authority's public key
-3. Confirm hash matches Node.contentHash
-4. Set verified = true and verifiedAt = now
-
----
-
 ## Provenance View
 
 Not a stored entity — a computed view combining provenance data for display.
@@ -108,15 +69,12 @@ Not a stored entity — a computed view combining provenance data for display.
 ### Components
 
 - Node.contentHash and hash chain validity
-- TimestampCertificate status (present, verified, timestamp)
 - RawApiResponse availability and summary
 - Parent chain verification status
 
 ### Display Information
 
 - **Hash Chain Status** — valid | invalid | unverified
-- **Timestamp Status** — certified | pending | unavailable
-- **Certified Time** — timestamp from authority (if available)
 - **API Evidence** — available | unavailable
 - **Provider Request ID** — for cross-referencing with provider logs
 
@@ -214,52 +172,6 @@ Process for verifying the integrity of a Node and its ancestry.
 
 ---
 
-## Timestamp Authority Configuration
-
-### Default Authority
-
-- [FreeTSA](https://freetsa.org) — free, reliable, widely recognized
-- Fallback authorities can be configured
-
-### Request Process
-
-1. Node created with contentHash computed
-2. Background job submits hash to timestamp authority
-3. Certificate received and stored
-4. Verification performed
-5. Status updated on TimestampCertificate
-
-### Failure Handling
-
-- Network failures: retry with exponential backoff
-- Authority unavailable: try fallback authority
-- Persistent failure: mark as unavailable, Node still valid
-- Timestamps are evidence, not requirements — Nodes exist without them
-
----
-
-## Future: TLS Notary Integration
-
-Not implemented in MVP, but schema should accommodate.
-
-### Planned Entity: TlsNotaryProof
-
-- **id** — ULID
-- **nodeId** — ULID
-- **proof** — binary, the notarized TLS session proof
-- **serverIdentity** — string, verified server hostname
-- **sessionTimestamp** — timestamp
-- **verified** — boolean
-
-### Integration Notes
-
-- Optional, user-enabled per Loom Tree or session
-- Significant latency impact (currently 10-15 seconds per request; may improve over time)
-- Provides strongest available proof without provider cooperation
-- Store proof as binary blob (not human-readable)
-
----
-
 ## Related Documentation
 
 - [Provenance Overview](../../provenance-overview.md) — High-level explanation of the tiered verification strategy
@@ -273,17 +185,16 @@ Not implemented in MVP, but schema should accommodate.
 ### Default Retention
 
 - RawApiResponse: retained for lifetime of Node
-- TimestampCertificate: retained for lifetime of Node
 - Deleted when Node is hard-deleted
 
 ### Storage Considerations
 
-- Estimate 5-15KB per model-generated Node (response + certificate)
-- 1000 Nodes ≈ 5-15MB provenance data
+- Estimate 2-10KB per model-generated Node (compressed raw response)
+- 1000 Nodes ≈ 2-10MB provenance data
 - Consider optional pruning for old, verified Nodes (keep hash, remove raw response)
 
 ### Export Considerations
 
 - Provenance data should be exportable with Node
-- Include: contentHash, timestamp certificate, summary of API response
+- Open Loom export carries the hash chain and raw-response evidence, with privacy toggles (see [Open Loom spec](../../open-loom/spec.md))
 - Exclude: full response body (privacy, size) unless explicitly requested

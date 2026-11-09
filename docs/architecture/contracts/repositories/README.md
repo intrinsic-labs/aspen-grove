@@ -23,12 +23,11 @@ Repositories provide the boundary between application logic and persistence. Use
 | [Edge Repository](./edge-repository.md) | Edge persistence |
 | [Agent Repository](./agent-repository.md) | Agent persistence |
 | [Grove Repository](./grove-repository.md) | Grove persistence |
-| [Document Repository](./document-repository.md) | Document persistence |
-| [Link Repository](./link-repository.md) | Link persistence |
 | [Tag Repository](./tag-repository.md) | Tag and TagAssignment persistence |
-| [Provenance Repositories](./provenance-repositories.md) | RawApiResponse and TimestampCertificate |
+| [Provenance Repositories](./provenance-repositories.md) | RawApiResponse |
 | [User Preferences Repository](./user-preferences-repository.md) | UserPreferences singleton |
-| [Local Model Repository](./local-model-repository.md) | LocalModel persistence |
+
+Path and path-state persistence (`IPathRepository`) has no contract doc; read `src/application/repositories/core/IPathRepository.ts`. The interfaces for the cut Document and Link entities, `ILocalModelRepository` and `ITimestampCertificateRepository` still exist in `src/application/repositories/` with no implementation.
 
 ---
 
@@ -103,5 +102,5 @@ Repositories detect active transaction and participate automatically.
 
 - [Core Entities](../../model/core-entities.md) — Entity definitions
 - [Agents](../../model/agents.md) — Agent and Model entities
-- [Organization](../../model/organization.md) — Grove, Document, Link, Tag entities
+- [Organization](../../model/organization.md) — Grove and Tag entities
 - [Provenance](../../model/provenance.md) — RawApiResponse and TimestampCertificate entities

@@ -1,11 +1,11 @@
 # Aspen Grove — Build Plan (revised 2026-07-07)
 
-> Revised against `.dev/aspen-grove-goals.md` and a full audit of the codebase.
-> Organizing principle: **ship a dialogue-mode loom I can use daily and put into TestFlight/Play beta**, then layer the differentiators (buffer mode, backrooms, import/export ecosystem, provenance UI) on top.
+> Milestone record for Beta 1, revised 2026-07-07 against a full audit of the codebase.
+> **Scope is set by the project brief, which wins wherever this plan disagrees.** The scope
+> sections below (divergences, v1, after v1) were brought in line with it in 2026-11.
 >
-> Audience recalibration from goals doc: loom nerds / AI researchers / cyborgism crowd. Optimize for
-> local-model support (LM Studio first-class), provenance as moat, import/export, and multimodal
-> hypergraph trees — not for chasing general-consumer chat features.
+> Audience: loom nerds, AI researchers, the cyborgism crowd, and newcomers who want a first real
+> look at how models think. A loom, not a chat client and not a coding harness.
 
 ---
 
@@ -23,10 +23,10 @@ What the original phased plan called for vs. what actually exists:
 | 5 Tree Ops | ◐ Edit + path switching + bookmark *toggle* done. No prune UI, no tags, no links, no search, no bookmarks browse, no export |
 | 6 Loom-Aware | ❌ Not started |
 | 7 Buffer Mode | ❌ Not started (spec complete) |
-| 8 Voice | ❌ Not started |
-| 9 Summaries | ❌ Not started |
-| 10 Documents | ❌ Placeholder tab only |
-| 11 Provenance | ◐ **Over-delivered early (good)**: hash-chain verification implemented, tested, runs live on every model turn. ❌ No UI surface, no RFC 3161 |
+| 8 Voice | ❌ Not started. Hands-free voice mode cut; Latent Spaces-style character voices (read-aloud) are in v1 |
+| 9 Summaries | ❌ Not started (only needed for loom tools, post-v1) |
+| 10 Documents | ✂️ Cut (documents editor out of scope) |
+| 11 Provenance | ◐ **Over-delivered early (good)**: hash-chain verification implemented, tested, runs live on every model turn. RFC 3161 and other extras cut |
 | 12 Polish | ❌ Not started |
 
 Also done, outside the original plan: **agent-centric pivot phases 1–3** (per-tree agents, tree-owned agents, agent-driven provider routing, pinned default agent — see `.dev/agent-centric-dialogue-settings.md`).
@@ -37,9 +37,10 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 ## Deliberate divergences (now canon)
 
-- **Providers = OpenRouter + LM Studio** for beta. OpenRouter is the many-models gateway; LM Studio is the first-class local provider (aligned with goals: local/self-hosted emphasis). Native Anthropic/OpenAI adapters are **post-beta, if ever**. Ollama adapter is post-beta (cheap: reuse LM Studio's OpenAI-compat path).
-- **Provenance-first** was the right instinct — goals doc names provenance a product moat. Verification service is done; the *visible* part (node detail provenance view) moves into Beta 1.
-- **Mobile agent harness / phone-actions**: cut, per goals doc ("I'm not building OpenClaw"). What survives is what already exists: LM Studio's server-side MCP passthrough (`useMcpTools`). No client-side tool execution, no iOS Shortcuts bridge.
+- **Providers = OpenRouter + LM Studio, only.** OpenRouter is the many-models gateway; LM Studio is the local provider. No native Anthropic or OpenAI adapters.
+- **Provenance as it stands**: hash chains plus stored raw responses, verified live on every model turn and shown in the node detail sheet. RFC 3161 timestamps and other provenance extras are cut.
+- **A loom, not a harness**: no agent harness or phone actions, no connectors, no web search, no MCP passthrough. The leftover `useMcpTools` flag in the LM Studio adapter and Connections settings is to be removed.
+- **Local-first, bring your own keys, open source**: nothing depends on an Intrinsic Labs server. Sync, sharing/publishing platforms and hosted-inference revenue are cut.
 
 ---
 
@@ -50,7 +51,7 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 ### A1. Agent-centric pivot, phases 4–6 (from `.dev/agent-centric-dialogue-settings.md`) — *top priority* ✅
 - [x] DialogueSettingsSheet: per-tree agent tweaks from the chat screen (shared-agent fork prompt: "edit shared" vs "customize for this tree") — `chat/dialogue-settings/`, spec in `docs/architecture/specs/dialogue-settings-ui.md`
 - [x] Settings → Agents library: real CRUD (create/edit shared agents), replacing the "Agents (placeholder)" section — `settings/agents/` with editor sheet, templates, catalog picker
-- [x] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/MCP/auto-load **only** — `settings/connections/` with "Test connection"
+- [x] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/MCP/auto-load **only** (the MCP toggle is since out of scope) — `settings/connections/` with "Test connection"
 - [x] Removed ProviderPickerSection, singleton assistant helpers, and the implicit create-agent-on-settings-save hack
 - [x] Wired `CreateSharedAgent`, `UpdateAgentConfiguration`, `ForkAgentForTree`, `UpdateTreeDefaultAgent`
 - [x] Tree agent changeable after creation (chat ⚙️ → Switch agent)
@@ -92,7 +93,7 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 ## Milestone C — What loom nerds need on day one ✅ (2026-07-08)
 
-**Goal**: the features the goals doc calls "paramount" for the actual audience.
+**Goal**: the features the audience needs first: import/export above all.
 
 **Direction locked in during build**: Aspen Grove imports from *any* loom format (adapter registry), but exports *only* Open Loom (+ Markdown path for humans).
 
@@ -117,7 +118,7 @@ Also shipped in this pass (user-requested):
 **Goal**: approvable builds, honest first-run experience.
 
 - [x] Hide or replace the Documents placeholder tab (a visibly dead tab is a review-quality smell) — replaced with the Search tab in Milestone C
-- [ ] First-run onboarding-lite: what a loom is (3 screens max), connect OpenRouter or LM Studio, create first tree. The full Field Guide (Sanity CMS) stays post-beta; a static "what is this" screen is enough
+- [ ] First-run onboarding-lite: what a loom is (3 screens max), connect OpenRouter or LM Studio, create first tree. A static "what is this" screen is enough (the Field Guide is cut)
 - [ ] Empty states (no API key, no trees, LM Studio unreachable) with actionable guidance
 - [ ] Error-handling audit: every provider/DB failure has a user-visible, non-technical surface
 - [ ] App icons, splash, store listings, screenshots
@@ -129,19 +130,25 @@ Also shipped in this pass (user-requested):
 
 ---
 
-## Post-beta ladder (rough order)
+## v1 (per the brief)
 
-1. **Buffer Mode** (`docs/architecture/specs/buffer-mode.md`) — spec complete; core of the "notes a base model can continue" pillar. Biggest single chunk remaining
-2. **Backrooms / multi-agent trees** — two agents on one tree, alternating turns, human observes/intervenes. Builds directly on the per-tree agent layer (agent plan Phase 7: `participatingAgentIds`). Cheap-ish and highly differentiating — promote into beta 2 if momentum is good
-3. **Documents & knowledge layer** (Phase 10) — block editor, node/tree embeds, links. Repo interfaces exist
-4. **Summaries** (Phase 9) — needed before loom-aware tools; also improves long-tree context
-5. **Loom-aware tools** (Phase 6, `docs/architecture/specs/loom-tools/`) — the two-role collaborator pattern; depends on summaries + tree ops
-6. **Provenance completion** — RFC 3161 timestamps + verification UI polish (hash chains already live)
-7. **Voice Mode** (Phase 8) — deprioritized: not mentioned in goals doc; revisit after beta feedback
-8. **Ollama adapter**; native Anthropic/OpenAI adapters only if users demand them
-9. **Sync subscription** (E2EE device sync, Obsidian-style) — the monetization candidate; needs backend decision (deferred per docs review)
-10. **Publishing/sharing platform** ("LessWrong for looms", Intrinsic Labs-curated) — separate product; needs market research first
-11. **Interp/latent-space mapping experiments** — the long-tail moat features; design after real usage
+v1 is the Beta 1 loop above plus three things:
+
+1. **Several continuations at once, compared side by side.** Today each generate call makes one continuation and siblings are browsed one rail at a time.
+2. **Latent Spaces' character voices**: named voices that read nodes aloud, as in the Swift app (`~/dev/mobile/loom-swift`, `LoomVoice` / `SpeechSynthesizer`). Not a hands-free dictation loop.
+3. **Latent Spaces' UI and UX brought over exactly** (`docs/architecture/specs/loom-swift-prototype-ui-transfer-audit.md`, `docs/architecture/specs/loom-ui-rebuild-implementation-plan.md`).
+
+v1 ships against a written definition of done; scope arguments lose to it.
+
+---
+
+## After v1 (in order of interest)
+
+1. **LoomDisplay**: the model draws ASCII animation frames; the first `→` model-ergonomic tool (`docs/architecture/specs/loom-tools/`; no LoomDisplay spec yet)
+2. **Buffer mode with base models** (`docs/architecture/specs/buffer-mode.md`)
+3. **Backrooms**: two agents on one tree, alternating turns, human observes and intervenes. Builds on the per-tree agent layer (agent plan Phase 7: `participatingAgentIds`)
+
+Anything else (summaries, the wider loom-tools set) waits until one of these needs it.
 
 ---
 
@@ -151,7 +158,6 @@ Also shipped in this pass (user-requested):
 - A2 (truncation) and A3 (retry) are independent — parallelize freely
 - C is independent of B except the share-sheet entry point
 - D depends on A + B; C's import/export is strongly desired for beta but severable
-- Post-beta items 1, 2, 3 are mutually independent; 5 depends on 4
 
 ---
 

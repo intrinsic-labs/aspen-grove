@@ -47,7 +47,7 @@ Updates UserPreferences fields.
 **Input:**
 - `changes` — object with optional fields:
   - `displayName` — string, user's chosen name
-  - `email` — string, for future account/sync features
+  - `email` — string (unused)
   - `avatarRef` — string, reference to avatar image in media storage
   - `defaultVoiceModeEnabled` — boolean
   - `defaultTemperature` — number (0.0-2.0), preferred temperature for new model agents
@@ -96,7 +96,7 @@ UserPreferences captures what's truly app-wide (theme, font size, etc.) while Ag
 | `displayName` | string | "Human" | User's chosen name |
 | `email` | string? | null | For future account features |
 | `avatarRef` | string? | null | Reference to avatar image |
-| `defaultVoiceModeEnabled` | boolean | false | Voice Mode default state |
+| `defaultVoiceModeEnabled` | boolean | false | Reserved for character voices (not read yet) |
 | `defaultTemperature` | number | 1.0 | Default for new model agents |
 | `theme` | enum | `system` | `light` \| `dark` \| `system` |
 | `fontSize` | number | 16 | UI text size in points |

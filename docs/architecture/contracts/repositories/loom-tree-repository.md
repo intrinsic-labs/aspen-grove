@@ -81,13 +81,15 @@ Updates LoomTree metadata.
 
 Triggers regeneration of the LoomTree summary.
 
+**Status:** specified, not in the interface or implemented; summaries wait for loom tools (after v1).
+
 **Input:**
 - `id` — ULID
 
 **Behavior:**
 - Gathers node summaries from primary path and branch points
 - Includes user-edited `description` field as context
-- Generates new summary via summarization model (Haiku/GPT-4o-mini)
+- Generates new summary via a small summarization model the user has configured
 - Updates `summary` field and `updatedAt` timestamp
 
 **Returns:** Updated LoomTree

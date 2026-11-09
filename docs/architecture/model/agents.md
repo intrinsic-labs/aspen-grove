@@ -99,35 +99,18 @@ Agents have two flavors depending on whether they're managed at the application 
 
 ## Model Reference
 
-The `modelRef` field on Agent stores a reference to the underlying model. The format depends on provider type:
+The `modelRef` field on Agent stores a reference to the underlying model.
 
-### Remote Models
+### Format
 
-For models from remote providers (OpenRouter, Anthropic, OpenAI, Google, Hyperbolic), `modelRef` stores a composite key:
+`modelRef` is `{provider}:{identifier}`. Aspen Grove routes two providers:
 
-```
-{provider}:{identifier}
-```
+- `openrouter:{openrouter model id}` — e.g. `openrouter:anthropic/claude-sonnet-4.5`
+- `lmstudio:{LM Studio model key}` — a model served by the user's LM Studio
 
-Examples:
-- `openrouter:claude-sonnet-4-20250514`
-- `anthropic:claude-3-5-haiku-20241022`
-- `openai:gpt-4o`
-- `google:gemini-1.5-pro`
+Provider routing is resolved per request from this prefix (`selectableProviderFromModelRef`); there is no global active provider. The domain `Provider` type still lists other values (`anthropic`, `openai`, `google`, `hyperbolic`, `local`, `custom`), but only `openrouter` and `lmstudio` can be routed, and no native Anthropic or OpenAI adapters are planned.
 
-The [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice) resolves this to full model metadata at runtime.
-
-### Local Models
-
-For user-defined local models, `modelRef` stores the LocalModel's ULID:
-
-```
-local:{ulid}
-```
-
-Example: `local:01HQ3K4N7Y8M2P5R6T9W0X1Z2A`
-
-See [LocalModelRepository](../contracts/repositories.md#localmodelrepository) for local model persistence.
+OpenRouter models are listed from the public catalog (`OpenRouterModelCatalog`, cached for 24 hours); LM Studio models are discovered live from the server.
 
 ---
 
@@ -139,9 +122,11 @@ App-wide user preferences stored as a singleton. Not tied to any specific Agent.
 
 - **id** — ULID, primary identifier (singleton — only one record exists)
 - **displayName** — string, user's chosen name (used as default for human Agent names)
-- **email** — optional string, for future account/sync features
+- **email** — optional string (unused)
 - **avatarRef** — optional string, reference to avatar image in media storage
-- **defaultVoiceModeEnabled** — boolean, default false
+- **defaultVoiceModeEnabled** — boolean, default false; reserved for character voices (nothing reads it yet)
+- **autoTitleEnabled** — boolean, generate a tree title with one extra model call after the first response
+- **lmstudioSettings** — LM Studio connection settings (endpoint and options; the token is in secure storage)
 - **defaultTemperature** — number, preferred temperature for new model agents (default: 1.0)
 - **defaultModelAgentId** — optional ULID, the model Agent that new LoomTrees are pinned to (see [Default Model Agent](#default-model-agent-for-new-trees))
 - **theme** — enum: `light` | `dark` | `system`, default `system`
@@ -181,65 +166,24 @@ Previous versions had a separate `Human` entity that Agents referenced. This was
 - MVP is single-user — no need to model multiple humans locally
 - Human-specific preferences are app-wide, not per-Agent
 - The Agent abstraction already handles identity for authorship
-- Future multi-user (collaboration) will be server-mediated, not local
 
 ---
 
-## Model (Remote — from Catalog)
+## Model (from a provider)
 
-Remote models are not persisted locally. They're fetched dynamically from provider catalogs via [ModelCatalogService](../contracts/llm-provider.md#modelcatalogservice).
+Models are not persisted locally. OpenRouter's are fetched from its public catalog; LM Studio's from the running server.
 
 ### Properties (Runtime Only)
 
 - **identifier** — string, the model ID used in API requests
-- **provider** — enum: `openrouter` | `hyperbolic` | `anthropic` | `openai` | `google`
+- **provider** — `openrouter` | `lmstudio`
 - **displayName** — string, human-friendly name from provider
 - **description** — optional string, provider's model description
 - **capabilities** — ModelCapabilities object
-- **pricing** — optional PricingInfo (input/output cost per million tokens)
 
-### Why Not Persisted?
+### LM Studio connection
 
-- Models change frequently (new versions, deprecations)
-- Pricing and capabilities update without app releases
-- Catalog is cached with TTL for offline access
-- Reduces maintenance burden
-
----
-
-## LocalModel (Persisted)
-
-User-defined models for local inference servers or custom endpoints.
-
-### Properties
-
-- **id** — ULID, primary identifier
-- **identifier** — string, user-defined model name (e.g., `llama3:70b`, `my-fine-tune`)
-- **provider** — enum: `local` | `custom`
-- **endpoint** — string, full URL to the model endpoint
-- **authConfig** — optional AuthConfig object
-- **capabilities** — ModelCapabilities object (user-specified)
-- **createdAt** — timestamp
-- **updatedAt** — timestamp
-
-### AuthConfig Properties
-
-- **type** — enum: `none` | `bearer` | `basic`
-- **credentialRef** — optional string, reference to credential in secure storage
-
-### Constraints
-
-- `identifier` should be unique within the app (not enforced, but recommended)
-- `endpoint` must be network-accessible from the mobile device
-- `capabilities` must be manually configured (cannot be introspected)
-
-### Indexes
-
-- Primary: id
-- By provider (for filtering `local` vs `custom`)
-- By identifier (for lookup)
-
-*See [LocalModelRepository](../contracts/repositories.md#localmodelrepository) for persistence operations.*
+LM Studio's endpoint and settings live in `UserPreferences.lmstudioSettings`; its API token, like the OpenRouter key, lives in secure storage. A `LocalModel` entity and `ILocalModelRepository` interface exist in code for arbitrary custom endpoints, but nothing implements or uses them.
 
 ---
 
@@ -303,10 +247,10 @@ See [loom-tools ambient context](../specs/loom-tools/README.md#ambient-context) 
 ### Tools Available (for Model Agents)
 
 - **Navigation**: view, list, tree, switch
-- **Content**: continue (invoke subject model), respond (add own content), annotate, link, edit, bookmark, prune
-- **Documents**: read, write
-- **Memory**: pin, stash, recall, drop, memory
+- **Content**: continue (invoke subject model), respond (add own content), annotate, edit, bookmark, prune
 - **Meta**: help, think (private scratchpad)
+
+The tools are after v1; the `loomAware` flag exists today but unlocks nothing yet.
 
 *Full tool definitions, syntax, and examples in [loom-tools](../specs/loom-tools/README.md).*
 
@@ -343,15 +287,14 @@ On first launch, create these default entities:
 
 ### Suggested Model Agent Templates
 
-Pre-configured templates shown when user adds API credentials:
+Quick-start templates in the agent editor (`interface/components/settings/agents/agent-templates.ts`), all routed through OpenRouter. They are starting points the user edits before saving, never auto-created:
 
-| Template | modelRef | temperature | Notes |
-|----------|----------|-------------|-------|
-| Claude (Balanced) | `anthropic:claude-sonnet-4-20250514` | 0.7 | Good all-around |
-| Claude (Creative) | `anthropic:claude-sonnet-4-20250514` | 1.0 | Higher variance |
-| Claude (Precise) | `anthropic:claude-sonnet-4-20250514` | 0.3 | Lower variance |
-| GPT-4o | `openai:gpt-4o` | 0.7 | OpenAI flagship |
-| Gemini Pro | `google:gemini-1.5-pro` | 0.7 | Google flagship |
+| Template | Model (OpenRouter) | temperature |
+|----------|--------------------|-------------|
+| Claude Sonnet (Balanced) | `anthropic/claude-sonnet-4.5` | 0.7 |
+| Claude Sonnet (Creative) | `anthropic/claude-sonnet-4.5` | 1.2 |
+| Claude Haiku (Fast) | `anthropic/claude-haiku-4.5` | 0.7 |
+| GPT-4o (Balanced) | `openai/gpt-4o` | 0.7 |
 
 Users can create custom Agents from any available model.
 
@@ -369,15 +312,12 @@ Users can create custom Agents from any available model.
 ### Credential Reference Pattern
 
 ```
-Provider credentials:
-  anthropic → Keychain["anthropic_api_key"]
-  openai → Keychain["openai_api_key"]
-  openrouter → Keychain["openrouter_api_key"]
-  ...
-
-LocalModel.authConfig.credentialRef:
-  "local_model_{ulid}" → Keychain["local_model_{ulid}"]
+Provider credentials (ExpoSecureCredentialStore):
+  openrouter → SecureStore["openrouter_api_key"]
+  lmstudio   → SecureStore["lmstudio_api_token"]
 ```
+
+Keys are the user's own (bring your own keys); nothing passes through an Intrinsic Labs server.
 
 ### Agent Isolation
 

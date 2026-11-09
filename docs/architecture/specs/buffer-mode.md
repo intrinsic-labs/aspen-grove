@@ -2,7 +2,7 @@
 
 > This document specifies the structural model and behavior for Buffer Mode, a Loom Tree interaction style where content appears as continuous text rather than discrete messages.
 
-**Status**: Approved
+**Status**: Approved; kept for after v1 (buffer mode with base models). Not implemented.
 **Related**: [interaction-modes.md](../../domain-language/interaction-modes.md#buffer-mode), [core-entities.md](../model/core-entities.md)
 
 ---

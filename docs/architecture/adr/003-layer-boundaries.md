@@ -58,16 +58,15 @@ Adopt **Clean Architecture** with four distinct layers, enforcing strict depende
 
 **Contains**:
 - WatermelonDB repository implementations
-- LLM provider adapters (Anthropic, OpenAI, etc.)
+- LLM provider adapters (OpenRouter, LM Studio)
 - File system operations for media storage
-- RFC 3161 timestamp service client
 - Platform-specific utilities
 
 **Depends On**: Domain, Application
 
 **Example Concerns**:
 - "How do we actually save a Node to WatermelonDB?"
-- "How do we call the Anthropic API?"
+- "How do we call the OpenRouter API?"
 - "Where do we store image files?"
 
 ---
@@ -80,7 +79,7 @@ Adopt **Clean Architecture** with four distinct layers, enforcing strict depende
 - React components (screens, widgets)
 - Navigation configuration
 - State management (connecting UI to use cases)
-- Platform-specific UI (Voice Mode controls, etc.)
+- Platform-specific UI (share sheet, text-to-speech controls, etc.)
 
 **Depends On**: All inner layers (but only through defined interfaces)
 
@@ -129,26 +128,17 @@ For a mobile app, we could get away with less structure. However:
 
 ## Directory Structure
 
+As built:
+
 ```
 src/
-├── domain/           # Layer 1: Entities and business rules
-│   ├── entities/
-│   ├── values/
-│   └── errors/
-├── application/      # Layer 2: Use cases and interfaces
-│   ├── usecases/
-│   ├── repositories/  (interfaces only)
-│   └── services/      (interfaces only)
-├── infrastructure/   # Layer 3: Concrete implementations
-│   ├── persistence/
-│   ├── llm/
-│   ├── media/
-│   └── provenance/
-└── interface/        # Layer 4: React Native UI
-    ├── screens/
-    ├── components/
-    ├── navigation/
-    └── state/
+├── domain/            # Layer 1: entities/, value-objects/ (pure TypeScript)
+├── application/       # Layer 2: use-cases/, repositories/ (interfaces),
+│                      #          services/ (context, llm, open-loom, provenance, security)
+├── infrastructure/    # Layer 3: persistence/watermelon/, llm/ (OpenRouter, LM Studio),
+│                      #          security/, bootstrap/, logging/
+├── interface/         # Layer 4: components/, composition/ (DI), hooks/, services/, ui/
+└── app/               # expo-router routes (part of the Interface layer)
 ```
 
 ---
@@ -167,9 +157,8 @@ src/
 - Requires discipline to maintain boundaries
 
 ### Enforcement
-- Code review should verify layer boundaries
-- Consider ESLint rules to prevent illegal imports
-- Document patterns for common tasks
+- `eslint-plugin-boundaries` (`eslint.config.mjs`) fails `npm run lint` on any import that points outward: domain imports only domain; application imports domain and application; infrastructure adds application; interface (including `src/app/`) may import all layers
+- Code review should verify layer boundaries the linter can't see (e.g. infrastructure leaking through application types)
 
 ---
 
