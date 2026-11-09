@@ -1,0 +1,73 @@
+# First real turn: create an agent, open a tree, send, see the reply and its provenance.
+# Needs a provider: start Metro with EXPO_PUBLIC_OPENROUTER_API_KEY set (see VERIFY.md),
+# then run after smoke.yaml or on its own:
+#   maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"
+# It costs one short OpenRouter completion plus one title call.
+appId: com.intrinsiclabs.aspen-grove-rn
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 30000
+
+# P1: create an agent from the first template.
+- tapOn:
+    id: drawer-menu-button
+- tapOn:
+    id: drawer-nav-settings
+- tapOn:
+    id: settings-link-agents
+- tapOn:
+    id: settings-agents-new
+- tapOn:
+    id: agent-editor-template-claude-sonnet-balanced
+- tapOn:
+    id: agent-editor-submit
+- extendedWaitUntil:
+    visible:
+      id: settings-agents-list
+    timeout: 10000
+- takeScreenshot: 11-agent-created
+
+# P2: open a new tree from the tree list.
+- back
+- tapOn:
+    id: drawer-menu-button
+- tapOn:
+    id: drawer-nav-trees
+- tapOn:
+    id: trees-menu-button
+- tapOn: New Tree
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 10000
+- takeScreenshot: 12-empty-tree
+
+# Send one message and wait for the reply to finish streaming.
+- tapOn:
+    id: chat-composer-input
+- inputText: Say hello in five words.
+- tapOn:
+    id: chat-composer-send
+# The streaming row has its own id; the reply's persisted row (the second
+# chat-message-row-*) appears only once streaming completes.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- takeScreenshot: 13-first-reply
+
+# Node info for the reply: generation details and the provenance check.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- tapOn: Node Info
+- extendedWaitUntil:
+    visible:
+      id: node-detail-provenance-status
+    timeout: 10000
+- takeScreenshot: 14-node-detail

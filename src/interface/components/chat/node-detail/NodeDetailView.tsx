@@ -154,6 +154,7 @@ export const NodeDetailView = ({
             <HeaderIconButton
               icon="ellipsis-horizontal"
               accessibilityLabel="Node menu"
+              testID="node-detail-menu-button"
             />
           </ContextMenu>
         ) : null,
@@ -181,6 +182,7 @@ export const NodeDetailView = ({
 
   return (
     <View
+      testID="node-detail-screen"
       style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
     >
       {loading ? (
@@ -189,19 +191,25 @@ export const NodeDetailView = ({
         </View>
       ) : error ? (
         <View style={[styles.centerWrap, { paddingTop: headerHeight }]}>
-          <AppText variant="meta" tone="accent">
+          <AppText testID="node-detail-error" variant="meta" tone="accent">
             {error}
           </AppText>
         </View>
       ) : data ? (
         <ScrollView
+          testID="node-detail-content"
           contentContainerStyle={[
             styles.content,
             { paddingTop: headerHeight + 16 },
           ]}
         >
           {actionError ? (
-            <AppText variant="meta" tone="accent" style={styles.actionError}>
+            <AppText
+              testID="node-detail-action-error"
+              variant="meta"
+              tone="accent"
+              style={styles.actionError}
+            >
               {actionError}
             </AppText>
           ) : null}
@@ -210,10 +218,16 @@ export const NodeDetailView = ({
             <AppText variant="meta" tone="secondary" style={styles.blockLabel}>
               CONTENT
             </AppText>
-            <AppText variant="body" selectable style={styles.contentText}>
+            <AppText
+              testID="node-detail-text"
+              variant="body"
+              selectable
+              style={styles.contentText}
+            >
               {data.text}
             </AppText>
             <Pressable
+              testID="node-detail-copy"
               onPress={() => void runAction('copy')}
               hitSlop={6}
               style={({ pressed }) => [
@@ -254,7 +268,7 @@ export const NodeDetailView = ({
           </View>
 
           {data.generation ? (
-            <View style={styles.block}>
+            <View testID="node-detail-generation" style={styles.block}>
               <AppText
                 variant="meta"
                 tone="secondary"
@@ -278,7 +292,7 @@ export const NodeDetailView = ({
           ) : null}
 
           {provenance ? (
-            <View style={styles.block}>
+            <View testID="node-detail-provenance" style={styles.block}>
               <AppText
                 variant="meta"
                 tone="secondary"
@@ -287,6 +301,7 @@ export const NodeDetailView = ({
                 PROVENANCE
               </AppText>
               <AppText
+                testID="node-detail-provenance-status"
                 variant="meta"
                 style={[styles.provenanceStatus, { color: provenanceColor }]}
               >
@@ -321,7 +336,7 @@ export const NodeDetailView = ({
         </ScrollView>
       ) : (
         <View style={[styles.centerWrap, { paddingTop: headerHeight }]}>
-          <AppText variant="meta" tone="accent">
+          <AppText testID="node-detail-not-found" variant="meta" tone="accent">
             Node not found.
           </AppText>
         </View>

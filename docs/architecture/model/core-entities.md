@@ -142,7 +142,7 @@ Example: If Node 5 is edited to create Node 5':
 
 See [buffer-mode.md](../specs/buffer-mode.md) for the complete specification.
 
-*Note: Cross-references between Loom Trees, Documents, and Nodes use the [Link entity](./organization.md#link), not Edges. See also [Link Repository](../contracts/repositories/link-repository.md) for persistence operations.*
+*Note: Edges connect Nodes within one Loom Tree. There is no cross-tree link entity.*
 
 ### Indexes
 
@@ -194,9 +194,7 @@ Node content uses a discriminated union pattern for extensibility.
 
 ### Shared Primitives
 
-The TextBlock, ImageBlock, and AudioBlock types defined here are **shared primitives** used across the system. Documents extend these with additional block types suited for structured prose (headings, code blocks, callouts, embeds, etc.).
-
-See [organization.md](./organization.md#content-block-primitives) for the complete DocumentBlock type system that builds on these primitives.
+The TextBlock, ImageBlock, and AudioBlock types defined here are the content primitives for Nodes. Turns written or generated in the app are text today; imported trees can carry image and audio block references, but no media storage service exists yet (see [Media Storage](../contracts/media-storage.md)).
 
 ---
 
@@ -344,7 +342,7 @@ localId: 01HQ3K9 (7 chars, collision with above at 6)
 
 ## Summary Generation
 
-Summaries provide condensed representations of content for efficient context management in loom-aware interactions.
+Summaries provide condensed representations of content for efficient context management in loom-aware interactions. **Not implemented**: the `summary` fields exist but stay null until loom tools (after v1) need them.
 
 ### Node Summaries
 
@@ -402,7 +400,3 @@ Branch points explored: {branch_count}
 
 Summarize this tree's purpose and main themes in 2 sentences.
 ```
-
-### Document Summaries
-
-Documents also support summaries, generated on document close after editing. See [Organization](./organization.md#document) for Document entity specification.

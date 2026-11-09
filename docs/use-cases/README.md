@@ -6,13 +6,12 @@
 
 ## Overview
 
-Aspen Grove serves three interconnected purposes:
+Aspen Grove is a loom for getting to know language models. Its use cases fall under two purposes:
 
 1. **Exploration & Study** — Understanding how models think, behave, and respond
 2. **Creation & Collaboration** — Working with models to produce meaningful output
-3. **Knowledge Management** — Organizing, connecting, and preserving what emerges
 
-These aren't separate modes — they blend together. A user might start exploring a model's behavior, shift into collaborative writing, and end up with notes they want to preserve. The system supports this fluidity.
+These aren't separate modes — they blend together. A user might start exploring a model's behavior and shift into collaborative writing. Aspen Grove is not a chat client, a notes app or a coding harness.
 
 The activity of working within Loom Trees is called **looming** or **weaving**.
 
@@ -24,28 +23,25 @@ The activity of working within Loom Trees is called **looming** or **weaving**.
 |----------|-------------|
 | [Exploration & Study](./exploration-study.md) | Understanding model capabilities, behaviors, and quirks |
 | [Creation & Collaboration](./creation-collaboration.md) | Working with models to produce meaningful output |
-| [Knowledge Management](./knowledge-management.md) | Organizing, connecting, and preserving insights |
 | [Cross-Cutting Scenarios](./cross-cutting-scenarios.md) | Complex workflows combining multiple patterns |
-| [Future Use Cases](./future-use-cases.md) | Planned capabilities beyond MVP |
+| [Future Use Cases](./future-use-cases.md) | After v1: LoomDisplay, buffer mode, Backrooms |
 
 ---
 
-## Agent Congifuration Examples
+## Agent Configuration Examples
 
 | Use Case | Human is Loom-Aware | Model is Loom-Aware | Notes |
 |----------|------------------|------------------|-------|
 | Branching Exploration | ✓ | ✗ | Human navigates, model responds |
 | Comparative Model Study | ✓ | ✗ | Multiple models, none see tree |
 | Prompt Iteration Study | ✓ | ✗ | Human creates variants |
-| Behavioral Documentation | ✓ | Varies | Models and Humans are technically able to document each other |
-| Assisted Exploration | ✓ | ✓ (collaborator) | Two-role pattern |
+| Behavioral Documentation | ✓ | ✗ | Bookmarks, tags, annotations |
+| Assisted Exploration (after v1) | ✓ | ✓ (collaborator) | Two-role pattern |
 | Provenance Verification | ✓ | — | Human-only activity |
-| Buffer Mode Writing | ✓ | ✗ | Human navigates, model completes |
-| Collaborative Problem-Solving | ✓ | Optional | Web search + voice enabled |
+| Buffer Mode Writing (after v1) | ✓ | ✗ | Human navigates, model completes |
+| Collaborative Problem-Solving | ✓ | ✗ | Character voices optional |
 | Iterative Refinement | ✓ | ✗ | Human drives iteration |
 | Multi-Model Collaboration | ✓ | Varies | Per-agent configuration |
-| Knowledge Management | ✓ | — | Human-only activity |
-| Field Guide Learning | — | — | Passive consumption |
 
 ---
 

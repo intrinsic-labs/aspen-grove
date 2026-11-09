@@ -20,7 +20,10 @@ Aspen Grove requires a local-first database that can:
 - Handle complex relational data (Loom Trees are hypergraphs with many relationships)
 - Support lazy loading for large trees without loading everything into memory
 - Provide reactive/observable queries for UI updates
-- Enable future sync capabilities for multi-device support
+
+---
+
+*Note (2026-11): sync is out of scope (local-first, no server), so the sync rationale this ADR originally gave was removed.*
 
 ---
 
@@ -59,7 +62,6 @@ WatermelonDB hits the sweet spot:
 - **React Native native** — no fighting the framework
 - **Lazy by default** — critical for large Loom Trees with hundreds of nodes
 - **Observable** — UI stays in sync without manual refresh logic
-- **Sync-ready** — when we add cloud backup, the primitives are there
 - **SQLite foundation** — battle-tested, debuggable, well-understood
 
 The main tradeoff is that WatermelonDB has its own patterns and requires schema definition upfront. This is acceptable given the clear domain model we've defined.
@@ -71,7 +73,6 @@ The main tradeoff is that WatermelonDB has its own patterns and requires schema 
 ### Positive
 - Lazy loading prevents memory pressure from large trees
 - Reactive queries simplify UI state management
-- Future sync implementation has a clear path
 - SQLite means data is inspectable and portable
 
 ### Negative

@@ -102,7 +102,7 @@ Assigns a Tag to an item.
 
 **Input:**
 - `tagId` — ULID, reference to Tag
-- `targetType` — enum: `node` | `loomTree` | `document`
+- `targetType` — enum: `node` | `loomTree`
 - `targetId` — ULID, reference to tagged item
 
 **Behavior:**
@@ -119,7 +119,7 @@ Removes a Tag from an item.
 
 **Input:**
 - `tagId` — ULID
-- `targetType` — enum: `node` | `loomTree` | `document`
+- `targetType` — enum: `node` | `loomTree`
 - `targetId` — ULID
 
 **Behavior:**
@@ -135,7 +135,7 @@ Removes a Tag from an item.
 Finds all Tags assigned to a specific item.
 
 **Input:**
-- `targetType` — enum: `node` | `loomTree` | `document`
+- `targetType` — enum: `node` | `loomTree`
 - `targetId` — ULID
 
 **Returns:** Array of Tags
@@ -148,7 +148,7 @@ Finds all items that have a specific Tag.
 
 **Input:**
 - `tagId` — ULID
-- `targetType` — optional enum: `node` | `loomTree` | `document`
+- `targetType` — optional enum: `node` | `loomTree`
 
 **Behavior:**
 - If `targetType` provided, filters to that type only
@@ -164,7 +164,6 @@ Finds all items that have a specific Tag.
 |-------|--------|
 | "Show all items tagged #research" | `findItemsWithTag(tagId)` |
 | "Filter Loom Trees by #claude AND #comparison" | Multiple `findItemsWithTag` calls, intersect results |
-| "What tags are on this Document?" | `findTagsForItem('document', docId)` |
 | "Find all tags in my Grove" | `findTagsByGrove(groveId)` |
 
 ---
@@ -174,7 +173,7 @@ Finds all items that have a specific Tag.
 ### Cascade Behavior
 
 - Deleting a Tag removes all TagAssignments
-- Deleting an item (Node, LoomTree, Document) should remove its TagAssignments
+- Deleting an item (Node, LoomTree) should remove its TagAssignments
 - TagAssignments are the only junction — Tags and items have no direct relationship
 
 ---
@@ -183,4 +182,3 @@ Finds all items that have a specific Tag.
 
 - [Organization Model](../../model/organization.md) — Entity definitions
 - [Node Repository](./node-repository.md) — Node operations (doesn't store tags directly)
-- [Link Repository](./link-repository.md) — Alternative organization mechanism

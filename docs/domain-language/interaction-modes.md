@@ -1,6 +1,6 @@
 # Interaction Modes
 
-> How users interact with Loom Trees: Dialogue Mode, Buffer Mode, Voice Mode, and Loom-Aware settings.
+> How users interact with Loom Trees: Dialogue Mode, Buffer Mode, character voices, and Loom-Aware settings.
 
 ---
 
@@ -13,6 +13,8 @@ The term "dialogue" is chosen deliberately over "chat" to encourage a more thoug
 ---
 
 ## Buffer Mode
+
+**Status:** after v1 (buffer mode with base models). Not implemented; the spec is kept for later.
 
 A Loom Tree interaction style where there are no message boundaries — just continuous text. The model's completions stream directly into the document. Think "collaborative text editor" rather than "conversation."
 
@@ -35,91 +37,27 @@ This means editing a message in Dialogue Mode feels like "what if I said this in
 
 ---
 
-## Voice Mode
+## Character Voices
 
-An app-wide toggle that enables hands-free interaction with Loom Trees. Designed for mobile use while driving, walking, or otherwise occupied. Voice Mode will eventually support looming/weaving activity through speech rather than UI; for MVP it will be most useful for linear conversations in dialogue mode.
+Named voices that read nodes aloud, brought over from Latent Spaces (the Swift prototype, `LoomVoice` and `SpeechSynthesizer` in `~/dev/mobile/loom-swift`). Each voice is a character with a name, a system text-to-speech voice, a pitch, a short self-introduction and a color. In Latent Spaces they are Jefferson, Lily and Eve.
 
-### Core Behavior
+**Status:** part of v1, not yet built. `UserPreferences.defaultVoiceModeEnabled` exists in the schema but nothing reads it yet.
 
-When Voice Mode is **ON**:
-1. User sends prompt (typed + send button, OR dictation button for voice)
-2. Model generates response → Node created
-3. Response received → TTS reads it aloud
-4. TTS finishes → app auto-listens with 4-second silence timeout
-5. User speaks → transcribed → sent as prompt after 4-second pause of silence
-6. Loop back to step 2
+### Behavior (as in Latent Spaces)
 
-When Voice Mode is **OFF**:
-- Standard text-based interaction
-- No automatic speech output
-- Dictation button still available for voice input (but no auto-listen after response)
+- The user picks a voice in Settings; tapping a voice plays its sample line
+- With voices on, a new model node is read aloud as it lands, and any node can be played or stopped from its controls
+- The chosen voice's color tints the node being read
 
-### Silence Timeout Behavior
-
-The 4-second timeout applies to *silence*, not speech duration. Users can speak for as long as they want.
-
-- **After 4 seconds of silence**: If user said something → send as prompt. If user said nothing → voice chat ends (app stops listening, Voice Mode stays ON).
-- **No maximum speech duration**: User can talk continuously without timeout.
-
-### Button States
-
-The dictation button appears next to the send button and changes based on state:
-
-| State | Button | Tap Action |
-|-------|--------|------------|
-| Idle | 🎤 Dictation | Start listening |
-| Listening | ⏸️ Pause | Pause listening (think mode) |
-| Paused while listening | ▶️ Resume | Resume listening |
-| TTS playing | ⏸️ Pause | Pause TTS playback |
-| TTS paused | ▶️ Resume | Resume TTS playback |
-
-### Think Mode (Pause While Dictating)
-
-If user needs time to think mid-dictation:
-1. Tap pause → listening stops, timeout suspended
-2. Think as long as needed
-3. Tap resume → 4-second timeout starts
-4. If user speaks → continue transcribing
-5. If 4 seconds of silence and user had already said something → send
-6. If 4 seconds of silence and user said nothing → voice chat ends
-
-### Interactions
-
-- **Voice Mode Toggle**: Accessible from menu bar (any Loom Tree) or Settings screen
-- **Dictation button**: Start voice input (always available, next to send button)
-- **Double-tap any node**: Hear it read aloud (works regardless of Voice Mode state)
-- **Single-tap during TTS**: Stops playback immediately; does NOT start listening
-
-### Technical Implementation (MVP)
-
-- **Speech-to-text**: Native platform APIs (iOS Speech framework, Android SpeechRecognizer)
-- **Text-to-speech**: Native platform APIs (AVSpeechSynthesizer on iOS, TextToSpeech on Android)
-- **Future**: Higher-quality TTS & transcription services as optional upgrade
-
-### Edge Cases & Recovery
-
-**Connection drop during generation:**
-- Interrupt any current TTS
-- Speak the error aloud (e.g., "Connection lost. Please try again.")
-- User can retry via dictation button or typed input
-
-**Voice chat ending:**
-- Occurs when 4-second silence timeout expires with nothing said
-- Voice Mode stays ON — user can re-engage via dictation button
-- No automatic retry or prompt
-
-### Limitations (MVP)
-
-- Requires app to be in foreground (background audio is post-MVP)
-- Voice commands for Loom operations (e.g., "go back," "generate three more") are post-MVP
-- Voice input is for prompt content only, not navigation
-- Speech-to-text happens locally — no connection drop concerns for transcription
+There is no dictation, auto-listen or silence timeout: voices read, they don't listen.
 
 ---
 
 ## Loom-Aware
 
 An Agent-level toggle that determines whether the agent has access to Loom Tree navigation and manipulation tools.
+
+**Status:** the `loomAware` flag exists on Agent; the tools it unlocks are after v1 (see [Loom Tools](../architecture/specs/loom-tools/README.md)).
 
 A **Loom-Aware** agent can:
 - See metadata about the tree structure (branch points, sibling counts, path history)
@@ -140,4 +78,4 @@ This enables the **two-role pattern**: one agent as the "subject" (not Loom-Awar
 - [Core Concepts](./core-concepts.md) — Loom Tree, Node, Edge, Path
 - [Agents](./agents.md) — Agent abstraction for humans and models
 - [Buffer Mode Spec](../architecture/specs/buffer-mode.md) — Detailed Buffer Mode specification
-- [Use Cases: Creation & Collaboration](../use-cases/creation-collaboration.md) — Voice Mode and Buffer Mode workflows
+- [Use Cases: Creation & Collaboration](../use-cases/creation-collaboration.md) — Buffer Mode workflows (post-v1)

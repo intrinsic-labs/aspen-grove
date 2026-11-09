@@ -1,0 +1,47 @@
+# Checks for every pull request and every push to main. No secrets: the app is local-first
+# and the tests stub providers, so this is safe to run on pull requests from forks.
+# No native builds here: the iOS Simulator path is proved by VERIFY.md, and the JS bundle
+# export below catches what Metro would fail on without paying for a macOS runner.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: these checks only read the tree.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: typecheck · lint · test · feature map · bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Third-party actions are pinned to full commit SHAs; bump deliberately and keep the
+      # trailing comment honest.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The feature-map check verifies FEATURE_MAP.md's `revision:` against history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --ci
+      # A broken entry, a missing file or an unmapped route fails the build; drift is a
+      # warning (see the script for why).
+      - run: npm run check:map
+      # Metro bundles the iOS JS exactly as a native build would.
+      - run: npm run check:bundle

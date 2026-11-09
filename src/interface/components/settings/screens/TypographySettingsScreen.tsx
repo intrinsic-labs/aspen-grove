@@ -9,7 +9,10 @@ const TypographySettingsScreen = () => {
   const appearance = useAppearanceController();
 
   return (
-    <SettingsScreenScaffold loading={appearance.loading}>
+    <SettingsScreenScaffold
+      testID="settings-typography-screen"
+      loading={appearance.loading}
+    >
       <MessageTypographySection
         fontFace={appearance.fontFace}
         onChangeFontFace={appearance.setFontFace}

@@ -14,6 +14,8 @@ type HeaderIconButtonProps = {
   readonly onPress?: () => void;
   readonly iconSize?: number;
   readonly disabled?: boolean;
+  /** Forwarded to the host Pressable for Detox/Maestro. */
+  readonly testID?: string;
 };
 
 /**
@@ -26,6 +28,7 @@ export const HeaderIconButton = ({
   onPress,
   iconSize = 22,
   disabled,
+  testID,
 }: HeaderIconButtonProps) => {
   const { colors } = useAspenGroveTheme();
 
@@ -33,6 +36,7 @@ export const HeaderIconButton = ({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

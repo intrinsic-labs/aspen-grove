@@ -13,7 +13,10 @@ const ConnectionsSettingsScreen = () => {
     : 'rgba(0, 0, 0, 0.22)';
 
   return (
-    <SettingsScreenScaffold loading={controller.loading}>
+    <SettingsScreenScaffold
+      testID="settings-connections-screen"
+      loading={controller.loading}
+    >
       <ConnectionsSection
         controller={controller}
         switchOffTrack={switchOffTrack}

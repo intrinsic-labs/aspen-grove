@@ -98,6 +98,7 @@ export const AppDrawerContent = (props: DrawerContentComponentProps) => {
 
   return (
     <View
+      testID="drawer-root"
       style={[
         styles.container,
         {
@@ -117,6 +118,7 @@ export const AppDrawerContent = (props: DrawerContentComponentProps) => {
           return (
             <Pressable
               key={item.route}
+              testID={`drawer-nav-${item.route}`}
               onPress={() => openRoute(item.route)}
               accessibilityRole="button"
               accessibilityLabel={item.label}
@@ -148,12 +150,14 @@ export const AppDrawerContent = (props: DrawerContentComponentProps) => {
         Recents
       </AppText>
       <FlatList
+        testID="drawer-recents-list"
         data={trees}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.treeListContent}
         renderItem={({ item }) => (
           <Pressable
+            testID={`drawer-recents-row-${item.id}`}
             onPress={() => openTree(item)}
             style={({ pressed }) => [
               styles.treeRow,

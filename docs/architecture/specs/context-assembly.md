@@ -142,11 +142,11 @@ These can be configured at app level or overridden per tree.
 
 ## Loom-Aware Extensions
 
-For loom-aware agents, additional context is assembled beyond the base process described above. See [Loom Tools: Context Assembly](./loom-tools/context-and-execution.md#context-assembly-for-loom-aware-agents) for:
+For loom-aware agents (after v1), additional context is assembled beyond the base process described above. See [Loom Tools: Context Assembly](./loom-tools/context-and-execution.md#context-assembly-for-loom-aware-agents) for:
 
 - Per-node metadata (localId, author, timestamps, connections) inline with each message
 - System-level loom context (tree info, position, permissions) at end of context
-- Operational memory block (pinned content, recalled stashes, action trace)
+- Recent action trace (compressed)
 - Loom-aware addendum to system prompt
 
 ---

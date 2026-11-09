@@ -2,83 +2,84 @@
 
 _A watered idea blooms_
 
-A mobile application for branching, tree-based interactions with large language models.
+A mobile loom for getting to know language models.
 
 ---
 
 ## What is this?
 
-Aspen Grove is a **Loom** — an LLM interface that treats conversations as explorable trees rather than linear chats. Every response you generate, every path you take, is preserved. You can branch, backtrack, compare alternatives, and build understanding through exploration.
+Aspen Grove treats a conversation with a model as a tree you can explore, not a thread you scroll. You branch a conversation, draw several continuations, set them side by side, edit and carry on, and start to see how the model thinks.
 
-The core data structure is the **Loom Tree**: a hypergraph-backed tree where nodes contain content (text, images, audio) and edges represent relationships between them. Unlike traditional chat interfaces that show one linear thread, Aspen Grove lets you see and navigate the full space of possibilities.
+There's more going on with language models than most people realize. A chat app shows you one answer; a loom shows you the space of answers the model could have given, and lets you walk around in it. It's closer to getting to know a person than to using a productivity tool.
 
----
-
-## Why?
-
-Most AI interfaces optimize for quick answers. Aspen Grove optimizes for **understanding**.
-
-- **Models are probability spaces, not oracles** — The same prompt can yield wildly different responses. Seeing that distribution builds intuition.
-- **Exploration beats optimization** — Sometimes the fourth branch is where the insight lives.
-- **Provenance matters** — For researchers and anyone who needs to demonstrate authenticity, Aspen Grove provide hash chains, timestamps, and raw API response storage.
+Aspen Grove is not a chat client and not a coding harness. It's for people curious about what models are like: the loom and cyborgism crowd, researchers, and newcomers who want a first real look.
 
 ---
 
-## Key Concepts
+## Features
 
-| Term                  | Meaning                                              |
-| --------------------- | ---------------------------------------------------- |
-| **Loom Tree**         | A branching tree of conversation nodes               |
-| **Looming / Weaving** | The act of exploring and creating within a Loom Tree |
-| **Node**              | A single piece of content (text, image, audio)       |
-| **Path**              | One linear route through a tree from root to leaf    |
-| **Branch Point**      | Where the tree splits into multiple possibilities    |
-| **Agent**             | Any participant — human or model                     |
+Built today:
 
-See [Domain Language](./docs/domain-language/README.md) for complete terminology.
+- **Branching dialogue**: regenerate from any node to grow alternatives, browse them inline under the node, and switch paths
+- **Edit as a branch**: editing a message makes a new branch; the original stays
+- **Bookmarks, pruning and tags**, plus search across all your trees
+- **Per-tree agents**: each conversation has its own model, temperature and system prompt, from a shared library or customized for that tree
+- **Streaming**, automatic conversation titles
+- **Provenance**: every model response is stored raw and hash-chained to its parents, so tampering is detectable; the node detail sheet re-verifies it on demand
+- **Open Loom import and export**: export a whole tree as [Open Loom](./docs/open-loom/spec.md) JSON or the current path as Markdown; import Open Loom (v1 and v2), socketteer/loom and Loomsidian files
+
+Coming in v1:
+
+- Several continuations at once, compared side by side
+- Character voices that read responses aloud
+- The look and feel of Latent Spaces, the SwiftUI loom this app grew from
+
+After v1: LoomDisplay (the model draws ASCII animations), buffer mode with base models, and backrooms where models talk to each other.
 
 ---
 
-## Features (MVP)
+## Your keys, your device
 
-- **Dialogue Mode** — Branching conversations with clear turn-taking
-- **Buffer Mode** — Freeform collaborative text without message boundaries
-- **Voice Mode** — Hands-free interaction via speech
-- **Multi-model support** — Compare responses across different LLMs
-- **Provenance tracking** — Hash chains and RFC 3161 timestamps for verification
-- **Multimodal nodes** — Text, images, and audio in the same tree
+Aspen Grove is local-first. Your trees live on your phone, and there's no Aspen Grove server or account.
+
+Bring your own models:
+
+- **[OpenRouter](https://openrouter.ai/)** with your own API key, for hosted models from many providers
+- **[LM Studio](https://lmstudio.ai/)** running on a computer your phone can reach, for local models
+
+Keys are stored in the platform's secure storage (Keychain / Keystore) and sent only to the provider you chose.
+
+---
+
+## Running it
+
+Aspen Grove is an Expo / React Native app that needs a development build (WatermelonDB is a native module, so Expo Go won't work). See [VERIFY.md](./VERIFY.md) for setup, running on a device or simulator, and the checks to run.
+
+---
+
+## Architecture
+
+The code follows Clean Architecture in four layers under `src/`: **domain** (pure TypeScript entities and value objects), **application** (use cases, repository and provider interfaces, context assembly, Open Loom, provenance), **infrastructure** (WatermelonDB persistence, the OpenRouter and LM Studio adapters, secure storage) and **interface** (React Native components, wired together in one composition root; routes live in `src/app/` via expo-router). Dependencies point inward only, and ESLint enforces it. Nodes are immutable and every model response is hashed before it's parsed.
+
+Contributors and coding agents should start with [AGENTS.md](./AGENTS.md); [FEATURE_MAP.md](./FEATURE_MAP.md) maps every route and screen.
 
 ---
 
 ## Documentation
 
-| Document                                             | Description                            |
-| ---------------------------------------------------- | -------------------------------------- |
-| [Domain Language](./docs/domain-language/README.md)  | Core concepts and terminology          |
-| [Use Cases](./docs/use-cases/README.md)              | How users interact with the app        |
-| [Provenance Overview](./docs/provenance-overview.md) | Verification and authenticity strategy |
-| [Architecture](./docs/architecture/README.md)        | Technical design and specifications    |
-| [Review Findings](./docs/architecture/review-findings.md) | Pre-development issues and resolutions |
-
----
-
-## Tech Stack
-
-- **React Native** — Cross-platform mobile
-- **TypeScript** — Type safety throughout
-- **WatermelonDB** — Local-first persistence with lazy loading
-- **Clean Architecture** — Domain → Application → Infrastructure → Interface
-
----
-
-## Project Status
-
-- Architecture and specifications defined
-- Backend API and DB implemented
-- UI/UX under construction
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](./AGENTS.md) | How to work in the codebase |
+| [VERIFY.md](./VERIFY.md) | Run the app and verify changes |
+| [FEATURE_MAP.md](./FEATURE_MAP.md) | Routes, screens and features |
+| [Open Loom spec](./docs/open-loom/spec.md) | The open file format for loom trees |
+| [Domain Language](./docs/domain-language/README.md) | Core concepts and terminology |
+| [Use Cases](./docs/use-cases/README.md) | How people use a loom |
+| [Provenance Overview](./docs/provenance-overview.md) | Hash chains and raw-response evidence |
+| [Architecture](./docs/architecture/README.md) | Technical design and specifications |
 
 ---
 
 ## License
 
-Apache 2.0
+[Apache 2.0](./LICENSE)
