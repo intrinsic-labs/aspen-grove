@@ -9,7 +9,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import * as Clipboard from 'expo-clipboard';
-import { LlmProviderError } from '@application/services/llm';
+import {
+  describeProviderError,
+  type ProviderErrorAction,
+} from '@application/services/llm';
 import type { Content } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
@@ -80,6 +83,20 @@ export const useLoomTreeChatController = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The fix for the current provider error, kept with the message it belongs
+  // to so any later `setError` (or clearing it) drops the action too.
+  const [providerErrorAction, setProviderErrorAction] = useState<{
+    readonly message: string;
+    readonly action: ProviderErrorAction;
+  } | null>(null);
+  const showProviderError = useCallback(
+    (caught: unknown, provider: ChatSession['provider']) => {
+      const described = describeProviderError(caught, { provider });
+      setProviderErrorAction(described);
+      setError(described.message);
+    },
+    []
+  );
   const [input, setInput] = useState('');
   const [rows, setRows] = useState<
     Awaited<ReturnType<typeof loadDialogueRowsForPath>>['rows']
@@ -657,13 +674,7 @@ export const useLoomTreeChatController = () => {
           );
         }
       } catch (caught) {
-        const message =
-          caught instanceof LlmProviderError
-            ? `[${caught.provider}:${caught.code}] ${caught.message}`
-            : caught instanceof Error
-              ? caught.message
-              : String(caught);
-        setError(message);
+        showProviderError(caught, session.provider);
         // Rows were trimmed optimistically; reload from the (unchanged)
         // path so the old response reappears after a failed regenerate.
         await refreshRows(session);
@@ -684,6 +695,7 @@ export const useLoomTreeChatController = () => {
       rows,
       sending,
       session,
+      showProviderError,
       useCases.generateDialogueContinuationUseCase,
     ]
   );
@@ -783,13 +795,7 @@ export const useLoomTreeChatController = () => {
         );
       }
     } catch (caught) {
-      const message =
-        caught instanceof LlmProviderError
-          ? `[${caught.provider}:${caught.code}] ${caught.message}`
-          : caught instanceof Error
-            ? caught.message
-            : String(caught);
-      setError(message);
+      showProviderError(caught, session.provider);
     } finally {
       resetStreamingAssistantRow();
       setSending(false);
@@ -805,6 +811,7 @@ export const useLoomTreeChatController = () => {
     session,
     appendStreamingAssistantDelta,
     resetStreamingAssistantRow,
+    showProviderError,
     useCases.editDialogueNodeUseCase,
     useCases.sendDialogueTurnUseCase,
   ]);
@@ -955,6 +962,11 @@ export const useLoomTreeChatController = () => {
     loading,
     sending,
     error,
+    errorAction:
+      providerErrorAction && providerErrorAction.message === error
+        ? providerErrorAction.action
+        : null,
+    onErrorAction: () => router.push('/connections'),
     input,
     setInput,
     rows,
