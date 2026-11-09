@@ -1,6 +1,6 @@
 # Provenance Repositories
 
-> Manages persistence for RawApiResponse — the provenance evidence structure. (RFC 3161 timestamp certificates are out of scope; an unused `ITimestampCertificateRepository` interface remains in code.)
+> Manages persistence for RawApiResponse — the provenance evidence structure. (RFC 3161 timestamp certificates are cut.)
 
 ---
 

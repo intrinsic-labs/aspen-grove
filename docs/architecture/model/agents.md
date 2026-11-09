@@ -183,7 +183,7 @@ Models are not persisted locally. OpenRouter's are fetched from its public catal
 
 ### LM Studio connection
 
-LM Studio's endpoint and settings live in `UserPreferences.lmstudioSettings`; its API token, like the OpenRouter key, lives in secure storage. A `LocalModel` entity and `ILocalModelRepository` interface exist in code for arbitrary custom endpoints, but nothing implements or uses them.
+LM Studio's endpoint and settings live in `UserPreferences.lmstudioSettings`; its API token, like the OpenRouter key, lives in secure storage.
 
 ---
 

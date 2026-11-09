@@ -272,7 +272,6 @@ These are intentionally deferred. Worth noting so we don't accidentally design t
 
 - **Multi-agent participation in a tree.** Today: `defaultModelAgentId` (one model agent + the human owner). Future: `participatingAgentIds: ULID[]` for the two-role pattern and beyond. The schema can accept a new junction table without disturbing the current design.
 - **Renaming "Agent" → "Profile" in user-facing copy.** Internal type names stay `Agent` (matches all the docs and existing code); UI strings can shift to "Profile" later as a copy pass.
-- **Local model agents** (`local:{ulid}`) — depends on `LocalModel` entity getting fully implemented.
 
 ---
 

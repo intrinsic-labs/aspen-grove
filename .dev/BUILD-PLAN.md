@@ -16,7 +16,7 @@ What the original phased plan called for vs. what actually exists:
 | Original phase | Status |
 |---|---|
 | 0 Foundation | ✅ Done except media/file-system abstraction (defer until multimodal nodes) |
-| 1 Core Data Layer | ✅ Done for dialogue slice (WatermelonDB v7, 9 repo impls). ❌ Tag/Link/Document/LocalModel/TimestampCertificate repos are interface-only |
+| 1 Core Data Layer | ✅ Done for dialogue slice (WatermelonDB v7, 9 repo impls). Link/Document/LocalModel/TimestampCertificate interfaces removed as cut |
 | 2 LLM Providers | ◐ **Diverged, deliberately**: OpenRouter + LM Studio implemented (streaming + raw capture). Anthropic/OpenAI native adapters skipped — OpenRouter covers them. No retry logic, no OpenRouter model catalog |
 | 3 Basic UI | ◐ Tree list, dialogue view, settings exist. No node detail, no agent library UI |
 | 4 Generation Flow | ✅ Done for dialogue (context assembly, n>1 continuations, streaming, provenance storage). ❌ No truncation/exclusion filtering |

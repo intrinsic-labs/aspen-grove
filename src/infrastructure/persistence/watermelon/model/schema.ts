@@ -295,8 +295,8 @@ export const aspenGroveSchema = appSchema({
     /**
      * TagAssignment join table schema
      *
-     * One row per (tag, target) pair. `target_type` is 'node' | 'loomTree' |
-     * 'document'; `target_id` is the tagged item's id.
+     * One row per (tag, target) pair. `target_type` is 'node' | 'loomTree';
+     * `target_id` is the tagged item's id.
      */
     tableSchema({
       name: 'tag_assignments',
