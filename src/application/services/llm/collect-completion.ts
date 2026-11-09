@@ -30,7 +30,8 @@ const toInterruptedMarker = (reason: StreamInterruptionReason): string =>
  * Retryable provider errors (`LlmProviderError.retryable`) are retried with
  * exponential backoff. Streaming attempts are only retried while no chunks
  * have been received yet — once content has streamed, retrying would risk
- * duplicating output, so mid-stream failures are surfaced as-is.
+ * duplicating output, so mid-stream failures are surfaced as-is. A request
+ * whose `signal` has aborted is never retried.
  */
 export const collectCompletion = async (
   input: CollectCompletionInput
@@ -117,6 +118,7 @@ export const collectCompletion = async (
         ...retry,
         shouldRetry: (error) =>
           !chunkReceivedThisAttempt &&
+          !request.signal?.aborted &&
           (retry?.shouldRetry ?? isRetryableLlmError)(error),
       }
     );

@@ -58,6 +58,13 @@ export type CompletionRequest = {
   readonly maxTokens?: number;
   readonly stopSequences?: readonly string[];
   readonly tools?: readonly ToolDefinition[];
+  /**
+   * Cancels this one request. Adapters abort the underlying fetch; a stream
+   * that already produced text ends with a `done` chunk whose
+   * `interruptedReason` is `cancelled`, otherwise they throw an
+   * `LlmProviderError` with code `cancelled`.
+   */
+  readonly signal?: AbortSignal;
 };
 
 export type RawResponseCapture = {
@@ -124,6 +131,7 @@ export type LlmProviderErrorCode =
   | 'networkError'
   | 'timeout'
   | 'contentFiltered'
+  | 'cancelled'
   | 'unknown';
 
 export class LlmProviderError extends Error {

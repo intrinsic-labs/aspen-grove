@@ -1,11 +1,12 @@
 import { computeSha256Hash } from '@application/services/content-hash-service';
-import type {
-  CompletionRequest,
-  StreamChunk,
-  StreamInterruptionReason,
-} from '@application/services/llm';
+import type { CompletionRequest, StreamChunk } from '@application/services/llm';
 import { LlmProviderError } from '@application/services/llm';
 import { fetch as expoFetch } from 'expo/fetch';
+import {
+  toAbortedRequestError,
+  toInterruptedReason,
+} from '../shared/interruption';
+import { createRequestAbort } from '../shared/request-abort';
 import { toLlmProviderError } from './errors';
 import {
   headersToString,
@@ -17,24 +18,6 @@ import {
 } from './helpers';
 import type { OpenRouterConfig, OpenRouterStreamingPayload } from './types';
 
-const toInterruptedReason = (error: unknown): StreamInterruptionReason => {
-  if (error instanceof Error && error.name === 'AbortError') {
-    return 'timeout';
-  }
-
-  if (error instanceof LlmProviderError) {
-    if (error.code === 'timeout') {
-      return 'timeout';
-    }
-    if (error.code === 'networkError') {
-      return 'network';
-    }
-    return 'provider_error';
-  }
-
-  return 'network';
-};
-
 export const streamOpenRouterCompletion = async function* (input: {
   readonly config: OpenRouterConfig;
   readonly request: CompletionRequest;
@@ -43,8 +26,9 @@ export const streamOpenRouterCompletion = async function* (input: {
   const { config, request, timeoutMs } = input;
 
   const requestTimestamp = new Date();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  // Each request owns its abort wiring, so concurrent streams on one
+  // adapter instance never cancel or time out each other.
+  const abort = createRequestAbort({ timeoutMs, external: request.signal });
   const rawBodyChunks: string[] = [];
   let responseHeaders = '';
   let requestId: string | undefined;
@@ -113,7 +97,7 @@ export const streamOpenRouterCompletion = async function* (input: {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      signal: controller.signal,
+      signal: abort.signal,
     });
 
     responseHeaders = headersToString(response.headers);
@@ -252,23 +236,24 @@ export const streamOpenRouterCompletion = async function* (input: {
         content: completionText,
         usage,
         finishReason: 'error',
-        interruptedReason: toInterruptedReason(error),
+        interruptedReason: toInterruptedReason(error, abort.cause()),
         rawResponse: await createRawResponse(),
       };
       return;
     }
 
-    if (error instanceof LlmProviderError) {
-      throw error;
+    const abortedError = toAbortedRequestError({
+      error,
+      abortCause: abort.cause(),
+      provider: 'openrouter',
+      label: 'OpenRouter streaming',
+    });
+    if (abortedError) {
+      throw abortedError;
     }
 
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new LlmProviderError({
-        code: 'timeout',
-        message: 'OpenRouter streaming request timed out.',
-        provider: 'openrouter',
-        retryable: true,
-      });
+    if (error instanceof LlmProviderError) {
+      throw error;
     }
 
     throw new LlmProviderError({
@@ -278,6 +263,6 @@ export const streamOpenRouterCompletion = async function* (input: {
       retryable: true,
     });
   } finally {
-    clearTimeout(timeoutId);
+    abort.dispose();
   }
 };
