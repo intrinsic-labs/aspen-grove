@@ -7,6 +7,7 @@ export * from './ExportPathMarkdownUseCase';
 export * from './ImportLoomTreeUseCase';
 export * from './ForkAgentForTreeUseCase';
 export * from './GenerateDialogueContinuationUseCase';
+export * from './GenerateParallelContinuationsUseCase';
 export * from './GenerateTreeTitleUseCase';
 export * from './InitializeAppDefaultsUseCase';
 export * from './SendDialogueTurnUseCase';

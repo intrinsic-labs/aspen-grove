@@ -12,6 +12,8 @@ import {
   toTokenUsage,
   toToolCalls,
 } from './helpers';
+import { toAbortedRequestError } from '../shared/interruption';
+import { createRequestAbort } from '../shared/request-abort';
 import { toLlmProviderError } from './errors';
 import type { LMStudioConfig, LMStudioResponsePayload } from './types';
 
@@ -39,8 +41,7 @@ export const requestLMStudioCompletion = async (input: {
 }): Promise<CompletionResponse> => {
   const { config, request, timeoutMs } = input;
   const requestTimestamp = new Date();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const abort = createRequestAbort({ timeoutMs, external: request.signal });
 
   try {
     const endpoint = config.endpoint.replace(/\/$/, '');
@@ -81,7 +82,7 @@ export const requestLMStudioCompletion = async (input: {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      signal: controller.signal,
+      signal: abort.signal,
     });
 
     const responseBody = await response.text();
@@ -124,6 +125,14 @@ export const requestLMStudioCompletion = async (input: {
       },
     };
   } catch (error) {
+    if (abort.cause() === 'cancelled') {
+      throw toAbortedRequestError({
+        error,
+        abortCause: 'cancelled',
+        provider: 'lmstudio',
+        label: 'LM Studio',
+      });
+    }
     if (error instanceof Error && error.name === 'AbortError') {
       throw toLlmProviderError({
         status: 408,
@@ -132,6 +141,6 @@ export const requestLMStudioCompletion = async (input: {
     }
     throw error;
   } finally {
-    clearTimeout(timeoutId);
+    abort.dispose();
   }
 };
