@@ -141,6 +141,7 @@ Don't commit secrets, API keys or local `.env` files. Keys are the user's own an
 |------|------|
 | Run and verify the app | [VERIFY.md](./VERIFY.md) |
 | Routes, screens, features | [FEATURE_MAP.md](./FEATURE_MAP.md) |
+| Build and ship to TestFlight | [docs/shipping.md](./docs/shipping.md) |
 | Milestones, v1, after v1 | [.dev/BUILD-PLAN.md](./.dev/BUILD-PLAN.md) |
 | Per-tree agents (design history) | [.dev/agent-centric-dialogue-settings.md](./.dev/agent-centric-dialogue-settings.md) |
 | Terminology | [docs/domain-language/](./docs/domain-language/README.md) |

@@ -3,7 +3,7 @@
 # then run after smoke.yaml or on its own:
 #   maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"
 # It costs one short OpenRouter completion plus one title call.
-appId: com.intrinsiclabs.aspen-grove-rn
+appId: com.intrinsiclabs.aspengrove
 ---
 - launchApp:
     clearState: true

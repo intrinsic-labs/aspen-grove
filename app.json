@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "aspen-grove-rn",
-    "slug": "aspen-grove-rn",
+    "name": "Aspen Grove",
+    "slug": "aspen-grove",
     "scheme": "aspengrove",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.intrinsiclabs.aspen-grove-rn"
+      "bundleIdentifier": "com.intrinsiclabs.aspengrove"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +28,7 @@
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
-      "package": "com.intrinsiclabs.aspengrovern"
+      "package": "com.intrinsiclabs.aspengrove"
     },
     "web": {
       "favicon": "./assets/favicon.png"
