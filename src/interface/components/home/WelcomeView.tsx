@@ -54,13 +54,14 @@ const WelcomeView = () => {
   const greeting = greetingForHour(new Date().getHours());
 
   return (
-    <AppScreen style={styles.container}>
+    <AppScreen testID="home-welcome" style={styles.container}>
       <View style={styles.centerWrap}>
         <Ionicons name="leaf" size={34} color={colors.accentColor} />
         <AppText variant="body" tone="primary" style={styles.greeting}>
           {displayName ? `${greeting}, ${displayName}` : `${greeting}`}
         </AppText>
         <AppPillButton
+          testID="home-new-tree-button"
           label={creating ? 'Creating…' : 'New Loom Tree'}
           variant="outline"
           disabled={creating || !ready}
@@ -70,7 +71,12 @@ const WelcomeView = () => {
       </View>
 
       {error ? (
-        <AppText variant="meta" tone="accent" style={styles.errorText}>
+        <AppText
+          testID="home-error"
+          variant="meta"
+          tone="accent"
+          style={styles.errorText}
+        >
           {error}
         </AppText>
       ) : null}

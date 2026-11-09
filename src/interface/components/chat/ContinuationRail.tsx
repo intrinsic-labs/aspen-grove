@@ -42,6 +42,7 @@ export const ContinuationRail = memo(
 
     return (
       <View
+        testID="chat-continuation-rail"
         style={[
           styles.wrap,
           {
@@ -59,20 +60,36 @@ export const ContinuationRail = memo(
         </View>
 
         {loading ? (
-          <AppText variant="meta" tone="muted" style={styles.emptyText}>
+          <AppText
+            testID="chat-continuation-rail-loading"
+            variant="meta"
+            tone="muted"
+            style={styles.emptyText}
+          >
             Loading continuations...
           </AppText>
         ) : error ? (
-          <AppText variant="meta" tone="accent" style={styles.emptyText}>
+          <AppText
+            testID="chat-continuation-rail-error"
+            variant="meta"
+            tone="accent"
+            style={styles.emptyText}
+          >
             {error}
           </AppText>
         ) : continuations.length === 0 ? (
-          <AppText variant="meta" tone="muted" style={styles.emptyText}>
+          <AppText
+            testID="chat-continuation-rail-empty"
+            variant="meta"
+            tone="muted"
+            style={styles.emptyText}
+          >
             No continuations yet.
           </AppText>
         ) : (
           <>
             <ScrollView
+              testID="chat-continuation-rail-list"
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.content}
@@ -98,6 +115,7 @@ export const ContinuationRail = memo(
                     }}
                   >
                     <Pressable
+                      testID={`chat-continuation-card-${item.nodeId}`}
                       onPress={() => onSelect(item.nodeId)}
                       style={[
                         styles.card,

@@ -88,6 +88,8 @@ type AppTextProps = {
   readonly onTextLayout?: (
     event: NativeSyntheticEvent<TextLayoutEventData>
   ) => void;
+  /** Forwarded to the host Text. */
+  readonly testID?: string;
 };
 
 export const AppText = ({
@@ -98,11 +100,13 @@ export const AppText = ({
   selectable,
   style,
   onTextLayout,
+  testID,
 }: AppTextProps) => {
   const { colors } = useAspenGroveTheme();
 
   return (
     <Text
+      testID={testID}
       numberOfLines={numberOfLines}
       selectable={selectable}
       onTextLayout={onTextLayout}
@@ -120,13 +124,16 @@ export const AppText = ({
 type AppScreenProps = {
   readonly children: ReactNode;
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the host View. */
+  readonly testID?: string;
 };
 
-export const AppScreen = ({ children, style }: AppScreenProps) => {
+export const AppScreen = ({ children, style, testID }: AppScreenProps) => {
   const { colors } = useAspenGroveTheme();
 
   return (
     <View
+      testID={testID}
       style={[
         styles.screen,
         { backgroundColor: colors.oppositePrimary },
@@ -162,6 +169,8 @@ type AppPillButtonProps = {
   readonly disabled?: boolean;
   readonly variant?: 'solid' | 'outline';
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the host Pressable. */
+  readonly testID?: string;
 };
 
 export const AppPillButton = ({
@@ -170,11 +179,13 @@ export const AppPillButton = ({
   disabled,
   variant = 'solid',
   style,
+  testID,
 }: AppPillButtonProps) => {
   const { colors } = useAspenGroveTheme();
 
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [

@@ -48,12 +48,13 @@ const SettingsHomeView = () => {
   const router = useRouter();
 
   return (
-    <AppScreen>
+    <AppScreen testID="settings-screen">
       <View style={styles.list}>
         {LINKS.map((link, index) => (
           <View key={link.route}>
             {index > 0 ? <Hairline /> : null}
             <Pressable
+              testID={`settings-link-${link.route.replace('/settings/', '')}`}
               onPress={() => router.push(link.route)}
               accessibilityRole="button"
               style={({ pressed }) => [

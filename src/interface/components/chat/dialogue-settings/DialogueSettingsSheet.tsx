@@ -110,6 +110,7 @@ export const DialogueSettingsSheet = ({
 
             <View style={styles.actionRow}>
               <Pressable
+                testID="dialogue-settings-edit-agent"
                 onPress={controller.onEditAgent}
                 disabled={controller.busy}
                 hitSlop={6}
@@ -120,6 +121,7 @@ export const DialogueSettingsSheet = ({
                 </AppText>
               </Pressable>
               <Pressable
+                testID="dialogue-settings-switch-agent"
                 onPress={() => controller.setMode('switchAgent')}
                 disabled={controller.busy}
                 hitSlop={6}
@@ -149,6 +151,7 @@ export const DialogueSettingsSheet = ({
           Prepended after the agent's system prompt, for this tree only.
         </AppText>
         <AppInput
+          testID="dialogue-settings-system-context-input"
           value={controller.systemContextInput}
           onChangeText={controller.setSystemContextInput}
           placeholder="e.g. We are exploring recursive self-models…"
@@ -159,6 +162,7 @@ export const DialogueSettingsSheet = ({
         />
         {controller.systemContextDirty ? (
           <Pressable
+            testID="dialogue-settings-system-context-save"
             onPress={() => void controller.saveSystemContext()}
             disabled={controller.busy}
             hitSlop={6}
@@ -205,6 +209,7 @@ export const DialogueSettingsSheet = ({
           candidates.map((candidate) => (
             <Pressable
               key={candidate.id}
+              testID={`dialogue-settings-switch-agent-row-${candidate.id}`}
               onPress={() => void controller.switchToAgent(candidate.id)}
               disabled={controller.busy}
               style={({ pressed }) => [
@@ -244,6 +249,7 @@ export const DialogueSettingsSheet = ({
               patchEditDraft({ modelIdentifier })
             }
             colors={colors}
+            testIDPrefix="dialogue-settings-edit-agent"
           />
         </View>
 
@@ -266,16 +272,22 @@ export const DialogueSettingsSheet = ({
             onChangeSystemPrompt={(systemPrompt) =>
               patchEditDraft({ systemPrompt })
             }
+            testIDPrefix="dialogue-settings-edit-agent"
           />
         </View>
 
         {editError ? (
-          <AppText variant="meta" tone="accent">
+          <AppText
+            testID="dialogue-settings-edit-agent-error"
+            variant="meta"
+            tone="accent"
+          >
             {editError}
           </AppText>
         ) : null}
 
         <Pressable
+          testID="dialogue-settings-edit-agent-save"
           onPress={() => void onSaveAgentEdit()}
           disabled={editSaving}
           hitSlop={6}
@@ -305,11 +317,13 @@ export const DialogueSettingsSheet = ({
       onRequestClose={onClose}
     >
       <View
+        testID="dialogue-settings-sheet"
         style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
           {isSubView ? (
             <Pressable
+              testID="dialogue-settings-back"
               onPress={() => controller.setMode('overview')}
               hitSlop={8}
               style={styles.headerSide}
@@ -326,7 +340,12 @@ export const DialogueSettingsSheet = ({
                 ? 'Switch Agent'
                 : 'Dialogue Settings'}
           </AppText>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
+          <Pressable
+            testID="dialogue-settings-done"
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerSide}
+          >
             <AppText
               variant="meta"
               style={{ color: colors.primary, textAlign: 'right' }}
@@ -353,7 +372,11 @@ export const DialogueSettingsSheet = ({
               {controller.mode === 'editAgent' ? renderEditAgent() : null}
 
               {controller.error ? (
-                <AppText variant="meta" tone="accent">
+                <AppText
+                  testID="dialogue-settings-error"
+                  variant="meta"
+                  tone="accent"
+                >
                   {controller.error}
                 </AppText>
               ) : null}

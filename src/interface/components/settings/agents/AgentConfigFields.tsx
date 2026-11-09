@@ -18,6 +18,8 @@ type AgentConfigFieldsProps = {
   readonly onChangeMaxTokensInput: (value: string) => void;
   readonly systemPrompt: string;
   readonly onChangeSystemPrompt: (value: string) => void;
+  /** Prefix for these fields' testIDs, e.g. `agent-editor`. */
+  readonly testIDPrefix: string;
 };
 
 /**
@@ -35,11 +37,13 @@ export const AgentConfigFields = ({
   onChangeMaxTokensInput,
   systemPrompt,
   onChangeSystemPrompt,
+  testIDPrefix,
 }: AgentConfigFieldsProps) => {
   return (
     <>
       <SettingsStackRow label="Name">
         <AppInput
+          testID={`${testIDPrefix}-name-input`}
           value={name}
           onChangeText={onChangeName}
           placeholder="e.g. Claude (Creative)"
@@ -50,6 +54,7 @@ export const AgentConfigFields = ({
       </SettingsStackRow>
 
       <SettingsSliderRow
+        testID={`${testIDPrefix}-temperature`}
         label="Temperature"
         value={
           Number.isFinite(Number(temperatureInput.replace(',', '.')))
@@ -65,6 +70,7 @@ export const AgentConfigFields = ({
 
       <SettingsStackRow label="Max Tokens (optional)">
         <AppInput
+          testID={`${testIDPrefix}-max-tokens-input`}
           value={maxTokensInput}
           onChangeText={onChangeMaxTokensInput}
           placeholder="Leave blank for provider default"
@@ -76,6 +82,7 @@ export const AgentConfigFields = ({
 
       <SettingsStackRow label="System Prompt">
         <AppInput
+          testID={`${testIDPrefix}-system-prompt-input`}
           value={systemPrompt}
           onChangeText={onChangeSystemPrompt}
           placeholder={DEFAULT_AGENT_SYSTEM_PROMPT}

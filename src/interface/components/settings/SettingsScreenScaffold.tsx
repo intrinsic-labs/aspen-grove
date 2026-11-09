@@ -11,6 +11,8 @@ import { AppScreen, SettingsList } from '@/interface/ui/value-objects';
 type SettingsScreenScaffoldProps = {
   readonly loading?: boolean;
   readonly children: ReactNode;
+  /** Forwarded to the screen's host root View. */
+  readonly testID?: string;
 };
 
 /**
@@ -20,12 +22,13 @@ type SettingsScreenScaffoldProps = {
 export const SettingsScreenScaffold = ({
   loading = false,
   children,
+  testID,
 }: SettingsScreenScaffoldProps) => {
   const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <AppScreen>
+    <AppScreen testID={testID}>
       {loading ? (
         <View style={styles.centerWrap}>
           <ActivityIndicator color={colors.primary} />

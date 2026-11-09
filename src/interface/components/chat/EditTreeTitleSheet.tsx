@@ -63,10 +63,16 @@ export const EditTreeTitleSheet = ({
       onRequestClose={onCancel}
     >
       <View
+        testID="chat-title-sheet"
         style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
-          <Pressable onPress={onCancel} hitSlop={8} disabled={saving}>
+          <Pressable
+            testID="chat-title-sheet-cancel"
+            onPress={onCancel}
+            hitSlop={8}
+            disabled={saving}
+          >
             <AppText variant="meta" tone="secondary">
               Cancel
             </AppText>
@@ -74,7 +80,12 @@ export const EditTreeTitleSheet = ({
           <AppText variant="ui" style={styles.headerTitle}>
             Edit Title
           </AppText>
-          <Pressable onPress={onSave} hitSlop={8} disabled={!canSave}>
+          <Pressable
+            testID="chat-title-sheet-save"
+            onPress={onSave}
+            hitSlop={8}
+            disabled={!canSave}
+          >
             {saving ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
@@ -101,6 +112,7 @@ export const EditTreeTitleSheet = ({
               TITLE
             </AppText>
             <AppInput
+              testID="chat-title-sheet-input"
               autoFocus
               value={title}
               onChangeText={setTitle}
@@ -113,7 +125,11 @@ export const EditTreeTitleSheet = ({
           </View>
 
           {error ? (
-            <AppText variant="meta" tone="accent">
+            <AppText
+              testID="chat-title-sheet-error"
+              variant="meta"
+              tone="accent"
+            >
               {error}
             </AppText>
           ) : null}
