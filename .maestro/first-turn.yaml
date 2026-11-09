@@ -7,10 +7,18 @@ appId: com.intrinsiclabs.aspengrove
 ---
 - launchApp:
     clearState: true
+# A fresh install opens onboarding; skip it and take the Settings path, which works with
+# the EXPO_PUBLIC_ key fallback (onboarding's Continue wants a key typed in).
+- extendedWaitUntil:
+    visible:
+      id: onboarding-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-skip
 - extendedWaitUntil:
     visible:
       id: home-welcome
-    timeout: 30000
+    timeout: 10000
 
 # P1: create an agent from the first template.
 - tapOn:

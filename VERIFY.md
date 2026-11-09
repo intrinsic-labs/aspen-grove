@@ -55,9 +55,11 @@ When it's done the app opens on the simulator and `.verify/metro.log` shows the 
 loading. `expo run:ios` stays running as the Metro server; leave it up while you drive the
 app. (`.verify/` is gitignored.)
 
-A fresh install opens on **Home**: a greeting, a leaf and **New Loom Tree**
-(`home-welcome`). There is no account and no sign-in: the app is local-first, and every
-install is its own synthetic user.
+A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
+(`onboarding-screen`): connect a provider, choose an agent, land in a first tree. Skip it
+with `onboarding-skip`; Home then shows a setup hint (`home-setup-action`) instead of
+**New Loom Tree** until a model agent exists. There is no account and no sign-in: the app
+is local-first, and every install is its own synthetic user.
 
 ## 4. Give it a model (your own keys, never committed)
 
