@@ -8,6 +8,7 @@ import {
   type TextLayoutEventData,
   type TextStyle,
   type NativeSyntheticEvent,
+  type StyleProp,
   type ViewStyle,
   View,
 } from 'react-native';
@@ -83,7 +84,7 @@ type AppTextProps = {
   readonly tone?: TextTone;
   readonly numberOfLines?: number;
   readonly selectable?: boolean;
-  readonly style?: TextStyle | TextStyle[];
+  readonly style?: StyleProp<TextStyle>;
   readonly onTextLayout?: (
     event: NativeSyntheticEvent<TextLayoutEventData>
   ) => void;
