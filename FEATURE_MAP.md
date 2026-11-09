@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 12ac020e95e30ab2f8555e04cc0855233d617e6e
+revision: bf9ff0422fdc497d687c52d01bc1a868c9f81c84
 reconciled: 2026-11-09
 ---
 # Aspen Grove feature map
@@ -23,8 +23,11 @@ code, not observed.
 **Maintenance rule.** If you change a route, a screen or a feature, update its entry in the
 same change: add entries for new features, remove entries for removed ones, and keep `testID`s
 and their entries in step. Then run `npm run check:map` (the vendored checker in
-`scripts/check-feature-map.py`, strict, over `src/app/**/*.tsx`). Bump `revision:` only after
-re-reading every entry the drift warnings name. Bump `reconciled:` only after a full walk of
+`scripts/check-feature-map.py`, over `src/app/**/*.tsx`; CI fails on errors and unmapped routes
+and shows drift as a warning). `main` is squash-merged, so `revision:` must always name a
+commit already on `main`, never one on your branch: bump it in a follow-up once the change has
+landed, and only after re-reading every entry the drift warnings name; `npm run
+check:map:strict` then passes. Bump `reconciled:` only after a full walk of
 every entry on a device or simulator.
 
 **Scope.** v1 is branching dialogue, inline continuations, edit-as-branch, bookmarks,
