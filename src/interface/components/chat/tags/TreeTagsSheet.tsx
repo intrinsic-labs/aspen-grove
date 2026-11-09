@@ -125,6 +125,7 @@ export const TreeTagsSheet = ({
       onRequestClose={onClose}
     >
       <View
+        testID="tags-sheet"
         style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
@@ -132,7 +133,12 @@ export const TreeTagsSheet = ({
           <AppText variant="ui" style={styles.headerTitle}>
             Tags
           </AppText>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
+          <Pressable
+            testID="tags-sheet-done"
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerSide}
+          >
             <AppText
               variant="meta"
               style={{ color: colors.primary, textAlign: 'right' }}
@@ -144,6 +150,7 @@ export const TreeTagsSheet = ({
 
         <View style={[styles.newTagRow, { borderBottomColor: colors.line }]}>
           <TextInput
+            testID="tags-sheet-new-input"
             value={newTagName}
             onChangeText={setNewTagName}
             placeholder="New tag…"
@@ -155,6 +162,7 @@ export const TreeTagsSheet = ({
             style={[styles.newTagInput, { color: colors.primary }]}
           />
           <Pressable
+            testID="tags-sheet-new-add"
             onPress={() => void createAndAssignTag()}
             disabled={newTagName.trim().length === 0}
             hitSlop={8}
@@ -177,17 +185,21 @@ export const TreeTagsSheet = ({
           </View>
         ) : allTags.length === 0 ? (
           <View style={styles.centerWrap}>
-            <AppText variant="meta" tone="muted">
+            <AppText testID="tags-sheet-empty" variant="meta" tone="muted">
               No tags yet. Create one above to label this tree.
             </AppText>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView
+            testID="tags-sheet-list"
+            contentContainerStyle={styles.content}
+          >
             {allTags.map((tag) => {
               const assigned = assignedTagIds.has(tag.id);
               return (
                 <Pressable
                   key={tag.id}
+                  testID={`tags-sheet-row-${tag.id}`}
                   onPress={() => void toggleTag(tag)}
                   style={({ pressed }) => [
                     styles.tagRow,
@@ -210,7 +222,12 @@ export const TreeTagsSheet = ({
         )}
 
         {error ? (
-          <AppText variant="meta" tone="accent" style={styles.errorText}>
+          <AppText
+            testID="tags-sheet-error"
+            variant="meta"
+            tone="accent"
+            style={styles.errorText}
+          >
             {error}
           </AppText>
         ) : null}

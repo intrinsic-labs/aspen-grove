@@ -31,7 +31,6 @@ When implementing, use these terms consistently:
 | Continuation | `Continuation` |
 | Sibling | `sibling` / `siblings` |
 | Grove | `Grove` |
-| Document | `Document` |
 | Agent | `Agent` |
 | Human | `Human` |
 | Model | `Model` |
@@ -58,21 +57,13 @@ When implementing, use these terms consistently:
 
 These questions are tracked but not yet resolved:
 
-### Cloud Sync Service
-
-Supabase is a candidate for auth + backup + sync. Could also consider encrypted backup to iCloud/Google Drive for simplicity. Decision deferred until sync is needed.
-
 ### API Provider Signatures
 
 True proof of model identity requires providers to sign responses. This doesn't exist yet. Worth advocating for as the ecosystem matures.
 
 ### Multi-user/Collaboration
 
-Out of scope for MVP, but the Agent abstraction should accommodate it when needed. Future work will need to address:
-- Shared Groves
-- Permission models beyond read/write
-- Conflict resolution for concurrent edits
-- Identity and authentication
+Out of scope. Aspen Grove is local-first with no server: no sync, shared Groves or accounts.
 
 ---
 
@@ -83,12 +74,12 @@ Out of scope for MVP, but the Agent abstraction should accommodate it when neede
 1. **Domain Layer** — entities, value objects, domain logic (no framework dependencies)
 2. **Application Layer** — use cases, orchestration (depends on domain)
 3. **Infrastructure Layer** — persistence, API clients, platform APIs (implements contracts)
-4. **Presentation Layer** — React Native components, screens, navigation
+4. **Interface Layer** — React Native components, screens, navigation (`src/interface/`, routes in `src/app/`)
 
 ### Dependency Direction
 
 Dependencies flow inward:
-- Presentation → Application → Domain
+- Interface → Application → Domain
 - Infrastructure → Application → Domain
 - Never: Domain → Infrastructure
 
@@ -122,4 +113,3 @@ Dependencies flow inward:
 
 - [Architecture Decision Records](../architecture/adr/) — Detailed technical decisions
 - [Architecture Overview](../architecture/README.md) — System structure
-- [Review Findings](../architecture/review-findings.md) — Tracked issues and resolutions

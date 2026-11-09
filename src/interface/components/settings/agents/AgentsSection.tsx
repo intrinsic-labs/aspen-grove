@@ -46,6 +46,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
     return (
       <Pressable
         key={agent.id}
+        testID={`settings-agents-row-${agent.id}`}
         onPress={() => controller.openEdit(agent)}
         disabled={isBusy}
         style={({ pressed }) => [
@@ -82,6 +83,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
         <View style={styles.actionRow}>
           {!isDefault && (
             <Pressable
+              testID={`settings-agents-row-make-default-${agent.id}`}
               onPress={() => controller.makeDefault(agent.id)}
               disabled={isBusy}
               hitSlop={6}
@@ -93,6 +95,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
             </Pressable>
           )}
           <Pressable
+            testID={`settings-agents-row-delete-${agent.id}`}
             onPress={() => controller.deleteAgent(agent)}
             disabled={isBusy}
             hitSlop={6}
@@ -110,6 +113,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
   return (
     <>
       <SettingsSection
+        testID="settings-agents-list"
         title="Agents"
         footer="Agents pair a model with a system prompt and generation settings. New trees use the default agent; each tree can switch or customize its own from the chat's settings."
       >
@@ -135,6 +139,7 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
 
         {!controller.loading ? (
           <Pressable
+            testID="settings-agents-new"
             onPress={controller.openCreate}
             style={({ pressed }) => [
               styles.newAgentRow,
@@ -149,7 +154,12 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
         ) : null}
 
         {controller.error ? (
-          <AppText variant="meta" tone="accent" style={styles.statusText}>
+          <AppText
+            testID="settings-agents-error"
+            variant="meta"
+            tone="accent"
+            style={styles.statusText}
+          >
             {controller.error}
           </AppText>
         ) : null}

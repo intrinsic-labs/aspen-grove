@@ -67,7 +67,7 @@ Lists Agents by type with optional filtering and pagination.
 Finds all Agents using a specific model reference.
 
 **Input:**
-- `modelRef` — string (e.g., `anthropic:claude-sonnet-4-20250514`)
+- `modelRef` — string (e.g., `openrouter:anthropic/claude-sonnet-4.5` or `lmstudio:{model key}`)
 
 **Behavior:**
 - Useful for finding all Agent configurations for a given model
@@ -140,4 +140,3 @@ Finds the owner (human) Agent for the app.
 
 - [Agents Model](../../model/agents.md) — Entity definition
 - [User Preferences Repository](./user-preferences-repository.md) — App-wide preferences
-- [Local Model Repository](./local-model-repository.md) — Local model definitions

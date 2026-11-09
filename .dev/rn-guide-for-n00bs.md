@@ -4,6 +4,7 @@
 
 **Audience**: Native mobile developers with React/Next.js experience entering React Native  
 **Project Context**: Aspen Grove — an Expo + Expo Router app with Clean Architecture, WatermelonDB, and TypeScript  
+**Note**: A general React Native learning guide written before implementation. Its code samples illustrate patterns; they are not the codebase. Where it disagrees with [AGENTS.md](../AGENTS.md), AGENTS.md wins.  
 **Stack**: Expo SDK 52+, Expo Router v3+, WatermelonDB, Zustand, TypeScript
 
 ---
@@ -294,7 +295,7 @@ This is where native developers most often struggle. React's state model is fund
 | State Type | Where It Lives | Examples |
 |------------|---------------|----------|
 | **Server/Persisted** | WatermelonDB + React Query/hooks | Loom Trees, Nodes, User Preferences |
-| **Global UI** | Zustand/Context | Active tree ID, theme, Voice Mode toggle |
+| **Global UI** | Context | Active tree ID, theme |
 | **Local UI** | useState | Form inputs, modal open/closed, loading states |
 | **Derived** | useMemo/selectors | Computed path, filtered nodes, search results |
 | **URL/Navigation** | React Navigation params | Current screen, tree being viewed |
@@ -866,7 +867,6 @@ Expo provides a managed workflow that handles much of the native complexity. For
 
 - **expo-secure-store** — For API keys (replaces raw Keychain/Keystore access)
 - **expo-file-system** — For media storage
-- **expo-av** — For Voice Mode audio
 - **expo-speech** — For TTS
 - **Expo Router** — File-based navigation (see below)
 - **EAS Build** — Cloud builds without local Xcode/Android Studio setup
@@ -885,25 +885,7 @@ Expo Router is built on React Navigation but uses **file-based routing** (like N
 
 ### File Structure for Aspen Grove
 
-```
-app/
-├── _layout.tsx              # Root layout (providers, fonts, etc.)
-├── index.tsx                # Home/Grove screen (/)
-├── settings.tsx             # Settings screen (/settings)
-├── (tabs)/                  # Tab group
-│   ├── _layout.tsx          # Tab navigator config
-│   ├── grove.tsx            # Grove tab
-│   └── documents.tsx        # Documents tab
-├── tree/
-│   ├── [treeId]/
-│   │   ├── _layout.tsx      # Tree-specific layout
-│   │   ├── index.tsx        # Tree view (/tree/[treeId])
-│   │   └── node/
-│   │       └── [nodeId].tsx # Node detail (/tree/[treeId]/node/[nodeId])
-├── agent/
-│   └── [agentId].tsx        # Agent config (/agent/[agentId])
-└── +not-found.tsx           # 404 handler
-```
+This guide predates the code. For the real route and layer layout, see [AGENTS.md](../AGENTS.md) and [FEATURE_MAP.md](../FEATURE_MAP.md).
 
 ### Navigation in Expo Router
 
@@ -1465,129 +1447,9 @@ export function LoomTreeView({ treeId }: { treeId: string }) {
 
 ## Project Structure Reference
 
-### Recommended Structure for Aspen Grove (Expo Router)
+### Aspen Grove's Structure
 
-```
-aspen-grove-rn/
-├── app/                              # Expo Router - file-based routes
-│   ├── _layout.tsx                   # Root layout (providers)
-│   ├── index.tsx                     # Home screen (/)
-│   ├── settings.tsx                  # Settings (/settings)
-│   ├── (tabs)/                       # Tab group (optional)
-│   │   ├── _layout.tsx
-│   │   ├── grove.tsx
-│   │   └── documents.tsx
-│   ├── tree/
-│   │   └── [treeId]/
-│   │       ├── _layout.tsx           # Tree-scoped providers
-│   │       ├── index.tsx             # Tree view
-│   │       ├── buffer.tsx            # Buffer mode view
-│   │       └── node/
-│   │           └── [nodeId].tsx      # Node detail
-│   ├── agent/
-│   │   └── [agentId].tsx
-│   └── +not-found.tsx
-│
-├── src/
-│   ├── domain/                       # Layer 1: Pure TypeScript
-│   │   ├── entities/
-│   │   │   ├── LoomTree.ts
-│   │   │   ├── Node.ts
-│   │   │   ├── Edge.ts
-│   │   │   ├── Agent.ts
-│   │   │   └── index.ts
-│   │   ├── values/
-│   │   │   ├── Content.ts
-│   │   │   ├── ContentHash.ts
-│   │   │   ├── EdgeSource.ts
-│   │   │   └── index.ts
-│   │   └── errors/
-│   │       ├── DomainError.ts
-│   │       └── index.ts
-│   │
-│   ├── application/                  # Layer 2: Use cases
-│   │   ├── usecases/
-│   │   │   ├── generation/
-│   │   │   │   ├── generateContinuation.ts
-│   │   │   │   └── assembleContext.ts
-│   │   │   ├── navigation/
-│   │   │   │   ├── computePath.ts
-│   │   │   │   └── switchBranch.ts
-│   │   │   └── tree/
-│   │   │       ├── createNode.ts
-│   │   │       └── forkTree.ts
-│   │   ├── repositories/             # Interfaces only
-│   │   │   ├── LoomTreeRepository.ts
-│   │   │   ├── NodeRepository.ts
-│   │   │   └── index.ts
-│   │   ├── services/                 # Interfaces only
-│   │   │   ├── LLMProvider.ts
-│   │   │   └── MediaStorage.ts
-│   │   └── hooks/                    # React hooks for use cases
-│   │       ├── useLoomTree.ts
-│   │       ├── useNodes.ts
-│   │       ├── useGeneration.ts
-│   │       └── index.ts
-│   │
-│   ├── infrastructure/               # Layer 3: Implementations
-│   │   ├── persistence/
-│   │   │   ├── database.ts
-│   │   │   ├── schema.ts
-│   │   │   ├── migrations/
-│   │   │   ├── models/
-│   │   │   │   ├── NodeModel.ts
-│   │   │   │   └── LoomTreeModel.ts
-│   │   │   └── repositories/
-│   │   │       ├── WatermelonNodeRepository.ts
-│   │   │       └── WatermelonLoomTreeRepository.ts
-│   │   ├── llm/
-│   │   │   ├── adapters/
-│   │   │   │   ├── AnthropicAdapter.ts
-│   │   │   │   ├── OpenAIAdapter.ts
-│   │   │   │   └── OpenRouterAdapter.ts
-│   │   │   └── ModelCatalogService.ts
-│   │   ├── media/
-│   │   │   └── ExpoFileSystemMediaStorage.ts  # Uses expo-file-system
-│   │   ├── secure-storage/
-│   │   │   └── ExpoSecureStorage.ts           # Uses expo-secure-store
-│   │   └── di/
-│   │       └── RepositoryProvider.tsx
-│   │
-│   └── interface/                    # Layer 4: UI (non-route)
-│       ├── components/
-│       │   ├── atoms/
-│       │   ├── molecules/
-│       │   ├── organisms/
-│       │   └── templates/
-│       ├── providers/                # Scoped context providers
-│       │   ├── LoomTreeProvider.tsx
-│       │   └── VoiceModeProvider.tsx
-│       ├── state/                    # Zustand stores
-│       │   ├── useNavigationStore.ts
-│       │   └── useVoiceModeStore.ts
-│       └── theme/
-│           ├── colors.ts
-│           ├── typography.ts
-│           └── spacing.ts
-│
-├── __tests__/
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   └── interface/
-│
-├── assets/                           # Static assets (images, fonts)
-│   ├── images/
-│   └── fonts/
-│
-├── app.json                          # Expo config (or app.config.ts)
-├── babel.config.js
-├── metro.config.js
-├── tsconfig.json
-├── .eslintrc.js
-├── eas.json                          # EAS Build config
-└── package.json
-```
+This guide was written before the code and its sketch of the tree went stale. The real layout (`src/app/` routes, `src/{domain,application,infrastructure,interface}` layers) is described in [AGENTS.md](../AGENTS.md); routes and screens are mapped in [FEATURE_MAP.md](../FEATURE_MAP.md).
 
 ### Key Differences from Bare React Native
 

@@ -13,7 +13,10 @@ const BehaviorSettingsScreen = () => {
     : 'rgba(0, 0, 0, 0.22)';
 
   return (
-    <SettingsScreenScaffold loading={appearance.loading}>
+    <SettingsScreenScaffold
+      testID="settings-behavior-screen"
+      loading={appearance.loading}
+    >
       <AppBehaviorSection
         verboseErrorAlerts={appearance.verboseErrorAlerts}
         onChangeVerboseErrorAlerts={appearance.setVerboseErrorAlerts}

@@ -3,32 +3,32 @@
 ## Purpose
 This document captures the concrete UI/interaction choices used in the Swift prototype at:
 
-- `/Users/asherpope/dev/ai/Loom`
+- Latent Spaces, the SwiftUI app (`loom-swift`)
 
 It is intended as a transfer reference for parity work in React Native.
 
 ## Source Files Audited
 Primary files reviewed:
 
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/components/AppColors.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/components/LoomFont.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/components/MessageField.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/MessageInputView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/LoomTreeView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/LoomTreeContentView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/NodeView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/ChildNodesView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/ChildNodeView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/loom tree views/NodeSheetView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/home screen/SampleNodeView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/home screen/LoomSettingsView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/home screen/HomeScreenView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/hightlighting/CodeBlockView.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/presentation/hightlighting/ContentParser.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/data/SwiftData/LoomTree.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/data/SwiftData/Node.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/LoomApp.swift`
-- `/Users/asherpope/dev/ai/Loom/Loom/Assets.xcassets/AccentColor.colorset/Contents.json`
+- `loom-swift/Loom/presentation/components/AppColors.swift`
+- `loom-swift/Loom/presentation/components/LoomFont.swift`
+- `loom-swift/Loom/presentation/components/MessageField.swift`
+- `loom-swift/Loom/presentation/loom tree views/MessageInputView.swift`
+- `loom-swift/Loom/presentation/loom tree views/LoomTreeView.swift`
+- `loom-swift/Loom/presentation/loom tree views/LoomTreeContentView.swift`
+- `loom-swift/Loom/presentation/loom tree views/NodeView.swift`
+- `loom-swift/Loom/presentation/loom tree views/ChildNodesView.swift`
+- `loom-swift/Loom/presentation/loom tree views/ChildNodeView.swift`
+- `loom-swift/Loom/presentation/loom tree views/NodeSheetView.swift`
+- `loom-swift/Loom/presentation/home screen/SampleNodeView.swift`
+- `loom-swift/Loom/presentation/home screen/LoomSettingsView.swift`
+- `loom-swift/Loom/presentation/home screen/HomeScreenView.swift`
+- `loom-swift/Loom/presentation/hightlighting/CodeBlockView.swift`
+- `loom-swift/Loom/presentation/hightlighting/ContentParser.swift`
+- `loom-swift/Loom/data/SwiftData/LoomTree.swift`
+- `loom-swift/Loom/data/SwiftData/Node.swift`
+- `loom-swift/Loom/LoomApp.swift`
+- `loom-swift/Loom/Assets.xcassets/AccentColor.colorset/Contents.json`
 
 ## Design Tokens Extracted
 

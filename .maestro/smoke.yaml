@@ -1,0 +1,61 @@
+# Cold-start smoke walk: every screen a fresh install can reach without a provider key.
+# Run from the repo root with the app installed on a booted simulator:
+#   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"
+# Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
+appId: com.intrinsiclabs.aspen-grove-rn
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 30000
+- takeScreenshot: 01-home
+
+- tapOn:
+    id: drawer-menu-button
+- assertVisible:
+    id: drawer-root
+- takeScreenshot: 02-drawer
+
+- tapOn:
+    id: drawer-nav-trees
+- assertVisible:
+    id: trees-screen
+- takeScreenshot: 03-trees-empty
+
+- tapOn:
+    id: drawer-menu-button
+- tapOn:
+    id: drawer-nav-search
+- assertVisible:
+    id: search-screen
+- takeScreenshot: 04-search
+
+- tapOn:
+    id: drawer-menu-button
+- tapOn:
+    id: drawer-nav-settings
+- assertVisible:
+    id: settings-screen
+- takeScreenshot: 05-settings
+
+- tapOn:
+    id: settings-link-connections
+- assertVisible:
+    id: connections-openrouter-key-input
+- assertVisible:
+    id: connections-lmstudio-endpoint-input
+- takeScreenshot: 06-connections
+- back
+
+- tapOn:
+    id: settings-link-agents
+- assertVisible:
+    id: settings-agents-screen
+- takeScreenshot: 07-agents-empty
+- tapOn:
+    id: settings-agents-new
+- assertVisible:
+    id: agent-editor-sheet
+- takeScreenshot: 08-agent-editor

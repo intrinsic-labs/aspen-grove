@@ -157,13 +157,15 @@ Updates Node metadata without modifying content.
 
 Triggers regeneration of the Node summary.
 
+**Status:** specified, not in the interface or implemented; summaries wait for loom tools (after v1).
+
 **Input:**
 - `id` — ULID
 
 **Behavior:**
 - Retrieves parent node content (and grandparent if node is short)
 - Retrieves tree title for context
-- Generates new summary via summarization model (Haiku/GPT-4o-mini)
+- Generates new summary via a small summarization model the user has configured
 - Updates `summary` field
 
 **Returns:** Updated Node

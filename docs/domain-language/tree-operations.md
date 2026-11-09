@@ -134,16 +134,17 @@ Mark a branch as "pruned" — not deleted, but hidden from default views.
 
 ---
 
-## Export Path
+## Export and Import
 
-Serialize a specific Path (or the entire Loom Tree) to an external format.
+Move a Loom Tree in and out of Aspen Grove as a file.
 
-**Parameters:**
-- **Target** — a specific Node (exports path from Root to Node) or entire tree
-- **Format** — Markdown, JSON, PDF, etc.
-- **Options** — include annotations, include metadata, etc.
+**Export:**
+- **Whole tree** as [Open Loom](../open-loom/spec.md) JSON: nodes, edges, agents, hash chain and raw-response evidence, with privacy toggles
+- **Active path** as Markdown, for reading
 
-**Result:** A file or data structure suitable for sharing or archiving outside Aspen Grove.
+**Import:** Open Loom v2, Open Loom v1 (the Latent Spaces Swift app), socketteer/loom and Loomsidian files. Imported trees get fresh IDs and recomputed local hashes.
+
+**Result:** A file handed to the system share sheet, or a new Loom Tree from a picked file. Nothing is uploaded anywhere.
 
 ---
 
@@ -158,12 +159,10 @@ Combine insights from multiple Paths into a new Node. This is a creative/editori
 
 **Behavior:**
 - Creates a new Node with content synthesized from the sources
-- The new Node can reference its sources via Links
 - This is a human-driven operation (or Loom-Aware model operation)
 
 **Use Cases:**
 - Combine the best parts of different model responses
-- Create a synthesis document from exploration
 - Resolve branches into a single canonical path
 
 ---
@@ -179,7 +178,7 @@ Combine insights from multiple Paths into a new Node. This is a creative/editori
 | Bookmark | Yes (metadata) | No | Human |
 | Annotate | Yes | Yes | Human |
 | Prune | Yes (metadata) | No | Human |
-| Export Path | No | No | Human |
+| Export / Import | No / Yes | No / Yes | Human |
 | Merge | Yes | Yes | Human |
 
 ---

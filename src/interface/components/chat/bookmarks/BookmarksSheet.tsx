@@ -111,6 +111,7 @@ export const BookmarksSheet = ({
       onRequestClose={onClose}
     >
       <View
+        testID="bookmarks-sheet"
         style={[styles.container, { backgroundColor: colors.oppositePrimary }]}
       >
         <View style={[styles.header, { borderBottomColor: colors.line }]}>
@@ -118,7 +119,12 @@ export const BookmarksSheet = ({
           <AppText variant="ui" style={styles.headerTitle}>
             Bookmarks
           </AppText>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
+          <Pressable
+            testID="bookmarks-sheet-done"
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerSide}
+          >
             <AppText
               variant="meta"
               style={{ color: colors.primary, textAlign: 'right' }}
@@ -134,22 +140,30 @@ export const BookmarksSheet = ({
           </View>
         ) : error ? (
           <View style={styles.centerWrap}>
-            <AppText variant="meta" tone="accent">
+            <AppText
+              testID="bookmarks-sheet-error"
+              variant="meta"
+              tone="accent"
+            >
               {error}
             </AppText>
           </View>
         ) : bookmarks.length === 0 ? (
           <View style={styles.centerWrap}>
-            <AppText variant="meta" tone="muted">
+            <AppText testID="bookmarks-sheet-empty" variant="meta" tone="muted">
               No bookmarks in this tree yet. Long-press a message and choose
               Bookmark.
             </AppText>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView
+            testID="bookmarks-sheet-list"
+            contentContainerStyle={styles.content}
+          >
             {bookmarks.map((bookmark) => (
               <Pressable
                 key={bookmark.nodeId}
+                testID={`bookmarks-sheet-row-${bookmark.nodeId}`}
                 onPress={() => void onSelectNode(bookmark.nodeId)}
                 style={({ pressed }) => [
                   styles.row,
@@ -165,6 +179,7 @@ export const BookmarksSheet = ({
                     · {bookmark.authorType}
                   </AppText>
                   <Pressable
+                    testID={`bookmarks-sheet-row-details-${bookmark.nodeId}`}
                     onPress={() => onShowDetail(bookmark.nodeId)}
                     hitSlop={8}
                   >

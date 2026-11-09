@@ -40,3 +40,6 @@ yarn-error.*
 /ios
 /android
 /.dev/loom-ui-demo/
+
+# local verification runs (VERIFY.md)
+/.verify/

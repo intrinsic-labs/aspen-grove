@@ -8,8 +8,8 @@
 
 The LLM provider abstraction enables:
 
-- Uniform interface across providers (OpenRouter, Hyperbolic, Anthropic, OpenAI, Google, local models, user defined providers)
-- Easy addition of new providers without changing application logic
+- Uniform interface across the two providers Aspen Grove supports: **OpenRouter** (hosted models) and **LM Studio** (local models)
+- Provider choice stays an adapter detail; application logic never changes per provider
 - Testability with mock implementations
 - Provider-specific features exposed through capability detection
 
@@ -134,39 +134,11 @@ Each StreamChunk contains:
 
 ## Tool Use
 
-This section describes **provider-level tools** — capabilities exposed through the provider's native tool-calling API (e.g., web search, code execution, file operations).
+Aspen Grove passes **no provider tools**: no web search, code execution, connectors or MCP. A loom, not a harness.
 
-**Note:** Loom-aware tools (view, continue, annotate, etc.) are **not** registered as provider tools. They use a custom `→ syntax` parsed client-side, which avoids provider tool system prompts that could conflict with our natural language approach. See [Loom Tools Spec](../specs/loom-tools/README.md) for details.
+The interface still carries optional `tools` / `toolCalls` fields (and a leftover `useMcpTools` toggle in the LM Studio adapter and Settings → Connections); no use case sends tools, and the toggle is to be removed.
 
-| Tool Type | Handled By | Use Case |
-|-----------|------------|----------|
-| Provider tools | Provider API (this spec) | Web search, code execution, etc. |
-| Loom tools | Client-side parsing | Tree navigation, content creation, memory |
-
-### ToolDefinition
-
-- **name** — string, unique identifier for the tool
-- **description** — string, explains what the tool does (for model)
-- **inputSchema** — JSON Schema object describing expected parameters
-
-### ToolCall
-
-- **id** — string, unique identifier for this invocation
-- **name** — string, which tool to call
-- **arguments** — object, the parsed arguments
-
-### ToolResult
-
-- **toolCallId** — string, references the ToolCall.id
-- **content** — string, the result to feed back to the model
-
-### Tool Use Flow
-
-1. Include tools in CompletionRequest
-2. Model may respond with toolCalls instead of/alongside text
-3. Application executes tools, gathers results
-4. Send follow-up request with ToolResults
-5. Model generates final response
+Loom-aware tools (view, continue, annotate, etc., after v1) are **not** provider tools. They use the custom `→` syntax parsed client-side, which avoids provider tool system prompts that conflict with the natural-language approach. See [Loom Tools Spec](../specs/loom-tools/README.md).
 
 ---
 
@@ -206,62 +178,23 @@ Base error type for all provider errors.
 
 ---
 
-## Provider-Specific Adapters
+## Provider Adapters
 
-Each provider needs an adapter implementing the LlmProvider interface.
+Two adapters implement the interface (`src/infrastructure/llm/`). There are no native Anthropic, OpenAI or Google adapters, by decision: OpenRouter covers those models.
 
 ### OpenRouterAdapter
 
 - Endpoint: `https://openrouter.ai/api/v1/chat/completions`
-- Authentication: Bearer token (`Authorization: Bearer <key>`)
-- Models: aggregates models from multiple providers (Claude, GPT, Llama, Gemini, etc.)
-- Specific features: OpenAI-compatible API, model routing/fallback, usage-based pricing, plugins (web search, PDF parsing)
+- Authentication: Bearer token (`Authorization: Bearer <key>`), the user's own key
+- Models: aggregates models from many providers (Claude, GPT, Llama, Gemini, etc.)
 - Optional headers: `HTTP-Referer` (app URL), `X-Title` (app name) for attribution
 
-### HyperbolicAdapter
+### LMStudioAdapter
 
-- Endpoint: `https://api.hyperbolic.xyz/v1/chat/completions`
-- Authentication: Bearer token (`Authorization: Bearer <key>`)
-- Models: Llama 3.1 70B/405B, Qwen, DeepSeek, and other open models
-- Specific features: OpenAI-compatible API, also supports image generation and audio/TTS endpoints
-
-### AnthropicAdapter
-
-- Endpoint: `https://api.anthropic.com/v1/messages`
-- Authentication: `x-api-key` header + `anthropic-version` header (e.g., `2023-06-01`)
-- Models: claude-sonnet-4-20250514, claude-3-5-haiku, etc.
-- Specific features: native system prompt field, strong tool use, message batches API
-
-### OpenAiAdapter
-
-- Endpoint: `https://api.openai.com/v1/chat/completions`
-- Authentication: Bearer token (`Authorization: Bearer <key>`)
-- Models: gpt-4o, gpt-4-turbo, o1, o3, etc.
-- Specific features: function calling, JSON mode, structured outputs, streaming
-
-### GoogleAdapter
-
-- Endpoint: Vertex AI (`https://[region]-aiplatform.googleapis.com`) or AI Studio (`https://generativelanguage.googleapis.com`)
-- Authentication: OAuth 2.0 (Vertex AI) or API key (AI Studio)
-- Models: gemini-1.5-pro, gemini-1.5-flash, gemini-ultra, etc.
-- Specific features: multi-turn conversation format differences, grounding with Google Search
-
-### LocalAdapter
-
-- Endpoint: user-configured — must be network-accessible from mobile device
-  - Local network IP: `http://192.168.1.100:1234/v1` (LM Studio default port)
-  - Dynamic DNS: `http://my-home-server.duckdns.org:11434/v1` (Ollama)
-  - Tailscale/ZeroTier: `http://100.x.x.x:8080/v1` (private mesh network)
-- Authentication: none or basic auth (configurable)
-- Models: whatever the local server provides (LM Studio, Ollama, llama.cpp, etc.)
-- Specific features: typically OpenAI-compatible, may not support all capabilities
-
-### CustomAdapter
-
-- Endpoint: user-configured
-- Authentication: user-configured (Bearer, API key, or none)
-- For self-hosted or alternative providers
-- Capability detection via introspection or manual configuration
+- Endpoint: user-configured LM Studio server reachable from the phone (local network IP, Tailscale, etc.), default port 1234
+- Completions use the OpenAI-compatible `/v1/chat/completions`: the native `/api/v1/chat` chains history statefully, which doesn't fit branching trees
+- Model discovery, load and unload use LM Studio's `/api/v1/models` endpoints
+- Authentication: optional API token from secure storage
 
 ---
 
@@ -330,67 +263,15 @@ Returned alongside CompletionResponse:
 
 ---
 
-## ModelCatalogService
+## Model Catalogs
 
-Fetches and caches available models from remote providers. Local/custom models are persisted separately — see [LocalModelRepository](./repositories.md#localmodelrepository).
+Models are fetched, not persisted, so users get new models without app updates.
 
-### Design Rationale
+- **OpenRouter** — `OpenRouterModelCatalog` fetches the public `GET /api/v1/models` catalog and caches it for 24 hours in WatermelonDB local storage, serving the stale copy if a refresh fails
+- **LM Studio** — models are discovered live from the server
+- Users can always type a model identifier by hand
 
-Models change frequently in the current landscape. Rather than persist a stale catalog, we fetch dynamically from providers:
-
-- Users get access to new models immediately without app updates
-- Pricing, context windows, and capabilities stay current
-- Reduces maintenance burden
-
-### Operations
-
-**getAvailableModels**
-- Input: provider
-- Returns cached models if fresh, otherwise fetches from provider
-- Returns: array of CatalogModel objects
-
-**refreshCatalog**
-- Input: provider (optional — refreshes all if omitted)
-- Forces fresh fetch from provider(s), updates cache
-- Returns: array of CatalogModel objects
-
-**getModelInfo**
-- Input: provider, modelIdentifier
-- Returns: CatalogModel or null
-
-**getCacheStatus**
-- Input: provider (optional)
-- Returns: cache age, staleness indicator per provider
-
-### CatalogModel Properties
-
-- **identifier** — string, the model ID used in API requests (e.g., "claude-sonnet-4-20250514")
-- **provider** — enum: provider this model is available through
-- **displayName** — string, human-readable name from provider
-- **description** — optional string, provider's description
-- **contextWindow** — number, max tokens
-- **capabilities** — ModelCapabilities object (see [agents.md](../model/agents.md#modelcapabilities-properties))
-- **pricing** — optional PricingInfo object (input/output per million tokens)
-
-### Caching Strategy
-
-- **TTL**: 24 hours default, configurable
-- **Storage**: in-memory + lightweight file cache for offline fallback
-- **Refresh triggers**: app launch, manual refresh, TTL expiration
-- **Offline behavior**: serve stale cache with indicator, don't block app usage
-
-### Provider-Specific Notes
-
-| Provider | Catalog Endpoint | Notes |
-|----------|------------------|-------|
-| OpenRouter | `GET /api/v1/models` | Comprehensive, includes pricing |
-| Anthropic | Hardcoded list | No public catalog API; update with SDK releases |
-| OpenAI | `GET /v1/models` | Returns all models, filter to chat-capable |
-| Google | Hardcoded list | Vertex AI model garden requires auth |
-| Hyperbolic | `GET /v1/models` | OpenAI-compatible endpoint |
-| Local/Custom | N/A | User-defined, see LocalModelRepository |
-
-*Note: Some providers don't expose a catalog API. For these, we maintain a hardcoded list updated with app releases, supplemented by user's ability to manually specify model identifiers.*
+The agent editor's model picker (`useModelPickerData`) reads both.
 
 ---
 

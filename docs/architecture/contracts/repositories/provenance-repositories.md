@@ -1,6 +1,6 @@
 # Provenance Repositories
 
-> Manages persistence for RawApiResponse and TimestampCertificate — the provenance evidence structures.
+> Manages persistence for RawApiResponse — the provenance evidence structure. (RFC 3161 timestamp certificates are out of scope; an unused `ITimestampCertificateRepository` interface remains in code.)
 
 ---
 
@@ -77,93 +77,6 @@ Removes the RawApiResponse for a specific Node.
 
 ---
 
-## TimestampCertificateRepository
-
-Manages RFC 3161 timestamp certificates for provenance verification.
-
-### Operations
-
-#### create
-
-Creates a new TimestampCertificate record.
-
-**Input:**
-- `nodeId` — ULID, reference to the Node this timestamp certifies
-- `contentHash` — string, the hash that was timestamped (should match Node.contentHash)
-- `timestampAuthority` — string, URL of the timestamp authority used
-- `certificate` — string, base64-encoded timestamp certificate
-- `timestamp` — timestamp, the certified time from the authority
-
-**Behavior:**
-- Generates id and timestamp
-- Sets `verified` to false initially
-- Certificate is obtained asynchronously after Node creation
-
-**Returns:** Created TimestampCertificate
-
----
-
-#### findByNode
-
-Retrieves the TimestampCertificate for a Node.
-
-**Input:**
-- `nodeId` — ULID
-
-**Returns:** TimestampCertificate or null
-
----
-
-#### findPending
-
-Finds Nodes awaiting timestamp certificates.
-
-**Behavior:**
-- Returns Nodes that have no associated TimestampCertificate yet
-- Used by background job to retry failed timestamp requests
-
-**Returns:** Array of Nodes
-
----
-
-#### findUnverified
-
-Finds TimestampCertificates that haven't been verified locally.
-
-**Behavior:**
-- Returns certificates where `verified` = false
-- Used by background verification job
-
-**Returns:** Array of TimestampCertificates
-
----
-
-#### markVerified
-
-Marks a certificate as locally verified.
-
-**Input:**
-- `id` — ULID
-
-**Behavior:**
-- Sets `verified` = true
-- Sets `verifiedAt` = current timestamp
-
-**Returns:** Updated TimestampCertificate
-
----
-
-#### delete
-
-Removes a TimestampCertificate record.
-
-**Input:**
-- `id` — ULID
-
-**Returns:** Boolean success
-
----
-
 ## Storage Considerations
 
 ### Compression
@@ -179,30 +92,20 @@ Expected size: 2-10KB compressed per response.
 ### Retention
 
 - RawApiResponse: retained for lifetime of Node
-- TimestampCertificate: retained for lifetime of Node
-- Both deleted when Node is hard-deleted
+- Deleted when Node is hard-deleted
 
 ### Estimates
 
-- 1000 model-generated Nodes ≈ 5-15MB provenance data
+- 1000 model-generated Nodes ≈ 2-10MB provenance data
 - Consider optional pruning for very old, verified Nodes (keep hash, remove raw response)
 
 ---
 
 ## Verification Workflow
 
-### Timestamp Certificate Flow
-
-1. Node created → contentHash computed
-2. Background job submits hash to timestamp authority
-3. Certificate received → `create()` called
-4. Background job calls `findUnverified()`
-5. Verification performed on each certificate
-6. `markVerified()` called on success
-
 ### Hash Verification Flow
 
-1. User requests verification
+1. A new model node is created, or the user opens a node's detail sheet
 2. Repository retrieves Node and RawApiResponse
 3. Hash verification service recomputes hash:
    - For human nodes: content + parent hashes + createdAt + authorAgentId

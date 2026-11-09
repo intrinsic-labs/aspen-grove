@@ -7,10 +7,18 @@ import { AppText } from './primitives';
 type SettingsListProps = {
   readonly children: ReactNode;
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the host View. */
+  readonly testID?: string;
 };
 
-export const SettingsList = ({ children, style }: SettingsListProps) => (
-  <View style={[styles.list, style]}>{children}</View>
+export const SettingsList = ({
+  children,
+  style,
+  testID,
+}: SettingsListProps) => (
+  <View testID={testID} style={[styles.list, style]}>
+    {children}
+  </View>
 );
 
 type SettingsSectionProps = {
@@ -18,6 +26,8 @@ type SettingsSectionProps = {
   readonly footer?: ReactNode;
   readonly children: ReactNode;
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the section's host View. */
+  readonly testID?: string;
 };
 
 /**
@@ -29,6 +39,7 @@ export const SettingsSection = ({
   footer,
   children,
   style,
+  testID,
 }: SettingsSectionProps) => {
   const { isDark } = useAspenGroveTheme();
   const items = Children.toArray(children).filter(Boolean);
@@ -37,7 +48,7 @@ export const SettingsSection = ({
     : 'rgba(0, 0, 0, 0.12)';
 
   return (
-    <View style={[styles.section, style]}>
+    <View testID={testID} style={[styles.section, style]}>
       {title ? (
         <AppText variant="ui" tone="secondary" style={styles.sectionHeader}>
           {title}
@@ -114,6 +125,8 @@ type SettingsSliderRowProps = {
   /** Formats the value shown next to the label. Defaults to String(value). */
   readonly formatValue?: (value: number) => string;
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the host Slider. */
+  readonly testID?: string;
 };
 
 export const SettingsSliderRow = ({
@@ -125,6 +138,7 @@ export const SettingsSliderRow = ({
   onValueChange,
   formatValue,
   style,
+  testID,
 }: SettingsSliderRowProps) => {
   const { colors } = useAspenGroveTheme();
 
@@ -139,6 +153,7 @@ export const SettingsSliderRow = ({
         </AppText>
       </View>
       <Slider
+        testID={testID}
         value={value}
         minimumValue={minimumValue}
         maximumValue={maximumValue}
@@ -158,6 +173,8 @@ type SettingsSwitchRowProps = {
   readonly onValueChange: (value: boolean) => void;
   readonly trackColor?: { false: string; true: string };
   readonly style?: ViewStyle | ViewStyle[];
+  /** Forwarded to the host Switch. */
+  readonly testID?: string;
 };
 
 export const SettingsSwitchRow = ({
@@ -166,12 +183,14 @@ export const SettingsSwitchRow = ({
   onValueChange,
   trackColor,
   style,
+  testID,
 }: SettingsSwitchRowProps) => (
   <View style={[styles.switchRow, style]}>
     <AppText variant="ui" tone="primary" style={styles.switchLabel}>
       {label}
     </AppText>
     <Switch
+      testID={testID}
       value={value}
       onValueChange={onValueChange}
       trackColor={trackColor}

@@ -14,7 +14,7 @@ This extends the base [Context Assembly spec](../context-assembly.md) for loom-a
 
 ```
 [System prompt + loom-aware addendum]
-[Operational memory block]
+[Recent action trace]
 [Conversation context with per-node metadata]
 [System-level loom context]
 [Current turn input]
@@ -40,24 +40,13 @@ Your current permissions: [list permissions]
 Use → help to see available commands.
 ```
 
-### Operational Memory Block
+### Action Trace
 
-Assembled from:
-- Pinned content (nodes, documents, sections)
-- Recalled stashes
-- Recent action trace (compressed)
+A compressed log of the agent's recent operations, including any errors:
 
-**Format:**
 ```
-=== Operational Memory ===
-Pinned:
-  [a7x2] "Marie's reluctance stems from..."
-  doc:"character notes" §motivation (247 words)
-
-Recent actions:
-  viewed a7x2, b3k9 · annotated b3k9 · continued from b3k9 (2 results)
-
-Stashed (not in context): "marie insight", "theme notes"
+=== Recent actions ===
+viewed a7x2, b3k9 · annotated b3k9 · continued from b3k9 (2 results)
 ===
 ```
 
@@ -66,21 +55,14 @@ Stashed (not in context): "marie insight", "theme notes"
 - Results under threshold (configurable, default 1k tokens) appear inline
 - Results over threshold are auto-summarized
 - Tool call lines are not persisted in conversation context
-- Results can be explicitly pinned to preserve them
 
 ### Pruning Behavior
 
 When context grows too long:
 1. Older conversation portions are summarized
 2. Action trace is compressed (keeps recent, summarizes older)
-3. Unpinned ephemeral content is dropped
+3. Ephemeral tool results are dropped
 4. Model is notified that pruning occurred
-
-The model can preempt aggressive pruning:
-```
-→ stash "early discussion" summary-of:r001-a7x2
-→ drop pin:r001
-```
 
 ---
 
@@ -93,7 +75,6 @@ Loom awareness is modular. Capabilities are enabled per-agent.
 - See tree structure metadata
 - Navigate and inspect nodes (view, list, tree, switch)
 - Use thinking tool
-- Use memory tools (pin, stash, recall, drop, memory)
 - Use help tool
 
 ### loom_write
@@ -102,7 +83,7 @@ Requires: `loom_aware`
 
 - Create nodes (respond)
 - Add annotations (annotate)
-- Create links (link)
+- Bookmark, prune and restore nodes
 - Edit nodes (edit) — Buffer Mode
 
 ### loom_generate
@@ -112,22 +93,12 @@ Requires: `loom_aware`
 - Request continuations from subject models (continue)
 - Specify generation parameters
 
-### doc_read
-
-- View linked documents (read)
-
-### doc_write
-
-Requires: `doc_read`
-
-- Edit documents (write)
-
 ### Permission Examples
 
 | Role | Permissions | Use Case |
 |------|-------------|----------|
 | Research collaborator | all | Full creative partnership |
-| Analysis assistant | loom_aware, doc_read | Navigation and insight, no modification |
+| Analysis assistant | loom_aware | Navigation and insight, no modification |
 | Subject model | none | Content generation only, no tree awareness |
 
 ---
@@ -147,7 +118,7 @@ Errors are structured for both human readability and programmatic handling.
 
 | Code | Meaning | Retryable |
 |------|---------|-----------|
-| `NOT_FOUND` | Node, document, or stash doesn't exist | No |
+| `NOT_FOUND` | Node doesn't exist | No |
 | `PERMISSION_DENIED` | Operation requires permission you don't have | No |
 | `INVALID_SYNTAX` | Couldn't parse the command | Yes (rephrase) |
 | `LIMIT_EXCEEDED` | Exceeded a limit (e.g., max continuations) | Yes (reduce) |
@@ -172,11 +143,7 @@ Errors are structured for both human readability and programmatic handling.
 
 ### Inspecting Errors
 
-```
-→ memory trace
-```
-
-Shows recent actions including any errors encountered.
+Recent errors appear in the action trace at the top of the agent's next turn.
 
 ---
 
@@ -266,7 +233,7 @@ Summaries enable efficient context management by providing condensed representat
 ### Generation Strategy
 
 **Model Selection:**
-- Default: Claude 3.5 Haiku or GPT-4o-mini (based on available API keys, with fallback)
+- Default: a small, inexpensive model the user has configured (through OpenRouter or LM Studio)
 - User can override with any configured model
 - Uses low max_tokens (50) regardless of model
 
@@ -275,7 +242,6 @@ Summaries enable efficient context management by providing condensed representat
 | Entity | When Generated |
 |--------|----------------|
 | Node | Async after creation |
-| Document | On document close after editing |
 | LoomTree | Every 10 new nodes, on tree close, or manual trigger |
 
 ### Node Summary Context
@@ -354,7 +320,7 @@ The model cannot continue generating while tools execute. This simplifies state 
 1. Tool executes
 2. Result returned to model
 3. Result visible in current turn
-4. Result fades from context next turn (unless pinned or referenced)
+4. Result fades from context next turn (unless referenced)
 5. Action logged to trace
 
 ---
@@ -389,16 +355,9 @@ Loom tools are parsed **client-side only**. We do not register them as provider 
 4. Tools execute, results injected back into context
 5. Model continues (or new turn begins)
 
-**Provider tools vs Loom tools:**
+**No provider tools:**
 
-If we later add provider-native capabilities (web search, code execution), those would use the provider's tool system. But loom-aware tools are *our* tools for *our* system—they're handled entirely client-side.
-
-| Tool Type | Parsing | System Prompt |
-|-----------|---------|---------------|
-| Loom tools (view, continue, etc.) | Client-side, → syntax | Our loom-aware addendum |
-| Provider tools (web search, etc.) | Provider API | Provider's tool guidance |
-
-This separation keeps concerns clean and avoids the "two parallel systems" confusion.
+Aspen Grove is a loom, not a harness. It does not register provider-native tools or pass through connectors, web search or MCP servers. The `→` loom tools are the only tools a model gets, and they are handled entirely client-side.
 
 ---
 
@@ -422,7 +381,7 @@ The loom-aware system treats models as genuine collaborators. By giving models t
 
 The design prioritizes:
 - **Minimal friction** — Natural language tools, ambient metadata, embedded in reasoning flow
-- **Context efficiency** — Summaries, explicit memory management, aggressive pruning
+- **Context efficiency** — Summaries, compressed action traces, aggressive pruning
 - **True parity** — Same operations available to humans and models
 - **Transparency** — Action traces, visible thinking, clear error handling
 

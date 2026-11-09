@@ -1,6 +1,6 @@
 # Aspen Grove Architecture Documentation
 
-> Technical architecture specifications for Aspen Grove. These documents define the structure, patterns, and contracts that guide implementation.
+> Technical architecture specifications for Aspen Grove. The code is ground truth for what is implemented; these documents explain the structure, patterns and contracts behind it, and keep the specs for work planned after v1.
 
 ---
 
@@ -10,44 +10,38 @@
 2. **Review Model specs** — Learn the data structures and their relationships
 3. **Study Contracts** — Understand the interfaces between layers
 
-These specifications are written to make TypeScript implementation straightforward. They use bullet points and prose rather than code to avoid maintaining a second codebase.
+These specifications use bullet points and prose rather than code to avoid maintaining a second codebase. Where a spec and `src/` disagree, `src/` wins and the spec should be fixed.
 
 ---
 
 ## Architecture Decision Records (ADR)
 
-Captured decisions with context and rationale.
-
 | ADR | Title | Status |
 |-----|-------|--------|
 | [001](./adr/001-persistence.md) | Persistence with WatermelonDB | Accepted |
-| [002](./adr/002-multimodal-storage.md) | Multimodal Content Storage Strategy | Accepted |
+| [002](./adr/002-multimodal-storage.md) | Multimodal Content Storage Strategy | Accepted (not yet implemented) |
 | [003](./adr/003-layer-boundaries.md) | Clean Architecture Layer Boundaries | Accepted |
 
 ---
 
 ## Data Model Specifications
 
-Entity definitions, relationships, and constraints.
-
 | Document | Covers |
 |----------|--------|
 | [Core Entities](./model/core-entities.md) | LoomTree, Node, Edge, Content Types |
-| [Agents](./model/agents.md) | Agent, Model, UserPreferences |
-| [Organization](./model/organization.md) | Grove, Document, Link, Tag |
-| [Provenance](./model/provenance.md) | RawApiResponse, TimestampCertificate, Hash Chain Computation |
+| [Agents](./model/agents.md) | Agent, UserPreferences, LocalModel |
+| [Organization](./model/organization.md) | Grove, Tag, TagAssignment |
+| [Provenance](./model/provenance.md) | RawApiResponse, hash chain computation |
 
 ---
 
 ## Contract Specifications
 
-Abstract interfaces that define layer boundaries.
-
 | Document | Covers |
 |----------|--------|
-| [Repositories](./contracts/repositories/README.md) | Data access contracts for all entities |
-| [LLM Provider](./contracts/llm-provider.md) | Model API abstraction |
-| [Media Storage](./contracts/media-storage.md) | Binary content storage |
+| [Repositories](./contracts/repositories/README.md) | Data access contracts |
+| [LLM Provider](./contracts/llm-provider.md) | Model API abstraction (OpenRouter, LM Studio) |
+| [Media Storage](./contracts/media-storage.md) | Binary content storage (not yet implemented) |
 
 ---
 
@@ -75,16 +69,17 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 
 ---
 
-## Review & Specifications
+## Feature Specifications
 
-| Document | Description |
-|----------|-------------|
-| [Review Findings](./review-findings.md) | Pre-development review issues and resolutions |
-| [Buffer Mode Spec](./specs/buffer-mode.md) | Buffer Mode specification |
-| [Loom Tools Spec](./specs/loom-tools/README.md) | Loom-aware model tools specification |
-| [Context Assembly Spec](./specs/context-assembly.md) | Context window construction for LLM requests |
-
-*Additional specs will be added to `./specs/` as issues are resolved.*
+| Document | Status |
+|----------|--------|
+| [Context Assembly](./specs/context-assembly.md) | Implemented for dialogue mode |
+| [Dialogue Settings UI](./specs/dialogue-settings-ui.md) | Implemented |
+| [Dialogue UI Branching + Streaming](./specs/dialogue-ui-branching-and-streaming.md) | Draft; mostly implemented (prototype parity) |
+| [Loom UI Rebuild Plan](./specs/loom-ui-rebuild-implementation-plan.md) | v1: bringing Latent Spaces' UI and UX over |
+| [Latent Spaces UI Transfer Audit](./specs/loom-swift-prototype-ui-transfer-audit.md) | v1 reference |
+| [Loom Tools](./specs/loom-tools/README.md) | After v1 (`→` tools, LoomDisplay first) |
+| [Buffer Mode](./specs/buffer-mode.md) | After v1 |
 
 ---
 
@@ -92,20 +87,4 @@ From [ADR-003](./adr/003-layer-boundaries.md):
 
 - [Domain Language](../domain-language/README.md) — Core concepts and terminology
 - [Use Cases](../use-cases/README.md) — User interactions and flows
-
----
-
-## Implementation Order
-
-Recommended sequence for building:
-
-1. **Domain Layer** — Entity interfaces, value objects, hash computation
-2. **Application Layer** — Repository interfaces, use case skeletons
-3. **Infrastructure Layer** — WatermelonDB implementation, LLM adapters
-4. **Interface Layer** — React Native screens and components
-
-Within each layer, start with the core Loom Tree operations (create tree, add node, navigate) before expanding to organization features (tags, links, documents).
-
----
-
-*These specifications should evolve as implementation reveals new requirements or constraints.*
+- [Open Loom spec](../open-loom/spec.md) — The import/export file format

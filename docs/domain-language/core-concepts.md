@@ -98,6 +98,6 @@ Nodes that share the same parent Node (i.e., they are alternative continuations 
 
 ## Related Documentation
 
-- [Interaction Modes](./interaction-modes.md) — Dialogue Mode, Buffer Mode, Voice Mode
+- [Interaction Modes](./interaction-modes.md) — Dialogue Mode, Buffer Mode, character voices
 - [Tree Operations](./tree-operations.md) — Generate Continuation, Fork, Navigate, etc.
 - [Architecture: Core Entities](../architecture/model/core-entities.md) — Technical specification

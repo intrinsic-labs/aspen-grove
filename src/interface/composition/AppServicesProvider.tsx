@@ -376,7 +376,7 @@ export const AppBootstrapGate = ({ children }: AppBootstrapGateProps) => {
 
   if (bootstrap.status === 'loading') {
     return (
-      <View style={styles.centerWrap}>
+      <View testID="app-bootstrap-loading" style={styles.centerWrap}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -384,7 +384,7 @@ export const AppBootstrapGate = ({ children }: AppBootstrapGateProps) => {
 
   if (bootstrap.status === 'error') {
     return (
-      <View style={styles.centerWrap}>
+      <View testID="app-bootstrap-error" style={styles.centerWrap}>
         <AppText variant="meta" tone="accent">
           {bootstrap.message}
         </AppText>

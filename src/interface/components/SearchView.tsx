@@ -148,7 +148,7 @@ const SearchView = () => {
   }, [searching, trimmedQuery]);
 
   return (
-    <AppScreen style={styles.container}>
+    <AppScreen testID="search-screen" style={styles.container}>
       <View style={styles.searchBarRow}>
         <View
           style={[
@@ -158,6 +158,7 @@ const SearchView = () => {
         >
           <Ionicons name="search" size={16} color={colors.secondary} />
           <TextInput
+            testID="search-input"
             value={query}
             onChangeText={setQuery}
             placeholder="Search node content…"
@@ -171,7 +172,11 @@ const SearchView = () => {
             style={[styles.searchInput, { color: colors.primary }]}
           />
           {query.length > 0 ? (
-            <Pressable hitSlop={8} onPress={() => setQuery('')}>
+            <Pressable
+              testID="search-clear-button"
+              hitSlop={8}
+              onPress={() => setQuery('')}
+            >
               <Ionicons
                 name="close-circle"
                 size={16}
@@ -181,7 +186,11 @@ const SearchView = () => {
           ) : null}
         </View>
         {inputFocused ? (
-          <Pressable hitSlop={8} onPress={() => Keyboard.dismiss()}>
+          <Pressable
+            testID="search-done-button"
+            hitSlop={8}
+            onPress={() => Keyboard.dismiss()}
+          >
             <AppText variant="ui" tone="accent" style={styles.doneButton}>
               Done
             </AppText>
@@ -195,12 +204,14 @@ const SearchView = () => {
         </View>
       ) : (
         <SectionList<Node, SearchSection>
+          testID="search-results-list"
           sections={sections}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.listContent}
           renderSectionHeader={({ section }) => (
             <Pressable
+              testID={`search-results-tree-${section.treeId}`}
               onPress={() => openTree(section.treeId)}
               style={styles.sectionHeader}
             >
@@ -220,6 +231,7 @@ const SearchView = () => {
           )}
           renderItem={({ item }) => (
             <Pressable
+              testID={`search-results-row-${item.id}`}
               onPress={() => openResult(item)}
               style={styles.resultRow}
             >

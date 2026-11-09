@@ -69,7 +69,7 @@ Updates Grove properties.
 - One Grove per user (single-user app)
 - Grove is created automatically on first launch
 - No delete operation — Grove persists for app lifetime
-- All Loom Trees and Documents belong to exactly one Grove
+- All Loom Trees and Tags belong to exactly one Grove
 
 ---
 
@@ -77,4 +77,3 @@ Updates Grove properties.
 
 - [Organization Model](../../model/organization.md) — Entity definition
 - [Loom Tree Repository](./loom-tree-repository.md) — LoomTree persistence
-- [Document Repository](./document-repository.md) — Document persistence

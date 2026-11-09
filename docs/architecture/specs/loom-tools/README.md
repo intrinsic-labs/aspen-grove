@@ -1,8 +1,8 @@
 # Loom-Aware Tools Specification
 
-> How model agents interact with Loom Trees: tool definitions, execution model, ambient context, and memory management.
+> How model agents interact with Loom Trees: tool definitions, execution model and ambient context.
 
-**Status**: Approved
+**Status**: Kept for later. Not implemented, and not part of v1. Loom tools are the first thing after v1: the planned first `→` tool is **LoomDisplay**, where the model draws ASCII animation frames (no spec written yet). The tree tools below are the longer-term design.
 **Related**: [Context Assembly](../context-assembly.md), [Buffer Mode](../buffer-mode.md), [Agents](../../model/agents.md), [Core Entities](../../model/core-entities.md)
 
 ---
@@ -21,7 +21,7 @@ This specification is organized into three documents:
 
 ## Vision
 
-The loom-aware system enables language models to operate as true collaborators within the loom workspace, with the same agency and capabilities as human users. Rather than being passive responders to prompts, a loom-aware model can navigate the tree structure, inspect branches, create annotations, generate continuations, and manage its own working memory—all through a natural, low-friction interface.
+The loom-aware system enables language models to operate as true collaborators within the loom workspace, with the same agency and capabilities as human users. Rather than being passive responders to prompts, a loom-aware model can navigate the tree structure, inspect branches, create annotations and generate continuations, all through a natural, low-friction interface.
 
 The core principle: **humans and models get access to the same operations.** Humans interact through a graphical interface optimized for touch and vision. Models interact through a minimal command syntax optimized for token efficiency and natural expression. Both are calling the same underlying operations on the same shared workspace.
 
@@ -39,7 +39,7 @@ This is not about making the model an assistant that proposes actions for human 
 
 **Reduce the prosthetic feeling of tool use.** Current tool-calling patterns feel clunky—structured JSON, explicit function signatures, stop-start execution. The loom-aware system aims for something closer to peripheral awareness and natural action. Tools should feel like reaching for something, not filing a formal request.
 
-**Manage context efficiently.** The first portion of context tends to be where models perform best. The system should maximize signal by keeping tool calls minimal, summarizing aggressively, and giving models explicit control over what stays in working memory versus what gets stashed or dropped.
+**Manage context efficiently.** The first portion of context tends to be where models perform best. The system should maximize signal by keeping tool calls minimal and summarizing aggressively.
 
 ---
 
@@ -60,7 +60,6 @@ A tree-unique short identifier for efficient in-context reference. See [Core Ent
 One-to-two sentence summaries for efficient context scanning:
 
 - `Node.summary` — Generated async after creation with parent context
-- `Document.summary` — Regenerated on document close
 - `LoomTree.summary` — Regenerated periodically (every N nodes or on close)
 
 See [Summary Generation](./context-and-execution.md#summary-generation) for the generation strategy.
@@ -96,7 +95,6 @@ Building on that insight, we could explore how Thomas represents...
 - **continuations** — Count of child nodes (if any)
 - **annotations** — Count of annotations (if any)
 - **bookmarked** — Flag if bookmarked
-- **links** — Count of links (if any)
 
 This mirrors what users see in the UI for every node. The model can reference any visible localId in tool calls.
 
@@ -110,7 +108,7 @@ Tree-wide orientation provided once per turn, clearly delimited. Placed at the e
 Tree: "Marie Character Study" (dialogue mode)
 47 nodes · 6 branches · depth: 12
 Position: ... → [a7x2] → [b3k9]*
-Permissions: loom_aware, loom_write, doc_read
+Permissions: loom_aware, loom_write
 Human active at [c4m2], depth:8
 ===
 ```
@@ -179,10 +177,10 @@ Tool call lines are parsed and executed, not stored in conversation context. The
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | **Navigation** | view, list, tree, switch | Explore and understand tree structure |
-| **Content** | continue, respond, annotate, link, edit, bookmark, prune | Create nodes, annotations, links; manage branches |
-| **Document** | read, write | Access and modify linked documents |
-| **Memory** | pin, stash, recall, drop, memory | Manage working context |
-| **Meta** | help, think, search | Self-help, private reasoning, web search |
+| **Content** | continue, respond, annotate, edit, bookmark, prune | Create nodes and annotations; manage branches |
+| **Meta** | help, think | Self-help, private reasoning |
+
+There are deliberately no memory, document or web-search tools: a loom, not a harness.
 
 See [tool-reference.md](./tool-reference.md) for complete definitions.
 
@@ -205,18 +203,9 @@ See [tool-reference.md](./tool-reference.md) for complete definitions.
 → continue using agent:"GPT-4o"     # Generate with specific agent
 → respond [localId] "content"       # Add own content
 → annotate [localId] "note"         # Add annotation
-→ link [localId] to doc:"name"      # Create link
 → bookmark [localId] "label"        # Mark for easy retrieval
 → prune [localId]                   # Hide branch (soft delete)
 → restore [localId]                 # Restore pruned branch
-```
-
-### Memory
-```
-→ pin [localId]                     # Keep in working memory
-→ stash "label" content-of:[id]     # Save for later
-→ recall "label"                    # Retrieve stashed
-→ memory                            # Review memory state
 ```
 
 ### Meta
@@ -225,8 +214,6 @@ See [tool-reference.md](./tool-reference.md) for complete definitions.
 → help [tool]                       # Tool details
 → think                             # Start private scratchpad
 ←                                   # End scratchpad
-→ search "query"                    # Search the web
-→ search "query" depth:deep         # Deep search with content extraction
 ```
 
 ---
