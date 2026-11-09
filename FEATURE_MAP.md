@@ -249,7 +249,7 @@ state across relaunches.
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session-helpers.ts`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -266,7 +266,7 @@ state across relaunches.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts#onSend`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -300,7 +300,7 @@ state across relaunches.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/ChatMessageList.tsx#buildMessageMenuItems`, `src/interface/components/chat/useLoomTreeChatController.ts#onMessageAction`
+- **Code:** `src/interface/components/chat/ChatMessageList.tsx#buildMessageMenuItems`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info pushes the node
   detail route (`node.detail`). The other items have their own entries below.
 - **Status:** live
@@ -314,7 +314,7 @@ state across relaunches.
   "Regenerate".
 - **Requires:** A model message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/useLoomTreeChatController.ts#regenerateFromNode`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
@@ -330,7 +330,7 @@ state across relaunches.
   `chat-composer-edit-cancel`.
 - **Requires:** At least one message.
 - **Selector:** working — `chat-composer-edit-banner`, `chat-composer-edit-cancel`, `chat-composer-input`, `chat-composer-send`; menu item none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/useLoomTreeChatController.ts#startEditForNode`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
+- **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
 - **Backend:** WatermelonDB `nodes` (new node with `edited_from`), `edges`, `path_nodes`,
   `path_states`. Editing a human turn then generates a reply through the provider call in
   `chat.composer`.
@@ -349,7 +349,7 @@ state across relaunches.
   "Rewind To Node".
 - **Requires:** More than one node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/useLoomTreeChatController.ts#rewindToNode`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
+- **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
 - **Backend:** WatermelonDB `path_states`, `path_nodes`, `path_selections` via `WatermelonPathRepository` and `WatermelonPathStateRepository`
 - **Status:** live
 
@@ -363,7 +363,7 @@ state across relaunches.
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/useLoomTreeChatController.ts#onContinuationSelect`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
@@ -379,7 +379,7 @@ state across relaunches.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Bookmark".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/useLoomTreeChatController.ts#toggleBookmark`, `src/interface/components/chat/useNodeContinuations.ts#toggleBookmark`
+- **Code:** `src/interface/components/chat/node-actions/useNodeActions.ts#toggleBookmark`, `src/interface/components/chat/useNodeContinuations.ts#toggleBookmark`
 - **Backend:** WatermelonDB `nodes` metadata (`bookmarked`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
 
@@ -391,7 +391,7 @@ state across relaunches.
 - **Reach:** P2 → `chat-menu-button` → "Bookmarks".
 - **Requires:** A tree. When empty it shows the "No bookmarks in this tree yet" hint.
 - **Selector:** working — `bookmarks-sheet`, `bookmarks-sheet-done`, `bookmarks-sheet-list`, rows `bookmarks-sheet-row-<nodeId>`, `bookmarks-sheet-row-details-<nodeId>` (nested, see the driving notes), `bookmarks-sheet-empty`, `bookmarks-sheet-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
-- **Code:** `src/interface/components/chat/bookmarks/BookmarksSheet.tsx`, `src/interface/components/chat/ChatHeaderMenu.tsx`
+- **Code:** `src/interface/components/chat/bookmarks/BookmarksSheet.tsx`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useChatSheets.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked`
 - **Status:** live
 
@@ -402,7 +402,7 @@ state across relaunches.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Prune".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/useLoomTreeChatController.ts#togglePrune`
+- **Code:** `src/interface/components/chat/node-actions/useNodeActions.ts#togglePrune`
 - **Backend:** WatermelonDB `nodes` metadata (`pruned`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
 
@@ -414,7 +414,7 @@ state across relaunches.
   `chat-title-sheet-save`.
 - **Requires:** A tree.
 - **Selector:** working — `chat-title-sheet`, `chat-title-sheet-input`, `chat-title-sheet-save`, `chat-title-sheet-cancel`, `chat-title-sheet-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
-- **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`
+- **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/header-actions/useTreeTitle.ts`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
 
@@ -427,7 +427,7 @@ state across relaunches.
 - **Requires:** "Auto-Title Conversations" on (`settings.behavior.auto-title`), plus a
   reachable provider.
 - **Selector:** none — renders into the native stack header title, which has no testID; assert on the visible title text
-- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`
+- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`
 - **Backend:** The same provider chat-completions call as `chat.composer`. Writes
   `loom_trees.title`.
 - **Status:** live
@@ -506,7 +506,7 @@ state across relaunches.
 - **Reach:** P2 → `chat-menu-button` → "Export Tree (OpenLoom)" → share sheet.
 - **Requires:** A tree, and sharing available on the device.
 - **Selector:** none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it); the share sheet is native
-- **Code:** `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/ChatHeaderMenu.tsx`
+- **Code:** `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`. Writes
   a cache file (`expo-file-system`), then calls `expo-sharing`.
 - **Status:** live
@@ -519,7 +519,7 @@ state across relaunches.
 - **Reach:** P2 → `chat-menu-button` → "Export Path (Markdown)" → share sheet.
 - **Requires:** A tree with a loaded session.
 - **Selector:** none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it); the share sheet is native
-- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`
+- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `paths`, `path_nodes`, `nodes`. Writes a cache file and calls
   `expo-sharing`.
 - **Status:** live
