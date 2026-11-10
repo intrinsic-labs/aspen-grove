@@ -1,0 +1,179 @@
+import { useCallback, type MutableRefObject } from 'react';
+import type { ICredentialStore } from '@application/services/security';
+import type {
+  EditDialogueNodeUseCase,
+  SendDialogueTurnUseCase,
+} from '@application/use-cases';
+import type { SelectableProvider } from '@domain/entities';
+import type { ULID } from '@domain/value-objects';
+import type { EditTarget } from '../composer/composer-mode';
+import { getProviderApiKey } from '../provider-key';
+import type { ChatSession } from '../types';
+import type { useStreamingAssistantRow } from '../useStreamingAssistantRow';
+import {
+  createStreamDiagnostics,
+  logStreamDiagnostics,
+} from './stream-diagnostics';
+
+type UseSendTurnInput = {
+  readonly session: ChatSession | null;
+  readonly sending: boolean;
+  readonly setSending: (sending: boolean) => void;
+  readonly setError: (error: string | null) => void;
+  /** Shows a failed generation, with the fix when there is one. */
+  readonly showProviderError: (
+    caught: unknown,
+    provider?: SelectableProvider
+  ) => void;
+  readonly input: string;
+  readonly setInput: (text: string) => void;
+  readonly editTarget: EditTarget | null;
+  readonly setEditTarget: (target: EditTarget | null) => void;
+  readonly shouldAutoScrollRef: MutableRefObject<boolean>;
+  readonly streaming: Pick<
+    ReturnType<typeof useStreamingAssistantRow>,
+    'appendDelta' | 'reset'
+  >;
+  readonly markAsNonEphemeral: () => void;
+  readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
+  readonly maybeGenerateTreeTitle: (
+    userText: string,
+    assistantNodeId: ULID
+  ) => void;
+  readonly credentialStore: ICredentialStore;
+  readonly editDialogueNodeUseCase: Pick<EditDialogueNodeUseCase, 'execute'>;
+  readonly sendDialogueTurnUseCase: Pick<SendDialogueTurnUseCase, 'execute'>;
+};
+
+/**
+ * The composer's Send: saves an edit as a new sibling node when editing,
+ * otherwise commits the user's turn and streams the model's reply.
+ */
+export const useSendTurn = ({
+  session,
+  sending,
+  setSending,
+  setError,
+  showProviderError,
+  input,
+  setInput,
+  editTarget,
+  setEditTarget,
+  shouldAutoScrollRef,
+  streaming,
+  markAsNonEphemeral,
+  refreshRowsAndContinuations,
+  maybeGenerateTreeTitle,
+  credentialStore,
+  editDialogueNodeUseCase,
+  sendDialogueTurnUseCase,
+}: UseSendTurnInput) => {
+  const { appendDelta, reset } = streaming;
+
+  return useCallback(async () => {
+    if (sending || !session) {
+      return;
+    }
+
+    const prompt = input.trim();
+    if (!prompt) {
+      return;
+    }
+
+    try {
+      setSending(true);
+      setError(null);
+      shouldAutoScrollRef.current = true;
+      setInput('');
+      reset();
+
+      if (editTarget) {
+        const result = await editDialogueNodeUseCase.execute({
+          session: {
+            ownerAgentId: session.ownerAgentId,
+            treeId: session.treeId,
+            pathId: session.pathId,
+          },
+          targetNodeId: editTarget.nodeId,
+          editedText: prompt,
+        });
+
+        markAsNonEphemeral();
+        setEditTarget(null);
+        await refreshRowsAndContinuations({
+          ...session,
+          activeNodeId: result.editedNodeId,
+        });
+        return;
+      }
+
+      // Provider is bound to this session's agent (via tree.defaultModelAgentId).
+      // Fetch the matching API key from secure storage.
+      const providerApiKey = await getProviderApiKey(
+        credentialStore,
+        session.provider
+      );
+      const diagnostics = createStreamDiagnostics();
+      const turnResult = await sendDialogueTurnUseCase.execute({
+        session,
+        prompt,
+        providerApiKey,
+        providerAppName: 'Aspen Grove RN',
+        stream: true,
+        onUserNodeCommitted: async ({ userNodeId }) => {
+          markAsNonEphemeral();
+          await refreshRowsAndContinuations({
+            ...session,
+            activeNodeId: userNodeId,
+          });
+        },
+        onAssistantTextDelta: async ({ delta }) => {
+          diagnostics.recordDelta();
+          appendDelta(delta);
+        },
+      });
+
+      logStreamDiagnostics('send', diagnostics);
+
+      await refreshRowsAndContinuations({
+        ...session,
+        activeNodeId: turnResult.assistantNodeId,
+      });
+      // Clear the transient streaming row now that the committed node is in
+      // `rows` — leaving it set rendered the response twice until remount.
+      reset();
+
+      maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
+
+      if (turnResult.completion.interruptionReason) {
+        setError(
+          `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
+        );
+      }
+    } catch (caught) {
+      showProviderError(caught, session.provider);
+    } finally {
+      reset();
+      setSending(false);
+    }
+  }, [
+    appendDelta,
+    credentialStore,
+    editDialogueNodeUseCase,
+    editTarget,
+    input,
+    markAsNonEphemeral,
+    maybeGenerateTreeTitle,
+    refreshRowsAndContinuations,
+    reset,
+    sendDialogueTurnUseCase,
+    sending,
+    session,
+    setEditTarget,
+    setError,
+    setInput,
+    showProviderError,
+    setSending,
+    shouldAutoScrollRef,
+  ]);
+};
