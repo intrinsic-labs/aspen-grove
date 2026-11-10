@@ -176,5 +176,22 @@ export default schemaMigrations({
         ),
       ],
     },
+    {
+      // v9: first-run onboarding. `user_preferences.onboarding_completed_at`
+      // records when setup was finished or skipped.
+      toVersion: 9,
+      steps: [
+        addColumns({
+          table: 'user_preferences',
+          columns: [
+            {
+              name: 'onboarding_completed_at',
+              type: 'number',
+              isOptional: true,
+            },
+          ],
+        }),
+      ],
+    },
   ],
 });

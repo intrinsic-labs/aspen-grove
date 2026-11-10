@@ -31,4 +31,4 @@ export interface TagAssignment {
 /**
  * Types that can be tagged.
  */
-export type TaggableType = 'node' | 'loomTree' | 'document';
+export type TaggableType = 'node' | 'loomTree';

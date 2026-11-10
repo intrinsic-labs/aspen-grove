@@ -4,17 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   DEFAULT_AGENT_SYSTEM_PROMPT,
   DEFAULT_AGENT_TEMPERATURE,
-  DEFAULT_MODEL_AGENT_PERMISSIONS,
 } from '@application/services/agent-defaults';
-import { pinDefaultModelAgentIfUnset } from '@application/services/resolve-default-model-agent';
 import type { Agent, SelectableProvider } from '@domain/entities';
 import { isSelectableProvider } from '@domain/entities';
-import { parseModelRef } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
-import {
-  parsedDraftNumbers,
-  type AgentDraft,
-} from './agent-editor-types';
+import { agentDraftToConfig } from './agent-draft-to-config';
+import type { AgentDraft } from './agent-editor-types';
+import { useCreateAgentFromDraft } from './useCreateAgentFromDraft';
 
 export type AgentEditorState =
   | { readonly mode: 'create' }
@@ -59,6 +55,7 @@ export const draftFromAgent = (agent: Agent): AgentDraft => {
  */
 export const useAgentsLibraryController = () => {
   const { repositories, useCases } = useAppServices();
+  const createAgentFromDraft = useCreateAgentFromDraft();
 
   const [agents, setAgents] = useState<readonly Agent[]>([]);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
@@ -103,29 +100,10 @@ export const useAgentsLibraryController = () => {
         return;
       }
 
-      const modelRef = parseModelRef(
-        `${draft.provider}:${draft.modelIdentifier.trim()}`
-      );
-      const { temperature, maxTokens } = parsedDraftNumbers(draft);
-      const configuration = {
-        systemPrompt: draft.systemPrompt.trim() || DEFAULT_AGENT_SYSTEM_PROMPT,
-        temperature,
-        maxTokens,
-      };
-
       if (editor.mode === 'create') {
-        const created = await useCases.createSharedAgentUseCase.execute({
-          name: draft.name,
-          modelRef,
-          configuration,
-          permissions: DEFAULT_MODEL_AGENT_PERMISSIONS,
-        });
-        // The first agent a user creates becomes the default for new trees;
-        // replacing an existing pin stays an explicit "Make default" action.
-        await pinDefaultModelAgentIfUnset(created.id, {
-          userPreferencesRepository: repositories.userPreferencesRepo,
-        });
+        await createAgentFromDraft(draft);
       } else {
+        const { modelRef, configuration } = agentDraftToConfig(draft);
         await useCases.updateAgentConfigurationUseCase.execute({
           agentId: editor.agent.id,
           changes: {
@@ -140,10 +118,9 @@ export const useAgentsLibraryController = () => {
       await refresh();
     },
     [
+      createAgentFromDraft,
       editor,
       refresh,
-      repositories.userPreferencesRepo,
-      useCases.createSharedAgentUseCase,
       useCases.updateAgentConfigurationUseCase,
     ]
   );

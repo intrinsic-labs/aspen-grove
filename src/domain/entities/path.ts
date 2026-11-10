@@ -4,7 +4,7 @@ import { ULID } from '../value-objects';
  * Path
  *
  * A persisted, agent-owned "view" through a LoomTree. It changes often (navigation),
- * but is stored as durable state so it can survive restarts and (later) be synced/shared.
+ * but is stored as durable state so it can survive restarts.
  *
  * A Path is shared across UI modes (Dialogue/Buffer). Mode-specific cursor state lives in PathState.
  */
@@ -87,8 +87,8 @@ export interface PathSelection {
 /**
  * PathState
  *
- * Fast-changing cursor state for a Path. This is UI-ish state, but persisted so it survives restarts
- * and can later be synced.
+ * Fast-changing cursor state for a Path. This is UI-ish state, but persisted so it survives
+ * restarts.
  *
  * The Path is shared across modes, but you can persist separate cursors per mode if desired.
  */

@@ -4,7 +4,6 @@ export const DEFAULT_TIMEOUT_MS = 60000;
 export type LMStudioConfig = {
   readonly endpoint: string;
   readonly apiToken?: string;
-  readonly useMcpTools: boolean;
   readonly autoLoadModels: boolean;
 };
 
@@ -64,15 +63,6 @@ export type LMStudioMessagePayload = {
   readonly content: string | readonly Record<string, unknown>[];
 };
 
-export type LMStudioToolCall = {
-  readonly id?: string;
-  readonly type?: string;
-  readonly function?: {
-    readonly name?: string;
-    readonly arguments?: string;
-  };
-};
-
 export type LMStudioStats = {
   readonly tokens_per_second?: number;
   readonly time_to_first_token?: number;
@@ -90,7 +80,6 @@ export type LMStudioResponsePayload = {
     readonly message?: {
       readonly role?: string;
       readonly content?: string | Array<Record<string, unknown>> | null;
-      readonly tool_calls?: LMStudioToolCall[];
     };
   }>;
   readonly stats?: LMStudioStats;
@@ -108,7 +97,6 @@ export type LMStudioStreamingPayload = {
     readonly delta?: {
       readonly role?: string;
       readonly content?: string | Array<Record<string, unknown>> | null;
-      readonly tool_calls?: LMStudioToolCall[];
     };
     readonly finish_reason?: string | null;
   }>;
