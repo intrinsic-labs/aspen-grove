@@ -5,13 +5,8 @@
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
 appId: com.intrinsiclabs.aspengrove
 ---
-- launchApp:
-    clearState: true
+- runFlow: open-app.yaml
 # A fresh install opens onboarding over Home. Capture step 1 with each provider, then skip.
-- extendedWaitUntil:
-    visible:
-      id: onboarding-screen
-    timeout: 30000
 - assertVisible:
     id: onboarding-step-provider
 - takeScreenshot: 01-onboarding-openrouter
@@ -35,10 +30,7 @@ appId: com.intrinsiclabs.aspengrove
     id: onboarding-screen
 - takeScreenshot: 03-home
 
-- tapOn:
-    id: drawer-menu-button
-- assertVisible:
-    id: drawer-root
+- runFlow: open-drawer.yaml
 - takeScreenshot: 04-drawer
 
 - tapOn:
@@ -51,16 +43,14 @@ appId: com.intrinsiclabs.aspengrove
     id: trees-setup-action
 - takeScreenshot: 05-trees-empty
 
-- tapOn:
-    id: drawer-menu-button
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-search
 - assertVisible:
     id: search-screen
 - takeScreenshot: 06-search
 
-- tapOn:
-    id: drawer-menu-button
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-settings
 - assertVisible:
@@ -74,7 +64,19 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible:
     id: connections-lmstudio-endpoint-input
 - takeScreenshot: 08-connections
-- back
+# `back` is Android-only in Maestro; tap the stack header's back button, and
+# retry, since a tap during the push transition can be dropped.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: settings-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+- assertVisible:
+    id: settings-screen
 
 - tapOn:
     id: settings-link-agents
