@@ -16,6 +16,7 @@ import {
   useReadAloudPlayback,
   type ReadAloudPlayback,
 } from './useReadAloudPlayback';
+import { useVoiceModeToggle } from './useVoiceModeToggle';
 import { useVoicePreferences } from './useVoicePreferences';
 
 type VoiceModeContextValue = {
@@ -46,7 +47,7 @@ export const VoiceModeProvider = ({ children }: { children: ReactNode }) => {
   const preferences = useVoicePreferences(repositories.voicePreferencesRepo);
   const playback = useReadAloudPlayback(speech.readAloud);
   const { preferencesRef, update } = preferences;
-  const { speakNode: speakNodeInVoice } = playback;
+  const { speakNode: speakNodeInVoice, stopSpeaking } = playback;
 
   const speakNode = useCallback(
     (nodeId: ULID, text: string) => {
@@ -57,10 +58,7 @@ export const VoiceModeProvider = ({ children }: { children: ReactNode }) => {
     },
     [preferencesRef, speakNodeInVoice]
   );
-  const setVoiceModeEnabled = useCallback(
-    (enabled: boolean) => void update({ voiceModeEnabled: enabled }),
-    [update]
-  );
+  const setVoiceModeEnabled = useVoiceModeToggle({ update, stopSpeaking });
   const setVoice = useCallback(
     (name: LoomVoiceName) => void update({ voiceName: name }),
     [update]

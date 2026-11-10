@@ -17,6 +17,7 @@ import {
   initialParallelSlotsState,
   parallelSlotsReducer,
 } from './parallel-slots-state';
+import { describeSlotFailure } from './describe-slot-failure';
 import { useBufferedSlotText } from './useBufferedSlotText';
 
 type UseParallelContinuationsInput = {
@@ -109,7 +110,8 @@ export const useParallelContinuations = (
           count,
           signal: controls.all.signal,
           slotSignals: controls.perSlot.map((controller) => controller.signal),
-          onSlotEvent,
+          onSlotEvent: (event) =>
+            onSlotEvent(describeSlotFailure(event, model.provider)),
         });
         flushNow();
         dispatch({ type: 'finished' });

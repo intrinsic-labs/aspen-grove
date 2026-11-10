@@ -49,6 +49,8 @@ export type ContinuationSlotError = {
   readonly type: 'error';
   readonly message: string;
   readonly code?: LlmProviderErrorCode;
+  /** What was thrown, so the UI can word it like any provider failure. */
+  readonly cause?: unknown;
 };
 
 /**
@@ -67,6 +69,8 @@ export type ContinuationSlotOutcome =
   | ContinuationSlotError
   | ContinuationSlotCancelled;
 
-export type ContinuationSlotEvent = ContinuationSlotDelta | ContinuationSlotOutcome;
+export type ContinuationSlotEvent =
+  | ContinuationSlotDelta
+  | ContinuationSlotOutcome;
 
 export type ContinuationSlotListener = (event: ContinuationSlotEvent) => void;
