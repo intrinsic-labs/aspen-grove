@@ -31,9 +31,10 @@ The Beta 1 loop, which is built:
 - Per-tree agents (shared library agents or tree-owned copies), streaming, auto titles
 - Latent Spaces' character voices (Lily, Jefferson, Eve): Voice Mode reads model responses aloud on device (`expo-speech`), double-tap to listen, tap to stop
 
+- Several continuations at once: the continuation rail generates N in parallel as streaming cards, compared side by side
+
 Still to build for v1:
 
-- **Several continuations at once, compared side by side.** Today each generate makes one continuation.
 - **Latent Spaces' UI and UX brought over exactly.**
 
 The Beta 1 milestones and v1 list live in [.dev/BUILD-PLAN.md](./.dev/BUILD-PLAN.md).

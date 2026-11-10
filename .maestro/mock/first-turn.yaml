@@ -1,0 +1,44 @@
+# First real turn with no API key: a cleared install wired to the mock server
+# (setup.yaml), then a new tree, one message and the reply streamed to the end.
+# Needs the mock server on 1235 and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+
+# P2: open a new tree from the tree list. setup.yaml ends on Settings.
+- runFlow: ../open-drawer.yaml
+- tapOn:
+    id: drawer-nav-trees
+- tapOn:
+    id: trees-menu-button
+- tapOn: New Tree
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 10000
+- takeScreenshot: mock-03-empty-tree
+
+# Send one message and wait for the reply to finish streaming.
+- tapOn:
+    id: chat-composer-input
+- inputText: Say hello in five words.
+- tapOn:
+    id: chat-composer-send
+# The streaming row has its own id and goes away when the reply is persisted.
+# Wait for it to show first so the wait below can't pass before streaming starts.
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 10000
+- takeScreenshot: mock-04-first-reply

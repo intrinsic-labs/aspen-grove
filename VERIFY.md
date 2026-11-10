@@ -16,10 +16,18 @@ they don't stand in for feel, performance or anything hardware.
 | Node | from [.nvmrc](.nvmrc) (`nvm use` / `fnm use`); `engines` in package.json is the floor | `node -v` |
 | CocoaPods | Homebrew `cocoapods` | `pod --version` |
 | Maestro (to drive and screenshot) | [maestro.mobile.dev](https://maestro.mobile.dev) | `maestro --version` |
+| Java runtime (Maestro needs one) | `brew install openjdk`, or the Homebrew keg if it is installed but unlinked (see the env block) | `java -version` |
 | A model | an OpenRouter key of your own, or LM Studio running locally | see step 4 |
 
-If `xcodebuild` says the active developer directory is the Command Line Tools, point this
-shell at Xcode without changing the machine: `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
+**Environment, in every shell** (pod, xcodebuild, simctl, Maestro, Metro). Paste this first;
+it points the shell at Xcode without changing the machine, finds an unlinked Homebrew Java for
+Maestro, and silences CocoaPods' UTF-8 error:
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export JAVA_HOME=/opt/homebrew/opt/openjdk; export PATH="$JAVA_HOME/bin:$PATH"   # skip if `java -version` already works
+export LANG=en_US.UTF-8
+```
 
 Install dependencies from the lockfile: `npm ci`. Never symlink `node_modules` from another
 checkout: `npm ci` follows the link and empties the original.
@@ -43,6 +51,12 @@ generates `ios/` (gitignored) from [app.json](app.json) on first run. Change nat
 Metro defaults to port 8081, which another session may already be using. Check first and
 pick a free port if it's taken; don't stop a server you didn't start.
 
+**Which path?** Expo's `expo run:ios` needs a separate Simulator.app, which Xcode 27 no longer
+ships. Check: `ls "$DEVELOPER_DIR/Applications/Simulator.app" /Applications/Simulator.app 2>&1`
+If both are missing (Xcode 27+), use **Path B**; otherwise Path A.
+
+**Path A: `expo run:ios`** (Simulator.app present)
+
 ```sh
 lsof -nP -iTCP:8081 -sTCP:LISTEN          # anything here? then use --port 8082 (or another free port)
 mkdir -p .verify
@@ -55,19 +69,22 @@ When it's done the app opens on the simulator and `.verify/metro.log` shows the 
 loading. `expo run:ios` stays running as the Metro server; leave it up while you drive the
 app. (`.verify/` is gitignored.)
 
-**If `expo run:ios` fails with "Can't determine id of Simulator app"**, your Xcode ships
-without a separate Simulator.app (Xcode 27 does), which the Expo CLI looks for. By then it has
-already generated `ios/` and installed pods, so build, install and serve in three steps
-instead, keeping the build products inside `.verify/`:
+**Path B: three steps** (no Simulator.app; `expo run:ios` fails with "Can't determine id of
+Simulator app"). Generate `ios/` and pods first if `ios/` is missing
+(`npx expo prebuild -p ios`; the failed `expo run:ios` also leaves them), then build, install
+and serve, keeping every build product inside `.verify/` so nothing global is created:
 
 ```sh
 UDID=<booted device UDID>
+mkdir -p .verify
 xcodebuild -workspace ios/AspenGrove.xcworkspace -scheme AspenGrove -configuration Debug \
   -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath .verify/DerivedData \
   build > .verify/xcodebuild.log 2>&1
 xcrun simctl install "$UDID" .verify/DerivedData/Build/Products/Debug-iphonesimulator/AspenGrove.app
+lsof -nP -iTCP:8081 -sTCP:LISTEN          # free? else pick another port
 npx expo start --dev-client --port 8081 > .verify/metro.log 2>&1 &
 echo $! > .verify/metro.pid
+xcrun simctl launch "$UDID" com.intrinsiclabs.aspengrove   # or let .maestro/open-app.yaml launch it
 ```
 
 The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
@@ -113,11 +130,15 @@ echo $! > .verify/mock.pid
 Use the mock server through Settings → Connections → LM Studio at `http://localhost:1235`:
 type that into `connections-lmstudio-endpoint-input`, tap `connections-lmstudio-test`, then
 create an agent on the LM Studio model `mock-model` (the model `mock-missing` always
-answers 404). `--slow` gives time to tap stop mid-stream; `--fail-every 3 --fail-status 422`
+answers 404). `--slow` gives time to tap stop mid-stream, and you need it to screenshot
+streaming states: at `--pace 20` a parallel-continuation card finishes in about 3 s; `--fail-every 3 --fail-status 422`
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
 a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
 [.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
 state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+[.maestro/mock/first-turn.yaml](.maestro/mock/first-turn.yaml) is the no-key path to a working
+conversation: that setup, then a new tree, one message, the reply streamed to the end, and a
+screenshot (run it with the mock server and Metro up).
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
 Save. A fresh install has no model agent, so until you do, New Loom Tree shows
@@ -200,21 +221,27 @@ Stop only what you started, by the PID you recorded:
 
 ```sh
 pid=$(cat .verify/metro.pid)
-lsof -nP -t -iTCP:8081 -sTCP:LISTEN       # the listener should be $pid or a descendant of it
-kill "$pid"                               # ends expo run:ios and its Metro
+lsof -nP -t -iTCP:8081 -sTCP:LISTEN       # the listener is $pid or its child
+kill "$pid"                               # stops Metro
+kill "$(cat .verify/mock.pid)"            # if you started the mock server
 xcrun simctl shutdown "<device name>"     # if you booted it
 ```
 
-Then remove what you created: `rm -rf .verify dist ios` in your checkout (that includes
-`.verify/DerivedData` if you built with `xcodebuild`), and, if you used `expo run:ios`, the
-app's build products under `~/Library/Developer/Xcode/DerivedData/` (the folder whose name
-starts with `AspenGrove-`). Disk on the shared Mac is watched. Never `pkill -f`
-and never kill a PID you didn't record.
+With `npx expo start` the recorded PID is the npm wrapper and the port listener is its child;
+killing the recorded PID stops both. Confirm with `lsof` that the ports are free.
+
+Then remove only build outputs: `rm -rf .verify/DerivedData dist ios` (`ios/` is generated).
+Leave `.verify/shots` in place until you have reported the screenshots. Always build with
+`-derivedDataPath .verify/DerivedData` so nothing global is created. If you used
+`expo run:ios`, it writes to `~/Library/Developer/Xcode/DerivedData/AspenGrove-*`, which other
+sessions on this Mac may share: delete only a folder you created (check its timestamp), never
+the others. Disk on the shared Mac is watched. Never `pkill -f` and never kill a PID you
+didn't record.
 
 ## 8. Known gotchas
 
-- **Command Line Tools selected instead of Xcode:** `xcodebuild` and `simctl` fail; set
-  `DEVELOPER_DIR` as in step 1.
+- **Command Line Tools selected instead of Xcode:** `xcodebuild` and `simctl` fail; use the
+  env block in step 1.
 - **Sandboxed agent shells can't reach the simulator.** `xcrun simctl` there fails with
   "CoreSimulatorService connection became invalid". That is the sandbox, not the app: the
   build-and-drive steps need a shell with full access to CoreSimulator. CI and every check in
@@ -228,8 +255,9 @@ and never kill a PID you didn't record.
   `expo-build-properties`. If a pod install fails on simdjson, check that block survived.
 - **Native dependency changed?** A JS reload won't pick it up: rerun `npx expo run:ios`.
   After an `app.json` native change, `npx expo prebuild --clean -p ios` regenerates `ios/`.
-- **"No trees" doesn't last.** On a relaunch with a model agent and no trees, startup seeds
-  "First Loom Tree". Use `clearState: true` (Maestro) or delete the app for a true cold start.
+- **Startup does not seed a tree.** `AppServicesProvider` passes
+  `ensureDialogueSmokeTreeIfEmpty: false`, so "no trees" stays until you create one. Use
+  `clearState: true` (Maestro) or delete the app for a true cold start.
 - **A new tree you leave without sending is deleted** (ephemeral until the first message).
 - **There's no Home row in the drawer.** Once you leave Home, relaunch to get back to it.
 - **Watchman** may be unavailable in a sandbox; `jest --no-watchman` avoids its crash.
