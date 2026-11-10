@@ -99,6 +99,7 @@ export const useLoomTreeChatController = () => {
 
   const { markAsNonEphemeral, resetEphemeralState } = useEphemeralTreeState({
     shouldDeleteEmptyOnBlur,
+    hasMessages: rows.length > 0,
     sessionTreeId: session?.treeId,
     fallbackTreeId: activeTreeIdRef.current,
     treeRepo: repositories.treeRepo,

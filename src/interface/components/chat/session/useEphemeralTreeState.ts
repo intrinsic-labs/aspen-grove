@@ -6,6 +6,7 @@ import { useDeleteEphemeralTreeOnBack } from '../useDeleteEphemeralTreeOnBack';
 
 type UseEphemeralTreeStateInput = {
   readonly shouldDeleteEmptyOnBlur: boolean;
+  readonly hasMessages: boolean;
   readonly sessionTreeId?: ULID;
   readonly fallbackTreeId: ULID | null;
   readonly treeRepo: Pick<ILoomTreeRepository, 'hardDelete'>;
@@ -18,6 +19,7 @@ type UseEphemeralTreeStateInput = {
  */
 export const useEphemeralTreeState = ({
   shouldDeleteEmptyOnBlur,
+  hasMessages,
   sessionTreeId,
   fallbackTreeId,
   treeRepo,
@@ -36,6 +38,7 @@ export const useEphemeralTreeState = ({
   useDeleteEphemeralTreeOnBack({
     shouldDeleteEmptyOnBlur,
     hasUserSentMessage,
+    hasMessages,
     sessionTreeId,
     fallbackTreeId,
     treeRepo,
