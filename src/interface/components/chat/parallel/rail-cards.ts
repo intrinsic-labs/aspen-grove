@@ -54,3 +54,11 @@ export const toRailCards = (
 /** A key per card, stable while a slot moves from streaming to saved. */
 export const railCardKey = (card: RailCard): string =>
   card.kind === 'saved' ? card.preview.nodeId : `slot-${card.view.slot}`;
+
+/** Slot cards still streaming (or stopping): a new run raises this from 0. */
+export const countLiveSlots = (cards: readonly RailCard[]): number =>
+  cards.filter(
+    (card) =>
+      card.kind === 'slot' &&
+      (card.view.status === 'streaming' || card.view.status === 'stopping')
+  ).length;
