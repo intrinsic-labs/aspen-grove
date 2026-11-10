@@ -41,18 +41,14 @@ import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
-import {
-  ContinuationRail,
-  type ContinuationMenuAction,
-} from './ContinuationRail';
+import type { ContinuationMenuAction } from './continuation-menu';
+import { ContinuationRail } from './ContinuationRail';
+import type { ContinuationGenerateControlProps } from './parallel/ContinuationGenerateControl';
+import type { RailCard } from './parallel/rail-cards';
 import { ChatErrorNotice } from './ChatErrorNotice';
 import { MarkdownText } from './MarkdownText';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
-import type {
-  ChatDisplayPreferences,
-  ChatRow,
-  ContinuationPreview,
-} from './types';
+import type { ChatDisplayPreferences, ChatRow } from './types';
 
 export type ChatMessageMenuAction =
   | 'regenerate'
@@ -69,13 +65,13 @@ export type ContinuationRailState = {
   readonly loading: boolean;
   readonly sourceNodeId: ULID | null;
   readonly sourceLocalId?: string;
-  readonly items: readonly ContinuationPreview[];
+  /** Existing siblings, then the cards of a run started from this node. */
+  readonly cards: readonly RailCard[];
+  readonly generation: ContinuationGenerateControlProps;
   readonly error?: string | null;
   readonly onSelect: (nodeId: ULID) => void;
-  readonly onMenuAction: (
-    nodeId: ULID,
-    action: ContinuationMenuAction
-  ) => void;
+  readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
+  readonly onStopSlot: (slot: number) => void;
 };
 
 type ChatMessageMenuItem = {
@@ -235,7 +231,7 @@ export const ChatMessageList = memo(
       scheduleRailReveal(activeRailNodeId);
     }, [
       activeRailNodeId,
-      continuationRail.items.length,
+      continuationRail.cards.length,
       continuationRail.loading,
       scheduleRailReveal,
     ]);
@@ -421,11 +417,13 @@ export const ChatMessageList = memo(
                   visible={continuationRail.visible}
                   loading={continuationRail.loading}
                   sourceLocalId={continuationRail.sourceLocalId}
-                  continuations={continuationRail.items}
+                  cards={continuationRail.cards}
+                  generation={continuationRail.generation}
                   previewFontFamily={displayPreferences.messageFontFamily}
                   error={continuationRail.error}
                   onSelect={continuationRail.onSelect}
                   onMenuAction={continuationRail.onMenuAction}
+                  onStopSlot={continuationRail.onStopSlot}
                 />
               </Animated.View>
             ) : null}

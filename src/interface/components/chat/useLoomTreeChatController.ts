@@ -14,6 +14,7 @@ import { useContinuationGestures } from './node-actions/useContinuationGestures'
 import { useMessageActions } from './node-actions/useMessageActions';
 import { useNodeActions } from './node-actions/useNodeActions';
 import { useRewindToNode } from './node-actions/useRewindToNode';
+import { useParallelRail } from './parallel/useParallelRail';
 import { useChatReadAloud } from './read-aloud/useChatReadAloud';
 import { useReadAloudTaps } from './read-aloud/useReadAloudTaps';
 import { toDialogueRouteParams } from './route-params';
@@ -167,6 +168,19 @@ export const useLoomTreeChatController = () => {
     refreshRows,
     switchDialoguePathUseCase: useCases.switchDialoguePathUseCase,
   });
+  const parallelRail = useParallelRail({
+    session,
+    sending,
+    continuations,
+    refreshRows,
+    credentialStore: adapters.credentialStore,
+    continuationCountRepo: repositories.continuationCountRepo,
+    generateParallelContinuationsUseCase:
+      useCases.generateParallelContinuationsUseCase,
+  });
+  // A single generation waits while several stream, so the path and rows
+  // aren't rebuilt under them. Making a card current (rewind) still works.
+  const generating = sending || parallelRail.running;
   const { editTarget, setEditTarget, startEditForNode } = useEditNode({
     session,
     editNodeId,
@@ -181,7 +195,7 @@ export const useLoomTreeChatController = () => {
 
   const regenerateFromNode = useRegenerateFromNode({
     session,
-    sending,
+    sending: generating,
     setSending,
     setError,
     showProviderError: providerError.showProviderError,
@@ -201,7 +215,7 @@ export const useLoomTreeChatController = () => {
   });
   const onSend = useSendTurn({
     session,
-    sending,
+    sending: generating,
     setSending,
     setError,
     showProviderError: providerError.showProviderError,
@@ -278,9 +292,18 @@ export const useLoomTreeChatController = () => {
       loading: continuations.loading,
       sourceNodeId: continuations.sourceNodeId,
       sourceLocalId: continuations.sourceLocalId,
-      items: continuations.items,
+      cards: parallelRail.cards,
+      generation: {
+        count: parallelRail.count,
+        onChangeCount: parallelRail.setCount,
+        canGenerate: parallelRail.canGenerate,
+        running: parallelRail.runIsInRail,
+        onGenerate: () => void parallelRail.generate(),
+        onStopAll: parallelRail.stopAll,
+      },
       onSelect: onContinuationSelect,
       onMenuAction: onContinuationMenuAction,
+      onStopSlot: parallelRail.stop,
       error: continuations.error,
     },
     bookmarks: sheets.bookmarks,
@@ -296,7 +319,7 @@ export const useLoomTreeChatController = () => {
     tags: sheets.tags,
     scrollRef,
     inputRef,
-    canSend: !sending && !loading && input.trim().length > 0,
+    canSend: !generating && !loading && input.trim().length > 0,
     composerPlaceholder: composerMode.composerPlaceholder,
     sendLabel: composerMode.sendLabel,
     displayPreferences,

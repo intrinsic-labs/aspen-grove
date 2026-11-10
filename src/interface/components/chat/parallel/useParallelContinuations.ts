@@ -3,11 +3,13 @@ import type { ICredentialStore } from '@application/services/security';
 import type {
   GenerateParallelContinuationsResult,
   GenerateParallelContinuationsUseCase,
-  SwitchDialoguePathResult,
-  SwitchDialoguePathUseCase,
 } from '@application/use-cases';
-import type { ContinuationSlotEvent } from '@application/services/dialogue-continuation';
+import type {
+  ContinuationSlotEvent,
+  ContinuationSlotOutcome,
+} from '@application/services/dialogue-continuation';
 import { describeProviderError } from '@application/services/llm';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
@@ -15,6 +17,7 @@ import {
   initialParallelSlotsState,
   parallelSlotsReducer,
 } from './parallel-slots-state';
+import { describeSlotFailure } from './describe-slot-failure';
 import { useBufferedSlotText } from './useBufferedSlotText';
 
 type UseParallelContinuationsInput = {
@@ -23,8 +26,9 @@ type UseParallelContinuationsInput = {
     GenerateParallelContinuationsUseCase,
     'execute'
   >;
-  readonly switchDialoguePathUseCase: Pick<SwitchDialoguePathUseCase, 'execute'>;
   readonly credentialStore: ICredentialStore;
+  /** Each slot's outcome, as it settles (to reload what shows saved nodes). */
+  readonly onSlotSettled?: (outcome: ContinuationSlotOutcome) => void;
 };
 
 type RunControls = {
@@ -32,24 +36,25 @@ type RunControls = {
   readonly perSlot: readonly AbortController[];
 };
 
-const toMessage = (caught: unknown): string =>
-  describeProviderError(caught).message;
+const toMessage = (caught: unknown, provider: SelectableProvider): string =>
+  describeProviderError(caught, { provider }).message;
 
 /**
  * Drives "draw several continuations at once" for the chat screen: starts N
- * streams from one node, keeps one card's worth of state per slot, stops one
- * or all, and makes a chosen result the current path. Renders nothing.
+ * streams from one node, keeps one card's worth of state per slot, and stops
+ * one or all. Renders nothing.
  *
- * Results are saved as siblings as they finish, whether or not one is
- * chosen. Choosing only moves the active path; the rest stay in the tree.
+ * Results are saved as siblings as they finish. Choosing one is the chat's
+ * ordinary "make current" (`useRewindToNode`), as for any sibling; the rest
+ * stay in the tree.
  */
-export const useParallelContinuations = (input: UseParallelContinuationsInput) => {
-  const {
-    session,
-    generateParallelContinuationsUseCase,
-    switchDialoguePathUseCase,
-    credentialStore,
-  } = input;
+export const useParallelContinuations = (
+  input: UseParallelContinuationsInput
+) => {
+  const { session, generateParallelContinuationsUseCase, credentialStore } =
+    input;
+  const onSlotSettledRef = useRef(input.onSlotSettled);
+  onSlotSettledRef.current = input.onSlotSettled;
   const [state, dispatch] = useReducer(
     parallelSlotsReducer,
     initialParallelSlotsState
@@ -67,6 +72,7 @@ export const useParallelContinuations = (input: UseParallelContinuationsInput) =
       }
       flushNow();
       dispatch({ type: 'outcome', outcome: event });
+      onSlotSettledRef.current?.(event);
     },
     [flushNow, setText]
   );
@@ -103,14 +109,18 @@ export const useParallelContinuations = (input: UseParallelContinuationsInput) =
           count,
           signal: controls.all.signal,
           slotSignals: controls.perSlot.map((controller) => controller.signal),
-          onSlotEvent,
+          onSlotEvent: (event) =>
+            onSlotEvent(describeSlotFailure(event, session.provider)),
         });
         flushNow();
         dispatch({ type: 'finished' });
         return result;
       } catch (caught) {
         discard();
-        dispatch({ type: 'failed', message: toMessage(caught) });
+        dispatch({
+          type: 'failed',
+          message: toMessage(caught, session.provider),
+        });
         return null;
       } finally {
         if (controlsRef.current === controls) {
@@ -148,26 +158,6 @@ export const useParallelContinuations = (input: UseParallelContinuationsInput) =
     controls.all.abort();
   }, []);
 
-  /**
-   * Makes a slot's saved node the current path. Returns null when that slot
-   * has nothing saved (still streaming, failed, or stopped before any text).
-   * The caller refreshes its rows from the returned path.
-   */
-  const choose = useCallback(
-    async (slot: number): Promise<SwitchDialoguePathResult | null> => {
-      const nodeId = state.slots.find((view) => view.slot === slot)?.nodeId;
-      if (!session || !nodeId) {
-        return null;
-      }
-      return switchDialoguePathUseCase.execute({
-        pathId: session.pathId,
-        ownerAgentId: session.ownerAgentId,
-        targetNodeId: nodeId,
-      });
-    },
-    [session, state.slots, switchDialoguePathUseCase]
-  );
-
   /** Clears the cards. Only once settled: a running set must be stopped first. */
   const reset = useCallback(() => {
     if (controlsRef.current) {
@@ -186,7 +176,6 @@ export const useParallelContinuations = (input: UseParallelContinuationsInput) =
     start,
     stop,
     stopAll,
-    choose,
     reset,
   };
 };

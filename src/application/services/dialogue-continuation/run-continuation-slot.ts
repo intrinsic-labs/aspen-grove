@@ -34,6 +34,7 @@ const toErrorOutcome = (
   type: 'error',
   message: error instanceof Error ? error.message : String(error),
   code: error instanceof LlmProviderError ? error.code : undefined,
+  cause: error,
 });
 
 const toSettledOutcome = (

@@ -28,7 +28,8 @@
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
-      "package": "com.intrinsiclabs.aspengrove"
+      "package": "com.intrinsiclabs.aspengrove",
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
     },
     "web": {
       "favicon": "./assets/favicon.png"

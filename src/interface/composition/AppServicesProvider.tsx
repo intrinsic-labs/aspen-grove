@@ -37,6 +37,7 @@ import database from '@infrastructure/persistence/watermelon/index.native';
 import { subscribeToDatabaseSetupError } from '@infrastructure/persistence/watermelon/setup-error';
 import {
   WatermelonAgentRepository,
+  WatermelonContinuationCountPreferenceRepository,
   WatermelonEdgeRepository,
   WatermelonGroveRepository,
   WatermelonLoomTreeRepository,
@@ -58,6 +59,7 @@ import { AppText } from '@/interface/ui/value-objects';
 type AppServices = {
   readonly repositories: {
     readonly agentRepo: WatermelonAgentRepository;
+    readonly continuationCountRepo: WatermelonContinuationCountPreferenceRepository;
     readonly edgeRepo: WatermelonEdgeRepository;
     readonly groveRepo: WatermelonGroveRepository;
     readonly treeRepo: WatermelonLoomTreeRepository;
@@ -123,6 +125,9 @@ const buildAppServices = (): AppServices => {
   const userPreferencesRepo = new WatermelonUserPreferencesRepository(database);
   const repositories = {
     agentRepo: new WatermelonAgentRepository(database),
+    continuationCountRepo: new WatermelonContinuationCountPreferenceRepository(
+      database
+    ),
     edgeRepo: new WatermelonEdgeRepository(database),
     groveRepo: new WatermelonGroveRepository(database),
     treeRepo: new WatermelonLoomTreeRepository(database),
