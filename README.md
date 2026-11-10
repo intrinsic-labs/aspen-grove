@@ -28,10 +28,11 @@ Built today:
 - **Provenance**: every model response is stored raw and hash-chained to its parents, so tampering is detectable; the node detail sheet re-verifies it on demand
 - **Open Loom import and export**: export a whole tree as [Open Loom](./docs/open-loom/spec.md) JSON or the current path as Markdown; import Open Loom (v1 and v2), socketteer/loom and Loomsidian files
 
+- **Parallel continuations**: draw several at once and compare them side by side in the rail
+- **Character voices** (Jefferson, Lily, Eve) that read responses aloud
+
 Coming in v1:
 
-- Several continuations at once, compared side by side
-- Character voices that read responses aloud
 - The look and feel of Latent Spaces, the SwiftUI loom this app grew from
 
 After v1: LoomDisplay (the model draws ASCII animations), buffer mode with base models, and backrooms where models talk to each other.

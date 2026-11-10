@@ -1,8 +1,8 @@
 ---
 feature-map: 1
 root: .
-revision: bf9ff0422fdc497d687c52d01bc1a868c9f81c84
-reconciled: 2026-11-09
+revision: 9b26e3090a5a6317927c71cb9a5b2b62f6dfc0ed
+reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
 
@@ -16,9 +16,10 @@ see [VERIFY.md](VERIFY.md).
 **State of this map.** It was built from source at `revision:`. Every `working` selector was
 confirmed by reading that its `testID` lands on a host element (`View`, `Pressable`, `Text`,
 `TextInput`, `ScrollView`/`FlatList`/`SectionList`, `Switch`, `Slider`), directly or through a
-wrapper that forwards it. **The first rendered walk on a simulator is still pending**: the
-owner does it and then re-confirms `reconciled:`. Until then, treat each Reach path as read from
-code, not observed.
+wrapper that forwards it. **A first rendered simulator walk on 2026-11-10, at main
+9b26e30, matched the map on every path walked**: onboarding skip, Connections, the agent
+editor, trees menu → new tree, send, the parallel rail, the voice chooser lookup and the export
+lookup. Paths not in that list are still read from code, not observed.
 
 **Maintenance rule.** If you change a route, a screen or a feature, update its entry in the
 same change: add entries for new features, remove entries for removed ones, and keep `testID`s
@@ -80,6 +81,9 @@ stays until the user makes one.
 
 - Selectors are React Native `testID`s. On iOS they surface as `accessibilityIdentifier`
   (Detox `by.id`, Maestro `id:`). The map writes them bare, for example `chat-composer-input`.
+- A few ids exist in code only as templates (`settings-link-${route}`,
+  `settings-voice-${name}`), so grepping for the literal id finds nothing. The entries name the
+  template; search for its prefix.
 - An id written like `trees-list-row-<treeId>` has a ULID or other runtime suffix. Find the
   static parent (`trees-list`) first, then the row by its visible text, or read ids from the
   database.
@@ -180,7 +184,7 @@ stays until the user makes one.
   "New Tree". From a cold start you can use Home's `home-new-tree-button` instead.
 - **Requires:** A model agent (P1). Without one, the menu's "New Tree" opens onboarding
   instead (there is no "No agents yet" error any more).
-- **Selector:** working — `home-new-tree-button`, `trees-empty-new-tree`; menu item none — native context menu item; reach via long-press on `trees-menu-button` (a tap opens it)
+- **Selector:** working — `home-new-tree-button`, `trees-empty-new-tree`; menu item none — native context menu item; reach via a tap on `trees-menu-button`
 - **Code:** `src/interface/hooks/useCreateLoomTree.ts`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`
@@ -225,7 +229,7 @@ stays until the user makes one.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
   "Import Tree" → OS document picker.
 - **Requires:** A file on the device, simulator or Files app. No agent needed.
-- **Selector:** none — native context menu item; reach via long-press on `trees-menu-button` (a tap opens it); the picker and the alert are native
+- **Selector:** none — native context menu item; reach via a tap on `trees-menu-button`; the picker and the alert are native
 - **Code:** `src/interface/components/LoomTreeListView.tsx#onImportTree`, `src/interface/services/loom-file-sharing.ts#pickAndReadTextFile`, `src/application/use-cases/ImportLoomTreeUseCase.ts`, `src/application/services/open-loom/import/`
 - **Backend:** WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`, `path_states`
 - **Status:** live
@@ -451,7 +455,7 @@ stays until the user makes one.
   it again → tap any row to stop.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
   up; it plays with the iOS silent switch on, as in Latent Spaces.
-- **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
 - **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
@@ -564,7 +568,7 @@ stays until the user makes one.
 - **Where:** A page sheet from the Dialogue `···` menu.
 - **Reach:** P2 → `chat-menu-button` → "Bookmarks".
 - **Requires:** A tree. When empty it shows the "No bookmarks in this tree yet" hint.
-- **Selector:** working — `bookmarks-sheet`, `bookmarks-sheet-done`, `bookmarks-sheet-list`, rows `bookmarks-sheet-row-<nodeId>`, `bookmarks-sheet-row-details-<nodeId>` (nested, see the driving notes), `bookmarks-sheet-empty`, `bookmarks-sheet-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Selector:** working — `bookmarks-sheet`, `bookmarks-sheet-done`, `bookmarks-sheet-list`, rows `bookmarks-sheet-row-<nodeId>`, `bookmarks-sheet-row-details-<nodeId>` (nested, see the driving notes), `bookmarks-sheet-empty`, `bookmarks-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/bookmarks/BookmarksSheet.tsx`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useChatSheets.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked`
 - **Status:** live
@@ -587,7 +591,7 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Edit Title" → `chat-title-sheet-input` →
   `chat-title-sheet-save`.
 - **Requires:** A tree.
-- **Selector:** working — `chat-title-sheet`, `chat-title-sheet-input`, `chat-title-sheet-save`, `chat-title-sheet-cancel`, `chat-title-sheet-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Selector:** working — `chat-title-sheet`, `chat-title-sheet-input`, `chat-title-sheet-save`, `chat-title-sheet-cancel`, `chat-title-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/header-actions/useTreeTitle.ts`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
@@ -626,7 +630,7 @@ stays until the user makes one.
 - **Where:** A page sheet from the Dialogue `···` menu ("Dialogue Settings").
 - **Reach:** P2 → `chat-menu-button` → "Dialogue Settings".
 - **Requires:** A tree.
-- **Selector:** working — `dialogue-settings-sheet`, `dialogue-settings-done`, `dialogue-settings-system-context-input`, `dialogue-settings-system-context-save` (shown once edited), `dialogue-settings-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Selector:** working — `dialogue-settings-sheet`, `dialogue-settings-done`, `dialogue-settings-system-context-input`, `dialogue-settings-system-context-save` (shown once edited), `dialogue-settings-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx`, `src/interface/components/chat/dialogue-settings/useDialogueSettingsController.ts`
 - **Backend:** WatermelonDB `loom_trees` (system context) and `agents`, via `WatermelonLoomTreeRepository` and `WatermelonAgentRepository`
 - **Status:** live
@@ -690,7 +694,7 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Tags" → `tags-sheet-new-input` →
   `tags-sheet-new-add`. Toggle an existing tag with `tags-sheet-row-<tagId>`.
 - **Requires:** A tree.
-- **Selector:** working — `tags-sheet`, `tags-sheet-done`, `tags-sheet-new-input`, `tags-sheet-new-add`, `tags-sheet-list`, rows `tags-sheet-row-<tagId>`, `tags-sheet-empty`, `tags-sheet-error`; menu item none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it)
+- **Selector:** working — `tags-sheet`, `tags-sheet-done`, `tags-sheet-new-input`, `tags-sheet-new-add`, `tags-sheet-list`, rows `tags-sheet-row-<tagId>`, `tags-sheet-empty`, `tags-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/tags/TreeTagsSheet.tsx`
 - **Backend:** WatermelonDB `tags` and `tag_assignments` via `WatermelonTagRepository`
 - **Status:** live
@@ -702,7 +706,7 @@ stays until the user makes one.
 - **Where:** "Export Tree (OpenLoom)" in the Dialogue `···` menu.
 - **Reach:** P2 → `chat-menu-button` → "Export Tree (OpenLoom)" → share sheet.
 - **Requires:** A tree, and sharing available on the device.
-- **Selector:** none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it); the share sheet is native
+- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
 - **Code:** `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`. Writes
   a cache file (`expo-file-system`), then calls `expo-sharing`.
@@ -715,7 +719,7 @@ stays until the user makes one.
 - **Where:** "Export Path (Markdown)" in the Dialogue `···` menu.
 - **Reach:** P2 → `chat-menu-button` → "Export Path (Markdown)" → share sheet.
 - **Requires:** A tree with a loaded session.
-- **Selector:** none — native context menu item; reach via long-press on `chat-menu-button` (a tap opens it); the share sheet is native
+- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
 - **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `paths`, `path_nodes`, `nodes`. Writes a cache file and calls
   `expo-sharing`.
@@ -745,7 +749,7 @@ stays until the user makes one.
 - **Where:** `···` at the right of the node detail header.
 - **Reach:** Open `node.detail` → `node-detail-menu-button`.
 - **Requires:** A loaded node. The button is hidden while loading.
-- **Selector:** working — `node-detail-menu-button`; items none — native context menu item; reach via long-press on `node-detail-menu-button` (a tap opens it)
+- **Selector:** working — `node-detail-menu-button`; items none — native context menu item; reach via a tap on `node-detail-menu-button`
 - **Code:** `src/app/tree/*/node/*.tsx`, `src/interface/components/chat/node-detail/NodeDetailView.tsx#buildDetailMenuItems`
 - **Backend:** Make Current uses `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
   Prune update `nodes` metadata via `WatermelonNodeRepository#updateMetadata`. Copy is
@@ -777,7 +781,7 @@ stays until the user makes one.
 - **Where:** Drawer → Settings, a nested stack with its own header and drawer button.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
 - **Requires:** none
-- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`
+- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice` (all built from the template `settings-link-${route}` in `SettingsHomeView.tsx`)
 - **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
@@ -954,7 +958,7 @@ stays until the user makes one.
 - **Reach:** `settings-link-voice` → `settings-voice-choose` → swipe `settings-voice-pager` →
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
-- **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles), `settings-voice-select`
+- **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
 - **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
 - **Backend:** none for the demo (on-device `expo-speech`); Select writes the WatermelonDB local
   key `aspen_grove.voice_mode.voice_name`
