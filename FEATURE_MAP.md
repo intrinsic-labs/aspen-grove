@@ -340,13 +340,15 @@ stays until the user makes one.
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
 - **Notes:** Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
+  A long path mounts its last rows first and fills in the earlier ones once the screen has
+  slid in, so a row far up the path can take a moment to exist in the hierarchy.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
@@ -398,7 +400,7 @@ stays until the user makes one.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/ChatMessageList.tsx#buildMessageMenuItems`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuItems`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info pushes the node
   detail route (`node.detail`). The other items have their own entries below.
 - **Status:** live
@@ -654,9 +656,32 @@ stays until the user makes one.
   `dialogue-settings-switch-agent` → `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** At least two shared agents. Otherwise it says "No other shared agents".
 - **Selector:** working — `dialogue-settings-switch-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`, `dialogue-settings-back`
-- **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderSwitchAgent`, `src/application/use-cases/UpdateTreeDefaultAgentUseCase.ts`
+- **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderSwitchAgent`, `src/interface/components/chat/dialogue-settings/AgentCandidateList.tsx`, `src/application/use-cases/UpdateTreeDefaultAgentUseCase.ts`
 - **Backend:** WatermelonDB `loom_trees` (default agent) via `WatermelonLoomTreeRepository`
 - **Status:** live
+
+### Tree without an agent
+- **ID:** `chat.needs-agent`
+- **Purpose:** A tree with no usable model agent (imported before any agent existed, its
+  agent since deleted or archived, or a legacy agent on a provider the app can't route, such
+  as `anthropic:` or `openai:`) still opens and reads normally. On open it adopts the user's
+  default model agent, or else the first shared one it can use, if there is one. Otherwise the composer says the tree needs an
+  agent to continue, with a button that opens Dialogue Settings to pick one.
+- **Where:** In place of the composer input on the Dialogue screen, and at the top of
+  Dialogue Settings.
+- **Reach:** Cold start → import a tree before creating any agent (`trees.import`) →
+  `trees-list-row-<treeId>` → `chat-needs-agent-choose` →
+  `dialogue-settings-switch-agent-row-<agentId>`.
+- **Requires:** A tree without a usable agent, and no default model agent to adopt.
+- **Selector:** working — `chat-needs-agent` (the message), `chat-needs-agent-choose`, `dialogue-settings-needs-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`
+- **Code:** `src/application/services/resolve-tree-model-agent.ts`, `src/interface/components/chat/session-helpers.ts#initializeDialogueChatSession`, `src/interface/components/chat/session/session-model.ts`, `src/interface/components/chat/composer/NeedsAgentNotice.tsx`, `src/interface/components/chat/composer/can-submit-composer.ts`, `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderNeedsAgent`
+- **Backend:** WatermelonDB `loom_trees` (default agent), `agents`, `user_preferences`
+  (default agent)
+- **Status:** live
+- **Notes:** Editing a message still works, Save included (it generates nothing). Only
+  OpenRouter and LM Studio agents count as usable. Regenerate and the rail's
+  Generate wait for an agent. Coming back to the tree from creating an agent in Settings
+  makes it adopt that agent.
 
 ### Tree tags
 - **ID:** `chat.tags`
@@ -917,7 +942,8 @@ stays until the user makes one.
   `WatermelonVoicePreferencesRepository`
 - **Status:** live
 - **Notes:** Saves on each change (no debounce). The same on/off state drives the Dialogue
-  `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once. The default voice is Jefferson.
+  `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once.
+  The default voice is Jefferson.
 
 ### Voice chooser
 - **ID:** `settings.voice.chooser`

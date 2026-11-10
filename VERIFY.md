@@ -98,6 +98,27 @@ The app has no server. A model agent needs either provider:
   endpoint in Settings → Connections works as is; tap `connections-lmstudio-test` to check.
   (The Android Emulator would need `http://10.0.2.2:1234`.)
 
+### No key? Use the mock server
+
+[scripts/mock-llm-server](scripts/mock-llm-server/README.md) answers the LM Studio calls the
+app makes with deterministic streamed text, at a pace you set, with optional failure
+injection. It needs nothing but Node:
+
+```sh
+lsof -nP -iTCP:1235 -sTCP:LISTEN          # free? (1234 is LM Studio's own port)
+node scripts/mock-llm-server/cli.ts --port 1235 --pace 20 > .verify/mock.log 2>&1 &
+echo $! > .verify/mock.pid
+```
+
+Use the mock server through Settings → Connections → LM Studio at `http://localhost:1235`:
+type that into `connections-lmstudio-endpoint-input`, tap `connections-lmstudio-test`, then
+create an agent on the LM Studio model `mock-model` (the model `mock-missing` always
+answers 404). `--slow` gives time to tap stop mid-stream; `--fail-every 3 --fail-status 422`
+fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
+a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
+[.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
+state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
 Save. A fresh install has no model agent, so until you do, New Loom Tree shows
 "No agents yet…" (`home-error`).
@@ -127,6 +148,22 @@ the dev launcher to Home) and open the drawer through
 - [first-turn.yaml](.maestro/first-turn.yaml) creates an agent from a template, opens a new
   tree, sends one message, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.
+
+A third, [perf/](.maestro/perf/), times a big tree: opening it, opening a continuation
+rail, switching branch and searching. Copy the seed tree (`scripts/seed-perf-tree`) and
+`.maestro/perf/fixtures/perf-tiny.openloom` into the simulator's Files ("On My iPhone")
+first. `perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
+a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>` lines into
+the run's `maestro.log`. The numbers are Maestro wall clock: compare runs on one machine
+and simulator, three runs or more, by median. No key needed.
+
+[needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
+`perf-tiny.openloom` before any agent exists: the tree opens with its messages and the
+"needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
+reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
+live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboarding; flows
+that set up through Settings or an import skip it), `create-agent.yaml` and
+`import-tree.yaml`.
 
 For a one-off screenshot or deep link without Maestro:
 

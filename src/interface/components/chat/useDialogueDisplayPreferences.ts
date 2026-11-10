@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import type { IUserPreferencesRepository } from '@application/repositories';
+import { sameDisplayPreferences } from './display-preferences-equality';
 import type { ChatDisplayPreferences } from './types';
 
 const DEFAULT_FONT_SIZE = 17;
@@ -37,15 +38,26 @@ const createDefaults = (): ChatDisplayPreferences => ({
   messageFontFamily: undefined,
 });
 
+export type DialogueDisplayPreferences = {
+  readonly preferences: ChatDisplayPreferences;
+  /**
+   * The saved preferences have been read (or failed to read, leaving the
+   * defaults). Until then `preferences` holds defaults that may differ:
+   * render messages only once loaded, or they lay out twice in two sizes.
+   */
+  readonly loaded: boolean;
+};
+
 type UseDialogueDisplayPreferencesInput = {
   readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
 };
 
 export const useDialogueDisplayPreferences = ({
   userPreferencesRepo,
-}: UseDialogueDisplayPreferencesInput): ChatDisplayPreferences => {
+}: UseDialogueDisplayPreferencesInput): DialogueDisplayPreferences => {
   const [preferences, setPreferences] =
-    useState<ChatDisplayPreferences>(createDefaults());
+    useState<ChatDisplayPreferences>(createDefaults);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -56,7 +68,7 @@ export const useDialogueDisplayPreferences = ({
         MAX_FONT_SIZE
       );
 
-      setPreferences({
+      const next: ChatDisplayPreferences = {
         userNodeViewStyle: userPreferences.nodeViewStyle,
         userNodeCornerRadius: clamp(
           userPreferences.nodeViewCornerRadius ?? DEFAULT_CORNER_RADIUS,
@@ -66,10 +78,16 @@ export const useDialogueDisplayPreferences = ({
         messageFontSize,
         messageLineHeight: toMessageLineHeight(messageFontSize),
         messageFontFamily: normalizeFontFamily(userPreferences.fontFace),
-      });
+      };
+      // Every focus reloads; keep the same object when nothing changed so
+      // the message list doesn't re-render.
+      setPreferences((current) =>
+        sameDisplayPreferences(current, next) ? current : next
+      );
     } catch {
       // Keep existing preferences on load failure.
     }
+    setLoaded(true);
   }, [userPreferencesRepo]);
 
   useFocusEffect(
@@ -79,5 +97,5 @@ export const useDialogueDisplayPreferences = ({
     }, [load])
   );
 
-  return preferences;
+  return useMemo(() => ({ preferences, loaded }), [preferences, loaded]);
 };

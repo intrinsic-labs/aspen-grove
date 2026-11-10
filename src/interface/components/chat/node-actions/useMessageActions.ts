@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Keyboard } from 'react-native';
 import type { ULID } from '@domain/value-objects';
-import type { ChatMessageMenuAction } from '../ChatMessageList';
+import type { ChatMessageMenuAction } from '../message-list/message-menu';
 import type { useNodeContinuations } from '../useNodeContinuations';
 
 type NodeAction = (nodeId: ULID) => Promise<void>;

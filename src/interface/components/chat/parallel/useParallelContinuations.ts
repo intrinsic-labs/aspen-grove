@@ -82,7 +82,8 @@ export const useParallelContinuations = (
       sourceNodeId: ULID,
       count: number
     ): Promise<GenerateParallelContinuationsResult | null> => {
-      if (!session || controlsRef.current) {
+      const model = session?.model;
+      if (!session || !model || controlsRef.current) {
         return null;
       }
       const controls: RunControls = {
@@ -96,11 +97,11 @@ export const useParallelContinuations = (
       try {
         const providerApiKey = await getProviderApiKey(
           credentialStore,
-          session.provider
+          model.provider
         );
         const result = await generateParallelContinuationsUseCase.execute({
-          modelAgentId: session.modelAgentId,
-          modelIdentifier: session.modelIdentifier,
+          modelAgentId: model.modelAgentId,
+          modelIdentifier: model.modelIdentifier,
           treeId: session.treeId,
           pathId: session.pathId,
           sourceNodeId,
@@ -110,7 +111,7 @@ export const useParallelContinuations = (
           signal: controls.all.signal,
           slotSignals: controls.perSlot.map((controller) => controller.signal),
           onSlotEvent: (event) =>
-            onSlotEvent(describeSlotFailure(event, session.provider)),
+            onSlotEvent(describeSlotFailure(event, model.provider)),
         });
         flushNow();
         dispatch({ type: 'finished' });
@@ -119,7 +120,7 @@ export const useParallelContinuations = (
         discard();
         dispatch({
           type: 'failed',
-          message: toMessage(caught, session.provider),
+          message: toMessage(caught, model.provider),
         });
         return null;
       } finally {

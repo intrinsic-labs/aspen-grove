@@ -1,0 +1,91 @@
+{
+ "format": "open-loom",
+ "version": "2.0",
+ "exportedAt": "2026-01-01T00:00:10.000Z",
+ "generator": {
+  "name": "aspen-grove perf floor"
+ },
+ "trees": [
+  {
+   "id": "perf-tiny",
+   "title": "Perf tiny (3 nodes)",
+   "mode": "dialogue",
+   "systemContext": "",
+   "rootNodeIds": [
+    "t-0"
+   ],
+   "currentNodeId": "t-1",
+   "createdAt": "2026-01-01T00:00:00.000Z",
+   "updatedAt": "2026-01-01T00:00:10.000Z",
+   "nodes": {
+    "t-0": {
+     "id": "t-0",
+     "content": [
+      {
+       "type": "text",
+       "text": "Light the lantern."
+      }
+     ],
+     "author": {
+      "role": "human"
+     },
+     "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    "t-1": {
+     "id": "t-1",
+     "content": [
+      {
+       "type": "text",
+       "text": "The lantern is lit."
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "anthropic/claude-haiku-5.5"
+     },
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    "t-2": {
+     "id": "t-2",
+     "content": [
+      {
+       "type": "text",
+       "text": "The other lantern stays dark."
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "anthropic/claude-haiku-5.5"
+     },
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    }
+   },
+   "edges": [
+    {
+     "id": "e-1",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "t-0",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "t-1",
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    {
+     "id": "e-2",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "t-0",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "t-2",
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    }
+   ]
+  }
+ ]
+}

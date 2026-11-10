@@ -3,7 +3,7 @@
   "compilerOptions": {
     "strict": true,
 
-    // Node-run scripts (scripts/seed-perf-tree) import siblings with .ts extensions.
+    // Node-run scripts (scripts/mock-llm-server, scripts/seed-perf-tree) import siblings with .ts extensions.
     "allowImportingTsExtensions": true,
 
     // WatermelonDB uses legacy (Stage-2 / "experimental") decorators.

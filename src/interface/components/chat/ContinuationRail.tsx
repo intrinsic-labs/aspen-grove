@@ -9,7 +9,11 @@ import {
   ContinuationGenerateControl,
   type ContinuationGenerateControlProps,
 } from './parallel/ContinuationGenerateControl';
-import { railCardKey, type RailCard } from './parallel/rail-cards';
+import {
+  countLiveSlots,
+  railCardKey,
+  type RailCard,
+} from './parallel/rail-cards';
 import { StreamingContinuationCard } from './parallel/StreamingContinuationCard';
 import { SavedContinuationCard } from './SavedContinuationCard';
 
@@ -45,13 +49,18 @@ export const ContinuationRail = memo(
     const { colors } = useAspenGroveTheme();
     const listRef = useRef<ScrollView>(null);
     const slotCount = countSlots(cards);
+    const liveSlotCount = countLiveSlots(cards);
+    const shownLiveSlotCountRef = useRef(0);
 
-    // New streaming cards join the end of the row: bring them into view.
+    // New streaming cards join the end of the row: bring them into view
+    // whenever a run starts, including a second run whose finished cards
+    // are still showing (the slot count alone doesn't change then).
     useEffect(() => {
-      if (slotCount > 0) {
+      if (liveSlotCount > shownLiveSlotCountRef.current) {
         listRef.current?.scrollToEnd({ animated: true });
       }
-    }, [slotCount]);
+      shownLiveSlotCountRef.current = liveSlotCount;
+    }, [liveSlotCount]);
 
     if (!visible) {
       return null;

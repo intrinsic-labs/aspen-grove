@@ -5,6 +5,7 @@ import type { GenerateDialogueContinuationUseCase } from '@application/use-cases
 import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
+import { NEEDS_AGENT_MESSAGE } from '../session/session-model';
 import type { ChatRow, ChatSession } from '../types';
 import type { useNodeContinuations } from '../useNodeContinuations';
 import type { useStreamingAssistantRow } from '../useStreamingAssistantRow';
@@ -80,6 +81,11 @@ export const useRegenerateFromNode = ({
       if (!session || sending) {
         return;
       }
+      const model = session.model;
+      if (!model) {
+        setError(NEEDS_AGENT_MESSAGE);
+        return;
+      }
 
       try {
         setSending(true);
@@ -115,14 +121,14 @@ export const useRegenerateFromNode = ({
         // Fetch the matching API key from secure storage.
         const providerApiKey = await getProviderApiKey(
           credentialStore,
-          session.provider
+          model.provider
         );
         const diagnostics = createStreamDiagnostics();
         const result = await generateDialogueContinuationUseCase.execute({
           session: {
             ownerAgentId: session.ownerAgentId,
-            modelAgentId: session.modelAgentId,
-            modelIdentifier: session.modelIdentifier,
+            modelAgentId: model.modelAgentId,
+            modelIdentifier: model.modelIdentifier,
             treeId: session.treeId,
             pathId: session.pathId,
           },
@@ -153,7 +159,7 @@ export const useRegenerateFromNode = ({
           onModelNodeCompleted(result.assistantNodeId);
         }
       } catch (caught) {
-        showProviderError(caught, session.provider);
+        showProviderError(caught, session.model?.provider);
         // Rows were trimmed optimistically; reload from the (unchanged)
         // path so the old response reappears after a failed regenerate.
         await refreshRows(session);

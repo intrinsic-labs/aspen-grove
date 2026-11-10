@@ -25,12 +25,14 @@ jest.mock('expo-crypto', () =>
 
 const session: ChatSession = {
   ownerAgentId,
-  modelAgentId,
-  modelIdentifier: 'test/model',
   treeId,
   pathId,
   activeNodeId: sourceNodeId,
-  provider: 'openrouter',
+  model: {
+    modelAgentId,
+    modelIdentifier: 'test/model',
+    provider: 'openrouter',
+  },
 };
 
 type RailProps = {
@@ -234,9 +236,11 @@ describe('useParallelRail', () => {
     // The user picks another agent mid-run (the ⚙️ sheet reinitializes).
     const switched: ChatSession = {
       ...session,
-      modelAgentId: 'switched-agent' as ULID,
-      modelIdentifier: 'other/model',
-      provider: 'lmstudio',
+      model: {
+        modelAgentId: 'switched-agent' as ULID,
+        modelIdentifier: 'other/model',
+        provider: 'lmstudio',
+      },
     };
     await hook.rerender({ railSource: sourceNodeId, session: switched });
 

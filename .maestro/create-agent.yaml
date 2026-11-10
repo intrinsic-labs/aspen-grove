@@ -1,0 +1,30 @@
+# Create a shared agent from the first template (P1), from any top-level
+# screen. Needs no key: nothing is sent. Ends on the Settings screen.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-drawer.yaml
+- tapOn:
+    id: drawer-nav-settings
+- tapOn:
+    id: settings-link-agents
+- tapOn:
+    id: settings-agents-new
+- tapOn:
+    id: agent-editor-template-claude-sonnet-balanced
+- tapOn:
+    id: agent-editor-submit
+- extendedWaitUntil:
+    visible:
+      id: settings-agents-list
+    timeout: 10000
+# Back to Settings (`back` is Android-only in Maestro), retrying a tap that
+# lands mid-transition.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: settings-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton

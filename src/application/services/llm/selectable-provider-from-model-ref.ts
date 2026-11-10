@@ -17,6 +17,18 @@ import type { ModelRef } from '@domain/value-objects';
  * superset of what the app can actually route — only providers in
  * `SELECTABLE_PROVIDERS` are reachable today.
  */
+/**
+ * True when some adapter can route `modelRef` (its prefix is a
+ * `SelectableProvider`). A legacy agent can still name a provider the app has
+ * no adapter for, such as `anthropic:`: it is kept, but can't generate.
+ */
+export const isRoutableModelRef = (modelRef: ModelRef | string): boolean => {
+  const colonIndex = modelRef.indexOf(':');
+  return (
+    colonIndex !== -1 && isSelectableProvider(modelRef.slice(0, colonIndex))
+  );
+};
+
 export const selectableProviderFromModelRef = (
   modelRef: ModelRef
 ): SelectableProvider => {

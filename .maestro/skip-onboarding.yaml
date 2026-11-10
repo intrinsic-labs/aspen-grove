@@ -1,0 +1,18 @@
+# Skip first-run onboarding when it shows (a cleared install), and wait for
+# Home. Run right after open-app.yaml by flows that set things up their own
+# way (Settings, an import) rather than through onboarding.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      visible:
+        id: onboarding-screen
+    commands:
+      - tapOn:
+          id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 10000
+- assertNotVisible:
+    id: onboarding-screen

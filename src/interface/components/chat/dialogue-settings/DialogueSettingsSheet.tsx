@@ -18,6 +18,7 @@ import {
   type AgentDraft,
 } from '../../settings/agents/agent-editor-types';
 import { draftFromAgent } from '../../settings/agents/useAgentsLibraryController';
+import { AgentCandidateList } from './AgentCandidateList';
 import { useDialogueSettingsController } from './useDialogueSettingsController';
 
 type DialogueSettingsSheetProps = {
@@ -86,7 +87,7 @@ export const DialogueSettingsSheet = ({
         <AppText variant="meta" tone="secondary" style={styles.blockLabel}>
           AGENT
         </AppText>
-        {controller.agent ? (
+        {controller.agentUsable && controller.agent ? (
           <View style={styles.agentBlock}>
             <AppText variant="body" style={styles.agentName}>
               {controller.agent.name}
@@ -134,9 +135,7 @@ export const DialogueSettingsSheet = ({
             </View>
           </View>
         ) : (
-          <AppText variant="meta" tone="accent">
-            This tree has no agent configured. Pick one below.
-          </AppText>
+          renderNeedsAgent()
         )}
       </View>
 
@@ -184,12 +183,29 @@ export const DialogueSettingsSheet = ({
     </>
   );
 
-  const renderSwitchAgent = () => {
-    const currentAgentId = controller.agent?.id;
-    const candidates = controller.sharedAgents.filter(
-      (candidate) => candidate.id !== currentAgentId
-    );
+  const switchCandidates = controller.sharedAgents.filter(
+    (candidate) => candidate.id !== controller.agent?.id
+  );
 
+  // No agent, or one deleted or archived since: say so and offer the
+  // shared agents right here.
+  const renderNeedsAgent = () => (
+    <View testID="dialogue-settings-needs-agent" style={styles.block}>
+      <AppText variant="meta" tone="accent">
+        {controller.agent?.archivedAt
+          ? `${controller.agent.name} is archived. This tree needs an agent to continue: pick one.`
+          : 'This tree needs an agent to continue: pick one.'}
+      </AppText>
+      <AgentCandidateList
+        candidates={switchCandidates}
+        busy={controller.busy}
+        emptyText="No agents yet. Create one in Settings → Agents, then come back to this tree."
+        onPick={(agentId) => void controller.switchToAgent(agentId)}
+      />
+    </View>
+  );
+
+  const renderSwitchAgent = () => {
     return (
       <View style={styles.block}>
         <AppText variant="meta" tone="secondary" style={styles.blockLabel}>
@@ -201,35 +217,12 @@ export const DialogueSettingsSheet = ({
         >
           Re-points this tree; the conversation history is unchanged.
         </AppText>
-        {candidates.length === 0 ? (
-          <AppText variant="meta" style={{ color: colors.secondary }}>
-            No other shared agents. Create one in Settings → Agents.
-          </AppText>
-        ) : (
-          candidates.map((candidate) => (
-            <Pressable
-              key={candidate.id}
-              testID={`dialogue-settings-switch-agent-row-${candidate.id}`}
-              onPress={() => void controller.switchToAgent(candidate.id)}
-              disabled={controller.busy}
-              style={({ pressed }) => [
-                styles.candidateRow,
-                { borderBottomColor: colors.line },
-                { opacity: controller.busy ? 0.5 : pressed ? 0.65 : 1 },
-              ]}
-            >
-              <AppText variant="body" style={styles.agentName}>
-                {candidate.name}
-              </AppText>
-              <AppText
-                variant="meta"
-                style={{ color: colors.secondary, marginTop: 2 }}
-              >
-                {candidate.modelRef}
-              </AppText>
-            </Pressable>
-          ))
-        )}
+        <AgentCandidateList
+          candidates={switchCandidates}
+          busy={controller.busy}
+          emptyText="No other shared agents. Create one in Settings → Agents."
+          onPick={(agentId) => void controller.switchToAgent(agentId)}
+        />
       </View>
     );
   };
@@ -428,10 +421,6 @@ const styles = StyleSheet.create({
   },
   agentBlock: {
     paddingVertical: 4,
-  },
-  candidateRow: {
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   agentName: {
     fontWeight: '500',
