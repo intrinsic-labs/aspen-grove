@@ -94,6 +94,8 @@ create an agent on the LM Studio model `mock-model` (the model `mock-missing` al
 answers 404). `--slow` gives time to tap stop mid-stream; `--fail-every 3 --fail-status 422`
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
 a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
+[.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
+state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
 Save. A fresh install has no model agent, so until you do, New Loom Tree shows
