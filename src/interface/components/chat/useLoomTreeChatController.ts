@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { useAppServices } from '@interface/composition';
+import { canSubmitComposer } from './composer/can-submit-composer';
 import { toComposerMode } from './composer/composer-mode';
 import { useComposerDraft } from './composer/useComposerDraft';
 import { useComposerFocus } from './composer/useComposerFocus';
@@ -333,7 +334,13 @@ export const useLoomTreeChatController = () => {
     tags: sheets.tags,
     scrollRef,
     inputRef,
-    canSend: !generating && !loading && !needsAgent && input.trim().length > 0,
+    canSend: canSubmitComposer({
+      generating,
+      loading,
+      needsAgent,
+      isEditing: composerMode.isEditing,
+      input,
+    }),
     needsAgent,
     onChooseAgent: sheets.dialogueSettings.open,
     composerPlaceholder: composerMode.composerPlaceholder,

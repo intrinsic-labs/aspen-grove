@@ -131,6 +131,37 @@ describe('resolveTreeModelAgent', () => {
     expect(updates).toHaveLength(1);
   });
 
+  it("adopts the default when the tree's agent is on a provider the app can't route", async () => {
+    const legacy = modelAgent('01KOLD00000000000000000000', {
+      modelRef: 'anthropic:claude-sonnet-4-20250514' as Agent['modelRef'],
+    });
+    const fallback = modelAgent('01KDEF00000000000000000000');
+    const { dependencies, updates } = setup({ agents: [legacy, fallback] });
+
+    const result = await resolveTreeModelAgent(
+      { id: treeId, defaultModelAgentId: legacy.id },
+      dependencies
+    );
+
+    expect(result).toEqual({ status: 'adopted', agent: fallback });
+    expect(updates).toHaveLength(1);
+  });
+
+  it('opens without an agent when the only default is unroutable too', async () => {
+    const legacy = modelAgent('01KOLD00000000000000000000', {
+      modelRef: 'openai:gpt-4o' as Agent['modelRef'],
+    });
+    const { dependencies, updates } = setup({ agents: [legacy] });
+
+    const result = await resolveTreeModelAgent(
+      { id: treeId, defaultModelAgentId: legacy.id },
+      dependencies
+    );
+
+    expect(result).toEqual({ status: 'missing' });
+    expect(updates).toEqual([]);
+  });
+
   it('opens without an agent when there is nothing to adopt', async () => {
     const archived = modelAgent('01KOLD00000000000000000000', {
       archivedAt: now,
@@ -152,6 +183,14 @@ describe('isUsableTreeModelAgent', () => {
     expect(isUsableTreeModelAgent(modelAgent('01KA'), treeId)).toBe(true);
     expect(
       isUsableTreeModelAgent(
+        modelAgent('01KL', {
+          modelRef: 'lmstudio:qwen3-8b' as Agent['modelRef'],
+        }),
+        treeId
+      )
+    ).toBe(true);
+    expect(
+      isUsableTreeModelAgent(
         modelAgent('01KB', { ownerTreeId: treeId }),
         treeId
       )
@@ -164,6 +203,16 @@ describe('isUsableTreeModelAgent', () => {
     ['an agent without a model', modelAgent('01KD', { modelRef: undefined })],
     ['a human agent', modelAgent('01KE', { type: 'human' })],
     ['another tree’s agent', modelAgent('01KF', { ownerTreeId: otherTreeId })],
+    [
+      'an unroutable anthropic agent',
+      modelAgent('01KG', {
+        modelRef: 'anthropic:claude-sonnet-4-20250514' as Agent['modelRef'],
+      }),
+    ],
+    [
+      'an unroutable openai agent',
+      modelAgent('01KH', { modelRef: 'openai:gpt-4o' as Agent['modelRef'] }),
+    ],
   ])('rejects %s', (_label, agent) => {
     expect(isUsableTreeModelAgent(agent, treeId)).toBe(false);
   });

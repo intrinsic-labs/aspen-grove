@@ -662,9 +662,10 @@ stays until the user makes one.
 
 ### Tree without an agent
 - **ID:** `chat.needs-agent`
-- **Purpose:** A tree with no usable model agent (imported before any agent existed, or its
-  agent since deleted or archived) still opens and reads normally. On open it adopts the
-  user's default model agent if there is one. Otherwise the composer says the tree needs an
+- **Purpose:** A tree with no usable model agent (imported before any agent existed, its
+  agent since deleted or archived, or a legacy agent on a provider the app can't route, such
+  as `anthropic:` or `openai:`) still opens and reads normally. On open it adopts the user's
+  default model agent, or else the first shared one it can use, if there is one. Otherwise the composer says the tree needs an
   agent to continue, with a button that opens Dialogue Settings to pick one.
 - **Where:** In place of the composer input on the Dialogue screen, and at the top of
   Dialogue Settings.
@@ -673,11 +674,12 @@ stays until the user makes one.
   `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** A tree without a usable agent, and no default model agent to adopt.
 - **Selector:** working — `chat-needs-agent` (the message), `chat-needs-agent-choose`, `dialogue-settings-needs-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`
-- **Code:** `src/application/services/resolve-tree-model-agent.ts`, `src/interface/components/chat/session-helpers.ts#initializeDialogueChatSession`, `src/interface/components/chat/session/session-model.ts`, `src/interface/components/chat/composer/NeedsAgentNotice.tsx`, `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderNeedsAgent`
+- **Code:** `src/application/services/resolve-tree-model-agent.ts`, `src/interface/components/chat/session-helpers.ts#initializeDialogueChatSession`, `src/interface/components/chat/session/session-model.ts`, `src/interface/components/chat/composer/NeedsAgentNotice.tsx`, `src/interface/components/chat/composer/can-submit-composer.ts`, `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx#renderNeedsAgent`
 - **Backend:** WatermelonDB `loom_trees` (default agent), `agents`, `user_preferences`
   (default agent)
 - **Status:** live
-- **Notes:** Editing a message still works (it generates nothing). Regenerate and the rail's
+- **Notes:** Editing a message still works, Save included (it generates nothing). Only
+  OpenRouter and LM Studio agents count as usable. Regenerate and the rail's
   Generate wait for an agent. Coming back to the tree from creating an agent in Settings
   makes it adopt that agent.
 
@@ -940,7 +942,8 @@ stays until the user makes one.
   `WatermelonVoicePreferencesRepository`
 - **Status:** live
 - **Notes:** Saves on each change (no debounce). The same on/off state drives the Dialogue
-  `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once. The default voice is Jefferson.
+  `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once.
+  The default voice is Jefferson.
 
 ### Voice chooser
 - **ID:** `settings.voice.chooser`
