@@ -102,8 +102,9 @@ stays until the user makes one.
   `settings-agents-row-make-default-<agentId>` / `settings-agents-row-delete-<agentId>`
   inside `settings-agents-row-<agentId>`. They were left as they are, because changing
   `accessible` would change VoiceOver behavior. If the inner id isn't found, tap its visible
-  text ("Details", "Make default", "Delete").
-- Settings screens **autosave** about 450 ms after the last change. There is no Save button.
+  text ("Details", "Make Default", "Delete").
+- Settings screens **autosave** about 450 ms after the last change. There is no Save button,
+  except in the OpenRouter key sheet (`connections-openrouter-key-save`), as in Latent Spaces.
   `settings-status-saving` shows while a save runs and `settings-status-error` shows if it
   fails.
 - System dialogs (`Alert.alert`, the document picker, the share sheet) are native and have no
@@ -776,31 +777,36 @@ stays until the user makes one.
 
 ### Settings home
 - **ID:** `settings.home`
-- **Purpose:** Lists the settings sub-screens: Agents, Connections, Message Typography, App
-  Behavior and Voice Mode.
-- **Where:** Drawer → Settings, a nested stack with its own header and drawer button.
+- **Purpose:** Latent Spaces' one settings Form (`LoomSettingsView.swift`): links to
+  Connections ("API Settings") and Agents ("New loom tree Settings"), then the User Interface
+  settings, their live preview and Voice Mode, all edited in place.
+- **Where:** Drawer → Settings, a nested stack with its own header and drawer button. A 34 pt
+  "Settings" large title scrolls away and becomes the inline header title.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
 - **Requires:** none
-- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice` (all built from the template `settings-link-${route}` in `SettingsHomeView.tsx`)
-- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
+- **Selector:** working — `settings-screen`, `settings-link-connections`, `settings-link-agents`
+- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/settings/home/SettingsLinkSections.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/interface/ui/components/form/`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
 - **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
   stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
   gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
-  it off. The pushed sub-screens keep native headers with a system back button.
-
+  it off. The pushed sub-screens keep native headers with a system back button. The former
+  sub-screens Message Typography, App Behavior and Voice Mode (routes `settings/typography`,
+  `settings/behavior`, `settings/voice`) are now sections of this Form, so
+  `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`,
+  `settings-typography-screen`, `settings-behavior-screen` and `settings-voice-screen` are gone.
 ### Agents library
 - **ID:** `settings.agents`
 - **Purpose:** Lists the shared model agents with their model and settings. Tap one to edit
-  it, "Make default" to pin it for new trees, "Delete" to remove it (after a native confirm),
+  it, "Make Default" to pin it for new trees, "Delete" to remove it (after a native confirm),
   or "New Agent" to create one.
 - **Where:** Settings → Agents.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
   `settings-link-agents`.
 - **Requires:** none. A fresh install shows "No agents yet. Create one to start weaving."
 - **Selector:** working — `settings-agents-screen`, `settings-agents-list`, `settings-agents-new`, rows `settings-agents-row-<agentId>`, `settings-agents-row-make-default-<agentId>` and `settings-agents-row-delete-<agentId>` (nested, see the driving notes), `settings-agents-error`
-- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/AgentRow.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository#findSharedModels`;
   `user_preferences.default_model_agent_id` for the default
 - **Status:** live
@@ -809,30 +815,34 @@ stays until the user makes one.
 - **ID:** `settings.agents.editor`
 - **Purpose:** Creates or edits a shared agent: quick-start templates (create only), model,
   name, temperature, max tokens and system prompt.
-- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent".
+- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent"; also
+  onboarding's "Customize Agent". A Form in a sheet: glass Cancel and Create/Save capsules
+  either side of the title, the error pinned under the bar.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
 - **Requires:** none
 - **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/AgentConfigFields.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
-- **Notes:** Template keys come from `agent-templates.ts`. Templates are one full-width row
-  each (name, then model id and temperature); a tapped row is checked in gold. Their model
-  ids are OpenRouter `~…-latest` aliases. Validation errors show in `agent-editor-error`.
+- **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
+  then model id and temperature) with the gold checkmark in its own trailing column. Their
+  model ids are OpenRouter `~…-latest` aliases. Validation errors show in
+  `agent-editor-error`, pinned under the sheet's bar so they are always in view.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
 - **Purpose:** Picks the provider (OpenRouter or LM Studio) and a model: from the cached,
   searchable OpenRouter catalog, from live LM Studio discovery, or by typing a custom
   OpenRouter id.
-- **Where:** The MODEL block of the agent editor, and of Dialogue Settings → Edit agent.
+- **Where:** The Provider and Model sections of the agent editor (Form rows), and the MODEL
+  block of Dialogue Settings → Edit agent and onboarding's LM Studio step (`ModelPickerField`).
 - **Reach:** `settings-agents-new` → `agent-editor-model-provider-openrouter` →
   `agent-editor-model-search-input` → `agent-editor-model-option-<model id>`.
 - **Requires:** OpenRouter: network for the catalog. LM Studio: a reachable endpoint (set in
   `settings.connections.lmstudio`).
 - **Selector:** working — with prefix `agent-editor` (or `dialogue-settings-edit-agent`): `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
-- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
+- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models` (cached for 24 h); LM
   Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
@@ -843,25 +853,30 @@ stays until the user makes one.
 
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
-- **Purpose:** Stores, shows or hides, or clears the OpenRouter API key.
-- **Where:** Settings → Connections, in the OpenRouter section.
+- **Purpose:** Latent Spaces' API Keys page (`APIKeySettingsView.swift`) for OpenRouter: a
+  card on how keys are kept, "Edit OpenRouter API Key" (a sheet with one secure field,
+  Cancel and Save) and links to OpenRouter's key docs, keys and credits pages.
+- **Where:** Settings → Connections, the top card and the OpenRouter section.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-connections` → `connections-openrouter-key-input`.
+  `settings-link-connections` → `connections-openrouter-edit` →
+  `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
-- **Selector:** working — `settings-connections-screen`, `connections-openrouter`, `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
+- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
-- **Notes:** Autosaves about 450 ms after typing, and saves a pending edit when the screen
-  closes. The section footer reports whether a key is stored. Clearing the field removes the
-  key.
-
+- **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
+  Cancel or a swipe down discards the edit. Saving an empty field removes the key. The
+  section footer says whether a key is stored. Settings has no show/hide button any more
+  (`connections-openrouter-key-reveal` lives on in onboarding only), as Latent Spaces'
+  SecureField has none. The links open Safari.
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
 - **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
   an LM Studio server that is down can be fixed without leaving a tree.
-- **Where:** Route `connections`, a modal page sheet with "Connections" and Done at the top.
+- **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
+  the top.
 - **Reach:** `home-setup-action` ("Add key"), `trees-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
@@ -875,58 +890,64 @@ stays until the user makes one.
 - **ID:** `settings.connections.lmstudio`
 - **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
   auto-load, and tests the connection.
-- **Where:** Settings → Connections, in the LM Studio section.
+- **Where:** Settings → Connections, the LM Studio section below OpenRouter (scroll down).
 - **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
-- **Notes:** The status text is one of Untested, Checking…, Connected or Not reachable. When
-  the test fails, the button reads "Test again" and `connections-lmstudio-error` explains
-  it: "LM Studio isn't answering at <address>. Start its local server, then try again.",
-  plus a phone hint when the address is localhost. The Auto-load switch is gold when on and
-  a dim track when off (`AppSwitch`).
+- **Notes:** In Settings the fields are Form rows (`LmStudioFormSection`); onboarding keeps
+  `LmStudioConnectionSection` with the same ids. `connections-lmstudio-status` reads one of
+  Untested, Checking…, Connected or Not reachable (onboarding prefixes "Status: "). When the
+  test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
+  the footer: "LM Studio isn't answering at <address>. Start its local server, then try
+  again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold
+  when on.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (Serif, Mono or Sans), the font size, the user-bubble
-  style (Filled or Outlined) and the corner radius.
-- **Where:** Settings → Message Typography.
+- **Purpose:** Sets the dialogue font (IBM Plex Mono, Cardo or Open Sans), the font size, the
+  user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
+  sample messages.
+- **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-typography`.
+  `settings-typography-font` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-typography-screen`, `settings-typography-section`, `settings-typography-font` with options `settings-typography-font-Cardo-Regular`, `-IBMPlexMono-Regular`, `-OpenSans-Regular`, `settings-typography-font-size` (slider), `settings-typography-message-style` with `-filled` / `-outlined`, `settings-typography-corner-radius` (slider)
-- **Code:** `src/interface/components/settings/MessageTypographySection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/components/settings/screens/TypographySettingsScreen.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`, `src/app/(drawer)/settings/typography.tsx`
+- **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
-- **Notes:** Sliders are native, so drive them by swipe or by coordinate.
-
+- **Notes:** The four rows are Latent Spaces' Pickers (`LoomSettingsView.swift:233-275`): a
+  tap opens a native pull-down menu (react-native-context-menu-view) with the current value
+  checked. Menu items are native and have no testIDs; tap their visible text ("Cardo",
+  "Outlined", "20 (material design plebeian)"). Font size offers 12–26, corner radius 0–20 in
+  steps of 2. The former per-option ids (`settings-typography-font-<face>`,
+  `settings-typography-message-style-filled` / `-outlined`) are gone.
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`
 - **Purpose:** Turns the after-first-reply tree titling (`chat.auto-title`) on or off.
-- **Where:** Settings → App Behavior, the "Auto-Title Conversations" switch.
+- **Where:** Settings → User Interface Settings, the "Auto-Title Conversations" toggle.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-behavior` → `settings-behavior-auto-title`.
+  `settings-behavior-auto-title` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-behavior-screen`, `settings-behavior-auto-title`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/screens/BehaviorSettingsScreen.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/app/(drawer)/settings/behavior.tsx`
+- **Selector:** working — `settings-behavior-auto-title`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormToggleRow.tsx`
 - **Backend:** WatermelonDB `user_preferences.auto_title_enabled`
 - **Status:** live
-
 ### Verbose error alerts setting
 - **ID:** `settings.behavior.verbose-errors`
 - **Purpose:** A switch meant to show detailed provider failures in the UI.
-- **Where:** Settings → App Behavior, the "Verbose Error Alerts" switch.
-- **Reach:** `settings-link-behavior` → `settings-behavior-verbose-errors`.
+- **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
+- **Reach:** `drawer-nav-settings` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
 - **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
 - **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
@@ -935,12 +956,12 @@ stays until the user makes one.
 - **ID:** `settings.voice`
 - **Purpose:** Turns Voice Mode (beta) on or off, shows the current voice and opens the voice
   chooser. The footer explains double-tap to listen and tap to stop.
-- **Where:** Settings → Voice Mode, the "Voice Mode" section.
+- **Where:** Settings, the "Voice Mode" section near the bottom.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-voice` → `settings-voice-mode-toggle`.
+  `settings-voice-mode-toggle` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-voice-screen`, `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
+- **Selector:** working — `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
 - **Backend:** WatermelonDB `user_preferences.default_voice_mode_enabled` (on/off) and the
   WatermelonDB local key `aspen_grove.voice_mode.voice_name` (the voice), via
   `WatermelonVoicePreferencesRepository`
@@ -954,8 +975,9 @@ stays until the user makes one.
 - **Purpose:** Picks the character voice (Lily, Jefferson, Eve). Swipe between voice cards;
   each card plays its sample line as it comes into view, a tap on the colored circle stops or
   replays it, and Select saves the voice shown.
-- **Where:** A page sheet over Settings → Voice Mode, titled "Choose a voice".
-- **Reach:** `settings-link-voice` → `settings-voice-choose` → swipe `settings-voice-pager` →
+- **Where:** A page sheet over Settings, with no visible title (as in Latent Spaces, whose
+  `navigationTitle` has no navigation bar to show it in).
+- **Reach:** `drawer-nav-settings` → `settings-voice-choose` → swipe `settings-voice-pager` →
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
@@ -974,7 +996,7 @@ stays until the user makes one.
 - `src/entry.ts` — app entry (registers expo-router)
 - `src/interface/components/settings/index.ts` — barrel export
 - `src/interface/components/settings/types.ts` — shared type
-- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, keyboard toolbar, spinner)
+- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, large title, keyboard toolbar, spinner)
 - `src/interface/components/settings/SettingsStatus.tsx` — shared saving and error text (the settings-status testIDs)
 - `src/interface/components/chat/ChatHeaderMenu.tsx` — the Dialogue `···` menu; the reach for the chat sheets and exports
 - `src/interface/components/chat/types.ts` — chat row and preference types
@@ -982,4 +1004,4 @@ stays until the user makes one.
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
