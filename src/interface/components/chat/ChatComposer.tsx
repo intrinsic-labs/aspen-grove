@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppInput, AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
+import { ComposerSendButton } from './composer/ComposerSendButton';
 import { NeedsAgentNotice } from './composer/NeedsAgentNotice';
 import type { ChatDisplayPreferences } from './types';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
@@ -67,10 +68,15 @@ export const ChatComposer = memo(
     const onLayout = (event: LayoutChangeEvent) => {
       onComposerLayout(event.nativeEvent.layout.height);
     };
+    const inputVerticalPadding = loomUiTokens.composer.textPaddingVertical * 2;
+    // One line plus the field's padding: 48 pt at the default size, as in
+    // Latent Spaces.
+    const inputMinHeight =
+      displayPreferences.messageLineHeight + inputVerticalPadding;
     const collapsedInputMaxHeight =
       displayPreferences.messageLineHeight *
         loomUiTokens.composer.inputCollapsedMaxLines +
-      loomUiTokens.composer.inputVerticalPadding * 2;
+      inputVerticalPadding;
     const inputIsOverflowing =
       input.length > 0 &&
       contentHeight >
@@ -112,7 +118,7 @@ export const ChatComposer = memo(
           style={[
             styles.composerWrap,
             {
-              paddingBottom: bottomInset + loomUiTokens.composer.bottomPadding,
+              paddingBottom: bottomInset + loomUiTokens.layout.inputBarPadding,
             },
           ]}
         >
@@ -152,97 +158,77 @@ export const ChatComposer = memo(
           {needsAgent && !editLabel ? (
             <NeedsAgentNotice onChooseAgent={onChooseAgent} />
           ) : (
-            <MaterialView
-              variant="regular"
-              style={[
-                styles.inputRow,
-                {
-                  borderWidth: 1,
-                  borderColor: isFocused ? colors.green : 'dark-grey',
-                  borderRadius: loomUiTokens.composer.inputRowRadius,
-                },
-              ]}
-            >
-              <AppInput
-                testID="chat-composer-input"
-                ref={inputRef}
-                value={input}
-                onChangeText={onChangeInput}
-                placeholder={placeholder}
-                multiline
-                editable={!sending && !loading}
-                numberOfLines={loomUiTokens.composer.inputCollapsedMaxLines}
-                scrollEnabled
-                textAlignVertical="top"
-                onContentSizeChange={onContentSizeChange}
-                onFocus={() => {
-                  setIsFocused(true);
-                  onInputFocus();
-                }}
-                onBlur={() => setIsFocused(false)}
-                style={[
-                  styles.input,
-                  inputTextStyle,
-                  {
-                    maxHeight: collapsedInputMaxHeight,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.inputControls,
-                  inputIsOverflowing ? styles.inputControlsExpanded : null,
-                ]}
-              >
-                {inputIsOverflowing ? (
-                  <Pressable
-                    testID="chat-composer-expand"
-                    onPress={onExpandInput}
-                    hitSlop={loomUiTokens.composer.closeHitSlop}
-                    accessibilityLabel="Expand message input"
-                    style={({ pressed }) => [
-                      styles.expandButton,
-                      { opacity: pressed ? 0.65 : 1 },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="open-in-full"
-                      size={loomUiTokens.composer.expandIconSize}
-                      color={colors.secondary}
-                    />
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  testID="chat-composer-send"
-                  onPress={onSend}
-                  disabled={!canSend}
-                  accessibilityLabel={sendLabel}
-                  style={({ pressed }) => [
-                    styles.sendButton,
+            <View style={styles.fieldShadow}>
+              {isFocused ? (
+                <View
+                  pointerEvents="none"
+                  style={[styles.focusStroke, { borderColor: colors.green }]}
+                />
+              ) : null}
+              <MaterialView variant="systemThinDark" style={styles.field}>
+                <AppInput
+                  testID="chat-composer-input"
+                  ref={inputRef}
+                  value={input}
+                  onChangeText={onChangeInput}
+                  placeholder={placeholder}
+                  placeholderTextColor={loomUiTokens.colors.composerPlaceholder}
+                  selectionColor={colors.accentColor}
+                  keyboardAppearance="dark"
+                  multiline
+                  editable={!sending && !loading}
+                  numberOfLines={loomUiTokens.composer.inputCollapsedMaxLines}
+                  scrollEnabled
+                  textAlignVertical="top"
+                  onContentSizeChange={onContentSizeChange}
+                  onFocus={() => {
+                    setIsFocused(true);
+                    onInputFocus();
+                  }}
+                  onBlur={() => setIsFocused(false)}
+                  style={[
+                    styles.input,
+                    inputTextStyle,
                     {
-                      backgroundColor: canSend
-                        ? colors.green
-                        : colors.secondary,
-                      opacity: pressed ? 0.8 : 1,
-                      width: loomUiTokens.composer.buttonSize,
-                      height: loomUiTokens.composer.buttonSize,
+                      minHeight: inputMinHeight,
+                      maxHeight: collapsedInputMaxHeight,
                     },
                   ]}
+                />
+                <View
+                  style={[
+                    styles.inputControls,
+                    inputIsOverflowing ? styles.inputControlsExpanded : null,
+                  ]}
                 >
-                  <Ionicons
-                    name={
-                      sending
-                        ? 'ellipsis-horizontal'
-                        : sendLabel === 'Save'
-                          ? 'checkmark'
-                          : 'arrow-up'
-                    }
-                    size={loomUiTokens.composer.sendIconSize}
-                    color={colors.primary}
+                  {inputIsOverflowing ? (
+                    <Pressable
+                      testID="chat-composer-expand"
+                      onPress={onExpandInput}
+                      hitSlop={loomUiTokens.composer.closeHitSlop}
+                      accessibilityLabel="Expand message input"
+                      style={({ pressed }) => [
+                        styles.controlButton,
+                        { opacity: pressed ? 0.65 : 1 },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="open-in-full"
+                        size={loomUiTokens.composer.expandIconSize}
+                        color={colors.secondary}
+                      />
+                    </Pressable>
+                  ) : null}
+                  <ComposerSendButton
+                    onSend={onSend}
+                    canSend={canSend}
+                    sending={sending}
+                    hasText={input.length > 0}
+                    sendLabel={sendLabel}
                   />
-                </Pressable>
-              </View>
-            </MaterialView>
+                </View>
+              </MaterialView>
+            </View>
           )}
         </View>
       </KeyboardStickyView>
@@ -250,17 +236,15 @@ export const ChatComposer = memo(
   }
 );
 
+const FOCUS_STROKE_VISIBLE = loomUiTokens.composer.focusedStrokeWidth / 2;
+
 const styles = StyleSheet.create({
   composerWrap: {
-    // borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: loomUiTokens.layout.inputBarPadding,
-    paddingTop: loomUiTokens.composer.topPadding,
+    padding: loomUiTokens.layout.inputBarPadding,
     alignItems: 'stretch',
     gap: loomUiTokens.composer.sectionGap,
   },
   editBanner: {
-    // borderWidth: StyleSheet.hairlineWidth,
-    // borderRadius: loomUiTokens.composer.editBannerRadius,
     minHeight: loomUiTokens.composer.editBannerMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
@@ -284,46 +268,50 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  inputRow: {
+  // The shadow sits outside the clipped material (MessageInputView.swift:51).
+  fieldShadow: {
+    borderRadius: loomUiTokens.composer.fieldRadius,
+    shadowColor: '#000',
+    shadowOpacity: loomUiTokens.composer.shadowOpacity,
+    shadowRadius: loomUiTokens.composer.shadowRadius,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  field: {
     flexDirection: 'row',
-    alignItems: 'stretch',
-    // gap: loomUiTokens.composer.inputRowGap,
+    alignItems: 'flex-end',
+    borderRadius: loomUiTokens.composer.fieldRadius,
+  },
+  // The reference strokes a 1 pt line centered on the field's edge behind
+  // the field (MessageInputView.swift:47-50), so only its outer half shows.
+  focusStroke: {
+    position: 'absolute',
+    top: -FOCUS_STROKE_VISIBLE,
+    left: -FOCUS_STROKE_VISIBLE,
+    right: -FOCUS_STROKE_VISIBLE,
+    bottom: -FOCUS_STROKE_VISIBLE,
+    borderRadius: loomUiTokens.composer.fieldRadius + FOCUS_STROKE_VISIBLE,
+    borderWidth: FOCUS_STROKE_VISIBLE,
   },
   input: {
     flex: 1,
-    minHeight: loomUiTokens.composer.inputMinHeight,
-    // borderRadius: 20,
-    fontSize: loomUiTokens.composer.inputTextSize,
-    lineHeight: loomUiTokens.composer.inputTextLineHeight,
-    paddingTop: loomUiTokens.composer.inputVerticalPadding,
-    paddingBottom: loomUiTokens.composer.inputVerticalPadding,
+    paddingTop: loomUiTokens.composer.textPaddingVertical,
+    paddingBottom: loomUiTokens.composer.textPaddingVertical,
+    paddingLeft: loomUiTokens.composer.textPaddingLeading,
+    paddingRight: 0,
     borderWidth: 0,
+    borderRadius: 0,
     backgroundColor: 'transparent',
   },
   inputControls: {
     alignSelf: 'stretch',
-    alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    paddingTop: loomUiTokens.composer.inputControlEdgePadding,
-    paddingRight: loomUiTokens.composer.inputControlEdgePadding,
-    paddingBottom: loomUiTokens.composer.inputControlEdgePadding,
-    width:
-      loomUiTokens.composer.buttonSize +
-      loomUiTokens.composer.inputControlEdgePadding * 2,
   },
   inputControlsExpanded: {
     justifyContent: 'space-between',
   },
-  expandButton: {
-    width: loomUiTokens.composer.buttonSize,
-    height: loomUiTokens.composer.buttonSize,
+  controlButton: {
+    padding: loomUiTokens.composer.sendButtonPadding,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sendButton: {
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 0,
   },
 });

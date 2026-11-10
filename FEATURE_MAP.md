@@ -344,7 +344,7 @@ stays until the user makes one.
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -368,14 +368,15 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
-- **Notes:** The send icon shows `···` while sending and a checkmark while editing (label
-  "Save"). The provider key is read from SecureStore first, then from
+- **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
+  while the input is empty; it shows `···` while sending and a checkmark while editing
+  (label "Save"). The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
   Connections to generate." with `chat-error-action`.
@@ -605,11 +606,14 @@ stays until the user makes one.
 - **Requires:** "Auto-Title Conversations" on (`settings.behavior.auto-title`), plus a
   reachable provider.
 - **Selector:** none — renders into the native stack header title, which has no testID; assert on the visible title text
-- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`
+- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/application/use-cases/TitleTreeFromFirstMessageUseCase.ts`, `src/application/services/tree-title.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`, `src/interface/components/chat/header-actions/useFirstMessageTreeTitle.ts`
 - **Backend:** The same provider chat-completions call as `chat.composer`. Writes
   `loom_trees.title`.
 - **Status:** live
-- **Notes:** It fails silently and keeps the default title on any error.
+- **Notes:** A new tree shows a blank header title until the first message. Sending it
+  titles the tree with that message's first four words (plus "..." when longer), as Latent
+  Spaces does, whether or not auto-title is on. Auto-title then replaces that provisional
+  title, or a default one. It fails silently and keeps the current title on any error.
 
 ### Discard an empty new tree
 - **ID:** `chat.ephemeral-discard`
@@ -905,7 +909,8 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
-- **Notes:** Sliders are native, so drive them by swipe or by coordinate.
+- **Notes:** Sliders are native, so drive them by swipe or by coordinate. A new install
+  starts at size 17, as Latent Spaces does; Serif (Cardo) renders 1 pt above the chosen size.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

@@ -30,6 +30,7 @@ const session: ChatSession = {
   activeNodeId: sourceNodeId,
   model: {
     modelAgentId,
+    agentName: 'Test',
     modelIdentifier: 'test/model',
     provider: 'openrouter',
   },
@@ -238,6 +239,7 @@ describe('useParallelRail', () => {
       ...session,
       model: {
         modelAgentId: 'switched-agent' as ULID,
+        agentName: 'Switched',
         modelIdentifier: 'other/model',
         provider: 'lmstudio',
       },
