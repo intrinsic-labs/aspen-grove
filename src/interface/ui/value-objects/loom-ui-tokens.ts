@@ -16,6 +16,9 @@ export const loomUiTokens = {
     userBubbleFill: 'rgba(255, 255, 255, 0.12)',
     // userBubbleFillText: '#101217',
     userBubbleFillText: '#fff',    userBubbleOutline: 'rgba(182, 176, 158, 0.8)',
+    // Latent Spaces' character voices (LoomVoice.swift); Eve uses `green`.
+    voiceJefferson: '#A1CDFF',
+    voiceLily: '#FFACD0',
   },
   layout: {
     horizontalInset: 18,

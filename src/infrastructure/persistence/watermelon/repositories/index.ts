@@ -8,3 +8,4 @@ export * from './WatermelonPathStateRepository';
 export * from './WatermelonRawApiResponseRepository';
 export * from './WatermelonTagRepository';
 export * from './WatermelonUserPreferencesRepository';
+export * from './WatermelonVoicePreferencesRepository';

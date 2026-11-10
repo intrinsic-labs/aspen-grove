@@ -4,3 +4,4 @@ export * from './ulid';
 export * from './local-id';
 export * from './content-hash';
 export * from './model-ref';
+export * from './loom-voice';

@@ -41,6 +41,8 @@ type UseSendTurnInput = {
     assistantNodeId: ULID
   ) => void;
   readonly credentialStore: ICredentialStore;
+  /** A model response finished generating uninterrupted (Voice Mode reads it). */
+  readonly onModelNodeCompleted: (nodeId: ULID) => void;
   readonly editDialogueNodeUseCase: Pick<EditDialogueNodeUseCase, 'execute'>;
   readonly sendDialogueTurnUseCase: Pick<SendDialogueTurnUseCase, 'execute'>;
 };
@@ -65,6 +67,7 @@ export const useSendTurn = ({
   refreshRowsAndContinuations,
   maybeGenerateTreeTitle,
   credentialStore,
+  onModelNodeCompleted,
   editDialogueNodeUseCase,
   sendDialogueTurnUseCase,
 }: UseSendTurnInput) => {
@@ -149,6 +152,8 @@ export const useSendTurn = ({
         setError(
           `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
         );
+      } else {
+        onModelNodeCompleted(turnResult.assistantNodeId);
       }
     } catch (caught) {
       showProviderError(caught, session.provider);
@@ -164,6 +169,7 @@ export const useSendTurn = ({
     input,
     markAsNonEphemeral,
     maybeGenerateTreeTitle,
+    onModelNodeCompleted,
     refreshRowsAndContinuations,
     reset,
     sendDialogueTurnUseCase,

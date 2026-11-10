@@ -9,7 +9,8 @@ type SettingsLink = {
     | '/settings/agents'
     | '/settings/connections'
     | '/settings/typography'
-    | '/settings/behavior';
+    | '/settings/behavior'
+    | '/settings/voice';
   readonly title: string;
   readonly subtitle: string;
   readonly icon: keyof typeof Ionicons.glyphMap;
@@ -39,6 +40,12 @@ const LINKS: readonly SettingsLink[] = [
     title: 'App Behavior',
     subtitle: 'Auto-titles, error alerts',
     icon: 'options-outline',
+  },
+  {
+    route: '/settings/voice',
+    title: 'Voice Mode',
+    subtitle: 'Read responses aloud, character voices',
+    icon: 'pulse-outline',
   },
 ];
 
