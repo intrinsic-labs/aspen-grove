@@ -2,11 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { ULID } from '@domain/value-objects';
 import type { ContinuationMenuAction } from '../ContinuationRail';
 import type { useNodeContinuations } from '../useNodeContinuations';
-import {
-  CONTINUATION_SINGLE_TAP_DELAY_MS,
-  isContinuationDoubleTap,
-  type ContinuationTap,
-} from './continuation-tap';
+import { SINGLE_TAP_DELAY_MS, isDoubleTap, type NodeTap } from './double-tap';
 
 type UseContinuationGesturesInput = {
   readonly continuations: Pick<
@@ -30,13 +26,13 @@ export const useContinuationGestures = ({
   copyNodeText,
   openNodeDetail,
 }: UseContinuationGesturesInput) => {
-  const lastTapRef = useRef<ContinuationTap | null>(null);
+  const lastTapRef = useRef<NodeTap | null>(null);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onContinuationSelect = useCallback(
     (nodeId: ULID) => {
       const nowMs = Date.now();
-      if (isContinuationDoubleTap(lastTapRef.current, nodeId, nowMs)) {
+      if (isDoubleTap(lastTapRef.current, nodeId, nowMs)) {
         lastTapRef.current = null;
         if (singleTapTimerRef.current) {
           clearTimeout(singleTapTimerRef.current);
@@ -55,7 +51,7 @@ export const useContinuationGestures = ({
       singleTapTimerRef.current = setTimeout(() => {
         singleTapTimerRef.current = null;
         openNodeDetail(nodeId);
-      }, CONTINUATION_SINGLE_TAP_DELAY_MS);
+      }, SINGLE_TAP_DELAY_MS);
     },
     [openNodeDetail, rewindToNode]
   );

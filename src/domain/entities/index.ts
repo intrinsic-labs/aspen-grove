@@ -12,3 +12,4 @@ export * from './provider';
 export * from './raw-api-response';
 export * from './tag';
 export * from './user-preferences';
+export * from './voice-preferences';

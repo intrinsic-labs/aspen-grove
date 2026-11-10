@@ -14,6 +14,7 @@ import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettings
 import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
+import { useVoiceMode } from './voice';
 
 const LoomTreeChatView = () => {
   const { colors } = useAspenGroveTheme();
@@ -21,6 +22,7 @@ const LoomTreeChatView = () => {
   const headerHeight = useHeaderHeight();
   const navigation = useNavigation();
   const controller = useLoomTreeChatController();
+  const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
 
   const openDialogueSettings = controller.dialogueSettings.open;
@@ -38,6 +40,8 @@ const LoomTreeChatView = () => {
         <ChatHeaderMenu
           onOpenBookmarks={openBookmarks}
           onOpenDialogueSettings={openDialogueSettings}
+          voiceModeEnabled={voiceModeEnabled}
+          onToggleVoiceMode={() => setVoiceModeEnabled(!voiceModeEnabled)}
           onEditTitle={openTitleEditor}
           onOpenTags={openTags}
           onExportTree={() => void exportTree()}
@@ -54,6 +58,8 @@ const LoomTreeChatView = () => {
     openTags,
     exportTree,
     exportPath,
+    voiceModeEnabled,
+    setVoiceModeEnabled,
   ]);
 
   return (
@@ -72,6 +78,7 @@ const LoomTreeChatView = () => {
         onScroll={controller.onMessageListScroll}
         onMessageAction={controller.onMessageAction}
         onNodeTap={controller.onNodeTap}
+        speakingRow={controller.speakingRow}
         continuationRail={controller.continuationRail}
         displayPreferences={controller.displayPreferences}
       />

@@ -6,6 +6,7 @@ import { HeaderIconButton } from '@/interface/ui/value-objects';
 type ChatHeaderMenuAction =
   | 'bookmarks'
   | 'settings'
+  | 'voiceMode'
   | 'editTitle'
   | 'tags'
   | 'exportTree'
@@ -27,6 +28,12 @@ const MENU_ITEMS: readonly ChatHeaderMenuItem[] = [
     action: 'settings',
     title: 'Dialogue Settings',
     systemIcon: 'slider.horizontal.3',
+  },
+  {
+    // Latent Spaces' tree toolbar toggle (ToolbarMenu.swift).
+    action: 'voiceMode',
+    title: 'Voice Mode',
+    systemIcon: 'waveform',
   },
   {
     action: 'editTitle',
@@ -53,6 +60,9 @@ const MENU_ITEMS: readonly ChatHeaderMenuItem[] = [
 type ChatHeaderMenuProps = {
   readonly onOpenBookmarks: () => void;
   readonly onOpenDialogueSettings: () => void;
+  /** Checked in the menu while Voice Mode is on. */
+  readonly voiceModeEnabled: boolean;
+  readonly onToggleVoiceMode: () => void;
   readonly onEditTitle: () => void;
   readonly onOpenTags: () => void;
   readonly onExportTree: () => void;
@@ -62,6 +72,8 @@ type ChatHeaderMenuProps = {
 export const ChatHeaderMenu = ({
   onOpenBookmarks,
   onOpenDialogueSettings,
+  voiceModeEnabled,
+  onToggleVoiceMode,
   onEditTitle,
   onOpenTags,
   onExportTree,
@@ -70,6 +82,7 @@ export const ChatHeaderMenu = ({
   const actions: ContextMenuAction[] = MENU_ITEMS.map((item) => ({
     title: item.title,
     systemIcon: item.systemIcon,
+    selected: item.action === 'voiceMode' ? voiceModeEnabled : undefined,
   }));
 
   return (
@@ -87,6 +100,9 @@ export const ChatHeaderMenu = ({
             break;
           case 'settings':
             onOpenDialogueSettings();
+            break;
+          case 'voiceMode':
+            onToggleVoiceMode();
             break;
           case 'editTitle':
             onEditTitle();
