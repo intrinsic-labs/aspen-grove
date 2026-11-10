@@ -25,12 +25,14 @@ jest.mock('expo-crypto', () =>
 
 const session: ChatSession = {
   ownerAgentId,
-  modelAgentId,
-  modelIdentifier: 'test/model',
   treeId,
   pathId,
   activeNodeId: sourceNodeId,
-  provider: 'openrouter',
+  model: {
+    modelAgentId,
+    modelIdentifier: 'test/model',
+    provider: 'openrouter',
+  },
 };
 
 type RailProps = {

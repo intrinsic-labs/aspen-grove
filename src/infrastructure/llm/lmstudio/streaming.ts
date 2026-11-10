@@ -47,6 +47,8 @@ export const streamLMStudioCompletion = async function* (input: {
   let completionText = '';
   let parserBuffer = '';
   let eventLines: string[] = [];
+  // A finish reason or `[DONE]`: without one, the body was cut short.
+  let sawTerminalEvent = false;
 
   const createRawResponse = async (): Promise<
     NonNullable<StreamChunk['rawResponse']>
@@ -84,18 +86,6 @@ export const streamLMStudioCompletion = async function* (input: {
       stop: request.stopSequences,
       stream: true,
     };
-
-    // Only include tools if MCP is enabled and tools are provided
-    if (config.useMcpTools && request.tools && request.tools.length > 0) {
-      body.tools = request.tools.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      }));
-    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -155,7 +145,11 @@ export const streamLMStudioCompletion = async function* (input: {
 
       eventLines = [];
 
-      if (!dataPayload || dataPayload === '[DONE]') {
+      if (dataPayload === '[DONE]') {
+        sawTerminalEvent = true;
+        return null;
+      }
+      if (!dataPayload) {
         return null;
       }
 
@@ -165,6 +159,7 @@ export const streamLMStudioCompletion = async function* (input: {
 
       const choice = payload.choices?.[0];
       if (choice?.finish_reason) {
+        sawTerminalEvent = true;
         finishReason = toFinishReason(choice.finish_reason);
       }
 
@@ -233,6 +228,17 @@ export const streamLMStudioCompletion = async function* (input: {
     const trailingChunk = await processEvent();
     if (trailingChunk) {
       yield trailingChunk;
+    }
+
+    if (!sawTerminalEvent) {
+      // A dropped connection can end the body without an error; don't
+      // save a truncated reply as if it had finished.
+      throw new LlmProviderError({
+        code: 'networkError',
+        message: 'LM Studio stream ended before the response finished.',
+        provider: 'lmstudio',
+        retryable: true,
+      });
     }
 
     yield {

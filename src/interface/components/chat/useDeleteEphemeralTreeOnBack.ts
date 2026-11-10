@@ -3,10 +3,13 @@ import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRef } from 'react';
 import type { ILoomTreeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
+import { shouldDeleteTreeOnLeave } from './session/ephemeral-tree';
 
 type UseDeleteEphemeralTreeOnBackInput = {
   readonly shouldDeleteEmptyOnBlur: boolean;
   readonly hasUserSentMessage: boolean;
+  /** Rows on screen: a tree with messages is never deleted. */
+  readonly hasMessages: boolean;
   readonly sessionTreeId?: ULID;
   readonly fallbackTreeId?: ULID | null;
   readonly treeRepo: Pick<ILoomTreeRepository, 'hardDelete'>;
@@ -23,9 +26,12 @@ export const useDeleteEphemeralTreeOnBack = (
   const isHandlingRef = useRef(false);
 
   usePreventRemove(
-    input.shouldDeleteEmptyOnBlur &&
-      !input.hasUserSentMessage &&
-      Boolean(input.sessionTreeId),
+    shouldDeleteTreeOnLeave({
+      quickCreated: input.shouldDeleteEmptyOnBlur,
+      hasUserSentMessage: input.hasUserSentMessage,
+      hasMessages: input.hasMessages,
+      hasTree: Boolean(input.sessionTreeId),
+    }),
     ({ data }) => {
       if (isHandlingRef.current) {
         return;

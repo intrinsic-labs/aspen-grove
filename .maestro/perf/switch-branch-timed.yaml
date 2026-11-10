@@ -1,0 +1,27 @@
+# (b) Switch branch: with a rail open (open-rail-timed.yaml), make its second
+# card current and wait until the rail closes and that node's text
+# (${SWITCH_TEXT}) is a row on the new path. Timed from choosing "Make Current
+# Node" to the re-rendered list. The card's long-press menu stands in for its
+# double-tap: Maestro's two taps land about 360 ms apart, outside the app's
+# 300 ms double-tap window, so a double-tap reads as a tap (node details).
+appId: com.intrinsiclabs.aspengrove
+---
+- waitForAnimationToEnd
+- longPressOn:
+    id: 'chat-continuation-card-.*'
+    index: 1
+- waitForAnimationToEnd
+- evalScript: ${output.t0 = Date.now()}
+- tapOn: Make Current Node
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '${SWITCH_TEXT}'
+    timeout: 30000
+- assertVisible:
+    id: chat-screen
+- evalScript: ${console.log('PERF switch_branch_ms=' + (Date.now() - output.t0))}
+- waitForAnimationToEnd

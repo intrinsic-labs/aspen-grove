@@ -16,7 +16,7 @@ What the original phased plan called for vs. what actually exists:
 | Original phase | Status |
 |---|---|
 | 0 Foundation | ✅ Done except media/file-system abstraction (defer until multimodal nodes) |
-| 1 Core Data Layer | ✅ Done for dialogue slice (WatermelonDB v7, 9 repo impls). ❌ Tag/Link/Document/LocalModel/TimestampCertificate repos are interface-only |
+| 1 Core Data Layer | ✅ Done for dialogue slice (WatermelonDB v7, 9 repo impls). Link/Document/LocalModel/TimestampCertificate interfaces removed as cut |
 | 2 LLM Providers | ◐ **Diverged, deliberately**: OpenRouter + LM Studio implemented (streaming + raw capture). Anthropic/OpenAI native adapters skipped — OpenRouter covers them. No retry logic, no OpenRouter model catalog |
 | 3 Basic UI | ◐ Tree list, dialogue view, settings exist. No node detail, no agent library UI |
 | 4 Generation Flow | ✅ Done for dialogue (context assembly, n>1 continuations, streaming, provenance storage). ❌ No truncation/exclusion filtering |
@@ -39,7 +39,7 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 
 - **Providers = OpenRouter + LM Studio, only.** OpenRouter is the many-models gateway; LM Studio is the local provider. No native Anthropic or OpenAI adapters.
 - **Provenance as it stands**: hash chains plus stored raw responses, verified live on every model turn and shown in the node detail sheet. RFC 3161 timestamps and other provenance extras are cut.
-- **A loom, not a harness**: no agent harness or phone actions, no connectors, no web search, no MCP passthrough. The leftover `useMcpTools` flag in the LM Studio adapter and Connections settings is to be removed.
+- **A loom, not a harness**: no agent harness or phone actions, no connectors, no web search, no MCP passthrough.
 - **Local-first, bring your own keys, open source**: nothing depends on an Intrinsic Labs server. Sync, sharing/publishing platforms and hosted-inference revenue are cut.
 
 ---
@@ -51,7 +51,7 @@ Hygiene: typecheck clean, eslint clean, 6 test suites green (core use cases + pr
 ### A1. Agent-centric pivot, phases 4–6 (from `.dev/agent-centric-dialogue-settings.md`) — *top priority* ✅
 - [x] DialogueSettingsSheet: per-tree agent tweaks from the chat screen (shared-agent fork prompt: "edit shared" vs "customize for this tree") — `chat/dialogue-settings/`, spec in `docs/architecture/specs/dialogue-settings-ui.md`
 - [x] Settings → Agents library: real CRUD (create/edit shared agents), replacing the "Agents (placeholder)" section — `settings/agents/` with editor sheet, templates, catalog picker
-- [x] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/MCP/auto-load **only** (the MCP toggle is since out of scope) — `settings/connections/` with "Test connection"
+- [x] Settings → Connections section: OpenRouter key + LM Studio endpoint/token/auto-load **only** (the MCP toggle that shipped here has since been removed) — `settings/connections/` with "Test connection"
 - [x] Removed ProviderPickerSection, singleton assistant helpers, and the implicit create-agent-on-settings-save hack
 - [x] Wired `CreateSharedAgent`, `UpdateAgentConfiguration`, `ForkAgentForTree`, `UpdateTreeDefaultAgent`
 - [x] Tree agent changeable after creation (chat ⚙️ → Switch agent)

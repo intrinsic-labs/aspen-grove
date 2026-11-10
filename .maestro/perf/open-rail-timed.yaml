@@ -1,0 +1,22 @@
+# (c) Open a continuation rail: tap the row whose text matches ${RAIL_ROW_TEXT}
+# (in the perf tree, the human turn "Draft a SQL query..." with three children,
+# the only such row on the deepest path) and wait for the first card. Starts in
+# the dialogue with the rail closed; ends with it open.
+appId: com.intrinsiclabs.aspengrove
+---
+- scrollUntilVisible:
+    element:
+      text: '${RAIL_ROW_TEXT}'
+    direction: UP
+    speed: 60
+    timeout: 120000
+    centerElement: true
+- waitForAnimationToEnd
+- evalScript: ${output.t0 = Date.now()}
+- tapOn: '${RAIL_ROW_TEXT}'
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- evalScript: ${console.log('PERF open_rail_ms=' + (Date.now() - output.t0))}
+- waitForAnimationToEnd

@@ -23,6 +23,7 @@ import { useChatSessionLoader } from './session/useChatSessionLoader';
 import { useChatSessionState } from './session/useChatSessionState';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
+import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendTurn } from './turns/useSendTurn';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
@@ -59,8 +60,16 @@ export const useLoomTreeChatController = () => {
   } = toDialogueRouteParams(routeParams);
 
   const state = useChatSessionState();
-  const { activeTreeIdRef, loading, error, setError, rows, session } = state;
+  const {
+    activeTreeIdRef,
+    loading: sessionLoading,
+    error,
+    setError,
+    rows,
+    session,
+  } = state;
   const [sending, setSending] = useState(false);
+  const providerError = useProviderErrorNotice({ error, setError });
   const title = useTreeTitle({
     navigation,
     treeRepo: repositories.treeRepo,
@@ -75,9 +84,13 @@ export const useLoomTreeChatController = () => {
     pathRepo: repositories.pathRepo,
     pathId: session?.pathId,
   });
-  const displayPreferences = useDialogueDisplayPreferences({
-    userPreferencesRepo: repositories.userPreferencesRepo,
-  });
+  const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
+    useDialogueDisplayPreferences({
+      userPreferencesRepo: repositories.userPreferencesRepo,
+    });
+  // Messages render once both are in, so they lay out once, in the reader's
+  // own type size, rather than in the defaults and again a moment later.
+  const loading = sessionLoading || !displayPreferencesLoaded;
 
   const { input, setInput, openExpandedComposer } = useComposerDraft({
     sessionTreeId: session?.treeId,
@@ -88,6 +101,7 @@ export const useLoomTreeChatController = () => {
 
   const { markAsNonEphemeral, resetEphemeralState } = useEphemeralTreeState({
     shouldDeleteEmptyOnBlur,
+    hasMessages: rows.length > 0,
     sessionTreeId: session?.treeId,
     fallbackTreeId: activeTreeIdRef.current,
     treeRepo: repositories.treeRepo,
@@ -196,6 +210,7 @@ export const useLoomTreeChatController = () => {
     sending: generating,
     setSending,
     setError,
+    showProviderError: providerError.showProviderError,
     rows,
     setRows: state.setRows,
     getRowById: nodeActions.getRowById,
@@ -215,6 +230,7 @@ export const useLoomTreeChatController = () => {
     sending: generating,
     setSending,
     setError,
+    showProviderError: providerError.showProviderError,
     input,
     setInput,
     editTarget,
@@ -259,11 +275,15 @@ export const useLoomTreeChatController = () => {
     onSessionInvalidated: reinitializeSession,
   });
   const composerMode = toComposerMode(editTarget);
+  // Loaded, but the tree has no agent to generate with.
+  const needsAgent = !loading && session !== null && session.model === null;
 
   return {
     loading,
     sending,
     error,
+    errorAction: providerError.errorAction,
+    onErrorAction: () => router.push('/connections'),
     input,
     setInput,
     rows,
@@ -313,7 +333,9 @@ export const useLoomTreeChatController = () => {
     tags: sheets.tags,
     scrollRef,
     inputRef,
-    canSend: !generating && !loading && input.trim().length > 0,
+    canSend: !generating && !loading && !needsAgent && input.trim().length > 0,
+    needsAgent,
+    onChooseAgent: sheets.dialogueSettings.open,
     composerPlaceholder: composerMode.composerPlaceholder,
     sendLabel: composerMode.sendLabel,
     displayPreferences,

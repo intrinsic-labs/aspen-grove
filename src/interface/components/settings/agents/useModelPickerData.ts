@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { describeProviderError } from '@application/services/llm';
 import type { SelectableProvider } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 
@@ -82,9 +83,8 @@ export const useModelPickerData = (provider: SelectableProvider) => {
         }
       } catch (caught) {
         setOptions([]);
-        setError(
-          caught instanceof Error ? caught.message : 'Failed to load models'
-        );
+        // Plain words for an LM Studio server that isn't running.
+        setError(describeProviderError(caught, { provider }).message);
       } finally {
         setLoading(false);
       }

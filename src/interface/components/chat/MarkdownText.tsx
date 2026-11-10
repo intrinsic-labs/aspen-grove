@@ -4,6 +4,11 @@ import CodeHighlighter from 'react-native-code-highlighter';
 import Markdown, { type RenderRules } from 'react-native-markdown-display';
 import { codepenEmbed } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useAspenGroveTheme } from '../../hooks/useAspenGroveTheme';
+import {
+  parseMarkdown,
+  parseMarkdownUncached,
+  sharedMarkdownIt,
+} from './markdown/markdown-parse';
 
 // Extract background color from theme to apply to ScrollView
 const CODE_BLOCK_BACKGROUND =
@@ -12,14 +17,18 @@ const CODE_BLOCK_BACKGROUND =
 type MarkdownTextProps = {
   readonly children: string;
   readonly baseStyle?: TextStyle;
+  /** Text still being written (streaming): parsed without caching. */
+  readonly transient?: boolean;
 };
 
 /**
  * Renders markdown content using native components.
- * Styled to match Aspen Grove's typography and theme.
+ * Styled to match Aspen Grove's typography and theme. The text is parsed
+ * once per distinct message (`parseMarkdown`), so pass a stable `baseStyle`
+ * and the component only re-renders when the text or style changes.
  */
 export const MarkdownText = memo(
-  ({ children, baseStyle }: MarkdownTextProps) => {
+  ({ children, baseStyle, transient = false }: MarkdownTextProps) => {
     const { colors } = useAspenGroveTheme();
 
     const styles = useMemo(() => {
@@ -225,82 +234,82 @@ export const MarkdownText = memo(
       };
     }, [baseStyle, colors]);
 
-    // Custom rules for code blocks with syntax highlighting
-    const rules: RenderRules = useMemo(
-      () => ({
-        // Ensure text nodes inherit proper styling
-        textgroup: (node, children) => children,
-
-        // Fenced code blocks with syntax highlighting
-        fence: (node) => {
-          // Extract language from the info string (e.g., ```javascript)
-          // sourceInfo exists at runtime but isn't in type definitions
-          const language =
-            (node as unknown as { sourceInfo?: string }).sourceInfo || 'text';
-          const code = node.content || '';
-          const lineCount = code.split('\n').length;
-          // Calculate height: (lines * lineHeight) + topPadding + scrollbar clearance
-          const estimatedHeight = lineCount * 20 + 12 + 16;
-
-          return (
-            <View
-              key={node.key}
-              style={[codeBlockStyles.container, { height: estimatedHeight }]}
-            >
-              <CodeHighlighter
-                hljsStyle={codepenEmbed}
-                language={language}
-                scrollViewProps={{
-                  style: codeBlockStyles.scrollView,
-                  contentContainerStyle: codeBlockStyles.scrollContent,
-                  nestedScrollEnabled: true,
-                }}
-                textStyle={codeBlockStyles.text}
-              >
-                {code.replace(/\n$/, '')}
-              </CodeHighlighter>
-            </View>
-          );
-        },
-
-        // Indented code blocks (no language specified)
-        code_block: (node) => {
-          const code = node.content || '';
-          const lineCount = code.split('\n').length;
-          // Calculate height: (lines * lineHeight) + topPadding + scrollbar clearance
-          const estimatedHeight = lineCount * 20 + 12 + 16;
-
-          return (
-            <View
-              key={node.key}
-              style={[codeBlockStyles.container, { height: estimatedHeight }]}
-            >
-              <CodeHighlighter
-                hljsStyle={codepenEmbed}
-                language="text"
-                scrollViewProps={{
-                  style: codeBlockStyles.scrollView,
-                  contentContainerStyle: codeBlockStyles.scrollContent,
-                  nestedScrollEnabled: true,
-                }}
-                textStyle={codeBlockStyles.text}
-              >
-                {code.replace(/\n$/, '')}
-              </CodeHighlighter>
-            </View>
-          );
-        },
-      }),
-      []
-    );
+    const ast = transient
+      ? parseMarkdownUncached(children)
+      : parseMarkdown(children);
 
     return (
-      <Markdown style={styles} rules={rules} mergeStyle>
-        {children}
+      <Markdown
+        style={styles}
+        rules={rules}
+        mergeStyle
+        markdownit={sharedMarkdownIt}
+      >
+        {/* A parsed tree renders as is: markdown-display parses strings only. */}
+        {ast as unknown as string}
       </Markdown>
     );
   }
 );
+
+// Custom rules for code blocks with syntax highlighting. Module-level so
+// every message shares one rules object.
+const rules: RenderRules = {
+  // Ensure text nodes inherit proper styling
+  textgroup: (node, children) => children,
+
+  // Fenced code blocks with syntax highlighting
+  fence: (node) => {
+    // Extract language from the info string (e.g., ```javascript)
+    // sourceInfo exists at runtime but isn't in type definitions
+    const language =
+      (node as unknown as { sourceInfo?: string }).sourceInfo || 'text';
+    const code = node.content || '';
+    const lineCount = code.split('\n').length;
+    // Calculate height: (lines * lineHeight) + topPadding + scrollbar clearance
+    const estimatedHeight = lineCount * 20 + 12 + 16;
+
+    return (
+      <View
+        key={node.key}
+        style={[codeBlockStyles.container, { height: estimatedHeight }]}
+      >
+        <CodeHighlighter
+          hljsStyle={codepenEmbed}
+          language={language}
+          scrollViewProps={codeScrollViewProps}
+          textStyle={codeBlockStyles.text}
+        >
+          {code.replace(/\n$/, '')}
+        </CodeHighlighter>
+      </View>
+    );
+  },
+
+  // Indented code blocks (no language specified)
+  code_block: (node) => {
+    const code = node.content || '';
+    const lineCount = code.split('\n').length;
+    // Calculate height: (lines * lineHeight) + topPadding + scrollbar clearance
+    const estimatedHeight = lineCount * 20 + 12 + 16;
+
+    return (
+      <View
+        key={node.key}
+        style={[codeBlockStyles.container, { height: estimatedHeight }]}
+      >
+        <CodeHighlighter
+          hljsStyle={codepenEmbed}
+          language="text"
+          scrollViewProps={codeScrollViewProps}
+          textStyle={codeBlockStyles.text}
+        >
+          {code.replace(/\n$/, '')}
+        </CodeHighlighter>
+      </View>
+    );
+  },
+};
 
 const codeBlockStyles = StyleSheet.create({
   container: {
@@ -325,3 +334,9 @@ const codeBlockStyles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+const codeScrollViewProps = {
+  style: codeBlockStyles.scrollView,
+  contentContainerStyle: codeBlockStyles.scrollContent,
+  nestedScrollEnabled: true,
+};

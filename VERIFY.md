@@ -55,9 +55,31 @@ When it's done the app opens on the simulator and `.verify/metro.log` shows the 
 loading. `expo run:ios` stays running as the Metro server; leave it up while you drive the
 app. (`.verify/` is gitignored.)
 
-A fresh install opens on **Home**: a greeting, a leaf and **New Loom Tree**
-(`home-welcome`). There is no account and no sign-in: the app is local-first, and every
-install is its own synthetic user.
+**If `expo run:ios` fails with "Can't determine id of Simulator app"**, your Xcode ships
+without a separate Simulator.app (Xcode 27 does), which the Expo CLI looks for. By then it has
+already generated `ios/` and installed pods, so build, install and serve in three steps
+instead, keeping the build products inside `.verify/`:
+
+```sh
+UDID=<booted device UDID>
+xcodebuild -workspace ios/AspenGrove.xcworkspace -scheme AspenGrove -configuration Debug \
+  -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath .verify/DerivedData \
+  build > .verify/xcodebuild.log 2>&1
+xcrun simctl install "$UDID" .verify/DerivedData/Build/Products/Debug-iphonesimulator/AspenGrove.app
+npx expo start --dev-client --port 8081 > .verify/metro.log 2>&1 &
+echo $! > .verify/metro.pid
+```
+
+The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
+first: tap the `http://localhost:8081` server. On a cleared install the dev menu then shows a
+one-time intro (**Continue**) and stays open (close it with ✕). The Maestro flows handle all
+of this in [open-app.yaml](.maestro/open-app.yaml).
+
+A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
+(`onboarding-screen`): connect a provider, choose an agent, land in a first tree. Skip it
+with `onboarding-skip`; Home then shows a setup hint (`home-setup-action`) instead of
+**New Loom Tree** until a model agent exists. There is no account and no sign-in: the app
+is local-first, and every install is its own synthetic user.
 
 ## 4. Give it a model (your own keys, never committed)
 
@@ -76,6 +98,27 @@ The app has no server. A model agent needs either provider:
   endpoint in Settings → Connections works as is; tap `connections-lmstudio-test` to check.
   (The Android Emulator would need `http://10.0.2.2:1234`.)
 
+### No key? Use the mock server
+
+[scripts/mock-llm-server](scripts/mock-llm-server/README.md) answers the LM Studio calls the
+app makes with deterministic streamed text, at a pace you set, with optional failure
+injection. It needs nothing but Node:
+
+```sh
+lsof -nP -iTCP:1235 -sTCP:LISTEN          # free? (1234 is LM Studio's own port)
+node scripts/mock-llm-server/cli.ts --port 1235 --pace 20 > .verify/mock.log 2>&1 &
+echo $! > .verify/mock.pid
+```
+
+Use the mock server through Settings → Connections → LM Studio at `http://localhost:1235`:
+type that into `connections-lmstudio-endpoint-input`, tap `connections-lmstudio-test`, then
+create an agent on the LM Studio model `mock-model` (the model `mock-missing` always
+answers 404). `--slow` gives time to tap stop mid-stream; `--fail-every 3 --fail-status 422`
+fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
+a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
+[.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
+state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
 Save. A fresh install has no model agent, so until you do, New Loom Tree shows
 "No agents yet…" (`home-error`).
@@ -91,9 +134,14 @@ Two Maestro flows prove the base:
 
 ```sh
 SHOTS=.verify/shots/$(git rev-parse --short HEAD); mkdir -p "$SHOTS"
-maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
-maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
+maestro --device "$UDID" test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
+maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
 ```
+
+`--device` is required whenever more than one simulator or emulator is running, and harmless
+otherwise. Both flows start with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
+the dev launcher to Home) and open the drawer through
+[open-drawer.yaml](.maestro/open-drawer.yaml), which retries a tap that lands mid-transition.
 
 - [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, the drawer, the empty
   tree list, Search, Settings, Connections, the empty Agents library and the agent editor.
@@ -101,12 +149,31 @@ maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
   tree, sends one message, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.
 
+A third, [perf/](.maestro/perf/), times a big tree: opening it, opening a continuation
+rail, switching branch and searching. Copy the seed tree (`scripts/seed-perf-tree`) and
+`.maestro/perf/fixtures/perf-tiny.openloom` into the simulator's Files ("On My iPhone")
+first. `perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
+a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>` lines into
+the run's `maestro.log`. The numbers are Maestro wall clock: compare runs on one machine
+and simulator, three runs or more, by median. No key needed.
+
+[needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
+`perf-tiny.openloom` before any agent exists: the tree opens with its messages and the
+"needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
+reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
+live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboarding; flows
+that set up through Settings or an import skip it), `create-agent.yaml` and
+`import-tree.yaml`.
+
 For a one-off screenshot or deep link without Maestro:
 
 ```sh
 xcrun simctl io booted screenshot "$SHOTS/<name>.png"
 xcrun simctl openurl booted "aspengrove://settings/connections"   # expo-router paths; (drawer) groups are dropped
 ```
+
+In a development build, `openurl` raises a system "Open in Aspen Grove?" alert that stays up
+until answered and blocks every tap behind it; Maestro flows navigate by taps instead.
 
 Name screenshots by what they show (`13-first-reply.png`), keep them under `.verify/`, and
 label them as iOS Simulator captures wherever you report them.
@@ -138,9 +205,10 @@ kill "$pid"                               # ends expo run:ios and its Metro
 xcrun simctl shutdown "<device name>"     # if you booted it
 ```
 
-Then remove what you created: `rm -rf .verify dist ios` in your checkout, and the app's
-build products under `~/Library/Developer/Xcode/DerivedData/` (the folder whose name starts
-with the generated Xcode project's name). Disk on the shared Mac is watched. Never `pkill -f`
+Then remove what you created: `rm -rf .verify dist ios` in your checkout (that includes
+`.verify/DerivedData` if you built with `xcodebuild`), and, if you used `expo run:ios`, the
+app's build products under `~/Library/Developer/Xcode/DerivedData/` (the folder whose name
+starts with `AspenGrove-`). Disk on the shared Mac is watched. Never `pkill -f`
 and never kill a PID you didn't record.
 
 ## 8. Known gotchas
@@ -151,6 +219,11 @@ and never kill a PID you didn't record.
   "CoreSimulatorService connection became invalid". That is the sandbox, not the app: the
   build-and-drive steps need a shell with full access to CoreSimulator. CI and every check in
   step 6 run fine in the sandbox.
+- **Maestro's `back` does nothing on iOS** (it's Android's back key). Tap the stack header's
+  back button, `id: BackButton`, as [smoke.yaml](.maestro/smoke.yaml) does.
+- **A tap right after a screen transition can be dropped**, the first one after the dev menu
+  closes most of all. Wait for the animation and retry until the target screen shows
+  (`repeat` … `while: notVisible`), as the flows do, rather than asserting straight away.
 - **WatermelonDB on iOS** needs the `simdjson` pod; [app.json](app.json) adds it through
   `expo-build-properties`. If a pod install fails on simdjson, check that block survived.
 - **Native dependency changed?** A JS reload won't pick it up: rerun `npx expo run:ios`.

@@ -4,11 +4,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useCreateLoomTree } from '@/interface/hooks/useCreateLoomTree';
+import { useSetupStatus } from '@/interface/hooks/useSetupStatus';
 import {
   AppPillButton,
   AppScreen,
   AppText,
 } from '@/interface/ui/value-objects';
+import { useFirstRunRedirect } from '../onboarding/useFirstRunRedirect';
+import { SetupHint } from '../setup/SetupHint';
 
 const greetingForHour = (hour: number): string => {
   if (hour < 5) {
@@ -25,7 +28,9 @@ const greetingForHour = (hour: number): string => {
 
 /**
  * Home screen: a quiet welcome with a single entry point into a new tree.
- * Everything else lives in the slide-out drawer.
+ * Until a tree can start (no agent, no key) the entry point is the one step
+ * that unblocks it. A first run opens onboarding. Everything else lives in
+ * the slide-out drawer.
  */
 const WelcomeView = () => {
   const { colors } = useAspenGroveTheme();
@@ -33,6 +38,8 @@ const WelcomeView = () => {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { creating, createTree, ready } = useCreateLoomTree(setError);
+  const { status } = useSetupStatus();
+  useFirstRunRedirect(status);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,14 +67,22 @@ const WelcomeView = () => {
         <AppText variant="body" tone="primary" style={styles.greeting}>
           {displayName ? `${greeting}, ${displayName}` : `${greeting}`}
         </AppText>
-        <AppPillButton
-          testID="home-new-tree-button"
-          label={creating ? 'Creating…' : 'New Loom Tree'}
-          variant="outline"
-          disabled={creating || !ready}
-          onPress={() => void createTree()}
-          style={styles.newTreeButton}
-        />
+        {status === 'ready' ? (
+          <AppPillButton
+            testID="home-new-tree-button"
+            label={creating ? 'Creating…' : 'New Loom Tree'}
+            variant="outline"
+            disabled={creating || !ready}
+            onPress={() => void createTree()}
+            style={styles.newTreeButton}
+          />
+        ) : status ? (
+          <SetupHint
+            status={status}
+            testIDPrefix="home"
+            style={styles.newTreeButton}
+          />
+        ) : null}
       </View>
 
       {error ? (

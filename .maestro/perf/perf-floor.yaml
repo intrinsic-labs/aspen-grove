@@ -1,0 +1,34 @@
+# The overhead floor for perf-tree.yaml: the same steps on a three-node tree
+# (fixtures/perf-tiny.openloom, copied into Files "On My iPhone" next to the
+# perf tree), so what is left is Maestro and the app's fixed cost.
+appId: com.intrinsiclabs.aspengrove
+env:
+  TREE_FILE: perf-tiny.openloom
+  RAIL_ROW_TEXT: 'Light the lantern.*'
+  SWITCH_TEXT: '.*The other lantern stays dark.*'
+---
+- runFlow:
+    file: setup-import.yaml
+    env:
+      TREE_FILE: ${TREE_FILE}
+- runFlow: open-tree-timed.yaml
+- runFlow: open-tree-timed.yaml
+- runFlow: open-tree-timed.yaml
+- tapOn:
+    id: trees-list-row-.*
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+    timeout: 60000
+- runFlow: open-rail-timed.yaml
+- runFlow: switch-branch-timed.yaml
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: trees-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+- runFlow: search-timed.yaml

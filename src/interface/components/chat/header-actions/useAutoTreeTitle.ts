@@ -30,7 +30,8 @@ export const useAutoTreeTitle = ({
 }: UseAutoTreeTitleInput) =>
   useCallback(
     (userText: string, assistantNodeId: ULID) => {
-      if (!session) {
+      const model = session?.model;
+      if (!session || !model) {
         return;
       }
       const currentSession = session;
@@ -45,12 +46,12 @@ export const useAutoTreeTitle = ({
           }
           const providerApiKey = await getProviderApiKey(
             credentialStore,
-            currentSession.provider
+            model.provider
           );
           const result = await generateTreeTitleUseCase.execute({
             treeId: currentSession.treeId,
-            modelAgentId: currentSession.modelAgentId,
-            modelIdentifier: currentSession.modelIdentifier,
+            modelAgentId: model.modelAgentId,
+            modelIdentifier: model.modelIdentifier,
             providerApiKey,
             providerAppName: 'Aspen Grove RN',
             userText,

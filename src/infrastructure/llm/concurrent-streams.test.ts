@@ -13,7 +13,10 @@ jest.mock('expo-crypto', () => require('../../test-support/node-expo-crypto'));
 
 type FakeStream = {
   readonly push: (text: string) => void;
+  /** Ends the body after `[DONE]`, as a provider does. */
   readonly end: () => void;
+  /** Ends the body with no terminal event, as a dropped connection can. */
+  readonly drop: () => void;
   readonly signal: AbortSignal;
 };
 
@@ -42,6 +45,10 @@ jest.mock('expo/fetch', () => ({
         notify();
       },
       end: () => {
+        queue.push(encoder.encode('data: [DONE]\n\n'), null);
+        notify();
+      },
+      drop: () => {
         queue.push(null);
         notify();
       },
@@ -163,6 +170,29 @@ describe.each(adapters)('%s concurrent streams', (_name, create) => {
     const rawB = b.chunks.at(-1)?.rawResponse;
     expect(rawA?.rawBytesHash).not.toBe(rawB?.rawBytesHash);
     expect(rawA?.responseBody).not.toContain('two');
+  });
+
+  it('marks a stream cut off before its terminal event as interrupted, not finished', async () => {
+    openStreams.length = 0;
+    const adapter = await create();
+    const withText = collect(adapter.generateStreamingCompletion(request()));
+    const empty = collect(adapter.generateStreamingCompletion(request()));
+    await tick();
+
+    openStreams[0].push('partial');
+    await tick();
+    openStreams[0].drop();
+    openStreams[1].drop();
+
+    const [a, b] = await Promise.all([withText, empty]);
+    expect(a.chunks.at(-1)).toMatchObject({
+      type: 'done',
+      content: 'partial',
+      finishReason: 'error',
+      interruptedReason: 'network',
+    });
+    // No text yet: a retryable network error, like any failed request.
+    expect(b.error).toMatchObject({ code: 'networkError', retryable: true });
   });
 
   it('aborts the request when the consumer stops reading early', async () => {

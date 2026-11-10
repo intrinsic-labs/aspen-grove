@@ -4,10 +4,11 @@ import type {
   EditDialogueNodeUseCase,
   SendDialogueTurnUseCase,
 } from '@application/use-cases';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { EditTarget } from '../composer/composer-mode';
-import { toGenerationErrorMessage } from '../error-message';
 import { getProviderApiKey } from '../provider-key';
+import { NEEDS_AGENT_MESSAGE, toTurnSession } from '../session/session-model';
 import type { ChatSession } from '../types';
 import type { useStreamingAssistantRow } from '../useStreamingAssistantRow';
 import {
@@ -20,6 +21,11 @@ type UseSendTurnInput = {
   readonly sending: boolean;
   readonly setSending: (sending: boolean) => void;
   readonly setError: (error: string | null) => void;
+  /** Shows a failed generation, with the fix when there is one. */
+  readonly showProviderError: (
+    caught: unknown,
+    provider?: SelectableProvider
+  ) => void;
   readonly input: string;
   readonly setInput: (text: string) => void;
   readonly editTarget: EditTarget | null;
@@ -51,6 +57,7 @@ export const useSendTurn = ({
   sending,
   setSending,
   setError,
+  showProviderError,
   input,
   setInput,
   editTarget,
@@ -74,6 +81,12 @@ export const useSendTurn = ({
 
     const prompt = input.trim();
     if (!prompt) {
+      return;
+    }
+    // Saving an edit generates nothing; a new turn needs the tree's agent.
+    const model = session.model;
+    if (!editTarget && !model) {
+      setError(NEEDS_AGENT_MESSAGE);
       return;
     }
 
@@ -104,15 +117,18 @@ export const useSendTurn = ({
         return;
       }
 
+      if (!model) {
+        return;
+      }
       // Provider is bound to this session's agent (via tree.defaultModelAgentId).
       // Fetch the matching API key from secure storage.
       const providerApiKey = await getProviderApiKey(
         credentialStore,
-        session.provider
+        model.provider
       );
       const diagnostics = createStreamDiagnostics();
       const turnResult = await sendDialogueTurnUseCase.execute({
-        session,
+        session: toTurnSession(session, model),
         prompt,
         providerApiKey,
         providerAppName: 'Aspen Grove RN',
@@ -150,7 +166,7 @@ export const useSendTurn = ({
         onModelNodeCompleted(turnResult.assistantNodeId);
       }
     } catch (caught) {
-      setError(toGenerationErrorMessage(caught));
+      showProviderError(caught, session.model?.provider);
     } finally {
       reset();
       setSending(false);
@@ -172,6 +188,7 @@ export const useSendTurn = ({
     setEditTarget,
     setError,
     setInput,
+    showProviderError,
     setSending,
     shouldAutoScrollRef,
   ]);

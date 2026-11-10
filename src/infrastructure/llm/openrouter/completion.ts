@@ -10,7 +10,6 @@ import {
   toFinishReason,
   toOpenRouterMessages,
   toTokenUsage,
-  toToolCalls,
 } from './helpers';
 import { toAbortedRequestError } from '../shared/interruption';
 import { createRequestAbort } from '../shared/request-abort';
@@ -33,14 +32,6 @@ export const requestOpenRouterCompletion = async (input: {
       temperature: request.temperature,
       max_tokens: request.maxTokens,
       stop: request.stopSequences,
-      tools: request.tools?.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      })),
       stream: false,
     };
 
@@ -86,7 +77,6 @@ export const requestOpenRouterCompletion = async (input: {
       content: toCompletionText(choice?.message?.content),
       finishReason: toFinishReason(choice?.finish_reason),
       usage: toTokenUsage(payload.usage),
-      toolCalls: toToolCalls(choice?.message?.tool_calls),
       rawResponse: {
         rawBytes,
         rawBytesHash,

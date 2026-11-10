@@ -71,6 +71,21 @@ const RootLayout = () => {
                       headerShown: false,
                     }}
                   />
+                  <Stack.Screen
+                    name="onboarding"
+                    options={{
+                      headerShown: false,
+                      animation: 'fade',
+                      gestureEnabled: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="connections"
+                    options={{
+                      headerShown: false,
+                      presentation: 'modal',
+                    }}
+                  />
                 </Stack>
               </VoiceModeProvider>
             </AppBootstrapGate>

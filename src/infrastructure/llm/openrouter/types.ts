@@ -17,15 +17,6 @@ export type OpenRouterErrorPayload = {
   };
 };
 
-export type OpenRouterToolCall = {
-  readonly id?: string;
-  readonly type?: string;
-  readonly function?: {
-    readonly name?: string;
-    readonly arguments?: string;
-  };
-};
-
 export type OpenRouterMessagePayload = {
   readonly role: 'system' | 'user' | 'assistant';
   readonly content: string | readonly Record<string, unknown>[];
@@ -39,7 +30,6 @@ export type OpenRouterResponsePayload = {
     readonly message?: {
       readonly role?: string;
       readonly content?: string | Array<Record<string, unknown>> | null;
-      readonly tool_calls?: OpenRouterToolCall[];
     };
   }>;
   readonly usage?: {
@@ -56,7 +46,6 @@ export type OpenRouterStreamingPayload = {
     readonly delta?: {
       readonly role?: string;
       readonly content?: string | Array<Record<string, unknown>> | null;
-      readonly tool_calls?: OpenRouterToolCall[];
     };
     readonly finish_reason?: string | null;
   }>;

@@ -1,10 +1,12 @@
 import { Drawer } from 'expo-router/drawer';
 import { AppDrawerContent } from '@interface/components/drawer/AppDrawerContent';
 import { DrawerMenuButton } from '@interface/components/drawer/DrawerMenuButton';
+import { useDrawerHeaderStyle } from '@interface/components/drawer/useDrawerHeaderStyle';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
 const DrawerLayout = () => {
   const { colors } = useAspenGroveTheme();
+  const headerStyle = useDrawerHeaderStyle();
 
   return (
     <Drawer
@@ -19,16 +21,7 @@ const DrawerLayout = () => {
           backgroundColor: colors.oppositePrimary,
         },
         overlayColor: 'rgba(255,255,255,0.08)',
-        headerShadowVisible: false,
-        headerStyle: {
-          backgroundColor: colors.oppositePrimary,
-        },
-        headerTitleStyle: {
-          color: colors.primary,
-          fontSize: 19,
-          fontWeight: '600',
-        },
-        headerTintColor: colors.accentColor,
+        ...headerStyle,
         headerLeft: () => <DrawerMenuButton />,
       }}
     >

@@ -25,11 +25,21 @@ export const useChatAutoScroll = ({
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   const shouldAutoScrollRef = useRef(true);
 
+  // The first rows after a load jump straight to the end: animating there
+  // through a long path only delays the last message.
+  const jumpOnNextRowsRef = useRef(true);
+
   useEffect(() => {
+    if (loading) {
+      jumpOnNextRowsRef.current = true;
+      return;
+    }
     if (!shouldAutoScrollRef.current) {
       return;
     }
-    scrollRef.current?.scrollToEnd({ animated: true });
+    const animated = !jumpOnNextRowsRef.current;
+    jumpOnNextRowsRef.current = false;
+    scrollRef.current?.scrollToEnd({ animated });
   }, [rows, loading, sending]);
 
   useEffect(() => {

@@ -1,4 +1,8 @@
 import { selectableProviderFromModelRef } from '@application/services/llm';
+import {
+  resolveTreeModelAgent,
+  type UsableModelAgent,
+} from '@application/services/resolve-tree-model-agent';
 import type {
   IAgentRepository,
   IEdgeRepository,
@@ -9,26 +13,25 @@ import type {
   IPathStateRepository,
   IUserPreferencesRepository,
 } from '@application/repositories';
-import type { Agent, Node, SelectableProvider } from '@domain/entities';
+import type { Node } from '@domain/entities';
 import { parseULID, type ULID } from '@domain/value-objects';
-import type { ChatRow, ChatSession } from './types';
+import type { ChatRow, ChatSession, ChatSessionModel } from './types';
 
 type ChatSessionRepositories = {
-  readonly treeRepo: Pick<ILoomTreeRepository, 'findById'>;
+  readonly treeRepo: Pick<ILoomTreeRepository, 'findById' | 'update'>;
   readonly groveRepo: Pick<IGroveRepository, 'findById'>;
-  readonly agentRepo: Pick<IAgentRepository, 'findById'>;
+  readonly agentRepo: Pick<IAgentRepository, 'findById' | 'findSharedModels'>;
   readonly pathRepo: Pick<
     IPathRepository,
     'findByTreeAndOwner' | 'create' | 'getNodeSequence' | 'appendNode'
   >;
   readonly pathStateRepo: Pick<IPathStateRepository, 'setActiveNode'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById'>;
-  /**
-   * Reserved for future use (display preferences, defaults). Kept on the
-   * dependency surface so the chat controller doesn't need to re-thread this
-   * for upcoming Phase 4 work.
-   */
-  readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
+  /** The user's default model agent, adopted by a tree without one. */
+  readonly userPreferencesRepo: Pick<
+    IUserPreferencesRepository,
+    'get' | 'update'
+  >;
 };
 
 export type InitializedChatSession = {
@@ -37,44 +40,11 @@ export type InitializedChatSession = {
   readonly session: ChatSession;
 };
 
-const resolveModelAgent = async (
-  treeId: ULID,
-  defaultModelAgentId: ULID | undefined,
-  agentRepo: Pick<IAgentRepository, 'findById'>
-): Promise<{ agent: Agent; provider: SelectableProvider }> => {
-  if (!defaultModelAgentId) {
-    throw new Error(
-      `Loom Tree ${treeId} has no default model agent configured. ` +
-        `Configure an agent in Settings before opening this tree.`
-    );
-  }
-
-  const agent = await agentRepo.findById(defaultModelAgentId);
-  if (!agent) {
-    throw new Error(
-      `Loom Tree ${treeId} references a model agent that no longer exists ` +
-        `(${defaultModelAgentId}). Re-select an agent in this tree's settings.`
-    );
-  }
-  if (agent.type !== 'model') {
-    throw new Error(
-      `Loom Tree ${treeId}'s default agent must be a model agent (got ${agent.type}).`
-    );
-  }
-  if (!agent.modelRef) {
-    throw new Error(
-      `Model agent ${agent.id} has no modelRef. Re-configure it in Settings.`
-    );
-  }
-  if (agent.archivedAt) {
-    throw new Error(
-      `Model agent ${agent.id} is archived. Restore it or switch to another agent.`
-    );
-  }
-
-  const provider = selectableProviderFromModelRef(agent.modelRef);
-  return { agent, provider };
-};
+const toSessionModel = (agent: UsableModelAgent): ChatSessionModel => ({
+  modelAgentId: agent.id,
+  modelIdentifier: modelRefIdentifier(agent.modelRef),
+  provider: selectableProviderFromModelRef(agent.modelRef),
+});
 
 export const initializeDialogueChatSession = async (
   treeIdParam: string,
@@ -94,14 +64,14 @@ export const initializeDialogueChatSession = async (
 
   const ownerAgentId = grove.ownerAgentId as ULID;
 
-  // Resolve the model agent this tree generates from. The agent's modelRef
-  // determines the provider — there is no global "active provider".
-  const { agent: modelAgent, provider } = await resolveModelAgent(
-    tree.id,
-    tree.defaultModelAgentId,
-    repositories.agentRepo
-  );
-  const modelIdentifier = modelRefIdentifier(modelAgent.modelRef);
+  // The model agent this tree generates from; its modelRef determines the
+  // provider (there is no global "active provider"). A tree without a usable
+  // one adopts the user's default, or opens without a model.
+  const modelAgent = await resolveTreeModelAgent(tree, {
+    agentRepository: repositories.agentRepo,
+    userPreferencesRepository: repositories.userPreferencesRepo,
+    loomTreeRepository: repositories.treeRepo,
+  });
 
   const path =
     (await repositories.pathRepo.findByTreeAndOwner(tree.id, ownerAgentId)) ??
@@ -132,9 +102,10 @@ export const initializeDialogueChatSession = async (
     treeTitle: tree.title,
     session: {
       ownerAgentId,
-      modelAgentId: modelAgent.id,
-      modelIdentifier,
-      provider,
+      model:
+        modelAgent.status === 'missing'
+          ? null
+          : toSessionModel(modelAgent.agent),
       treeId: tree.id,
       pathId: path.id,
       activeNodeId,
@@ -175,8 +146,7 @@ export const loadDialogueRowsForPath = async (
   const continuationCounts = await Promise.all(
     nodes.map(async (node) => {
       const outgoing = await repositories.edgeRepo.findBySourceNodeId(node.id);
-      return outgoing.filter((edge) => edge.edgeType === 'continuation')
-        .length;
+      return outgoing.filter((edge) => edge.edgeType === 'continuation').length;
     })
   );
 

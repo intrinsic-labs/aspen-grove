@@ -5,16 +5,13 @@
 # It costs one short OpenRouter completion plus one title call.
 appId: com.intrinsiclabs.aspengrove
 ---
-- launchApp:
-    clearState: true
-- extendedWaitUntil:
-    visible:
-      id: home-welcome
-    timeout: 30000
+- runFlow: open-app.yaml
+# A fresh install opens onboarding; skip it and take the Settings path, which works with
+# the EXPO_PUBLIC_ key fallback (onboarding's Continue wants a key typed in).
+- runFlow: skip-onboarding.yaml
 
 # P1: create an agent from the first template.
-- tapOn:
-    id: drawer-menu-button
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-settings
 - tapOn:
@@ -31,10 +28,18 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 10000
 - takeScreenshot: 11-agent-created
 
-# P2: open a new tree from the tree list.
-- back
-- tapOn:
-    id: drawer-menu-button
+# P2: open a new tree from the tree list. Back to Settings first (`back` is
+# Android-only in Maestro), retrying a tap that lands mid-transition.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: settings-screen
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+- runFlow: open-drawer.yaml
 - tapOn:
     id: drawer-nav-trees
 - tapOn:

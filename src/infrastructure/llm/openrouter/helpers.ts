@@ -1,12 +1,10 @@
 import type {
   CompletionResponse,
   Message,
-  ToolCall,
 } from '@application/services/llm';
 import type {
   OpenRouterMessagePayload,
   OpenRouterResponsePayload,
-  OpenRouterToolCall,
 } from './types';
 
 export const toJsonString = (value: unknown): string => {
@@ -96,47 +94,6 @@ export const toOpenRouterMessages = (
   }
 
   return next;
-};
-
-const parseToolCallArguments = (raw?: string): Record<string, unknown> => {
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-};
-
-export const toToolCalls = (
-  toolCalls: OpenRouterToolCall[] | undefined
-): ToolCall[] | undefined => {
-  if (!toolCalls || toolCalls.length === 0) {
-    return undefined;
-  }
-
-  const mapped = toolCalls
-    .map((toolCall, index) => {
-      const name = toolCall.function?.name;
-      if (!name) {
-        return null;
-      }
-
-      return {
-        id: toolCall.id ?? `tool-call-${index}`,
-        name,
-        arguments: parseToolCallArguments(toolCall.function?.arguments),
-      };
-    })
-    .filter((toolCall): toolCall is ToolCall => Boolean(toolCall));
-
-  return mapped.length > 0 ? mapped : undefined;
 };
 
 export const toCompletionText = (
