@@ -76,6 +76,25 @@ The app has no server. A model agent needs either provider:
   endpoint in Settings → Connections works as is; tap `connections-lmstudio-test` to check.
   (The Android Emulator would need `http://10.0.2.2:1234`.)
 
+### No key? Use the mock server
+
+[scripts/mock-llm-server](scripts/mock-llm-server/README.md) answers the LM Studio calls the
+app makes with deterministic streamed text, at a pace you set, with optional failure
+injection. It needs nothing but Node:
+
+```sh
+lsof -nP -iTCP:1235 -sTCP:LISTEN          # free? (1234 is LM Studio's own port)
+node scripts/mock-llm-server/cli.ts --port 1235 --pace 20 > .verify/mock.log 2>&1 &
+echo $! > .verify/mock.pid
+```
+
+Use the mock server through Settings → Connections → LM Studio at `http://localhost:1235`:
+type that into `connections-lmstudio-endpoint-input`, tap `connections-lmstudio-test`, then
+create an agent on the LM Studio model `mock-model` (the model `mock-missing` always
+answers 404). `--slow` gives time to tap stop mid-stream; `--fail-every 3 --fail-status 422`
+fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
+a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
+
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
 Save. A fresh install has no model agent, so until you do, New Loom Tree shows
 "No agents yet…" (`home-error`).

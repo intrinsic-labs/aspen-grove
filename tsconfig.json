@@ -3,6 +3,9 @@
   "compilerOptions": {
     "strict": true,
 
+    // Node-run scripts (scripts/mock-llm-server) import siblings with .ts extensions.
+    "allowImportingTsExtensions": true,
+
     // WatermelonDB uses legacy (Stage-2 / "experimental") decorators.
     // Without this, TS 5+ will type-check using the new decorator proposal
     // and you'll see "Unable to resolve signature of property decorator..."
