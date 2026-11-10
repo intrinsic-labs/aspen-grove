@@ -9,6 +9,7 @@ import type {
   ContinuationSlotOutcome,
 } from '@application/services/dialogue-continuation';
 import { describeProviderError } from '@application/services/llm';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
@@ -16,6 +17,7 @@ import {
   initialParallelSlotsState,
   parallelSlotsReducer,
 } from './parallel-slots-state';
+import { describeSlotFailure } from './describe-slot-failure';
 import { useBufferedSlotText } from './useBufferedSlotText';
 
 type UseParallelContinuationsInput = {
@@ -34,8 +36,8 @@ type RunControls = {
   readonly perSlot: readonly AbortController[];
 };
 
-const toMessage = (caught: unknown): string =>
-  describeProviderError(caught).message;
+const toMessage = (caught: unknown, provider: SelectableProvider): string =>
+  describeProviderError(caught, { provider }).message;
 
 /**
  * Drives "draw several continuations at once" for the chat screen: starts N
@@ -107,14 +109,18 @@ export const useParallelContinuations = (
           count,
           signal: controls.all.signal,
           slotSignals: controls.perSlot.map((controller) => controller.signal),
-          onSlotEvent,
+          onSlotEvent: (event) =>
+            onSlotEvent(describeSlotFailure(event, session.provider)),
         });
         flushNow();
         dispatch({ type: 'finished' });
         return result;
       } catch (caught) {
         discard();
-        dispatch({ type: 'failed', message: toMessage(caught) });
+        dispatch({
+          type: 'failed',
+          message: toMessage(caught, session.provider),
+        });
         return null;
       } finally {
         if (controlsRef.current === controls) {

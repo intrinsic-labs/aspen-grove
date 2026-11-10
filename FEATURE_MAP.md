@@ -515,7 +515,7 @@ stays until the user makes one.
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
 - **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>`; once saved, the card's pressable is `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
+- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
   or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
   `edge_sources` and `raw_api_responses` per saved card and touches
@@ -531,7 +531,11 @@ stays until the user makes one.
   restart); a failure or stop before any text saves nothing. A finished run's cards stay while
   the rail shows that node; once the rail closes or moves, the saved ones show as ordinary
   sibling cards. Closing the rail, or making a card current (which closes it), leaves the
-  others streaming; leaving the Dialogue screen stops them all. LM Studio gets N concurrent
+  others streaming; leaving the Dialogue screen stops them all. A saved card reloads the rail
+  only while it is still open on the run's node: it never reopens a closed rail or replaces
+  the node you moved to. When the run ends the rows reload against the session as it is then,
+  so an agent switched mid-run stays switched. A failed card's error uses the same plain
+  wording as a failed send (missing or rejected key, LM Studio not answering). LM Studio gets N concurrent
   requests; a server that runs one prediction at a time queues them, so cards sit in
   `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
   late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
@@ -907,13 +911,13 @@ stays until the user makes one.
   `settings-link-voice` → `settings-voice-mode-toggle`.
 - **Requires:** none
 - **Selector:** working — `settings-voice-screen`, `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
+- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
 - **Backend:** WatermelonDB `user_preferences.default_voice_mode_enabled` (on/off) and the
   WatermelonDB local key `aspen_grove.voice_mode.voice_name` (the voice), via
   `WatermelonVoicePreferencesRepository`
 - **Status:** live
 - **Notes:** Saves on each change (no debounce). The same on/off state drives the Dialogue
-  `···` menu's "Voice Mode" item. The default voice is Jefferson.
+  `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once. The default voice is Jefferson.
 
 ### Voice chooser
 - **ID:** `settings.voice.chooser`

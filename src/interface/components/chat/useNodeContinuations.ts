@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   IEdgeRepository,
   INodeRepository,
@@ -41,7 +41,14 @@ const toContinuationPreview = (input: {
 export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
   const { edgeRepo, nodeRepo, pathRepo, pathId } = input;
 
-  const [sourceNodeId, setSourceNodeId] = useState<ULID | null>(null);
+  const [sourceNodeId, setSourceNodeIdState] = useState<ULID | null>(null);
+  // The node the rail shows right now, readable after an await: a load
+  // finishing after the rail was closed or moved must not reopen or replace it.
+  const sourceRef = useRef<ULID | null>(null);
+  const setSourceNodeId = useCallback((next: ULID | null) => {
+    sourceRef.current = next;
+    setSourceNodeIdState(next);
+  }, []);
   const [sourceLocalId, setSourceLocalId] = useState<string | undefined>(
     undefined
   );
@@ -57,7 +64,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     setItems([]);
     setLoading(false);
     setError(null);
-  }, []);
+  }, [setSourceNodeId]);
 
   const reload = useCallback(
     async (nextSourceNodeId: ULID) => {
@@ -65,7 +72,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         return;
       }
 
-      const isChangingSource = nextSourceNodeId !== sourceNodeId;
+      const isChangingSource = nextSourceNodeId !== sourceRef.current;
       if (isChangingSource) {
         setSourceNodeId(nextSourceNodeId);
         setSourceLocalId(undefined);
@@ -81,8 +88,9 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
           edgeRepo.findBySourceNodeId(nextSourceNodeId),
           pathRepo.getNodeSequence(pathId),
         ]);
-
-        setSourceNodeId(nextSourceNodeId);
+        if (sourceRef.current !== nextSourceNodeId) {
+          return;
+        }
         setSourceLocalId(sourceNode ? String(sourceNode.localId) : undefined);
 
         const continuationTargets = outgoingEdges
@@ -104,6 +112,9 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
           activeIndexByNodeId.set(nodeId, index);
         });
 
+        if (sourceRef.current !== nextSourceNodeId) {
+          return;
+        }
         const nextItems = resolved.map((node) =>
           toContinuationPreview({
             node,
@@ -113,13 +124,33 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         );
         setItems(nextItems);
       } catch (caught) {
+        if (sourceRef.current !== nextSourceNodeId) {
+          return;
+        }
         setError(caught instanceof Error ? caught.message : String(caught));
         setItems([]);
       } finally {
-        setLoading(false);
+        if (sourceRef.current === nextSourceNodeId) {
+          setLoading(false);
+        }
       }
     },
-    [edgeRepo, nodeRepo, pathId, pathRepo, sourceNodeId]
+    [edgeRepo, nodeRepo, pathId, pathRepo, setSourceNodeId]
+  );
+
+  /**
+   * Reloads the rail only if it is open on `nodeId` now, so a background
+   * refresh (a parallel card saving) never reopens a closed rail or replaces
+   * the node the user moved to.
+   */
+  const refreshIfShowing = useCallback(
+    async (nodeId: ULID) => {
+      if (sourceRef.current !== nodeId) {
+        return;
+      }
+      await reload(nodeId);
+    },
+    [reload]
   );
 
   const toggleBookmark = useCallback(
@@ -153,6 +184,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     error,
     items,
     showForNode: reload,
+    refreshIfShowing,
     reloadForCurrentNode: sourceNodeId ? () => reload(sourceNodeId) : undefined,
     hide,
     toggleBookmark,

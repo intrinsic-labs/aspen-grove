@@ -36,6 +36,7 @@ const session: ChatSession = {
 type RailProps = {
   readonly railSource: ULID | null;
   readonly sending?: boolean;
+  readonly session?: ChatSession;
 };
 
 const deferred = () => {
@@ -57,7 +58,7 @@ const setup = (
     providerRegistry: fake.registry,
     retry: { sleep: async () => {} },
   });
-  const showForNode = jest.fn(async (_nodeId: ULID) => {});
+  const refreshIfShowing = jest.fn(async (_nodeId: ULID) => {});
   const refreshRows = jest.fn(async (_session: ChatSession) => {});
   const countRepo = {
     get: jest.fn(async () => storedCount),
@@ -70,15 +71,15 @@ const setup = (
   };
 
   const hook = renderHook(
-    ({ railSource, sending = false }: RailProps) =>
+    ({ railSource, sending = false, session: current = session }: RailProps) =>
       useParallelRail({
-        session,
+        session: current,
         sending,
         continuations: {
           visible: railSource !== null,
           sourceNodeId: railSource,
           items: [],
-          showForNode,
+          refreshIfShowing,
         },
         refreshRows,
         credentialStore,
@@ -87,7 +88,7 @@ const setup = (
       }),
     { railSource: sourceNodeId } as RailProps
   );
-  return { store, fake, hook, showForNode, refreshRows, countRepo };
+  return { store, fake, hook, refreshIfShowing, refreshRows, countRepo };
 };
 
 const slotStates = (hook: ReturnType<typeof setup>['hook']) =>
@@ -104,7 +105,7 @@ const settle = () => act(async () => {});
 
 describe('useParallelRail', () => {
   it('starts the remembered count from the rail node, and a failing card does not stop the others', async () => {
-    const { store, fake, hook, showForNode, refreshRows } = setup([
+    const { store, fake, hook, refreshIfShowing, refreshRows } = setup([
       [{ text: 'Once' }, { text: ' upon' }],
       [{ throw: new Error('No endpoints found for bad/model') }],
       [{ text: 'Cut' }, { interrupt: 'network' }],
@@ -135,8 +136,8 @@ describe('useParallelRail', () => {
     );
 
     // The rail reloads as each one saves; the rows reload once at the end.
-    expect(showForNode).toHaveBeenCalledTimes(2);
-    expect(showForNode).toHaveBeenCalledWith(sourceNodeId);
+    expect(refreshIfShowing).toHaveBeenCalledTimes(2);
+    expect(refreshIfShowing).toHaveBeenCalledWith(sourceNodeId);
     expect(refreshRows).toHaveBeenCalledTimes(1);
     expect(hook.result.current.running).toBe(false);
   });
@@ -214,6 +215,37 @@ describe('useParallelRail', () => {
 
     await hook.rerender({ railSource: sourceNodeId });
     expect(hook.result.current.cards).toEqual([]); // cleared; the rail lists them as siblings
+  });
+
+  it('refreshes the rows against the current session when a run ends, not the one it started with', async () => {
+    const held = deferred();
+    const { hook, refreshRows } = setup(
+      [[{ waitFor: held.promise }, { text: 'Late' }]],
+      1
+    );
+    await settle();
+
+    let generating: Promise<void> = Promise.resolve();
+    await act(async () => {
+      generating = hook.result.current.generate();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    // The user picks another agent mid-run (the ⚙️ sheet reinitializes).
+    const switched: ChatSession = {
+      ...session,
+      modelAgentId: 'switched-agent' as ULID,
+      modelIdentifier: 'other/model',
+      provider: 'lmstudio',
+    };
+    await hook.rerender({ railSource: sourceNodeId, session: switched });
+
+    await act(async () => {
+      held.resolve();
+      await generating;
+    });
+    expect(refreshRows).toHaveBeenCalledTimes(1);
+    expect(refreshRows).toHaveBeenCalledWith(switched);
   });
 
   it('does not start while a single generation is in flight, and remembers a new count', async () => {

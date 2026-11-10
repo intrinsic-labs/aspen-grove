@@ -16,7 +16,7 @@ type UseParallelRailInput = {
   readonly sending: boolean;
   readonly continuations: Pick<
     ReturnType<typeof useNodeContinuations>,
-    'visible' | 'sourceNodeId' | 'items' | 'showForNode'
+    'visible' | 'sourceNodeId' | 'items' | 'refreshIfShowing'
   >;
   readonly refreshRows: (session: ChatSession) => Promise<void>;
   readonly credentialStore: ICredentialStore;
@@ -51,20 +51,20 @@ export const useParallelRail = (input: UseParallelRailInput) => {
   const { session, sending, continuations, refreshRows } = input;
   const { count, setCount } = useContinuationCount(input.continuationCountRepo);
 
-  const railSourceRef = useRef(continuations.sourceNodeId);
-  railSourceRef.current = continuations.sourceNodeId;
-  const showForNodeRef = useRef(continuations.showForNode);
-  showForNodeRef.current = continuations.showForNode;
+  // The session as it is now: the user may switch agent or provider while a
+  // run streams, and the run's completion must not restore the old one.
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const refreshIfShowingRef = useRef(continuations.refreshIfShowing);
+  refreshIfShowingRef.current = continuations.refreshIfShowing;
   const runSourceRef = useRef<ULID | null>(null);
 
+  // Reloads the rail only while it is still open on the run's node: never
+  // reopens a rail the user closed, nor replaces one they moved to.
   const onSlotSettled = useCallback((outcome: ContinuationSlotOutcome) => {
     const runSource = runSourceRef.current;
-    if (
-      hasSavedNode(outcome) &&
-      runSource &&
-      railSourceRef.current === runSource
-    ) {
-      void showForNodeRef.current(runSource);
+    if (hasSavedNode(outcome) && runSource) {
+      void refreshIfShowingRef.current(runSource);
     }
   }, []);
 
@@ -90,8 +90,9 @@ export const useParallelRail = (input: UseParallelRailInput) => {
     }
     runSourceRef.current = sourceNodeId;
     const result = await start(sourceNodeId, count);
-    if (result) {
-      await refreshRows(session);
+    const current = sessionRef.current;
+    if (result && current) {
+      await refreshRows(current);
     }
   }, [
     continuations.sourceNodeId,
