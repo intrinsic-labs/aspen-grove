@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import type { INodeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
 import { VOICE_APPEARANCE, useVoiceMode } from '../../voice';
@@ -22,6 +23,11 @@ type UseChatReadAloudInput = {
  * generating, the row being read takes its voice's color, and leaving the
  * dialogue stops speech. `tapOptions` feeds `useReadAloudTaps`, which reads
  * a row on double-tap.
+ *
+ * "Leaving" means losing focus, as SwiftUI's `onDisappear` does in LS: a
+ * pushed node screen, the expanded composer or a modal stops speech too, and
+ * a reply that finishes generating while the dialogue is out of focus is not
+ * read.
  */
 export const useChatReadAloud = ({
   getRowById,
@@ -29,11 +35,22 @@ export const useChatReadAloud = ({
 }: UseChatReadAloudInput) => {
   const { voiceModeEnabled, playback, speakNode, stopSpeaking } =
     useVoiceMode();
+  const focusedRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      focusedRef.current = true;
+      return () => {
+        focusedRef.current = false;
+        stopSpeaking();
+      };
+    }, [stopSpeaking])
+  );
 
   const readRowAloud = useCallback(
     (nodeId: ULID) => {
       const row = getRowById(nodeId);
-      if (row) {
+      if (row && focusedRef.current) {
         speakNode(nodeId, row.text);
       }
     },
@@ -44,7 +61,7 @@ export const useChatReadAloud = ({
     async (nodeId: ULID) => {
       try {
         const node = await nodeRepo.findById(nodeId, true);
-        if (node) {
+        if (node && focusedRef.current) {
           speakNode(nodeId, contentToDisplayText(node.content));
         }
       } catch {
@@ -53,8 +70,6 @@ export const useChatReadAloud = ({
     },
     [nodeRepo, speakNode]
   );
-
-  useEffect(() => stopSpeaking, [stopSpeaking]);
 
   const speakingRow = useMemo<SpeakingRow | null>(
     () =>
