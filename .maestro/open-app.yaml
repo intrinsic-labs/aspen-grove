@@ -24,9 +24,10 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     id: 'xmark'
     optional: true
+# A first launch shows onboarding over Home; a set-up install shows Home.
 - extendedWaitUntil:
     visible:
-      id: home-welcome
+      id: 'home-welcome|onboarding-screen'
     timeout: 120000
 # Let the dev menu finish sliding away before the first tap.
 - waitForAnimationToEnd

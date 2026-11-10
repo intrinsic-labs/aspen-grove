@@ -6,6 +6,7 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
 - runFlow:
     file: import-tree.yaml
     env:

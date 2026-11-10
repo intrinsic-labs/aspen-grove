@@ -21,12 +21,14 @@ import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
+import type { ProviderErrorAction } from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useLatestCallback } from '@/interface/hooks/useLatestCallback';
 import { useScreenSettled } from '@/interface/hooks/useScreenSettled';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+import { ChatErrorNotice } from './ChatErrorNotice';
 import { MarkdownText } from './MarkdownText';
 import { ChatMessageRows } from './message-list/ChatMessageRows';
 import type { ContinuationRailState } from './message-list/continuation-rail-state';
@@ -42,6 +44,9 @@ type ChatMessageListProps = {
   readonly composerHeight: number;
   readonly headerHeight: number;
   readonly error: string | null;
+  /** What fixes `error`, when something does (e.g. open Connections). */
+  readonly errorAction: ProviderErrorAction;
+  readonly onErrorAction: () => void;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   readonly onMessageAction: (
@@ -71,6 +76,8 @@ export const ChatMessageList = memo(
     composerHeight,
     headerHeight,
     error,
+    errorAction,
+    onErrorAction,
     scrollRef,
     onScroll,
     onMessageAction,
@@ -316,14 +323,11 @@ export const ChatMessageList = memo(
         ) : null}
 
         {error ? (
-          <AppText
-            testID="chat-error"
-            variant="meta"
-            tone="accent"
-            style={styles.errorText}
-          >
-            {error}
-          </AppText>
+          <ChatErrorNotice
+            message={error}
+            action={errorAction}
+            onAction={onErrorAction}
+          />
         ) : null}
 
         {sending ? <View style={styles.bottomSpacer} /> : null}
@@ -349,9 +353,6 @@ const styles = StyleSheet.create({
   streamingRow: {
     width: '100%',
     alignItems: 'flex-start',
-  },
-  errorText: {
-    marginTop: loomUiTokens.messageList.errorTopMargin,
   },
   bottomSpacer: {
     height: loomUiTokens.messageList.sendingBottomSpacer,

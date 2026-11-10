@@ -75,13 +75,11 @@ Standard (non-streaming) completion request.
 - **temperature** — optional number (0.0-2.0)
 - **maxTokens** — optional number, limit response length
 - **stopSequences** — optional array of strings
-- **tools** — optional array of ToolDefinition (for tool use)
 
 **Output: CompletionResponse**
 - **content** — string, the generated text
-- **finishReason** — enum: `stop` | `length` | `toolUse` | `error`
+- **finishReason** — enum: `stop` | `length` | `toolUse` | `error` (`toolUse` only mirrors a provider's `tool_calls` finish reason; Aspen Grove never sends tools)
 - **usage** — TokenUsage object (prompt, completion, total tokens)
-- **toolCalls** — optional array of ToolCall (if model invoked tools)
 - **rawResponse** — the complete HTTP response for provenance storage
 
 ### generateStreamingCompletion
@@ -93,9 +91,8 @@ Streaming completion that yields tokens as they're generated.
 **Output: AsyncIterator of StreamChunk**
 
 Each StreamChunk contains:
-- **type** — enum: `text` | `toolCallStart` | `toolCallDelta` | `toolCallEnd` | `done` | `error`
+- **type** — enum: `text` | `done` | `error`
 - **content** — string, the token(s) for text chunks
-- **toolCall** — partial ToolCall for tool-related chunks
 - **usage** — TokenUsage (present in final `done` chunk)
 - **rawResponse** — complete response (present in final `done` chunk)
 
@@ -136,7 +133,7 @@ Each StreamChunk contains:
 
 Aspen Grove passes **no provider tools**: no web search, code execution, connectors or MCP. A loom, not a harness.
 
-The interface still carries optional `tools` / `toolCalls` fields (and a leftover `useMcpTools` toggle in the LM Studio adapter and Settings → Connections); no use case sends tools, and the toggle is to be removed.
+`CompletionRequest` has no tools field, and adapters neither send tool definitions nor parse tool calls.
 
 Loom-aware tools (view, continue, annotate, etc., after v1) are **not** provider tools. They use the custom `→` syntax parsed client-side, which avoids provider tool system prompts that conflict with the natural-language approach. See [Loom Tools Spec](../specs/loom-tools/README.md).
 

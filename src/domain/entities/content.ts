@@ -1,7 +1,7 @@
 /**
  * Content Types
  *
- * Discriminated union pattern for extensible node and document content.
+ * Discriminated union pattern for extensible node content.
  * These are the core conent primitives used by Nodes and Documents.
  *
  * Design notes:
@@ -60,7 +60,7 @@ export interface AudioContent {
 
 /**
  * Mixed content: ordered array of text, image, and audio blocks.
- * Used when a single Node or Document contains multiple content types.
+ * Used when a single Node contains multiple content types.
  */
 export interface MixedContent {
   readonly type: 'mixed';

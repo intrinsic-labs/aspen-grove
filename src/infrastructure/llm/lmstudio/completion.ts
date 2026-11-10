@@ -10,7 +10,6 @@ import {
   toFinishReason,
   toLMStudioMessages,
   toTokenUsage,
-  toToolCalls,
 } from './helpers';
 import { toAbortedRequestError } from '../shared/interruption';
 import { createRequestAbort } from '../shared/request-abort';
@@ -28,11 +27,6 @@ import type { LMStudioConfig, LMStudioResponsePayload } from './types';
  *   assistant turns.
  * - OpenAI-compat accepts the same shape we already send to OpenRouter, so
  *   one body builder covers both providers.
- *
- * Trade-off: LM Studio's pre-configured MCP integrations are only available
- * through the native endpoint. The `useMcpTools` config flag is effectively
- * a no-op here — it's retained for forward compatibility if/when we add a
- * hybrid path for MCP-enabled requests.
  */
 export const requestLMStudioCompletion = async (input: {
   readonly config: LMStudioConfig;
@@ -57,18 +51,6 @@ export const requestLMStudioCompletion = async (input: {
       stop: request.stopSequences,
       stream: false,
     };
-
-    // Only include tools if MCP is enabled and tools are provided
-    if (config.useMcpTools && request.tools && request.tools.length > 0) {
-      body.tools = request.tools.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      }));
-    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -108,7 +90,6 @@ export const requestLMStudioCompletion = async (input: {
       content: toCompletionText(choice?.message?.content),
       finishReason: toFinishReason(choice?.finish_reason),
       usage: toTokenUsage(payload.usage, payload.stats),
-      toolCalls: toToolCalls(choice?.message?.tool_calls),
       rawResponse: {
         rawBytes,
         rawBytesHash,

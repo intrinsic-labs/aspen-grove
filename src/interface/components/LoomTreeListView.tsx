@@ -16,12 +16,14 @@ import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { pickAndReadTextFile } from '@interface/services/loom-file-sharing';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { useCreateLoomTree } from '../hooks/useCreateLoomTree';
+import { useSetupStatus } from '../hooks/useSetupStatus';
 import {
   AppScreen,
   AppText,
   Hairline,
   HeaderIconButton,
 } from '../ui/value-objects';
+import { TreesEmptyState } from './trees/TreesEmptyState';
 
 type ListMenuAction = 'create' | 'import';
 
@@ -138,6 +140,7 @@ const LoomTreeListView = () => {
   );
 
   const { creating, createTree: onCreateTree } = useCreateLoomTree(setError);
+  const { status: setupStatus } = useSetupStatus();
 
   const onImportTree = useCallback(async () => {
     if (!bootstrap || importing) {
@@ -295,11 +298,12 @@ const LoomTreeListView = () => {
             ItemSeparatorComponent={() => <Hairline style={styles.separator} />}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
-              <AppText variant="meta" tone="secondary" style={styles.emptyText}>
-                {activeTagId
-                  ? 'No trees with this tag.'
-                  : 'No dialogue trees yet. Open the ··· menu to create one.'}
-              </AppText>
+              <TreesEmptyState
+                filtered={activeTagId !== null}
+                status={setupStatus}
+                creating={creating}
+                onCreateTree={() => void onCreateTree()}
+              />
             }
           />
         </>
@@ -358,9 +362,6 @@ const styles = StyleSheet.create({
   },
   treeMeta: {
     fontSize: 11,
-  },
-  emptyText: {
-    marginTop: 18,
   },
   errorText: {
     paddingHorizontal: 18,

@@ -8,7 +8,8 @@ import type {
   ContinuationSlotEvent,
   ContinuationSlotOutcome,
 } from '@application/services/dialogue-continuation';
-import { LlmProviderError } from '@application/services/llm';
+import { describeProviderError } from '@application/services/llm';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
@@ -34,12 +35,8 @@ type RunControls = {
   readonly perSlot: readonly AbortController[];
 };
 
-const toMessage = (caught: unknown): string =>
-  caught instanceof LlmProviderError
-    ? `[${caught.provider}:${caught.code}] ${caught.message}`
-    : caught instanceof Error
-      ? caught.message
-      : String(caught);
+const toMessage = (caught: unknown, provider: SelectableProvider): string =>
+  describeProviderError(caught, { provider }).message;
 
 /**
  * Drives "draw several continuations at once" for the chat screen: starts N
@@ -119,7 +116,10 @@ export const useParallelContinuations = (
         return result;
       } catch (caught) {
         discard();
-        dispatch({ type: 'failed', message: toMessage(caught) });
+        dispatch({
+          type: 'failed',
+          message: toMessage(caught, model.provider),
+        });
         return null;
       } finally {
         if (controlsRef.current === controls) {

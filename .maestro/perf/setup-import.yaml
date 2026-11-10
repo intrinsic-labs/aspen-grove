@@ -4,6 +4,7 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: ../open-app.yaml
+- runFlow: ../skip-onboarding.yaml
 # An agent first, so the imported tree has one to continue with.
 - runFlow: ../create-agent.yaml
 - runFlow:

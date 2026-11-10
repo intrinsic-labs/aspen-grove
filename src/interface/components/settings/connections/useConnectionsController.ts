@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { describeProviderError } from '@application/services/llm';
 import { DEFAULT_LMSTUDIO_SETTINGS } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 
@@ -13,7 +14,6 @@ type ConnectionsDraft = {
   readonly apiKeyInput: string;
   readonly lmstudioEndpointInput: string;
   readonly lmstudioApiTokenInput: string;
-  readonly lmstudioUseMcpTools: boolean;
   readonly lmstudioAutoLoadModels: boolean;
 };
 
@@ -21,7 +21,7 @@ const toDraftKey = (draft: ConnectionsDraft): string => JSON.stringify(draft);
 
 /**
  * Provider connection settings: OpenRouter API key and the LM Studio server
- * connection (endpoint, optional token, MCP + auto-load switches).
+ * connection (endpoint, optional token, auto-load switch).
  *
  * This is deliberately the only credential-bearing settings surface. Model
  * and generation configuration live on Agents (Settings → Agents and the
@@ -45,14 +45,14 @@ export const useConnectionsController = () => {
   const [lmstudioApiTokenInput, setLmstudioApiTokenInput] = useState('');
   const [hasStoredLmstudioToken, setHasStoredLmstudioToken] = useState(false);
   const [showLmstudioToken, setShowLmstudioToken] = useState(false);
-  const [lmstudioUseMcpTools, setLmstudioUseMcpTools] = useState(
-    DEFAULT_LMSTUDIO_SETTINGS.useMcpTools
-  );
   const [lmstudioAutoLoadModels, setLmstudioAutoLoadModels] = useState(
     DEFAULT_LMSTUDIO_SETTINGS.autoLoadModels
   );
   const [lmstudioConnectionStatus, setLmstudioConnectionStatus] =
     useState<LmStudioConnectionStatus>('idle');
+  const [lmstudioConnectionError, setLmstudioConnectionError] = useState<
+    string | null
+  >(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -71,7 +71,6 @@ export const useConnectionsController = () => {
         apiKeyInput: storedOpenRouterKey?.trim() ?? '',
         lmstudioEndpointInput: lmSettings.endpoint,
         lmstudioApiTokenInput: storedLmstudioToken?.trim() ?? '',
-        lmstudioUseMcpTools: lmSettings.useMcpTools,
         lmstudioAutoLoadModels: lmSettings.autoLoadModels,
       };
 
@@ -80,7 +79,6 @@ export const useConnectionsController = () => {
       setLmstudioEndpointInput(draft.lmstudioEndpointInput);
       setLmstudioApiTokenInput(draft.lmstudioApiTokenInput);
       setHasStoredLmstudioToken(draft.lmstudioApiTokenInput.length > 0);
-      setLmstudioUseMcpTools(draft.lmstudioUseMcpTools);
       setLmstudioAutoLoadModels(draft.lmstudioAutoLoadModels);
 
       lastSavedDraftKeyRef.current = toDraftKey(draft);
@@ -100,6 +98,7 @@ export const useConnectionsController = () => {
 
   const testLmstudioConnection = useCallback(async () => {
     setLmstudioConnectionStatus('checking');
+    setLmstudioConnectionError(null);
     try {
       const lmstudioAdapter = adapters.providerRegistry.getLMStudioAdapter();
       await lmstudioAdapter.initialize(
@@ -107,20 +106,24 @@ export const useConnectionsController = () => {
         { endpoint: lmstudioEndpointInput.trim() }
       );
       lmstudioAdapter.configure({
-        useMcpTools: lmstudioUseMcpTools,
         autoLoadModels: lmstudioAutoLoadModels,
       });
       await lmstudioAdapter.fetchModels();
       setLmstudioConnectionStatus('connected');
-    } catch {
+    } catch (caught) {
       setLmstudioConnectionStatus('disconnected');
+      setLmstudioConnectionError(
+        describeProviderError(caught, {
+          provider: 'lmstudio',
+          lmstudioEndpoint: lmstudioEndpointInput.trim(),
+        }).message
+      );
     }
   }, [
     adapters.providerRegistry,
     lmstudioApiTokenInput,
     lmstudioAutoLoadModels,
     lmstudioEndpointInput,
-    lmstudioUseMcpTools,
   ]);
 
   const persistDraft = useCallback(
@@ -137,7 +140,6 @@ export const useConnectionsController = () => {
           repositories.userPreferencesRepo.update({
             lmstudioSettings: {
               endpoint: normalizedEndpoint,
-              useMcpTools: draft.lmstudioUseMcpTools,
               autoLoadModels: draft.lmstudioAutoLoadModels,
             },
           }),
@@ -164,7 +166,6 @@ export const useConnectionsController = () => {
           { endpoint: normalizedEndpoint }
         );
         lmstudioAdapter.configure({
-          useMcpTools: draft.lmstudioUseMcpTools,
           autoLoadModels: draft.lmstudioAutoLoadModels,
         });
 
@@ -189,6 +190,39 @@ export const useConnectionsController = () => {
     ]
   );
 
+  // Leaving the screen (or closing the sheet) inside the autosave delay
+  // would drop the last edit; save it on the way out instead.
+  const pendingDraftRef = useRef<ConnectionsDraft | null>(null);
+  const persistDraftRef = useRef(persistDraft);
+  persistDraftRef.current = persistDraft;
+  useEffect(
+    () => () => {
+      const pending = pendingDraftRef.current;
+      if (pending && toDraftKey(pending) !== lastSavedDraftKeyRef.current) {
+        void persistDraftRef.current(pending);
+      }
+    },
+    []
+  );
+
+  /** Persist the current inputs now, without waiting for the autosave. */
+  const saveNow = useCallback(
+    () =>
+      persistDraft({
+        apiKeyInput,
+        lmstudioEndpointInput,
+        lmstudioApiTokenInput,
+        lmstudioAutoLoadModels,
+      }),
+    [
+      apiKeyInput,
+      lmstudioApiTokenInput,
+      lmstudioAutoLoadModels,
+      lmstudioEndpointInput,
+      persistDraft,
+    ]
+  );
+
   useEffect(() => {
     if (loading) {
       return;
@@ -198,7 +232,6 @@ export const useConnectionsController = () => {
       apiKeyInput,
       lmstudioEndpointInput,
       lmstudioApiTokenInput,
-      lmstudioUseMcpTools,
       lmstudioAutoLoadModels,
     };
     if (toDraftKey(draft) === lastSavedDraftKeyRef.current) {
@@ -208,6 +241,7 @@ export const useConnectionsController = () => {
     const timeoutId = setTimeout(() => {
       void persistDraft(draft);
     }, 450);
+    pendingDraftRef.current = draft;
 
     return () => {
       clearTimeout(timeoutId);
@@ -216,7 +250,6 @@ export const useConnectionsController = () => {
     apiKeyInput,
     lmstudioEndpointInput,
     lmstudioApiTokenInput,
-    lmstudioUseMcpTools,
     lmstudioAutoLoadModels,
     loading,
     persistDraft,
@@ -247,11 +280,14 @@ export const useConnectionsController = () => {
     hasStoredLmstudioToken,
     showLmstudioToken,
     setShowLmstudioToken,
-    lmstudioUseMcpTools,
-    setLmstudioUseMcpTools,
     lmstudioAutoLoadModels,
     setLmstudioAutoLoadModels,
     lmstudioConnectionStatus,
+    lmstudioConnectionError,
     testLmstudioConnection,
+
+    saveNow,
   };
 };
+
+export type ConnectionsController = ReturnType<typeof useConnectionsController>;

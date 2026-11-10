@@ -29,7 +29,7 @@ These specifications use bullet points and prose rather than code to avoid maint
 | Document | Covers |
 |----------|--------|
 | [Core Entities](./model/core-entities.md) | LoomTree, Node, Edge, Content Types |
-| [Agents](./model/agents.md) | Agent, UserPreferences, LocalModel |
+| [Agents](./model/agents.md) | Agent, UserPreferences |
 | [Organization](./model/organization.md) | Grove, Tag, TagAssignment |
 | [Provenance](./model/provenance.md) | RawApiResponse, hash chain computation |
 
