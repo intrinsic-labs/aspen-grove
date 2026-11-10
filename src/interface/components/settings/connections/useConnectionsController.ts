@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { describeProviderError } from '@application/services/llm';
 import { DEFAULT_LMSTUDIO_SETTINGS } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 
@@ -49,6 +50,9 @@ export const useConnectionsController = () => {
   );
   const [lmstudioConnectionStatus, setLmstudioConnectionStatus] =
     useState<LmStudioConnectionStatus>('idle');
+  const [lmstudioConnectionError, setLmstudioConnectionError] = useState<
+    string | null
+  >(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -94,6 +98,7 @@ export const useConnectionsController = () => {
 
   const testLmstudioConnection = useCallback(async () => {
     setLmstudioConnectionStatus('checking');
+    setLmstudioConnectionError(null);
     try {
       const lmstudioAdapter = adapters.providerRegistry.getLMStudioAdapter();
       await lmstudioAdapter.initialize(
@@ -105,8 +110,14 @@ export const useConnectionsController = () => {
       });
       await lmstudioAdapter.fetchModels();
       setLmstudioConnectionStatus('connected');
-    } catch {
+    } catch (caught) {
       setLmstudioConnectionStatus('disconnected');
+      setLmstudioConnectionError(
+        describeProviderError(caught, {
+          provider: 'lmstudio',
+          lmstudioEndpoint: lmstudioEndpointInput.trim(),
+        }).message
+      );
     }
   }, [
     adapters.providerRegistry,
@@ -179,6 +190,39 @@ export const useConnectionsController = () => {
     ]
   );
 
+  // Leaving the screen (or closing the sheet) inside the autosave delay
+  // would drop the last edit; save it on the way out instead.
+  const pendingDraftRef = useRef<ConnectionsDraft | null>(null);
+  const persistDraftRef = useRef(persistDraft);
+  persistDraftRef.current = persistDraft;
+  useEffect(
+    () => () => {
+      const pending = pendingDraftRef.current;
+      if (pending && toDraftKey(pending) !== lastSavedDraftKeyRef.current) {
+        void persistDraftRef.current(pending);
+      }
+    },
+    []
+  );
+
+  /** Persist the current inputs now, without waiting for the autosave. */
+  const saveNow = useCallback(
+    () =>
+      persistDraft({
+        apiKeyInput,
+        lmstudioEndpointInput,
+        lmstudioApiTokenInput,
+        lmstudioAutoLoadModels,
+      }),
+    [
+      apiKeyInput,
+      lmstudioApiTokenInput,
+      lmstudioAutoLoadModels,
+      lmstudioEndpointInput,
+      persistDraft,
+    ]
+  );
+
   useEffect(() => {
     if (loading) {
       return;
@@ -197,6 +241,7 @@ export const useConnectionsController = () => {
     const timeoutId = setTimeout(() => {
       void persistDraft(draft);
     }, 450);
+    pendingDraftRef.current = draft;
 
     return () => {
       clearTimeout(timeoutId);
@@ -238,6 +283,11 @@ export const useConnectionsController = () => {
     lmstudioAutoLoadModels,
     setLmstudioAutoLoadModels,
     lmstudioConnectionStatus,
+    lmstudioConnectionError,
     testLmstudioConnection,
+
+    saveNow,
   };
 };
+
+export type ConnectionsController = ReturnType<typeof useConnectionsController>;

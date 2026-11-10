@@ -66,6 +66,8 @@ const LoomTreeChatView = () => {
         composerHeight={composerHeight}
         headerHeight={headerHeight}
         error={controller.error}
+        errorAction={controller.errorAction}
+        onErrorAction={controller.onErrorAction}
         scrollRef={controller.scrollRef}
         onScroll={controller.onMessageListScroll}
         onMessageAction={controller.onMessageAction}

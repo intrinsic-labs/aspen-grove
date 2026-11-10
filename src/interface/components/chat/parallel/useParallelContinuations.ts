@@ -7,7 +7,7 @@ import type {
   SwitchDialoguePathUseCase,
 } from '@application/use-cases';
 import type { ContinuationSlotEvent } from '@application/services/dialogue-continuation';
-import { LlmProviderError } from '@application/services/llm';
+import { describeProviderError } from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
@@ -33,11 +33,7 @@ type RunControls = {
 };
 
 const toMessage = (caught: unknown): string =>
-  caught instanceof LlmProviderError
-    ? `[${caught.provider}:${caught.code}] ${caught.message}`
-    : caught instanceof Error
-      ? caught.message
-      : String(caught);
+  describeProviderError(caught).message;
 
 /**
  * Drives "draw several continuations at once" for the chat screen: starts N

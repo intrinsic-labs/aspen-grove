@@ -18,6 +18,7 @@ import {
   GenerateDialogueContinuationUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
+  GetSetupStatusUseCase,
   ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
@@ -47,6 +48,7 @@ import {
 } from '@infrastructure/persistence/watermelon/repositories';
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { parseULID, type ULID } from '@domain/value-objects';
+import { findProviderApiKey } from '@/interface/components/chat/provider-key';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 
@@ -79,6 +81,7 @@ type AppServices = {
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
+    readonly getSetupStatusUseCase: GetSetupStatusUseCase;
     readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
@@ -234,6 +237,14 @@ const buildAppServices = (): AppServices => {
       agentRepository: repositories.agentRepo,
       userPreferencesRepository: repositories.userPreferencesRepo,
       providerRegistry: adapters.providerRegistry,
+    }),
+    // First-run onboarding and the Home / Loom Trees empty states.
+    getSetupStatusUseCase: new GetSetupStatusUseCase({
+      agentRepository: repositories.agentRepo,
+      userPreferencesRepository: repositories.userPreferencesRepo,
+      hasOpenRouterKey: async () =>
+        (await findProviderApiKey(adapters.credentialStore, 'openrouter')) !==
+        null,
     }),
   } as const;
 

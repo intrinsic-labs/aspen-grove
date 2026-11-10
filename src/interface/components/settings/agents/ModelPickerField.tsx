@@ -28,6 +28,8 @@ type ModelPickerFieldProps = {
    * stays addressable in the agent editor and the dialogue settings sheet.
    */
   readonly testIDPrefix: string;
+  /** Hide the provider tabs (onboarding has already chosen one). */
+  readonly lockProvider?: boolean;
 };
 
 /**
@@ -43,6 +45,7 @@ export const ModelPickerField = ({
   onChangeModelIdentifier,
   colors,
   testIDPrefix,
+  lockProvider = false,
 }: ModelPickerFieldProps) => {
   const picker = useModelPickerData(provider);
   const [search, setSearch] = useState('');
@@ -67,7 +70,7 @@ export const ModelPickerField = ({
 
   return (
     <View testID={`${testIDPrefix}-model`} style={styles.container}>
-      <View style={styles.providerRow}>
+      <View style={[styles.providerRow, lockProvider && styles.hidden]}>
         {SELECTABLE_PROVIDERS.map((candidate) => {
           const isSelected = candidate === provider;
           return (
@@ -136,7 +139,7 @@ export const ModelPickerField = ({
           onChangeText={setSearch}
           placeholder={
             provider === 'openrouter'
-              ? 'Search models or paste an identifier…'
+              ? 'Search or paste a model id'
               : 'Filter discovered models…'
           }
           autoCapitalize="none"
@@ -261,6 +264,9 @@ const styles = StyleSheet.create({
   providerRow: {
     flexDirection: 'row',
     gap: 20,
+  },
+  hidden: {
+    display: 'none',
   },
   providerTab: {
     paddingVertical: 6,

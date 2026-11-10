@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { DrawerMenuButton } from '@interface/components/drawer/DrawerMenuButton';
+import { DrawerScreenHeader } from '@interface/components/drawer/DrawerScreenHeader';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
 /**
@@ -32,7 +32,8 @@ const SettingsStackLayout = () => {
         name="index"
         options={{
           title: 'Settings',
-          headerLeft: () => <DrawerMenuButton />,
+          // The drawer's JS header, not the native one: see DrawerScreenHeader.
+          header: () => <DrawerScreenHeader title="Settings" />,
         }}
       />
       <Stack.Screen name="agents" options={{ title: 'Agents' }} />
