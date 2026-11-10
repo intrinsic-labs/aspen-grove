@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import type { IUserPreferencesRepository } from '@application/repositories';
 import { sameDisplayPreferences } from './display-preferences-equality';
@@ -38,15 +38,26 @@ const createDefaults = (): ChatDisplayPreferences => ({
   messageFontFamily: undefined,
 });
 
+export type DialogueDisplayPreferences = {
+  readonly preferences: ChatDisplayPreferences;
+  /**
+   * The saved preferences have been read (or failed to read, leaving the
+   * defaults). Until then `preferences` holds defaults that may differ:
+   * render messages only once loaded, or they lay out twice in two sizes.
+   */
+  readonly loaded: boolean;
+};
+
 type UseDialogueDisplayPreferencesInput = {
   readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
 };
 
 export const useDialogueDisplayPreferences = ({
   userPreferencesRepo,
-}: UseDialogueDisplayPreferencesInput): ChatDisplayPreferences => {
+}: UseDialogueDisplayPreferencesInput): DialogueDisplayPreferences => {
   const [preferences, setPreferences] =
     useState<ChatDisplayPreferences>(createDefaults);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +87,7 @@ export const useDialogueDisplayPreferences = ({
     } catch {
       // Keep existing preferences on load failure.
     }
+    setLoaded(true);
   }, [userPreferencesRepo]);
 
   useFocusEffect(
@@ -85,5 +97,5 @@ export const useDialogueDisplayPreferences = ({
     }, [load])
   );
 
-  return preferences;
+  return useMemo(() => ({ preferences, loaded }), [preferences, loaded]);
 };

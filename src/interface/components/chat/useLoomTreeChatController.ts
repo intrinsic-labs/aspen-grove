@@ -59,7 +59,14 @@ export const useLoomTreeChatController = () => {
   } = toDialogueRouteParams(routeParams);
 
   const state = useChatSessionState();
-  const { activeTreeIdRef, loading, error, setError, rows, session } = state;
+  const {
+    activeTreeIdRef,
+    loading: sessionLoading,
+    error,
+    setError,
+    rows,
+    session,
+  } = state;
   const [sending, setSending] = useState(false);
   const title = useTreeTitle({
     navigation,
@@ -75,9 +82,13 @@ export const useLoomTreeChatController = () => {
     pathRepo: repositories.pathRepo,
     pathId: session?.pathId,
   });
-  const displayPreferences = useDialogueDisplayPreferences({
-    userPreferencesRepo: repositories.userPreferencesRepo,
-  });
+  const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
+    useDialogueDisplayPreferences({
+      userPreferencesRepo: repositories.userPreferencesRepo,
+    });
+  // Messages render once both are in, so they lay out once, in the reader's
+  // own type size, rather than in the defaults and again a moment later.
+  const loading = sessionLoading || !displayPreferencesLoaded;
 
   const { input, setInput, openExpandedComposer } = useComposerDraft({
     sessionTreeId: session?.treeId,

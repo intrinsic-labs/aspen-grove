@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Fragment, useEffect } from 'react';
 import type { LayoutChangeEvent, TextStyle } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import type { SpeakingRow } from '../read-aloud/useChatReadAloud';
@@ -58,8 +58,13 @@ export const ChatMessageRows = ({
 
   useEffect(() => () => onFillingChange(false), [onFillingChange]);
 
+  // The tail mounts while the screen is still sliding in, and iOS can keep
+  // a paragraph drawn from that first layout: its last line runs past the
+  // edge, cut off. Remounting the few tail rows once the screen has settled
+  // lays them out again (one render of a screenful); rows mounted later are
+  // unaffected.
   return (
-    <>
+    <Fragment key={settled ? 'settled' : 'entering'}>
       {visibleRows.map((row) => (
         <ChatMessageRow
           key={row.id}
@@ -71,6 +76,6 @@ export const ChatMessageRows = ({
           {...rowProps}
         />
       ))}
-    </>
+    </Fragment>
   );
 };

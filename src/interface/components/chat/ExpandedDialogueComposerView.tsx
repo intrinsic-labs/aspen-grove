@@ -38,7 +38,7 @@ export const ExpandedDialogueComposerView = () => {
   const routeParams = useLocalSearchParams<{ treeId?: string | string[] }>();
   const treeId = getParamString(routeParams.treeId);
   const draft = useDialogueDraft(treeId);
-  const displayPreferences = useDialogueDisplayPreferences({
+  const { preferences: displayPreferences } = useDialogueDisplayPreferences({
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
 
