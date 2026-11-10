@@ -4,9 +4,9 @@ import type {
   EditDialogueNodeUseCase,
   SendDialogueTurnUseCase,
 } from '@application/use-cases';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { EditTarget } from '../composer/composer-mode';
-import { toGenerationErrorMessage } from '../error-message';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
 import type { useStreamingAssistantRow } from '../useStreamingAssistantRow';
@@ -20,6 +20,11 @@ type UseSendTurnInput = {
   readonly sending: boolean;
   readonly setSending: (sending: boolean) => void;
   readonly setError: (error: string | null) => void;
+  /** Shows a failed generation, with the fix when there is one. */
+  readonly showProviderError: (
+    caught: unknown,
+    provider?: SelectableProvider
+  ) => void;
   readonly input: string;
   readonly setInput: (text: string) => void;
   readonly editTarget: EditTarget | null;
@@ -49,6 +54,7 @@ export const useSendTurn = ({
   sending,
   setSending,
   setError,
+  showProviderError,
   input,
   setInput,
   editTarget,
@@ -145,7 +151,7 @@ export const useSendTurn = ({
         );
       }
     } catch (caught) {
-      setError(toGenerationErrorMessage(caught));
+      showProviderError(caught, session.provider);
     } finally {
       reset();
       setSending(false);
@@ -166,6 +172,7 @@ export const useSendTurn = ({
     setEditTarget,
     setError,
     setInput,
+    showProviderError,
     setSending,
     shouldAutoScrollRef,
   ]);

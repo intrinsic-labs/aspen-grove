@@ -66,14 +66,6 @@ export const streamOpenRouterCompletion = async function* (input: {
       temperature: request.temperature,
       max_tokens: request.maxTokens,
       stop: request.stopSequences,
-      tools: request.tools?.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      })),
       stream: true,
       stream_options: {
         include_usage: true,

@@ -19,6 +19,7 @@ import { useChatAutoScroll } from './scroll/useChatAutoScroll';
 import { useChatSessionLoader } from './session/useChatSessionLoader';
 import { useChatSessionState } from './session/useChatSessionState';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
+import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useSendTurn } from './turns/useSendTurn';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
@@ -58,6 +59,7 @@ export const useLoomTreeChatController = () => {
   const state = useChatSessionState();
   const { activeTreeIdRef, loading, error, setError, rows, session } = state;
   const [sending, setSending] = useState(false);
+  const providerError = useProviderErrorNotice({ error, setError });
   const title = useTreeTitle({
     navigation,
     treeRepo: repositories.treeRepo,
@@ -176,6 +178,7 @@ export const useLoomTreeChatController = () => {
     sending,
     setSending,
     setError,
+    showProviderError: providerError.showProviderError,
     rows,
     setRows: state.setRows,
     getRowById: nodeActions.getRowById,
@@ -194,6 +197,7 @@ export const useLoomTreeChatController = () => {
     sending,
     setSending,
     setError,
+    showProviderError: providerError.showProviderError,
     input,
     setInput,
     editTarget,
@@ -238,6 +242,8 @@ export const useLoomTreeChatController = () => {
     loading,
     sending,
     error,
+    errorAction: providerError.errorAction,
+    onErrorAction: () => router.push('/connections'),
     input,
     setInput,
     rows,

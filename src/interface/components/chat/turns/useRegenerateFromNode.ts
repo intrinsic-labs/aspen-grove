@@ -2,8 +2,8 @@ import { useCallback, type MutableRefObject } from 'react';
 import type { IEdgeRepository } from '@application/repositories';
 import type { ICredentialStore } from '@application/services/security';
 import type { GenerateDialogueContinuationUseCase } from '@application/use-cases';
+import type { SelectableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
-import { toGenerationErrorMessage } from '../error-message';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatRow, ChatSession } from '../types';
 import type { useNodeContinuations } from '../useNodeContinuations';
@@ -22,6 +22,11 @@ type UseRegenerateFromNodeInput = {
   readonly sending: boolean;
   readonly setSending: (sending: boolean) => void;
   readonly setError: (error: string | null) => void;
+  /** Shows a failed generation, with the fix when there is one. */
+  readonly showProviderError: (
+    caught: unknown,
+    provider?: SelectableProvider
+  ) => void;
   readonly rows: readonly ChatRow[];
   readonly setRows: (
     update: (current: readonly ChatRow[]) => readonly ChatRow[]
@@ -52,6 +57,7 @@ export const useRegenerateFromNode = ({
   sending,
   setSending,
   setError,
+  showProviderError,
   rows,
   setRows,
   getRowById,
@@ -142,7 +148,7 @@ export const useRegenerateFromNode = ({
           );
         }
       } catch (caught) {
-        setError(toGenerationErrorMessage(caught));
+        showProviderError(caught, session.provider);
         // Rows were trimmed optimistically; reload from the (unchanged)
         // path so the old response reappears after a failed regenerate.
         await refreshRows(session);
@@ -168,6 +174,7 @@ export const useRegenerateFromNode = ({
       setRows,
       setSending,
       shouldAutoScrollRef,
+      showProviderError,
     ]
   );
 };

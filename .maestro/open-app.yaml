@@ -1,0 +1,33 @@
+# Shared start for every flow: a cold launch with cleared data, through the
+# expo-dev-client launcher to the JS bundle served by Metro, to Home.
+# Run from another flow with `- runFlow: open-app.yaml`.
+appId: com.intrinsiclabs.aspengrove
+---
+- launchApp:
+    clearState: true
+# The development build opens on Expo's launcher: pick the running Metro
+# server. (tapOn waits for it to render; optional, so a build that skips the
+# launcher still passes.)
+- tapOn:
+    text: 'http://localhost:.*'
+    optional: true
+# Each cleared install shows the dev menu's one-time intro sheet once the
+# bundle loads (the first Metro bundle can take a minute to build).
+- extendedWaitUntil:
+    visible: 'Continue'
+    timeout: 120000
+    optional: true
+- tapOn:
+    text: 'Continue'
+    optional: true
+# ...which then leaves the dev menu itself open: close it.
+- tapOn:
+    id: 'xmark'
+    optional: true
+# A first launch shows onboarding over Home; a set-up install shows Home.
+- extendedWaitUntil:
+    visible:
+      id: 'home-welcome|onboarding-screen'
+    timeout: 120000
+# Let the dev menu finish sliding away before the first tap.
+- waitForAnimationToEnd
