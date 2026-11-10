@@ -32,18 +32,6 @@ export type Message = {
   readonly content: MessageContent;
 };
 
-export type ToolDefinition = {
-  readonly name: string;
-  readonly description: string;
-  readonly inputSchema: Record<string, unknown>;
-};
-
-export type ToolCall = {
-  readonly id: string;
-  readonly name: string;
-  readonly arguments: Record<string, unknown>;
-};
-
 export type TokenUsage = {
   readonly promptTokens: number;
   readonly completionTokens: number;
@@ -57,7 +45,6 @@ export type CompletionRequest = {
   readonly temperature?: number;
   readonly maxTokens?: number;
   readonly stopSequences?: readonly string[];
-  readonly tools?: readonly ToolDefinition[];
   /**
    * Cancels this one request. Adapters abort the underlying fetch; a stream
    * that already produced text ends with a `done` chunk whose
@@ -84,7 +71,6 @@ export type CompletionResponse = {
   readonly finishReason: 'stop' | 'length' | 'toolUse' | 'error';
   readonly interruptionReason?: StreamInterruptionReason;
   readonly usage?: TokenUsage;
-  readonly toolCalls?: readonly ToolCall[];
   readonly rawResponse: RawResponseCapture;
 };
 
@@ -95,15 +81,8 @@ export type StreamInterruptionReason =
   | 'cancelled';
 
 export type StreamChunk = {
-  readonly type:
-    | 'text'
-    | 'toolCallStart'
-    | 'toolCallDelta'
-    | 'toolCallEnd'
-    | 'done'
-    | 'error';
+  readonly type: 'text' | 'done' | 'error';
   readonly content?: string;
-  readonly toolCall?: Partial<ToolCall>;
   readonly usage?: TokenUsage;
   readonly finishReason?: CompletionResponse['finishReason'];
   readonly interruptedReason?: StreamInterruptionReason;

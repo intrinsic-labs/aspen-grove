@@ -1,7 +1,8 @@
 import { Children, Fragment, type ReactNode } from 'react';
-import { StyleSheet, Switch, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { AppSwitch } from './AppSwitch';
 import { AppText } from './primitives';
 
 type SettingsListProps = {
@@ -171,7 +172,6 @@ type SettingsSwitchRowProps = {
   readonly label: ReactNode;
   readonly value: boolean;
   readonly onValueChange: (value: boolean) => void;
-  readonly trackColor?: { false: string; true: string };
   readonly style?: ViewStyle | ViewStyle[];
   /** Forwarded to the host Switch. */
   readonly testID?: string;
@@ -181,7 +181,6 @@ export const SettingsSwitchRow = ({
   label,
   value,
   onValueChange,
-  trackColor,
   style,
   testID,
 }: SettingsSwitchRowProps) => (
@@ -189,12 +188,7 @@ export const SettingsSwitchRow = ({
     <AppText variant="ui" tone="primary" style={styles.switchLabel}>
       {label}
     </AppText>
-    <Switch
-      testID={testID}
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={trackColor}
-    />
+    <AppSwitch testID={testID} value={value} onValueChange={onValueChange} />
   </View>
 );
 

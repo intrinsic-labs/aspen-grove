@@ -1,3 +1,4 @@
+import { MissingProviderKeyError } from '@application/services/llm';
 import type { ICredentialStore } from '@application/services/security';
 import type { SelectableProvider } from '@domain/entities';
 
@@ -7,44 +8,41 @@ const ENV_KEY_MAP: Record<SelectableProvider, string> = {
 };
 
 /**
- * Reads API key for a provider from secure storage first, then env fallback.
- * For LM Studio, returns empty string if no key is found (it's optional).
+ * The stored key for a provider (secure storage first, then the build's env
+ * fallback), or `null` when there is none.
  */
-export const getProviderApiKey = async (
-  credentialStore: ICredentialStore,
+export const findProviderApiKey = async (
+  credentialStore: Pick<ICredentialStore, 'getProviderApiKey'>,
   provider: SelectableProvider
-): Promise<string> => {
+): Promise<string | null> => {
   const fromSecureStore = await credentialStore.getProviderApiKey(provider);
   if (fromSecureStore && fromSecureStore.trim().length > 0) {
     return fromSecureStore.trim();
   }
 
-  const envKey = ENV_KEY_MAP[provider];
   const fromEnv = (
     globalThis as {
       process?: { env?: Record<string, string | undefined> };
     }
-  ).process?.env?.[envKey]?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-
-  // LM Studio doesn't require an API key
-  if (provider === 'lmstudio') {
-    return '';
-  }
-
-  throw new Error(
-    `${provider} API key not found. Set ${envKey} or store in secure storage.`
-  );
+  ).process?.env?.[ENV_KEY_MAP[provider]]?.trim();
+  return fromEnv ? fromEnv : null;
 };
 
 /**
- * Reads OpenRouter API key from secure storage first, then env fallback.
- * @deprecated Use getProviderApiKey instead
+ * Reads the API key for a provider. LM Studio's token is optional, so it
+ * resolves to an empty string; a missing OpenRouter key throws
+ * `MissingProviderKeyError`, which the UI turns into "add your key".
  */
-export const getOpenRouterApiKey = async (
-  credentialStore: ICredentialStore
+export const getProviderApiKey = async (
+  credentialStore: Pick<ICredentialStore, 'getProviderApiKey'>,
+  provider: SelectableProvider
 ): Promise<string> => {
-  return getProviderApiKey(credentialStore, 'openrouter');
+  const key = await findProviderApiKey(credentialStore, provider);
+  if (key) {
+    return key;
+  }
+  if (provider === 'lmstudio') {
+    return '';
+  }
+  throw new MissingProviderKeyError(provider);
 };

@@ -11,7 +11,7 @@ import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { AgentConfigFields } from './AgentConfigFields';
 import { ModelPickerField } from './ModelPickerField';
-import { AGENT_TEMPLATES } from './agent-templates';
+import { AgentTemplateList } from './AgentTemplateList';
 import { validateAgentDraft, type AgentDraft } from './agent-editor-types';
 
 type AgentEditorSheetProps = {
@@ -46,11 +46,13 @@ export const AgentEditorSheet = ({
   const [draft, setDraft] = useState<AgentDraft>(initialDraft);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [templateKey, setTemplateKey] = useState<string | null>(null);
 
   // Re-seed the form whenever the sheet is (re)opened for a new target.
   useEffect(() => {
     if (visible) {
       setDraft(initialDraft);
+      setTemplateKey(null);
       setError(null);
       setSaving(false);
     }
@@ -128,24 +130,15 @@ export const AgentEditorSheet = ({
               <AppText variant="meta" tone="secondary" style={styles.blockLabel}>
                 START FROM A TEMPLATE
               </AppText>
-              <View style={styles.templatesRow}>
-                {AGENT_TEMPLATES.map((template) => (
-                  <Pressable
-                    key={template.key}
-                    testID={`agent-editor-template-${template.key}`}
-                    onPress={() => {
-                      setDraft(template.draft);
-                      setError(null);
-                    }}
-                    hitSlop={4}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-                  >
-                    <AppText variant="meta" style={{ color: colors.primary }}>
-                      {template.label}
-                    </AppText>
-                  </Pressable>
-                ))}
-              </View>
+              <AgentTemplateList
+                testIDPrefix="agent-editor-template"
+                selectedKey={templateKey}
+                onSelect={(template) => {
+                  setDraft(template.draft);
+                  setTemplateKey(template.key);
+                  setError(null);
+                }}
+              />
             </View>
           ) : null}
 
@@ -238,12 +231,6 @@ const styles = StyleSheet.create({
   },
   templatesBlock: {
     gap: 8,
-  },
-  templatesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: 20,
-    rowGap: 10,
   },
   block: {
     gap: 8,

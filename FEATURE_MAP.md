@@ -41,33 +41,40 @@ listed here.
 
 **First-launch state and the two prerequisite paths.**
 
-A fresh install, with no keys and no trees, opens on **Home** (`home-welcome`). Home shows a
-time-of-day greeting with no name, because `displayName` is unset and no UI sets it, plus a
-**New Loom Tree** button and the drawer button (`drawer-menu-button`, top left). Startup creates
-the human owner agent and a grove named "My Grove", but **no model agent**. So tapping
-New Loom Tree shows `home-error` ("No agents yet. Create one in Settings → Agents…"), and
-Loom Trees and drawer Recents are empty. Two paths unlock everything else, and the Reach lines
-below refer to them:
+A fresh install, with no keys, no model agent and no trees, opens on **Home**
+(`home-welcome`) and Home at once opens **onboarding** (`onboarding-screen`) over it, once:
+connect a provider, choose an agent, land in a first tree. Startup creates the human owner
+agent and a grove named "My Grove", but **no model agent**. Onboarding shows only while
+`user_preferences.onboarding_completed_at` is unset and there is no shared model agent
+(`src/application/services/onboarding/first-run.ts`); finishing or skipping sets the date,
+so an install that skipped, or one that already had an agent, stays on Home. After a skip,
+Home and an empty Loom Trees list show a one-line setup hint with its action
+(`home-setup-hint` / `home-setup-action`, `trees-setup-hint` / `trees-setup-action`):
+"Set up" reopens onboarding when there is no agent, "Add key" opens the Connections sheet
+when the default agent is on OpenRouter and no key is stored. Two paths unlock everything
+else, and the Reach lines below refer to them:
 
-- **P1, create an agent:** `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-agents` → `settings-agents-new` → pick a template (`agent-editor-template-*`)
-  or a provider tab (`agent-editor-model-provider-openrouter` / `-lmstudio`) and a model row
-  (`agent-editor-model-option-<model id>`, or type an id into
+- **P1, create an agent:** the onboarding path (`onboarding-provider-openrouter` → paste a
+  key into `connections-openrouter-key-input` → `onboarding-continue` → keep the
+  preselected `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`), which
+  also lands in a tree (P2). From Settings instead: `drawer-menu-button` →
+  `drawer-nav-settings` → `settings-link-agents` → `settings-agents-new` → pick a template
+  (`agent-editor-template-*`) or a provider tab (`agent-editor-model-provider-openrouter` /
+  `-lmstudio`) and a model row (`agent-editor-model-option-<model id>`, or type an id into
   `agent-editor-model-search-input` and tap `agent-editor-model-custom`) →
   `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
   key: the OpenRouter key in Connections, or a reachable LM Studio server. A build with
   `EXPO_PUBLIC_OPENROUTER_API_KEY` set falls back to that key (`provider-key.ts`).
-- **P2, open a tree:** after P1, `drawer-menu-button` → `drawer-nav-trees` →
-  `trees-menu-button` → "New Tree". If Home is still showing (a cold start), use
-  `home-new-tree-button` instead. This opens the Dialogue screen (`chat-screen`) on an empty,
-  *ephemeral* tree. If you go back without sending, the tree is deleted (see
-  `chat.ephemeral-discard`). Once a tree exists, `drawer-recents-row-<treeId>` or
-  `trees-list-row-<treeId>` reopens it.
+- **P2, open a tree:** onboarding's `onboarding-begin` opens one. Otherwise, after P1:
+  `home-new-tree-button` on Home, `trees-empty-new-tree` on an empty Loom Trees list, or
+  `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` → "New Tree". This opens
+  the Dialogue screen (`chat-screen`) on an empty, *ephemeral* tree. If you go back without
+  sending, the tree is deleted (see `chat.ephemeral-discard`). Once a tree exists,
+  `drawer-recents-row-<treeId>` or `trees-list-row-<treeId>` reopens it.
 
-On a **later** launch that has a model agent but zero dialogue trees, startup seeds a tree
-named "First Loom Tree" with the root text "Hello Aspen Grove."
-(`src/infrastructure/bootstrap/run-startup-orchestrator.ts`). So "no trees" is not a stable
-state across relaunches.
+Startup does not seed a tree: `runStartupOrchestrator` can create a "First Loom Tree", but
+`AppServicesProvider` calls it with `ensureDialogueSmokeTreeIfEmpty: false`. So "no trees"
+stays until the user makes one.
 
 **Driving notes (selectors).**
 
@@ -102,18 +109,18 @@ state across relaunches.
 
 ### Startup gate
 - **ID:** `app.bootstrap`
-- **Purpose:** On launch, opens the database, creates the defaults (preferences, human owner
-  agent, grove) and seeds a tree when one is due, showing a spinner and then the app or an
-  error.
+- **Purpose:** On launch, opens the database and creates the defaults (preferences, human
+  owner agent, grove), showing a spinner and then the app or an error.
 - **Where:** Full screen, before any route renders.
 - **Reach:** Cold start the app.
 - **Requires:** none
 - **Selector:** working — `app-bootstrap-loading` (spinner), `app-bootstrap-error` (failure text)
 - **Code:** `src/interface/composition/AppServicesProvider.tsx#AppBootstrapGate`, `src/infrastructure/bootstrap/run-startup-orchestrator.ts`, `src/application/use-cases/InitializeAppDefaultsUseCase.ts`, `src/app/_layout.tsx`
-- **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, plus `loom_trees` and
-  `nodes` for the seeded tree, through the Watermelon repositories
+- **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, through the Watermelon
+  repositories (schema v9 adds `user_preferences.onboarding_completed_at`)
 - **Status:** live
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
+  The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
 
 ### Navigation drawer
 - **ID:** `nav.drawer`
@@ -124,7 +131,7 @@ state across relaunches.
 - **Reach:** Cold start → `drawer-menu-button`.
 - **Requires:** none
 - **Selector:** working — `drawer-menu-button` (opens), `drawer-root` (drawer panel), `drawer-nav-trees`, `drawer-nav-search`, `drawer-nav-settings`
-- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`, `src/interface/components/drawer/DrawerMenuButton.tsx`, `src/app/(drawer)/_layout.tsx`
+- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`, `src/interface/components/drawer/DrawerMenuButton.tsx`, `src/interface/components/drawer/useDrawerHeaderStyle.ts`, `src/app/(drawer)/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
 - **Notes:** The drawer has no Home row. `NAV_ITEMS` holds trees, search and settings only,
@@ -148,16 +155,20 @@ state across relaunches.
 
 ### Home (welcome)
 - **ID:** `home.welcome`
-- **Purpose:** A quiet landing screen with a greeting and one entry point into a new tree.
+- **Purpose:** A quiet landing screen with a greeting and one entry point into a new tree. Until
+  a tree can start, the entry point is the step that unblocks it (`setup.hints`). On a first
+  run it opens onboarding.
 - **Where:** The drawer's initial screen.
-- **Reach:** Cold start. The drawer has no Home row (see `nav.drawer`).
+- **Reach:** Cold start, then `onboarding-skip` on a fresh install. The drawer has no Home row
+  (see `nav.drawer`).
 - **Requires:** none
-- **Selector:** working — `home-welcome` (screen), `home-new-tree-button`, `home-error`
-- **Code:** `src/interface/components/home/WelcomeView.tsx`, `src/app/(drawer)/index.tsx`
-- **Backend:** WatermelonDB `user_preferences.display_name` via `WatermelonUserPreferencesRepository#get`
+- **Selector:** working — `home-welcome` (screen), `home-new-tree-button` (only once ready), `home-setup-hint`, `home-setup-action`, `home-error`
+- **Code:** `src/interface/components/home/WelcomeView.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/(drawer)/index.tsx`
+- **Backend:** WatermelonDB `user_preferences.display_name` via `WatermelonUserPreferencesRepository#get`; setup status as in `setup.hints`
 - **Status:** live
 - **Notes:** The greeting changes with the time of day ("Up late", "Morning", "Afternoon",
-  "Evening"). No screen sets `displayName`, so no name is shown.
+  "Evening"). No screen sets `displayName`, so no name is shown. Nothing shows under the
+  greeting for the moment the setup status takes to load.
 
 ### Create a loom tree
 - **ID:** `trees.create`
@@ -167,9 +178,9 @@ state across relaunches.
   menu.
 - **Reach:** P1, then `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
   "New Tree". From a cold start you can use Home's `home-new-tree-button` instead.
-- **Requires:** A model agent (P1). Without one, `home-error` / `trees-error` shows the
-  "No agents yet" message.
-- **Selector:** working — `home-new-tree-button`; menu item none — native context menu item; reach via long-press on `trees-menu-button` (a tap opens it)
+- **Requires:** A model agent (P1). Without one, the menu's "New Tree" opens onboarding
+  instead (there is no "No agents yet" error any more).
+- **Selector:** working — `home-new-tree-button`, `trees-empty-new-tree`; menu item none — native context menu item; reach via long-press on `trees-menu-button` (a tap opens it)
 - **Code:** `src/interface/hooks/useCreateLoomTree.ts`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`
@@ -183,10 +194,11 @@ state across relaunches.
   time. Tap a row to open it.
 - **Where:** Drawer → Loom Trees.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees`.
-- **Requires:** none. When empty it shows "No dialogue trees yet. Open the ··· menu to create
-  one."
-- **Selector:** working — `trees-screen`, `trees-list`, rows `trees-list-row-<treeId>`, `trees-error`, `trees-menu-button`
-- **Code:** `src/interface/components/LoomTreeListView.tsx`, `src/app/(drawer)/trees.tsx`
+- **Requires:** none. When empty it shows "No loom trees yet." with a New Loom Tree button
+  (`trees-empty-new-tree`), or, before a tree can start, the setup hint (`setup.hints`).
+  With a tag filter on and no match it shows "No trees with this tag."
+- **Selector:** working — `trees-screen`, `trees-list`, rows `trees-list-row-<treeId>`, `trees-empty`, `trees-empty-new-tree`, `trees-setup-hint`, `trees-setup-action`, `trees-error`, `trees-menu-button`
+- **Code:** `src/interface/components/LoomTreeListView.tsx`, `src/interface/components/trees/TreesEmptyState.tsx`, `src/app/(drawer)/trees.tsx`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
 
@@ -220,6 +232,85 @@ state across relaunches.
 - **Notes:** Errors land in `trees-error`. The format is sniffed from content
   (`detect.ts`), not from the file extension.
 
+### Setup hints (no agent, no key)
+- **ID:** `setup.hints`
+- **Purpose:** Where a tree can't start yet, one line says what to do and the action sits
+  under it: "Choose a model to start your first tree." with "Set up" (opens onboarding),
+  or "Add your OpenRouter key to start a tree." with "Add key" (opens the Connections
+  sheet).
+- **Where:** Home, in place of New Loom Tree; the empty Loom Trees list, under "No loom
+  trees yet."
+- **Reach:** Fresh install → `onboarding-skip` → Home shows `home-setup-hint`. For "no key":
+  create an OpenRouter agent in Settings → Agents without storing a key.
+- **Requires:** Not ready to start a tree: no model agent, or an OpenRouter default agent and
+  no key. LM Studio reachability is not checked here; a server that is down is reported
+  when generation fails (`chat.dialogue`).
+- **Selector:** working — `home-setup-hint`, `home-setup-action`, `trees-setup-hint`, `trees-setup-action`
+- **Code:** `src/interface/components/setup/SetupHint.tsx`, `src/interface/components/setup/setup-hint-copy.ts`, `src/interface/hooks/useSetupStatus.ts`, `src/application/use-cases/GetSetupStatusUseCase.ts`, `src/application/services/onboarding/setup-status.ts`
+- **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
+  `onboarding_completed_at`); `expo-secure-store` `openrouter_api_key` (read only)
+- **Status:** live
+- **Notes:** Re-read on every focus, so returning from onboarding or Connections updates it.
+
+## Onboarding
+
+### First-run setup
+- **ID:** `onboarding.first-run`
+- **Purpose:** On a fresh install, a two-step setup (connect a provider, choose an agent) that
+  ends in a first tree. Skippable from every step.
+- **Where:** Route `onboarding`, a full screen over Home with no stack header. "1 of 2" /
+  "2 of 2" at the top, Back (step 2) at the left, Skip at the right, the step's button at
+  the bottom.
+- **Reach:** Cold start of a fresh install (it opens by itself), or `home-setup-action` /
+  `trees-setup-action` after a skip.
+- **Requires:** none
+- **Selector:** working — `onboarding-screen`, `onboarding-step-indicator`, `onboarding-skip`, `onboarding-back`, `onboarding-error`
+- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/useOnboardingFlow.ts`, `src/interface/components/onboarding/OnboardingHeading.tsx`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`
+- **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set on finish and on
+  skip)
+- **Status:** live
+- **Notes:** Skip goes back to Home, which then shows the setup hint. It opens once per launch
+  at most, and never again after a finish or skip.
+
+### Onboarding: connect a provider
+- **ID:** `onboarding.connect`
+- **Purpose:** Step 1. Choose OpenRouter (paste a key) or LM Studio (a server address and a
+  connection test), using the same fields and storage as Settings → Connections.
+- **Where:** `onboarding` step 1.
+- **Reach:** Fresh install → `onboarding-provider-openrouter` →
+  `connections-openrouter-key-input` → `onboarding-continue`; or
+  `onboarding-provider-lmstudio` → `connections-lmstudio-endpoint-input` →
+  `connections-lmstudio-test` → `onboarding-continue`.
+- **Requires:** none. Continue needs a key (OpenRouter) or an address (LM Studio); a
+  failing LM Studio test does not block it.
+- **Selector:** working — `onboarding-step-provider`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-continue`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
+- **Code:** `src/interface/components/onboarding/ProviderStep.tsx`, `src/interface/components/onboarding/ProviderOption.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`
+- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
+  (secure store and `user_preferences.lmstudio_settings`); Continue saves at once
+- **Status:** live
+- **Notes:** The LM Studio token and auto-load rows are left out here; they stay in Settings.
+
+### Onboarding: choose an agent
+- **ID:** `onboarding.agent`
+- **Purpose:** Step 2. OpenRouter: the agent templates with the first ("Claude Sonnet
+  (Balanced)") preselected, plus "Customize…" for the full agent editor. LM Studio: the
+  models the server reports. Begin creates the agent (the first becomes the default), marks
+  onboarding done and replaces onboarding with a new tree.
+- **Where:** `onboarding` step 2.
+- **Reach:** `onboarding.connect` → `onboarding-continue` → (optionally
+  `onboarding-template-<key>`, or `onboarding-agent-customize` → edit → `agent-editor-submit`
+  "Use"; for LM Studio `onboarding-agent-model-option-<model id>`) → `onboarding-begin`.
+- **Requires:** LM Studio: a reachable server to list models. When it isn't,
+  `onboarding-agent-model-error` says so in plain words with a refresh button
+  (`onboarding-agent-model-refresh`).
+- **Selector:** working — `onboarding-step-agent`, `onboarding-template-<key>`, `onboarding-agent-customize`, `onboarding-agent-custom`, `onboarding-begin`, LM Studio picker with prefix `onboarding-agent` (as in `settings.agents.model-picker`, provider tabs hidden); the customize sheet is `agent-editor-*` (`settings.agents.editor`)
+- **Code:** `src/interface/components/onboarding/AgentStep.tsx`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
+  `onboarding_completed_at`), then the tree tables as in `trees.create`
+- **Status:** live
+- **Notes:** Back from the new tree without sending discards it (`chat.ephemeral-discard`)
+  and returns to Home, which shows New Loom Tree.
+
 ## Search
 
 ### Search node content
@@ -248,14 +339,18 @@ state across relaunches.
   title, `···` at the right).
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
 - **Notes:** Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
+  A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
+  Connections (LM Studio not answering, no OpenRouter key, key refused),
+  `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
+  provider errors keep their `[provider:code]` detail.
 
 ### Compose and send
 - **ID:** `chat.composer`
@@ -275,7 +370,9 @@ state across relaunches.
 - **Status:** live
 - **Notes:** The send icon shows `···` while sending and a checkmark while editing (label
   "Save"). The provider key is read from SecureStore first, then from
-  `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`).
+  `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
+  OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
+  Connections to generate." with `chat-error-action`.
 
 ### Expanded composer
 - **ID:** `chat.composer-expanded`
@@ -609,9 +706,13 @@ state across relaunches.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
 - **Requires:** none
 - **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`
-- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
+- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
+- **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
+  stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
+  gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
+  it off. The pushed sub-screens keep native headers with a system back button.
 
 ### Agents library
 - **ID:** `settings.agents`
@@ -636,12 +737,13 @@ state across relaunches.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
 - **Requires:** none
-- **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>`, `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/AgentConfigFields.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
+- **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
+- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/AgentConfigFields.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
-- **Notes:** Template keys come from `agent-templates.ts`. Validation errors show in
-  `agent-editor-error`.
+- **Notes:** Template keys come from `agent-templates.ts`. Templates are one full-width row
+  each (name, then model id and temperature); a tapped row is checked in gold. Their model
+  ids are OpenRouter `~…-latest` aliases. Validation errors show in `agent-editor-error`.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
@@ -659,7 +761,9 @@ state across relaunches.
   Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
 - **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. At most
-  25 options render at once, so search to narrow.
+  25 options render at once, so search to narrow. The OpenRouter search placeholder is
+  "Search or paste a model id". A failed LM Studio discovery reads "LM Studio isn't
+  answering…" in `<prefix>-model-error`, not the raw fetch error.
 
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
@@ -669,29 +773,48 @@ state across relaunches.
   `settings-link-connections` → `connections-openrouter-key-input`.
 - **Requires:** none
 - **Selector:** working — `settings-connections-screen`, `connections-openrouter`, `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
+- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
-- **Notes:** Autosaves about 450 ms after typing. The section footer reports whether a key is
-  stored. Clearing the field removes the key.
+- **Notes:** Autosaves about 450 ms after typing, and saves a pending edit when the screen
+  closes. The section footer reports whether a key is stored. Clearing the field removes the
+  key.
+
+### Connections sheet
+- **ID:** `settings.connections.sheet`
+- **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
+  an LM Studio server that is down can be fixed without leaving a tree.
+- **Where:** Route `connections`, a modal page sheet with "Connections" and Done at the top.
+- **Reach:** `home-setup-action` ("Add key"), `trees-setup-action` ("Add key") or
+  `chat-error-action` ("Open Connections").
+- **Requires:** none
+- **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.openrouter` and `settings.connections.lmstudio`
+- **Code:** `src/interface/components/settings/screens/ConnectionsSheetScreen.tsx`, `src/app/connections.tsx`
+- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
+- **Status:** live
+- **Notes:** Swipe down also closes it.
 
 ### LM Studio connection
 - **ID:** `settings.connections.lmstudio`
-- **Purpose:** Sets the LM Studio server address and an optional API token, toggles MCP tools
-  and model auto-load, and tests the connection.
+- **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
+  auto-load, and tests the connection.
 - **Where:** Settings → Connections, in the LM Studio section.
 - **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-mcp-tools`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`
-- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
+- **Code:** `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
-- **Notes:** The status text is one of Untested, Checking…, Connected or Not reachable.
+- **Notes:** The status text is one of Untested, Checking…, Connected or Not reachable. When
+  the test fails, the button reads "Test again" and `connections-lmstudio-error` explains
+  it: "LM Studio isn't answering at <address>. Start its local server, then try again.",
+  plus a phone hint when the address is localhost. The Auto-load switch is gold when on and
+  a dim track when off (`AppSwitch`).
 
 ### Message typography
 - **ID:** `settings.typography`
@@ -716,7 +839,7 @@ state across relaunches.
   `settings-link-behavior` → `settings-behavior-auto-title`.
 - **Requires:** none
 - **Selector:** working — `settings-behavior-screen`, `settings-behavior-auto-title`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/screens/BehaviorSettingsScreen.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/app/(drawer)/settings/behavior.tsx`
+- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/screens/BehaviorSettingsScreen.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/app/(drawer)/settings/behavior.tsx`
 - **Backend:** WatermelonDB `user_preferences.auto_title_enabled`
 - **Status:** live
 

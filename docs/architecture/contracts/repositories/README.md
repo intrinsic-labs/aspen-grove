@@ -27,7 +27,7 @@ Repositories provide the boundary between application logic and persistence. Use
 | [Provenance Repositories](./provenance-repositories.md) | RawApiResponse |
 | [User Preferences Repository](./user-preferences-repository.md) | UserPreferences singleton |
 
-Path and path-state persistence (`IPathRepository`) has no contract doc; read `src/application/repositories/core/IPathRepository.ts`. The interfaces for the cut Document and Link entities, `ILocalModelRepository` and `ITimestampCertificateRepository` still exist in `src/application/repositories/` with no implementation.
+Path and path-state persistence (`IPathRepository`) has no contract doc; read `src/application/repositories/core/IPathRepository.ts`.
 
 ---
 
@@ -103,4 +103,4 @@ Repositories detect active transaction and participate automatically.
 - [Core Entities](../../model/core-entities.md) — Entity definitions
 - [Agents](../../model/agents.md) — Agent and Model entities
 - [Organization](../../model/organization.md) — Grove and Tag entities
-- [Provenance](../../model/provenance.md) — RawApiResponse and TimestampCertificate entities
+- [Provenance](../../model/provenance.md) — RawApiResponse and the hash chain

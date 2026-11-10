@@ -18,6 +18,7 @@ import {
   GenerateDialogueContinuationUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
+  GetSetupStatusUseCase,
   ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
@@ -50,6 +51,7 @@ import {
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { ExpoSpeechSynthesizer } from '@infrastructure/speech';
 import { parseULID, type ULID } from '@domain/value-objects';
+import { findProviderApiKey } from '@/interface/components/chat/provider-key';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 
@@ -86,6 +88,7 @@ type AppServices = {
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
+    readonly getSetupStatusUseCase: GetSetupStatusUseCase;
     readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
@@ -247,6 +250,14 @@ const buildAppServices = (): AppServices => {
       userPreferencesRepository: repositories.userPreferencesRepo,
       providerRegistry: adapters.providerRegistry,
     }),
+    // First-run onboarding and the Home / Loom Trees empty states.
+    getSetupStatusUseCase: new GetSetupStatusUseCase({
+      agentRepository: repositories.agentRepo,
+      userPreferencesRepository: repositories.userPreferencesRepo,
+      hasOpenRouterKey: async () =>
+        (await findProviderApiKey(adapters.credentialStore, 'openrouter')) !==
+        null,
+    }),
   } as const;
 
   const speech = {
@@ -311,7 +322,7 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
           await services.repositories.userPreferencesRepo.get();
 
         // Initialize LM Studio adapter with stored connection settings.
-        // This is connection-level config (endpoint, MCP toggle) — NOT a
+        // This is connection-level config (endpoint, auto-load) — NOT a
         // declaration that LM Studio is the active provider.
         const lmSettings = userPreferences.lmstudioSettings;
         if (lmSettings) {
@@ -322,7 +333,6 @@ export const AppServicesProvider = ({ children }: AppServicesProviderProps) => {
             { endpoint: lmSettings.endpoint }
           );
           lmAdapter.configure({
-            useMcpTools: lmSettings.useMcpTools,
             autoLoadModels: lmSettings.autoLoadModels,
           });
         }

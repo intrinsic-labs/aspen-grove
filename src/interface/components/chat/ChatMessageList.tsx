@@ -36,6 +36,7 @@ import Animated, {
   StretchInY,
   StretchOutY,
 } from 'react-native-reanimated';
+import type { ProviderErrorAction } from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
@@ -44,6 +45,7 @@ import {
   ContinuationRail,
   type ContinuationMenuAction,
 } from './ContinuationRail';
+import { ChatErrorNotice } from './ChatErrorNotice';
 import { MarkdownText } from './MarkdownText';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
 import type {
@@ -91,6 +93,9 @@ type ChatMessageListProps = {
   readonly composerHeight: number;
   readonly headerHeight: number;
   readonly error: string | null;
+  /** What fixes `error`, when something does (e.g. open Connections). */
+  readonly errorAction: ProviderErrorAction;
+  readonly onErrorAction: () => void;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   readonly onMessageAction: (
@@ -121,6 +126,8 @@ export const ChatMessageList = memo(
     composerHeight,
     headerHeight,
     error,
+    errorAction,
+    onErrorAction,
     scrollRef,
     onScroll,
     onMessageAction,
@@ -442,14 +449,11 @@ export const ChatMessageList = memo(
         ) : null}
 
         {error ? (
-          <AppText
-            testID="chat-error"
-            variant="meta"
-            tone="accent"
-            style={styles.errorText}
-          >
-            {error}
-          </AppText>
+          <ChatErrorNotice
+            message={error}
+            action={errorAction}
+            onAction={onErrorAction}
+          />
         ) : null}
 
         {sending ? <View style={styles.bottomSpacer} /> : null}
@@ -778,9 +782,6 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: loomUiTokens.messageList.textSize,
     lineHeight: loomUiTokens.messageList.textLineHeight,
-  },
-  errorText: {
-    marginTop: loomUiTokens.messageList.errorTopMargin,
   },
   bottomSpacer: {
     height: loomUiTokens.messageList.sendingBottomSpacer,

@@ -16,6 +16,10 @@ import { createULID, type ULID } from '@domain/value-objects';
 
 import UserPreferencesModel from '../model/UserPreferences';
 import { toOptionalString } from './helpers';
+import {
+  mergeLMStudioSettings,
+  parseLMStudioSettings,
+} from './lmstudio-settings';
 
 const DEFAULT_DISPLAY_NAME = 'Human';
 const DEFAULT_THEME: Theme = 'system';
@@ -26,35 +30,6 @@ const DEFAULT_VERBOSE_ERROR_ALERTS = false;
 const DEFAULT_AUTO_TITLE_ENABLED = true;
 const DEFAULT_NODE_VIEW_STYLE: NodeViewStyle = 'filled';
 const DEFAULT_NODE_CORNER_RADIUS = 8;
-
-const parseLMStudioSettings = (json: string | null): LMStudioSettings => {
-  if (!json) {
-    return DEFAULT_LMSTUDIO_SETTINGS;
-  }
-  try {
-    const parsed = JSON.parse(json) as Partial<LMStudioSettings>;
-    return {
-      endpoint: parsed.endpoint ?? DEFAULT_LMSTUDIO_SETTINGS.endpoint,
-      useMcpTools: parsed.useMcpTools ?? DEFAULT_LMSTUDIO_SETTINGS.useMcpTools,
-      autoLoadModels:
-        parsed.autoLoadModels ?? DEFAULT_LMSTUDIO_SETTINGS.autoLoadModels,
-      idleTtlSeconds:
-        parsed.idleTtlSeconds ?? DEFAULT_LMSTUDIO_SETTINGS.idleTtlSeconds,
-    };
-  } catch {
-    return DEFAULT_LMSTUDIO_SETTINGS;
-  }
-};
-
-const mergeLMStudioSettings = (
-  existing: LMStudioSettings,
-  changes: Partial<LMStudioSettings>
-): LMStudioSettings => ({
-  endpoint: changes.endpoint ?? existing.endpoint,
-  useMcpTools: changes.useMcpTools ?? existing.useMcpTools,
-  autoLoadModels: changes.autoLoadModels ?? existing.autoLoadModels,
-  idleTtlSeconds: changes.idleTtlSeconds ?? existing.idleTtlSeconds,
-});
 
 /** WatermelonDB implementation of `IUserPreferencesRepository`. */
 export class WatermelonUserPreferencesRepository implements IUserPreferencesRepository {
@@ -137,6 +112,10 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
           record.defaultModelAgentId = changes.defaultModelAgentId;
         }
 
+        if (changes.onboardingCompletedAt !== undefined) {
+          record.onboardingCompletedAt = changes.onboardingCompletedAt;
+        }
+
         record.updatedAt = this.now();
       });
 
@@ -183,6 +162,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.nodeViewCornerRadius = DEFAULT_NODE_CORNER_RADIUS;
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
       record.defaultModelAgentId = null;
+      record.onboardingCompletedAt = null;
       record.createdAt = createdAt;
       record.updatedAt = createdAt;
     });
@@ -208,6 +188,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       defaultModelAgentId: model.defaultModelAgentId
         ? (model.defaultModelAgentId as ULID)
         : undefined,
+      onboardingCompletedAt: model.onboardingCompletedAt ?? undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     };
