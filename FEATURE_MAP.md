@@ -391,8 +391,8 @@ stays until the user makes one.
   while a reply (or a regenerate) streams, the button is a stop circle,
   `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request
   through the same `AbortSignal` a parallel card's stop uses. Text that already streamed is
-  saved as the reply with `[stream interrupted: cancelled]` appended, exactly as a stopped
-  parallel card is, and no error shows; a stop before any text keeps the user's message
+  saved as the reply with no marker (Latent Spaces' `stopStreaming`, LLMManager.swift:45),
+  exactly as a stopped parallel card is, and no error shows; a stop before any text keeps the user's message
   and saves no reply. Leaving the screen stops it too. Saving an edit streams nothing and
   shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
@@ -442,7 +442,7 @@ stays until the user makes one.
   `raw_api_responses` and `path_states`.
 - **Status:** live
 - **Notes:** While it streams, `chat-composer-stop` stops it as it stops a send: streamed
-  text is kept as the new sibling, marked `[stream interrupted: cancelled]`; a stop before
+  text is kept, unmarked, as the new sibling; a stop before
   any text saves nothing and the old response comes back.
 
 ### Edit as branch
@@ -554,9 +554,10 @@ stays until the user makes one.
 - **Notes:** Card states: `pending` ("Waiting for the model…", request sent, no text yet),
   `streaming` (text plus a character count), `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
-  convention: a stop or interruption after text saves the partial text with a
-  `[stream interrupted: <reason>]` line appended (so a stopped node stays marked after a
-  restart); a failure or stop before any text saves nothing. A finished run's cards stay while
+  convention: a stop after text saves the partial text as is (no marker, so the next turn
+  doesn't send one to the model); a network, timeout or provider interruption after text saves
+  it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
+  saves nothing. A finished run's cards stay while
   the rail shows that node; once the rail closes or moves, the saved ones show as ordinary
   sibling cards. Closing the rail, or making a card current (which closes it), leaves the
   others streaming; leaving the Dialogue screen stops them all. A saved card reloads the rail

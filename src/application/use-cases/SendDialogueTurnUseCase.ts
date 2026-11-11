@@ -38,8 +38,9 @@ export type SendDialogueTurnInput = {
   readonly stream?: boolean;
   /**
    * Stops the reply (the composer's stop button). The user's turn is already
-   * saved by then. Text that already streamed is saved as the reply, marked
-   * `[stream interrupted: cancelled]` (as a stopped parallel card is); a stop
+   * saved by then. Text that already streamed is saved as the reply, as is
+   * (no marker; `completion.interruptionReason` is `cancelled`), as a
+   * stopped parallel card is; a stop
    * before any text saves no reply and rejects with a `cancelled`
    * `LlmProviderError`.
    */

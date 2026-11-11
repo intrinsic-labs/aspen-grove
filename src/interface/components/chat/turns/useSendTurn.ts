@@ -170,7 +170,7 @@ export const useSendTurn = ({
 
       maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
 
-      // A stopped reply keeps its text, marked stopped, and isn't read aloud.
+      // A stopped reply keeps its partial text, unmarked, and isn't read aloud.
       const reason = turnResult.completion.interruptionReason;
       const notice = interruptionNotice(reason);
       if (notice) {

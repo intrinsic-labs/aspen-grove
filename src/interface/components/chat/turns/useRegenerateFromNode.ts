@@ -158,7 +158,7 @@ export const useRegenerateFromNode = ({
         });
         reset();
 
-        // A stopped response keeps its text, marked stopped, as a sibling.
+        // A stopped response keeps its partial text, unmarked, as a sibling.
         const reason = result.completion.interruptionReason;
         const notice = interruptionNotice(reason);
         if (notice) {

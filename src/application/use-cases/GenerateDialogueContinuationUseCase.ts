@@ -33,7 +33,7 @@ export type GenerateDialogueContinuationInput = {
   readonly activateGeneratedNode?: boolean;
   /**
    * Stops the generation (regenerate's stop button). Streamed text is saved
-   * and marked `[stream interrupted: cancelled]`, as for a send; a stop
+   * as is, with no marker, as for a send; a stop
    * before any text saves nothing, leaves the path as it was and rejects
    * with a `cancelled` `LlmProviderError`.
    */

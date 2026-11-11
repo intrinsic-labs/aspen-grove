@@ -89,7 +89,7 @@ describe('stopping a single generation', () => {
     expect(fake.requests[0].signal).toBe(stop.signal);
     expect(result.completion.interruptionReason).toBe('cancelled');
     expect(textOf(store, result.assistantNodeId)).toBe(
-      'Once upon\n\n[stream interrupted: cancelled]'
+      'Once upon'
     );
     expect(store.pathNodeIds().slice(-2)).toEqual([
       result.userNodeId,
@@ -144,7 +144,7 @@ describe('stopping a single generation', () => {
     expect(fake.requests[0].signal).toBe(stop.signal);
     expect(result.completion.interruptionReason).toBe('cancelled');
     expect(textOf(store, result.assistantNodeId)).toBe(
-      'Partial\n\n[stream interrupted: cancelled]'
+      'Partial'
     );
     expect(store.childrenOfSource()).toEqual([result.assistantNodeId]);
     expect(store.activeNodeId()).toBe(result.assistantNodeId);

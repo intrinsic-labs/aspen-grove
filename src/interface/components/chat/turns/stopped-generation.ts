@@ -17,8 +17,8 @@ export const isStoppedBeforeText = (
 
 /**
  * What to say after a reply ended early and its partial text was saved. A
- * user's stop says nothing: the saved node already ends in
- * `[stream interrupted: cancelled]`, as a stopped parallel card does.
+ * user's stop says nothing: they asked for it, and the saved node keeps
+ * just the partial text, as a stopped parallel card does.
  */
 export const interruptionNotice = (
   reason: StreamInterruptionReason | undefined
