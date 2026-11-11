@@ -47,23 +47,24 @@ appId: com.intrinsiclabs.aspengrove
       - tapOn:
           id: BackButton
 
-# P1 on the mock model.
+# P1 on the mock model. Name it first: in the inset-grouped editor the model
+# list sits below the fold, and scrolling to it after typing loses the name.
 - tapOn:
     id: settings-link-agents
 - tapOn:
     id: settings-agents-new
 - tapOn:
-    id: agent-editor-model-provider-lmstudio
-- extendedWaitUntil:
-    visible:
-      id: agent-editor-model-option-${MOCK_MODEL}
-    timeout: 10000
-- tapOn:
-    id: agent-editor-model-option-${MOCK_MODEL}
-- tapOn:
     id: agent-editor-name-input
 - inputText: Mock
 - hideKeyboard
+- tapOn:
+    id: agent-editor-model-provider-lmstudio
+- scrollUntilVisible:
+    element:
+      id: agent-editor-model-option-${MOCK_MODEL}
+    timeout: 15000
+- tapOn:
+    id: agent-editor-model-option-${MOCK_MODEL}
 - takeScreenshot: mock-02-agent-editor
 - tapOn:
     id: agent-editor-submit
