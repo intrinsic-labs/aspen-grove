@@ -27,6 +27,7 @@ import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendTurn } from './turns/useSendTurn';
+import { useStopGeneration } from './turns/useStopGeneration';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
@@ -80,6 +81,7 @@ export const useLoomTreeChatController = () => {
   });
 
   const streaming = useStreamingAssistantRow();
+  const stopGeneration = useStopGeneration();
   const continuations = useNodeContinuations({
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
@@ -223,6 +225,7 @@ export const useLoomTreeChatController = () => {
     getRowById: nodeActions.getRowById,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     continuations,
     refreshRows,
     refreshRowsAndContinuations,
@@ -244,6 +247,7 @@ export const useLoomTreeChatController = () => {
     setEditTarget,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     markAsNonEphemeral,
     refreshRowsAndContinuations,
     maybeGenerateTreeTitle,
@@ -297,6 +301,10 @@ export const useLoomTreeChatController = () => {
     rows,
     streamingAssistantText: streaming.streamingText,
     onSend,
+    // A send or regenerate is streaming and can be stopped from the composer.
+    canStop: stopGeneration.stoppable,
+    stopping: stopGeneration.stopping,
+    onStop: stopGeneration.stop,
     onMessageAction,
     onMessageListScroll,
     onComposerFocus,

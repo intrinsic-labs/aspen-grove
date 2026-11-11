@@ -8,13 +8,13 @@ import {
   verifyModelNodeProvenance,
   type ModelNodeProvenanceVerificationResult,
 } from '@application/services/provenance';
-import type { TokenUsage } from '@domain/entities';
+import type { NodeAuthorType, TokenUsage } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
 export type NodeDetailData = {
   readonly nodeId: ULID;
   readonly localId: string;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: NodeAuthorType;
   readonly text: string;
   readonly createdAt: Date;
   readonly editedFrom?: ULID;

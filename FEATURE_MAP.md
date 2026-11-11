@@ -235,7 +235,9 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`, `path_states`
 - **Status:** live
 - **Notes:** Errors land in `trees-error`. The format is sniffed from content
-  (`detect.ts`), not from the file extension.
+  (`detect.ts`), not from the file extension. Node roles map to `human`, `model` and
+  `system` (`mixed` reads as human); system nodes render and send as system messages
+  (`chat.dialogue`) and export back as `author.role: "system"`.
 
 ### Setup hints (no agent, no key)
 - **ID:** `setup.hints`
@@ -338,14 +340,15 @@ stays until the user makes one.
 ### Dialogue view
 - **ID:** `chat.dialogue`
 - **Purpose:** Shows the active path of a tree as a conversation: human bubbles on the right,
-  model text in markdown on the left, and a caption under each node for bookmarks,
+  model text in markdown on the left, system messages centered without a bubble at 0.6
+  opacity (as Latent Spaces draws them), and a caption under each node for bookmarks,
   continuation count and pruned state.
 - **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
   title, `···` at the right).
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -358,6 +361,14 @@ stays until the user makes one.
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
   provider errors keep their `[provider:code]` detail.
+  **System messages:** a node with `authorType` `system` (an Open Loom node with
+  `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
+  `trees.import`; the app has no control that writes one yet) renders centered in the
+  message font at 0.6 opacity with no background, and its row is the same
+  `chat-message-row-<nodeId>`. It goes to the model in place on the path with the `system`
+  role; the agent prompt and tree context still go first, once
+  (`src/application/services/context/assemble-dialogue-context.ts`). Editing one saves an
+  edited system message. Export writes it back as `author.role: "system"`.
 
 ### Compose and send
 - **ID:** `chat.composer`
@@ -368,16 +379,22 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
-- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
 - **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
-  while the input is empty; it shows `···` while sending and a checkmark while editing
-  (label "Save"). The provider key is read from SecureStore first, then from
+  while the input is empty and shows a checkmark while editing (label "Save"). **Stop:**
+  while a reply (or a regenerate) streams, the button is a stop circle,
+  `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request
+  through the same `AbortSignal` a parallel card's stop uses. Text that already streamed is
+  saved as the reply with `[stream interrupted: cancelled]` appended, exactly as a stopped
+  parallel card is, and no error shows; a stop before any text keeps the user's message
+  and saves no reply. Leaving the screen stops it too. Saving an edit streams nothing and
+  shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
   Connections to generate." with `chat-error-action`.
@@ -420,10 +437,13 @@ stays until the user makes one.
   "Regenerate".
 - **Requires:** A model message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
+- **Notes:** While it streams, `chat-composer-stop` stops it as it stops a send: streamed
+  text is kept as the new sibling, marked `[stream interrupted: cancelled]`; a stop before
+  any text saves nothing and the old response comes back.
 
 ### Edit as branch
 - **ID:** `chat.edit-branch`

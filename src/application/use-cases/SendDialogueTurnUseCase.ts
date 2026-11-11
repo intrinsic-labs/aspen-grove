@@ -36,6 +36,14 @@ export type SendDialogueTurnInput = {
   readonly providerApiKey: string;
   readonly providerAppName?: string;
   readonly stream?: boolean;
+  /**
+   * Stops the reply (the composer's stop button). The user's turn is already
+   * saved by then. Text that already streamed is saved as the reply, marked
+   * `[stream interrupted: cancelled]` (as a stopped parallel card is); a stop
+   * before any text saves no reply and rejects with a `cancelled`
+   * `LlmProviderError`.
+   */
+  readonly signal?: AbortSignal;
   readonly onUserNodeCommitted?: (input: {
     readonly userNodeId: ULID;
   }) => void | Promise<void>;
@@ -219,6 +227,7 @@ export class SendDialogueTurnUseCase {
         temperature: modelAgent.configuration.temperature,
         maxTokens: modelAgent.configuration.maxTokens,
         stopSequences: modelAgent.configuration.stopSequences,
+        signal: input.signal,
       },
       onTextDelta: input.onAssistantTextDelta,
     });

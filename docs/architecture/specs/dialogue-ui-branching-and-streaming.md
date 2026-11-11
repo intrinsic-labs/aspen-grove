@@ -111,6 +111,8 @@ Scope: Dialogue mode only
 - Edited node must set `editedFrom` to the original node id.
 - Edited node author must be human (`authorType: "human"`), even when editing model-authored text.
   - Reason: prevents conflating manual edits with provider-authenticated model output/provenance.
+  - Exception: editing a system node keeps `authorType: "system"`. It is still the human's
+    node (`authorAgentId` is the owner, hashed as human), and it stays a system message.
 - Root-node edit is out of scope for first pass (no parent continuation source).
 - Empty edit content is rejected (no empty nodes).
 

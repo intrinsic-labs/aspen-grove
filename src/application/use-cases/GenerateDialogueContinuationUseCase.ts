@@ -31,6 +31,13 @@ export type GenerateDialogueContinuationInput = {
   readonly providerAppName?: string;
   readonly stream?: boolean;
   readonly activateGeneratedNode?: boolean;
+  /**
+   * Stops the generation (regenerate's stop button). Streamed text is saved
+   * and marked `[stream interrupted: cancelled]`, as for a send; a stop
+   * before any text saves nothing, leaves the path as it was and rejects
+   * with a `cancelled` `LlmProviderError`.
+   */
+  readonly signal?: AbortSignal;
   readonly onAssistantTextDelta?: (input: {
     readonly delta: string;
     readonly content: string;
@@ -147,7 +154,7 @@ export class GenerateDialogueContinuationUseCase {
     const completion = await collectCompletion({
       llmProvider,
       stream: input.stream ?? false,
-      request,
+      request: { ...request, signal: input.signal },
       onTextDelta: input.onAssistantTextDelta,
     });
 

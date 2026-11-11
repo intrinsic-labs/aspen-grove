@@ -105,6 +105,9 @@ const LoomTreeChatView = () => {
         onCancelEdit={controller.onCancelEdit}
         loading={controller.loading}
         sending={controller.sending}
+        canStop={controller.canStop}
+        stopping={controller.stopping}
+        onStop={controller.onStop}
         inputRef={controller.inputRef}
         onInputFocus={controller.onComposerFocus}
         onComposerLayout={setComposerHeight}

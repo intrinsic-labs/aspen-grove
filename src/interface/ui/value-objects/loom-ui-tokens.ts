@@ -76,6 +76,12 @@ export const loomUiTokens = {
     bottomOffset: 8,
     // NodeView.swift:33
     messageTextOpacity: 0.9,
+    // A system node: `Color.primary.opacity(0.6)` (NodeView.swift:33),
+    // centered (`.center` alignment and no Spacer, NodeView.swift:42-43,
+    // 62-67,111-113), in the message font (NodeView.swift:193-194) with
+    // `.padding(8)` (NodeView.swift:197) and no bubble: only `.user` draws a
+    // background (NodeView.swift:198-203).
+    systemTextOpacity: 0.6,
     userBubbleOutlineWidth: 1,
     errorTopMargin: 8,
     sendingBottomSpacer: 2,

@@ -30,6 +30,10 @@ type ChatComposerProps = {
   readonly onCancelEdit?: () => void;
   readonly loading: boolean;
   readonly sending: boolean;
+  /** A send or regenerate is streaming: the send button becomes Stop. */
+  readonly canStop: boolean;
+  readonly stopping: boolean;
+  readonly onStop: () => void;
   readonly inputRef: RefObject<TextInput | null>;
   readonly onInputFocus: () => void;
   readonly onComposerLayout: (height: number) => void;
@@ -53,6 +57,9 @@ export const ChatComposer = memo(
     onCancelEdit,
     loading,
     sending,
+    canStop,
+    stopping,
+    onStop,
     inputRef,
     onInputFocus,
     onComposerLayout,
@@ -225,6 +232,9 @@ export const ChatComposer = memo(
                     sending={sending}
                     hasText={input.length > 0}
                     sendLabel={sendLabel}
+                    canStop={canStop}
+                    stopping={stopping}
+                    onStop={onStop}
                   />
                 </View>
               </MaterialView>
