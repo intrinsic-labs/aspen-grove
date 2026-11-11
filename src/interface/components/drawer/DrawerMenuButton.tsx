@@ -1,4 +1,4 @@
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { DrawerActions, useNavigation } from 'expo-router/react-navigation';
 import { HeaderIconButton } from '@/interface/ui/value-objects';
 
 /** Header hamburger that opens the app drawer from any nested screen. */

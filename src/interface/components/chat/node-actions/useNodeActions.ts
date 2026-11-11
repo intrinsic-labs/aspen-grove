@@ -1,6 +1,6 @@
 import { useCallback, type MutableRefObject } from 'react';
 import * as Clipboard from 'expo-clipboard';
-import type { Router } from 'expo-router';
+import type { ImperativeRouter } from 'expo-router';
 import type { INodeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
 import { contentToDisplayText } from '../node-text';
@@ -10,7 +10,7 @@ type UseNodeActionsInput = {
   readonly rows: readonly ChatRow[];
   readonly session: ChatSession | null;
   readonly activeTreeIdRef: MutableRefObject<ULID | null>;
-  readonly router: Pick<Router, 'push'>;
+  readonly router: Pick<ImperativeRouter, 'push'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById' | 'updateMetadata'>;
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
 };

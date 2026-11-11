@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import type { IUserPreferencesRepository } from '@application/repositories';
 import { sameDisplayPreferences } from './display-preferences-equality';
 import type { ChatDisplayPreferences } from './types';

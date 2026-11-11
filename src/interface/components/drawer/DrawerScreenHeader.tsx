@@ -1,4 +1,4 @@
-import { Header } from '@react-navigation/elements';
+import { Header } from 'expo-router/react-navigation';
 import { DrawerMenuButton } from './DrawerMenuButton';
 import { useDrawerHeaderStyle } from './useDrawerHeaderStyle';
 
@@ -20,10 +20,6 @@ export const DrawerScreenHeader = ({ title }: DrawerScreenHeaderProps) => {
   const style = useDrawerHeaderStyle();
 
   return (
-    <Header
-      title={title}
-      headerLeft={() => <DrawerMenuButton />}
-      {...style}
-    />
+    <Header title={title} headerLeft={() => <DrawerMenuButton />} {...style} />
   );
 };

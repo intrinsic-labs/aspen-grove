@@ -3,7 +3,7 @@ import { act, renderHook } from '@interface/test-support/render-hook';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 
 // Focus is the screen's; here it runs once on mount.
-jest.mock('@react-navigation/native', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   useFocusEffect: (effect: () => undefined | (() => void)) =>
     require('react').useEffect(effect, [effect]),
 }));

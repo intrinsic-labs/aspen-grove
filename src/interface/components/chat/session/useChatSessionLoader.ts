@@ -1,5 +1,8 @@
 import { useCallback, useEffect, type MutableRefObject } from 'react';
-import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import type {
+  NavigationProp,
+  ParamListBase,
+} from 'expo-router/react-navigation';
 import type { ULID } from '@domain/value-objects';
 import { toErrorMessage } from '../error-message';
 import {

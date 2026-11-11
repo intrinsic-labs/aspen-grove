@@ -15,13 +15,16 @@
     // reflection-based library that requires it.
     "emitDecoratorMetadata": false,
 
-    "baseUrl": ".",
+    // TypeScript 6 loads no @types globals unless listed; the tests need Jest's.
+    "types": ["jest"],
+
+    // Relative to this file. No baseUrl: TypeScript 6 deprecates it.
     "paths": {
-      "@/*": ["src/*"],
-      "@domain/*": ["src/domain/*"],
-      "@application/*": ["src/application/*"],
-      "@infrastructure/*": ["src/infrastructure/*"],
-      "@interface/*": ["src/interface/*"],
+      "@/*": ["./src/*"],
+      "@domain/*": ["./src/domain/*"],
+      "@application/*": ["./src/application/*"],
+      "@infrastructure/*": ["./src/infrastructure/*"],
+      "@interface/*": ["./src/interface/*"],
     },
   },
 }

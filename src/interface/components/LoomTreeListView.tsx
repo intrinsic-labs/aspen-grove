@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import { useRouter } from 'expo-router';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from 'expo-router/react-navigation';
 import type { LoomTree, Tag } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
