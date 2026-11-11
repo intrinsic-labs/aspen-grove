@@ -9,6 +9,7 @@ export * from './ForkAgentForTreeUseCase';
 export * from './GenerateDialogueContinuationUseCase';
 export * from './GenerateParallelContinuationsUseCase';
 export * from './GenerateTreeTitleUseCase';
+export * from './TitleTreeFromFirstMessageUseCase';
 export * from './GetSetupStatusUseCase';
 export * from './InitializeAppDefaultsUseCase';
 export * from './SendDialogueTurnUseCase';

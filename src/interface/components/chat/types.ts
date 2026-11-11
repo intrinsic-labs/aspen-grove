@@ -1,5 +1,9 @@
 import type { DialogueTurnSession } from '@application/use-cases';
-import type { NodeViewStyle, SelectableProvider } from '@domain/entities';
+import type {
+  NodeAuthorType,
+  NodeViewStyle,
+  SelectableProvider,
+} from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
 /**
@@ -9,6 +13,8 @@ import type { ULID } from '@domain/value-objects';
  */
 export type ChatSessionModel = {
   readonly modelAgentId: ULID;
+  /** The agent's name, as the composer addresses it ("Reply to …"). */
+  readonly agentName: string;
   readonly modelIdentifier: string;
   readonly provider: SelectableProvider;
 };
@@ -30,7 +36,7 @@ export type ChatRow = {
   readonly id: ULID;
   readonly localId: string;
   readonly editedFrom?: ULID;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: NodeAuthorType;
   readonly text: string;
   readonly bookmarked: boolean;
   readonly pruned: boolean;

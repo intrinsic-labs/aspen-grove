@@ -2,6 +2,7 @@ import ContextMenu, {
   type ContextMenuAction,
 } from 'react-native-context-menu-view';
 import { HeaderIconButton } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 
 type ChatHeaderMenuAction =
   | 'bookmarks'
@@ -119,8 +120,10 @@ export const ChatHeaderMenu = ({
         }
       }}
     >
+      {/* Latent Spaces' `slider.horizontal.3` (ToolbarMenu.swift). */}
       <HeaderIconButton
-        icon="ellipsis-horizontal"
+        icon="options-outline"
+        iconSize={loomUiTokens.header.menuIconSize}
         accessibilityLabel="Dialogue menu"
         testID="chat-menu-button"
       />

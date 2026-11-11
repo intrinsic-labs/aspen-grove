@@ -11,6 +11,10 @@ appId: com.intrinsiclabs.aspengrove
     id: drawer-nav-settings
 - tapOn:
     id: settings-link-connections
+# The LM Studio section sits below the API Keys card.
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-test
 # A tap leaves the caret mid-text, so select all and type over it.
 - tapOn:
     id: connections-lmstudio-endpoint-input
@@ -26,7 +30,9 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     id: connections-lmstudio-test
 - extendedWaitUntil:
-    visible: 'Status: Connected'
+    visible:
+      id: connections-lmstudio-status
+      text: 'Connected'
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: mock-01-connections-connected

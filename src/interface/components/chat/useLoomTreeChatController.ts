@@ -8,6 +8,7 @@ import { useComposerDraft } from './composer/useComposerDraft';
 import { useComposerFocus } from './composer/useComposerFocus';
 import { useEditNode } from './composer/useEditNode';
 import { useAutoTreeTitle } from './header-actions/useAutoTreeTitle';
+import { useFirstMessageTreeTitle } from './header-actions/useFirstMessageTreeTitle';
 import { useChatSheets } from './header-actions/useChatSheets';
 import { useTreeExports } from './header-actions/useTreeExports';
 import { useTreeTitle } from './header-actions/useTreeTitle';
@@ -26,6 +27,7 @@ import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendTurn } from './turns/useSendTurn';
+import { useStopGeneration } from './turns/useStopGeneration';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
@@ -79,6 +81,7 @@ export const useLoomTreeChatController = () => {
   });
 
   const streaming = useStreamingAssistantRow();
+  const stopGeneration = useStopGeneration();
   const continuations = useNodeContinuations({
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
@@ -131,6 +134,11 @@ export const useLoomTreeChatController = () => {
     nodeRepo: repositories.nodeRepo,
     credentialStore: adapters.credentialStore,
     generateTreeTitleUseCase: useCases.generateTreeTitleUseCase,
+    applyTreeTitle: title.applyTreeTitle,
+  });
+  const titleFromFirstMessage = useFirstMessageTreeTitle({
+    treeId: session?.treeId,
+    titleTreeFromFirstMessageUseCase: useCases.titleTreeFromFirstMessageUseCase,
     applyTreeTitle: title.applyTreeTitle,
   });
   const exports = useTreeExports({
@@ -217,6 +225,7 @@ export const useLoomTreeChatController = () => {
     getRowById: nodeActions.getRowById,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     continuations,
     refreshRows,
     refreshRowsAndContinuations,
@@ -238,9 +247,11 @@ export const useLoomTreeChatController = () => {
     setEditTarget,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     markAsNonEphemeral,
     refreshRowsAndContinuations,
     maybeGenerateTreeTitle,
+    titleFromFirstMessage,
     credentialStore: adapters.credentialStore,
     onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
     editDialogueNodeUseCase: useCases.editDialogueNodeUseCase,
@@ -275,7 +286,7 @@ export const useLoomTreeChatController = () => {
     openNodeDetail: nodeActions.openNodeDetail,
     onSessionInvalidated: reinitializeSession,
   });
-  const composerMode = toComposerMode(editTarget);
+  const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.
   const needsAgent = !loading && session !== null && session.model === null;
 
@@ -290,6 +301,10 @@ export const useLoomTreeChatController = () => {
     rows,
     streamingAssistantText: streaming.streamingText,
     onSend,
+    // A send or regenerate is streaming and can be stopped from the composer.
+    canStop: stopGeneration.stoppable,
+    stopping: stopGeneration.stopping,
+    onStop: stopGeneration.stop,
     onMessageAction,
     onMessageListScroll,
     onComposerFocus,
