@@ -1,5 +1,3 @@
-export * from './AppBehaviorSection';
-export * from './MessageTypographySection';
 export * from './SettingsStatus';
 export * from './types';
 export * from './connections/ConnectionsSection';

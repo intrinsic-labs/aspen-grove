@@ -60,10 +60,21 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     id: settings-link-connections
 - assertVisible:
-    id: connections-openrouter-key-input
-- assertVisible:
-    id: connections-lmstudio-endpoint-input
+    id: connections-openrouter-edit
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-endpoint-input
 - takeScreenshot: 08-connections
+# The key is entered in a sheet, as in Latent Spaces' API Keys page.
+- tapOn:
+    id: connections-openrouter-edit
+- assertVisible:
+    id: connections-openrouter-key-input
+- takeScreenshot: 08b-connections-key-sheet
+- tapOn:
+    id: connections-openrouter-key-cancel
+- assertNotVisible:
+    id: connections-openrouter-key-input
 # `back` is Android-only in Maestro; tap the stack header's back button, and
 # retry, since a tap during the push transition can be dropped.
 - repeat:
