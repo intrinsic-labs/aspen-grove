@@ -12,7 +12,7 @@ they don't stand in for feel, performance or anything hardware.
 
 | Need | Version and source | Check |
 |------|--------------------|-------|
-| macOS with Xcode | Xcode with an iOS Simulator runtime installed | `xcodebuild -version` |
+| macOS with Xcode | Xcode 26.4 or later (Expo SDK 57's floor; built and verified with Xcode 27) with an iOS Simulator runtime installed | `xcodebuild -version` |
 | Node | from [.nvmrc](.nvmrc) (`nvm use` / `fnm use`); `engines` in package.json is the floor | `node -v` |
 | CocoaPods | Homebrew `cocoapods` | `pod --version` |
 | Maestro (to drive and screenshot) | [maestro.mobile.dev](https://maestro.mobile.dev) | `maestro --version` |
@@ -71,8 +71,9 @@ app. (`.verify/` is gitignored.)
 
 **Path B: three steps** (no Simulator.app; `expo run:ios` fails with "Can't determine id of
 Simulator app"). Generate `ios/` and pods first if `ios/` is missing
-(`npx expo prebuild -p ios`; the failed `expo run:ios` also leaves them), then build, install
-and serve, keeping every build product inside `.verify/` so nothing global is created:
+(`npx expo prebuild -p ios`, which since SDK 57 clears and regenerates `ios/` by default; the
+failed `expo run:ios` also leaves them), then build, install and serve, keeping every build
+product inside `.verify/` so nothing global is created:
 
 ```sh
 UDID=<booted device UDID>
@@ -89,8 +90,13 @@ xcrun simctl launch "$UDID" com.intrinsiclabs.aspengrove   # or let .maestro/ope
 
 The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
 first: tap the `http://localhost:8081` server. On a cleared install the dev menu then shows a
-one-time intro (**Continue**) and stays open (close it with ✕). The Maestro flows handle all
-of this in [open-app.yaml](.maestro/open-app.yaml).
+one-time intro (**Continue**) and stays open (close it with ✕). Since SDK 57 the dev menu
+also floats a **Tools** button (a gear) at the top right, over onboarding's Skip; turn it off
+under the dev menu's Tools → **Tools button** (tap the switch, not the label). A cleared
+install turns it back on. The launcher only lists Metro on its default ports; on another
+port, use **Enter URL manually** with `http://localhost:<port>`. The Maestro flows handle all
+of this in [open-app.yaml](.maestro/open-app.yaml): pass `-e METRO_URL=http://localhost:<port>`
+when Metro isn't on 8081.
 
 A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
 (`onboarding-screen`): connect a provider, choose an agent, land in a first tree. Skip it
@@ -135,7 +141,9 @@ streaming states: at `--pace 20` a parallel-continuation card finishes in about 
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
 a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
 [.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
-state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`. If
+another session already holds 1235, run the mock on a free port and pass it to Maestro:
+`-e MOCK_URL=http://localhost:<port>` (setup.yaml defaults to 1235).
 [.maestro/mock/first-turn.yaml](.maestro/mock/first-turn.yaml) is the no-key path to a working
 conversation: that setup, then a new tree, one message, the reply streamed to the end, and a
 screenshot (run it with the mock server and Metro up).
@@ -157,6 +165,8 @@ Two Maestro flows prove the base:
 SHOTS=.verify/shots/$(git rev-parse --short HEAD); mkdir -p "$SHOTS"
 maestro --device "$UDID" test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
 maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
+# Metro or the mock off their defaults (8081, 1235)? Add, for example:
+#   -e METRO_URL=http://localhost:8084 -e MOCK_URL=http://localhost:1236
 ```
 
 `--device` is required whenever more than one simulator or emulator is running, and harmless
@@ -253,6 +263,14 @@ didn't record.
   (`repeat` … `while: notVisible`), as the flows do, rather than asserting straight away.
 - **WatermelonDB on iOS** needs the `simdjson` pod; [app.json](app.json) adds it through
   `expo-build-properties`. If a pod install fails on simdjson, check that block survived.
+- **iOS 27 kills apps without the scene lifecycle** at launch (`EXC_BREAKPOINT` in
+  `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`) when they're built with the
+  iOS 27 SDK. `ios.enableSceneSupport` in [app.json](app.json) turns it on (SDK 57; see
+  AGENTS.md). After a prebuild, check it took:
+  `/usr/libexec/PlistBuddy -c "Print :UIApplicationSceneManifest" ios/AspenGrove/Info.plist`
+  should name `EXExpoAppSceneDelegate`, and `ios/AspenGrove/AppDelegate.swift` should not create
+  a `UIWindow`. The simulator can't prove the iOS 27 launch unless an iOS 27 runtime is
+  installed; a device on iOS 27 can.
 - **Native dependency changed?** A JS reload won't pick it up: rerun `npx expo run:ios`.
   After an `app.json` native change, `npx expo prebuild --clean -p ios` regenerates `ios/`.
 - **Startup does not seed a tree.** `AppServicesProvider` passes

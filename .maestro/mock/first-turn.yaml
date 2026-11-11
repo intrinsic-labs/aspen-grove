@@ -1,7 +1,8 @@
 # First real turn with no API key: a cleared install wired to the mock server
 # (setup.yaml), then a new tree, one message and the reply streamed to the end.
-# Needs the mock server on 1235 and Metro up (see VERIFY.md, "No key?"):
+# Needs the mock server (default 1235) and Metro up (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
+# Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

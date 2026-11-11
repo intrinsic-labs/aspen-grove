@@ -1,6 +1,8 @@
 # Cold start (cleared data) wired to the mock server: open the app, connect
 # LM Studio to the mock and create an agent on it. Ends on Settings.
 #   maestro test .maestro/mock/setup.yaml --test-output-dir "$SHOTS"
+# The mock defaults to http://localhost:1235; if another server holds that
+# port, run the mock elsewhere and pass -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: ../open-app.yaml
@@ -8,5 +10,5 @@ appId: com.intrinsiclabs.aspengrove
 - runFlow:
     file: connect-mock.yaml
     env:
-      MOCK_URL: http://localhost:1235
+      MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
       MOCK_MODEL: mock-model
