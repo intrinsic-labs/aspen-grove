@@ -7,7 +7,9 @@ import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
  *
  * Beta ships dark-only (explicit decision, BUILD-PLAN Milestone B): the
  * prototype was forced dark at the app level and all "dynamic" colors were
- * only ever observed in dark runtime. A light palette lives in git history;
+ * only ever observed in dark runtime. Native UI (menus, pickers, alerts,
+ * keyboard) is forced dark too, by `userInterfaceStyle: "dark"` in app.json.
+ * A light palette lives in git history;
  * reintroduce it via `useColorScheme` post-beta if wanted.
  */
 export const useAspenGroveTheme = () => {

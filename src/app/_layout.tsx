@@ -1,9 +1,5 @@
 import { Stack } from 'expo-router';
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from '@react-navigation/native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,13 +9,13 @@ import { VoiceModeProvider } from '@interface/components/voice';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
 const RootLayout = () => {
-  const { colors, isDark } = useAspenGroveTheme();
+  const { colors } = useAspenGroveTheme();
 
   const navigationTheme = useMemo(
     () => ({
-      ...(isDark ? DarkTheme : DefaultTheme),
+      ...DarkTheme,
       colors: {
-        ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+        ...DarkTheme.colors,
         background: colors.oppositePrimary,
         card: 'transparent',
         text: colors.primary,
@@ -27,7 +23,7 @@ const RootLayout = () => {
         primary: colors.accentColor,
       },
     }),
-    [colors.primary, colors.oppositePrimary, colors.accentColor, isDark]
+    [colors.primary, colors.oppositePrimary, colors.accentColor]
   );
 
   return (
