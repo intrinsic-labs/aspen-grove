@@ -30,6 +30,7 @@ import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import { ChatErrorNotice } from './ChatErrorNotice';
 import { MarkdownText } from './MarkdownText';
+import { ThinkingIndicator } from './ThinkingIndicator';
 import { ChatMessageRows } from './message-list/ChatMessageRows';
 import {
   keyboardExtraSpace,
@@ -335,7 +336,9 @@ export const ChatMessageList = memo(
           />
         ) : null}
 
-        {sending ? <View style={styles.bottomSpacer} /> : null}
+        {/* Latent Spaces: shown from the request's start until the stream ends
+            (LoomTreeContentView.swift:62-70), below any streamed text. */}
+        {sending ? <ThinkingIndicator /> : null}
       </KeyboardAwareScrollView>
     );
   }
@@ -362,8 +365,5 @@ const styles = StyleSheet.create({
     paddingRight:
       loomUiTokens.messageList.messagePadding +
       loomUiTokens.messageList.modelRowTrailingInset,
-  },
-  bottomSpacer: {
-    height: loomUiTokens.messageList.sendingBottomSpacer,
   },
 });

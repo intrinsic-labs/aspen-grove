@@ -84,7 +84,38 @@ export const loomUiTokens = {
     systemTextOpacity: 0.6,
     userBubbleOutlineWidth: 1,
     errorTopMargin: 8,
-    sendingBottomSpacer: 2,
+  },
+  // The thinking indicator (ThinkingIndicator.swift), shown under the last
+  // message from the request's start until the stream ends
+  // (LoomTreeContentView.swift:62-70, LLMManager.swift:14,50,89,102).
+  thinkingIndicator: {
+    // The 0 bounces along five cells; the timer fires every 0.1 s and the
+    // text starts at "0••••" (ThinkingIndicator.swift).
+    frames: [
+      '•0•••',
+      '••0••',
+      '•••0•',
+      '••••0',
+      '•••0•',
+      '••0••',
+      '•0•••',
+      '0••••',
+    ],
+    // Shown before the first tick, while the index is 0, so the first tick
+    // lands on frames[1] exactly as in the reference.
+    initialText: '0••••',
+    intervalMs: 100,
+    // Shown instead of the animation when the OS asks for reduced motion (AG).
+    reducedMotionText: '•••••',
+    // Calling Code Regular 16 (ThinkingIndicator.swift). Calling Code isn't
+    // bundled; IBM Plex Mono stands in for it, as elsewhere in AG.
+    fontFamily: 'IBMPlexMono-Regular',
+    fontSize: 16,
+    lineHeight: 22,
+    // `.padding([.bottom, .horizontal])` (LoomTreeContentView.swift:62-70):
+    // the horizontal 16 pt is the row inset (12) plus 4 more here.
+    paddingHorizontal: 4,
+    paddingBottom: 16,
   },
   composer: {
     // `.clipShape(RoundedRectangle(cornerRadius: 20))` (MessageField.swift:73)
