@@ -30,7 +30,13 @@ import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import { ChatErrorNotice } from './ChatErrorNotice';
 import { MarkdownText } from './MarkdownText';
+import { ThinkingIndicator } from './ThinkingIndicator';
 import { ChatMessageRows } from './message-list/ChatMessageRows';
+import {
+  keyboardExtraSpace,
+  messageListBottomPadding,
+  visibleContentBottom,
+} from './message-list/list-insets';
 import type { ContinuationRailState } from './message-list/continuation-rail-state';
 import type { ChatMessageMenuAction } from './message-list/message-menu';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
@@ -43,6 +49,8 @@ type ChatMessageListProps = {
   readonly streamingAssistantText: string;
   readonly composerHeight: number;
   readonly headerHeight: number;
+  /** Bottom safe area, which the keyboard covers when it is up. */
+  readonly bottomInset: number;
   readonly error: string | null;
   /** What fixes `error`, when something does (e.g. open Connections). */
   readonly errorAction: ProviderErrorAction;
@@ -75,6 +83,7 @@ export const ChatMessageList = memo(
     streamingAssistantText,
     composerHeight,
     headerHeight,
+    bottomInset,
     error,
     errorAction,
     onErrorAction,
@@ -143,11 +152,11 @@ export const ChatMessageList = memo(
         const railBottom = railTop + railLayout.height;
         const visibleTop =
           offsetY + headerHeight + loomUiTokens.messageList.topPadding;
-        const visibleBottom =
-          offsetY +
-          viewportHeight -
-          composerHeight -
-          loomUiTokens.messageList.composerClearancePadding;
+        const visibleBottom = visibleContentBottom(
+          offsetY,
+          viewportHeight,
+          composerHeight
+        );
 
         if (railBottom > visibleBottom) {
           scrollRef.current?.scrollTo({
@@ -272,17 +281,14 @@ export const ChatMessageList = memo(
         testID="chat-message-list"
         ref={scrollRef}
         enabled
-        extraKeyboardSpace={composerHeight}
+        extraKeyboardSpace={keyboardExtraSpace(bottomInset)}
         bottomOffset={loomUiTokens.messageList.bottomOffset}
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           {
             paddingTop: headerHeight + loomUiTokens.messageList.topPadding,
-            paddingBottom: Math.max(
-              loomUiTokens.messageList.minBottomPadding,
-              composerHeight + loomUiTokens.messageList.composerClearancePadding
-            ),
+            paddingBottom: messageListBottomPadding(composerHeight),
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -330,7 +336,9 @@ export const ChatMessageList = memo(
           />
         ) : null}
 
-        {sending ? <View style={styles.bottomSpacer} /> : null}
+        {/* Latent Spaces: shown from the request's start until the stream ends
+            (LoomTreeContentView.swift:62-70), below any streamed text. */}
+        {sending ? <ThinkingIndicator /> : null}
       </KeyboardAwareScrollView>
     );
   }
@@ -346,15 +354,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: loomUiTokens.layout.horizontalInset,
+    paddingHorizontal: loomUiTokens.messageList.rowInset,
     flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
   },
   streamingRow: {
     width: '100%',
     alignItems: 'flex-start',
-  },
-  bottomSpacer: {
-    height: loomUiTokens.messageList.sendingBottomSpacer,
+    padding: loomUiTokens.messageList.messagePadding,
+    paddingRight:
+      loomUiTokens.messageList.messagePadding +
+      loomUiTokens.messageList.modelRowTrailingInset,
   },
 });

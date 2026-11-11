@@ -240,7 +240,7 @@ const SearchView = () => {
                 tone="secondary"
                 style={styles.resultMeta}
               >
-                {item.authorType === 'model' ? 'model' : 'human'} ·{' '}
+                {item.authorType} ·{' '}
                 {item.createdAt.toLocaleDateString()}
               </AppText>
               <AppText tone="primary" style={styles.resultSnippet}>

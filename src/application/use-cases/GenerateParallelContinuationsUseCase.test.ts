@@ -208,7 +208,7 @@ describe('GenerateParallelContinuationsUseCase', () => {
     }
     expect(savedText(store, first.nodeId)).toBe('First done');
     expect(savedText(store, stoppedWithText.saved.nodeId)).toBe(
-      'Partial\n\n[stream interrupted: cancelled]'
+      'Partial'
     );
     expect(store.childrenOfSource()).toHaveLength(2);
   });

@@ -40,13 +40,14 @@ describe('useDialogueDisplayPreferences', () => {
     await act(() => undefined);
 
     expect(result.current.loaded).toBe(false);
-    expect(result.current.preferences.messageFontSize).toBe(17);
+    expect(result.current.preferences.messageFontSize).toBe(18);
 
     await act(() => settle('resolve'));
 
     expect(result.current.loaded).toBe(true);
-    expect(result.current.preferences.messageFontSize).toBe(16);
-    expect(result.current.preferences.messageLineHeight).toBe(25);
+    // Cardo renders over the saved size (see toMessageType).
+    expect(result.current.preferences.messageFontSize).toBe(17);
+    expect(result.current.preferences.messageLineHeight).toBeCloseTo(22.98, 2);
   });
 
   it('counts as loaded with the defaults when the read fails', async () => {
@@ -59,6 +60,6 @@ describe('useDialogueDisplayPreferences', () => {
     await act(() => settle('reject'));
 
     expect(result.current.loaded).toBe(true);
-    expect(result.current.preferences.messageFontSize).toBe(17);
+    expect(result.current.preferences.messageFontSize).toBe(18);
   });
 });

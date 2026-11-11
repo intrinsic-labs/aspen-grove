@@ -15,6 +15,8 @@ import {
   createStreamDiagnostics,
   logStreamDiagnostics,
 } from './stream-diagnostics';
+import { interruptionNotice, isStoppedBeforeText } from './stopped-generation';
+import type { StopGeneration } from './useStopGeneration';
 
 type UseSendTurnInput = {
   readonly session: ChatSession | null;
@@ -35,12 +37,16 @@ type UseSendTurnInput = {
     ReturnType<typeof useStreamingAssistantRow>,
     'appendDelta' | 'reset'
   >;
+  /** The composer's stop button for the reply. */
+  readonly stopGeneration: StopGeneration;
   readonly markAsNonEphemeral: () => void;
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
   readonly maybeGenerateTreeTitle: (
     userText: string,
     assistantNodeId: ULID
   ) => void;
+  /** Names an untitled tree from the message just sent. */
+  readonly titleFromFirstMessage: (text: string) => void;
   readonly credentialStore: ICredentialStore;
   /** A model response finished generating uninterrupted (Voice Mode reads it). */
   readonly onModelNodeCompleted: (nodeId: ULID) => void;
@@ -64,9 +70,11 @@ export const useSendTurn = ({
   setEditTarget,
   shouldAutoScrollRef,
   streaming,
+  stopGeneration,
   markAsNonEphemeral,
   refreshRowsAndContinuations,
   maybeGenerateTreeTitle,
+  titleFromFirstMessage,
   credentialStore,
   onModelNodeCompleted,
   editDialogueNodeUseCase,
@@ -90,6 +98,7 @@ export const useSendTurn = ({
       return;
     }
 
+    let signal: AbortSignal | undefined;
     try {
       setSending(true);
       setError(null);
@@ -120,6 +129,7 @@ export const useSendTurn = ({
       if (!model) {
         return;
       }
+      signal = stopGeneration.begin();
       // Provider is bound to this session's agent (via tree.defaultModelAgentId).
       // Fetch the matching API key from secure storage.
       const providerApiKey = await getProviderApiKey(
@@ -133,8 +143,10 @@ export const useSendTurn = ({
         providerApiKey,
         providerAppName: 'Aspen Grove RN',
         stream: true,
+        signal,
         onUserNodeCommitted: async ({ userNodeId }) => {
           markAsNonEphemeral();
+          titleFromFirstMessage(prompt);
           await refreshRowsAndContinuations({
             ...session,
             activeNodeId: userNodeId,
@@ -158,16 +170,21 @@ export const useSendTurn = ({
 
       maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
 
-      if (turnResult.completion.interruptionReason) {
-        setError(
-          `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
-        );
-      } else {
+      // A stopped reply keeps its partial text, unmarked, and isn't read aloud.
+      const reason = turnResult.completion.interruptionReason;
+      const notice = interruptionNotice(reason);
+      if (notice) {
+        setError(notice);
+      } else if (!reason) {
         onModelNodeCompleted(turnResult.assistantNodeId);
       }
     } catch (caught) {
-      showProviderError(caught, session.model?.provider);
+      // Stopped before any text: the user's turn stays, with no reply.
+      if (!isStoppedBeforeText(signal, caught)) {
+        showProviderError(caught, session.model?.provider);
+      }
     } finally {
+      stopGeneration.end(signal);
       reset();
       setSending(false);
     }
@@ -179,6 +196,7 @@ export const useSendTurn = ({
     input,
     markAsNonEphemeral,
     maybeGenerateTreeTitle,
+    titleFromFirstMessage,
     onModelNodeCompleted,
     refreshRowsAndContinuations,
     reset,
@@ -191,5 +209,6 @@ export const useSendTurn = ({
     showProviderError,
     setSending,
     shouldAutoScrollRef,
+    stopGeneration,
   ]);
 };

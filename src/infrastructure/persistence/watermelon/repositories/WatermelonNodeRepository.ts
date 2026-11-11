@@ -6,9 +6,9 @@ import type {
   NodeMetadataChanges,
 } from '@application/repositories';
 import type {
-  AgentType,
   Content,
   Node as NodeEntity,
+  NodeAuthorType,
   NodeMetadata,
 } from '@domain/entities';
 import {
@@ -21,6 +21,7 @@ import {
 import NodeModel from '../model/Node';
 import RawApiResponseModel from '../model/RawApiResponse';
 import { isPlainObject, isRecordNotFoundError, toOptionalString } from './helpers';
+import { toNodeAuthorType } from './node-author-type';
 
 /** WatermelonDB implementation of `INodeRepository`. */
 export class WatermelonNodeRepository implements INodeRepository {
@@ -74,7 +75,7 @@ export class WatermelonNodeRepository implements INodeRepository {
   async findByLoomTreeId(
     loomTreeId: ULID,
     includePruned: boolean = false,
-    agentType?: AgentType
+    agentType?: NodeAuthorType
   ): Promise<NodeEntity[]> {
     const queryClauses = [Q.where('loom_tree_id', loomTreeId)];
     if (!includePruned) {
@@ -100,7 +101,7 @@ export class WatermelonNodeRepository implements INodeRepository {
     return models.map((model) => this.toDomain(model));
   }
 
-  async findPruned(loomTreeId: ULID, agentType?: AgentType): Promise<NodeEntity[]> {
+  async findPruned(loomTreeId: ULID, agentType?: NodeAuthorType): Promise<NodeEntity[]> {
     const queryClauses = [
       Q.where('loom_tree_id', loomTreeId),
       Q.where('pruned', true),
@@ -342,7 +343,7 @@ export class WatermelonNodeRepository implements INodeRepository {
       content: model.content as Content,
       summary: toOptionalString(model.summary),
       authorAgentId: model.authorAgentId as ULID,
-      authorType: model.authorType as AgentType,
+      authorType: toNodeAuthorType(model.authorType),
       contentHash: model.contentHash as ContentHash,
       createdAt: model.createdAt,
       metadata: this.readMetadata(model),

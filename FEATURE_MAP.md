@@ -102,8 +102,9 @@ stays until the user makes one.
   `settings-agents-row-make-default-<agentId>` / `settings-agents-row-delete-<agentId>`
   inside `settings-agents-row-<agentId>`. They were left as they are, because changing
   `accessible` would change VoiceOver behavior. If the inner id isn't found, tap its visible
-  text ("Details", "Make default", "Delete").
-- Settings screens **autosave** about 450 ms after the last change. There is no Save button.
+  text ("Details", "Make Default", "Delete").
+- Settings screens **autosave** about 450 ms after the last change. There is no Save button,
+  except in the OpenRouter key sheet (`connections-openrouter-key-save`), as in Latent Spaces.
   `settings-status-saving` shows while a save runs and `settings-status-error` shows if it
   fails.
 - System dialogs (`Alert.alert`, the document picker, the share sheet) are native and have no
@@ -234,7 +235,9 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`, `path_states`
 - **Status:** live
 - **Notes:** Errors land in `trees-error`. The format is sniffed from content
-  (`detect.ts`), not from the file extension.
+  (`detect.ts`), not from the file extension. Node roles map to `human`, `model` and
+  `system` (`mixed` reads as human); system nodes render and send as system messages
+  (`chat.dialogue`) and export back as `author.role: "system"`.
 
 ### Setup hints (no agent, no key)
 - **ID:** `setup.hints`
@@ -337,14 +340,15 @@ stays until the user makes one.
 ### Dialogue view
 - **ID:** `chat.dialogue`
 - **Purpose:** Shows the active path of a tree as a conversation: human bubbles on the right,
-  model text in markdown on the left, and a caption under each node for bookmarks,
+  model text in markdown on the left, system messages centered without a bubble at 0.6
+  opacity (as Latent Spaces draws them), and a caption under each node for bookmarks,
   continuation count and pruned state.
 - **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
   title, `···` at the right).
 - **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -357,6 +361,19 @@ stays until the user makes one.
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
   provider errors keep their `[provider:code]` detail.
+  **Thinking indicator:** while a single send or regenerate is in flight (the same state
+  that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
+  the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
+  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on, and
+  is not shown for parallel continuation cards.
+  **System messages:** a node with `authorType` `system` (an Open Loom node with
+  `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
+  `trees.import`; the app has no control that writes one yet) renders centered in the
+  message font at 0.6 opacity with no background, and its row is the same
+  `chat-message-row-<nodeId>`. It goes to the model in place on the path with the `system`
+  role; the agent prompt and tree context still go first, once
+  (`src/application/services/context/assemble-dialogue-context.ts`). Editing one saves an
+  edited system message. Export writes it back as `author.role: "system"`.
 
 ### Compose and send
 - **ID:** `chat.composer`
@@ -367,15 +384,22 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
-- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
-- **Notes:** The send icon shows `···` while sending and a checkmark while editing (label
-  "Save"). The provider key is read from SecureStore first, then from
+- **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
+  while the input is empty and shows a checkmark while editing (label "Save"). **Stop:**
+  while a reply (or a regenerate) streams, the button is a stop circle,
+  `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request
+  through the same `AbortSignal` a parallel card's stop uses. Text that already streamed is
+  saved as the reply with no marker (Latent Spaces' `stopStreaming`, LLMManager.swift:45),
+  exactly as a stopped parallel card is, and no error shows; a stop before any text keeps the user's message
+  and saves no reply. Leaving the screen stops it too. Saving an edit streams nothing and
+  shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
   Connections to generate." with `chat-error-action`.
@@ -418,10 +442,13 @@ stays until the user makes one.
   "Regenerate".
 - **Requires:** A model message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
+- **Notes:** While it streams, `chat-composer-stop` stops it as it stops a send: streamed
+  text is kept, unmarked, as the new sibling; a stop before
+  any text saves nothing and the old response comes back.
 
 ### Edit as branch
 - **ID:** `chat.edit-branch`
@@ -532,9 +559,10 @@ stays until the user makes one.
 - **Notes:** Card states: `pending` ("Waiting for the model…", request sent, no text yet),
   `streaming` (text plus a character count), `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
-  convention: a stop or interruption after text saves the partial text with a
-  `[stream interrupted: <reason>]` line appended (so a stopped node stays marked after a
-  restart); a failure or stop before any text saves nothing. A finished run's cards stay while
+  convention: a stop after text saves the partial text as is (no marker, so the next turn
+  doesn't send one to the model); a network, timeout or provider interruption after text saves
+  it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
+  saves nothing. A finished run's cards stay while
   the rail shows that node; once the rail closes or moves, the saved ones show as ordinary
   sibling cards. Closing the rail, or making a card current (which closes it), leaves the
   others streaming; leaving the Dialogue screen stops them all. A saved card reloads the rail
@@ -605,11 +633,14 @@ stays until the user makes one.
 - **Requires:** "Auto-Title Conversations" on (`settings.behavior.auto-title`), plus a
   reachable provider.
 - **Selector:** none — renders into the native stack header title, which has no testID; assert on the visible title text
-- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`
+- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/application/use-cases/TitleTreeFromFirstMessageUseCase.ts`, `src/application/services/tree-title.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`, `src/interface/components/chat/header-actions/useFirstMessageTreeTitle.ts`
 - **Backend:** The same provider chat-completions call as `chat.composer`. Writes
   `loom_trees.title`.
 - **Status:** live
-- **Notes:** It fails silently and keeps the default title on any error.
+- **Notes:** A new tree shows a blank header title until the first message. Sending it
+  titles the tree with that message's first four words (plus "..." when longer), as Latent
+  Spaces does, whether or not auto-title is on. Auto-title then replaces that provisional
+  title, or a default one. It fails silently and keeps the current title on any error.
 
 ### Discard an empty new tree
 - **ID:** `chat.ephemeral-discard`
@@ -776,31 +807,36 @@ stays until the user makes one.
 
 ### Settings home
 - **ID:** `settings.home`
-- **Purpose:** Lists the settings sub-screens: Agents, Connections, Message Typography, App
-  Behavior and Voice Mode.
-- **Where:** Drawer → Settings, a nested stack with its own header and drawer button.
+- **Purpose:** Latent Spaces' one settings Form (`LoomSettingsView.swift`): links to
+  Connections ("API Settings") and Agents ("New loom tree Settings"), then the User Interface
+  settings, their live preview and Voice Mode, all edited in place.
+- **Where:** Drawer → Settings, a nested stack with its own header and drawer button. A 34 pt
+  "Settings" large title scrolls away and becomes the inline header title.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
 - **Requires:** none
-- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice` (all built from the template `settings-link-${route}` in `SettingsHomeView.tsx`)
-- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
+- **Selector:** working — `settings-screen`, `settings-link-connections`, `settings-link-agents`
+- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/settings/home/SettingsLinkSections.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/interface/ui/components/form/`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
 - **Backend:** none — client-only
 - **Status:** live
 - **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
   stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
   gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
-  it off. The pushed sub-screens keep native headers with a system back button.
-
+  it off. The pushed sub-screens keep native headers with a system back button. The former
+  sub-screens Message Typography, App Behavior and Voice Mode (routes `settings/typography`,
+  `settings/behavior`, `settings/voice`) are now sections of this Form, so
+  `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`,
+  `settings-typography-screen`, `settings-behavior-screen` and `settings-voice-screen` are gone.
 ### Agents library
 - **ID:** `settings.agents`
 - **Purpose:** Lists the shared model agents with their model and settings. Tap one to edit
-  it, "Make default" to pin it for new trees, "Delete" to remove it (after a native confirm),
+  it, "Make Default" to pin it for new trees, "Delete" to remove it (after a native confirm),
   or "New Agent" to create one.
 - **Where:** Settings → Agents.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
   `settings-link-agents`.
 - **Requires:** none. A fresh install shows "No agents yet. Create one to start weaving."
 - **Selector:** working — `settings-agents-screen`, `settings-agents-list`, `settings-agents-new`, rows `settings-agents-row-<agentId>`, `settings-agents-row-make-default-<agentId>` and `settings-agents-row-delete-<agentId>` (nested, see the driving notes), `settings-agents-error`
-- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/AgentRow.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository#findSharedModels`;
   `user_preferences.default_model_agent_id` for the default
 - **Status:** live
@@ -809,30 +845,34 @@ stays until the user makes one.
 - **ID:** `settings.agents.editor`
 - **Purpose:** Creates or edits a shared agent: quick-start templates (create only), model,
   name, temperature, max tokens and system prompt.
-- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent".
+- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent"; also
+  onboarding's "Customize Agent". A Form in a sheet: glass Cancel and Create/Save capsules
+  either side of the title, the error pinned under the bar.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
 - **Requires:** none
 - **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/AgentConfigFields.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
-- **Notes:** Template keys come from `agent-templates.ts`. Templates are one full-width row
-  each (name, then model id and temperature); a tapped row is checked in gold. Their model
-  ids are OpenRouter `~…-latest` aliases. Validation errors show in `agent-editor-error`.
+- **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
+  then model id and temperature) with the gold checkmark in its own trailing column. Their
+  model ids are OpenRouter `~…-latest` aliases. Validation errors show in
+  `agent-editor-error`, pinned under the sheet's bar so they are always in view.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
 - **Purpose:** Picks the provider (OpenRouter or LM Studio) and a model: from the cached,
   searchable OpenRouter catalog, from live LM Studio discovery, or by typing a custom
   OpenRouter id.
-- **Where:** The MODEL block of the agent editor, and of Dialogue Settings → Edit agent.
+- **Where:** The Provider and Model sections of the agent editor (Form rows), and the MODEL
+  block of Dialogue Settings → Edit agent and onboarding's LM Studio step (`ModelPickerField`).
 - **Reach:** `settings-agents-new` → `agent-editor-model-provider-openrouter` →
   `agent-editor-model-search-input` → `agent-editor-model-option-<model id>`.
 - **Requires:** OpenRouter: network for the catalog. LM Studio: a reachable endpoint (set in
   `settings.connections.lmstudio`).
 - **Selector:** working — with prefix `agent-editor` (or `dialogue-settings-edit-agent`): `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
-- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
+- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models` (cached for 24 h); LM
   Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
@@ -843,25 +883,30 @@ stays until the user makes one.
 
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
-- **Purpose:** Stores, shows or hides, or clears the OpenRouter API key.
-- **Where:** Settings → Connections, in the OpenRouter section.
+- **Purpose:** Latent Spaces' API Keys page (`APIKeySettingsView.swift`) for OpenRouter: a
+  card on how keys are kept, "Edit OpenRouter API Key" (a sheet with one secure field,
+  Cancel and Save) and links to OpenRouter's key docs, keys and credits pages.
+- **Where:** Settings → Connections, the top card and the OpenRouter section.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-connections` → `connections-openrouter-key-input`.
+  `settings-link-connections` → `connections-openrouter-edit` →
+  `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
-- **Selector:** working — `settings-connections-screen`, `connections-openrouter`, `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
+- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
-- **Notes:** Autosaves about 450 ms after typing, and saves a pending edit when the screen
-  closes. The section footer reports whether a key is stored. Clearing the field removes the
-  key.
-
+- **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
+  Cancel or a swipe down discards the edit. Saving an empty field removes the key. The
+  section footer says whether a key is stored. Settings has no show/hide button any more
+  (`connections-openrouter-key-reveal` lives on in onboarding only), as Latent Spaces'
+  SecureField has none. The links open Safari.
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
 - **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
   an LM Studio server that is down can be fixed without leaving a tree.
-- **Where:** Route `connections`, a modal page sheet with "Connections" and Done at the top.
+- **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
+  the top.
 - **Reach:** `home-setup-action` ("Add key"), `trees-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
@@ -875,58 +920,66 @@ stays until the user makes one.
 - **ID:** `settings.connections.lmstudio`
 - **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
   auto-load, and tests the connection.
-- **Where:** Settings → Connections, in the LM Studio section.
+- **Where:** Settings → Connections, the LM Studio section below OpenRouter (scroll down).
 - **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
-- **Notes:** The status text is one of Untested, Checking…, Connected or Not reachable. When
-  the test fails, the button reads "Test again" and `connections-lmstudio-error` explains
-  it: "LM Studio isn't answering at <address>. Start its local server, then try again.",
-  plus a phone hint when the address is localhost. The Auto-load switch is gold when on and
-  a dim track when off (`AppSwitch`).
+- **Notes:** In Settings the fields are Form rows (`LmStudioFormSection`); onboarding keeps
+  `LmStudioConnectionSection` with the same ids. `connections-lmstudio-status` reads one of
+  Untested, Checking…, Connected or Not reachable (onboarding prefixes "Status: "). When the
+  test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
+  the footer: "LM Studio isn't answering at <address>. Start its local server, then try
+  again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold
+  when on.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (Serif, Mono or Sans), the font size, the user-bubble
-  style (Filled or Outlined) and the corner radius.
-- **Where:** Settings → Message Typography.
+- **Purpose:** Sets the dialogue font (IBM Plex Mono, Cardo or Open Sans), the font size, the
+  user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
+  sample messages.
+- **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-typography`.
+  `settings-typography-font` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-typography-screen`, `settings-typography-section`, `settings-typography-font` with options `settings-typography-font-Cardo-Regular`, `-IBMPlexMono-Regular`, `-OpenSans-Regular`, `settings-typography-font-size` (slider), `settings-typography-message-style` with `-filled` / `-outlined`, `settings-typography-corner-radius` (slider)
-- **Code:** `src/interface/components/settings/MessageTypographySection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/components/settings/screens/TypographySettingsScreen.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`, `src/app/(drawer)/settings/typography.tsx`
+- **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
-- **Notes:** Sliders are native, so drive them by swipe or by coordinate.
+- **Notes:** The four rows are Latent Spaces' Pickers (`LoomSettingsView.swift:233-275`): a
+  tap opens a native pull-down menu (react-native-context-menu-view) with the current value
+  checked. Menu items are native and have no testIDs; tap their visible text ("Cardo",
+  "Outlined", "20 (material design plebeian)"). Font size offers 12–26, corner radius 0–20 in
+  steps of 2. The former per-option ids (`settings-typography-font-<face>`,
+  `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
+  (Cardo) renders 1 pt above the chosen size.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`
 - **Purpose:** Turns the after-first-reply tree titling (`chat.auto-title`) on or off.
-- **Where:** Settings → App Behavior, the "Auto-Title Conversations" switch.
+- **Where:** Settings → User Interface Settings, the "Auto-Title Conversations" toggle.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-behavior` → `settings-behavior-auto-title`.
+  `settings-behavior-auto-title` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-behavior-screen`, `settings-behavior-auto-title`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/screens/BehaviorSettingsScreen.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/app/(drawer)/settings/behavior.tsx`
+- **Selector:** working — `settings-behavior-auto-title`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormToggleRow.tsx`
 - **Backend:** WatermelonDB `user_preferences.auto_title_enabled`
 - **Status:** live
-
 ### Verbose error alerts setting
 - **ID:** `settings.behavior.verbose-errors`
 - **Purpose:** A switch meant to show detailed provider failures in the UI.
-- **Where:** Settings → App Behavior, the "Verbose Error Alerts" switch.
-- **Reach:** `settings-link-behavior` → `settings-behavior-verbose-errors`.
+- **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
+- **Reach:** `drawer-nav-settings` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
 - **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
 - **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
@@ -935,12 +988,12 @@ stays until the user makes one.
 - **ID:** `settings.voice`
 - **Purpose:** Turns Voice Mode (beta) on or off, shows the current voice and opens the voice
   chooser. The footer explains double-tap to listen and tap to stop.
-- **Where:** Settings → Voice Mode, the "Voice Mode" section.
+- **Where:** Settings, the "Voice Mode" section near the bottom.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-voice` → `settings-voice-mode-toggle`.
+  `settings-voice-mode-toggle` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-voice-screen`, `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
+- **Selector:** working — `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
 - **Backend:** WatermelonDB `user_preferences.default_voice_mode_enabled` (on/off) and the
   WatermelonDB local key `aspen_grove.voice_mode.voice_name` (the voice), via
   `WatermelonVoicePreferencesRepository`
@@ -954,8 +1007,9 @@ stays until the user makes one.
 - **Purpose:** Picks the character voice (Lily, Jefferson, Eve). Swipe between voice cards;
   each card plays its sample line as it comes into view, a tap on the colored circle stops or
   replays it, and Select saves the voice shown.
-- **Where:** A page sheet over Settings → Voice Mode, titled "Choose a voice".
-- **Reach:** `settings-link-voice` → `settings-voice-choose` → swipe `settings-voice-pager` →
+- **Where:** A page sheet over Settings, with no visible title (as in Latent Spaces, whose
+  `navigationTitle` has no navigation bar to show it in).
+- **Reach:** `drawer-nav-settings` → `settings-voice-choose` → swipe `settings-voice-pager` →
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
@@ -974,7 +1028,7 @@ stays until the user makes one.
 - `src/entry.ts` — app entry (registers expo-router)
 - `src/interface/components/settings/index.ts` — barrel export
 - `src/interface/components/settings/types.ts` — shared type
-- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, keyboard toolbar, spinner)
+- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, large title, keyboard toolbar, spinner)
 - `src/interface/components/settings/SettingsStatus.tsx` — shared saving and error text (the settings-status testIDs)
 - `src/interface/components/chat/ChatHeaderMenu.tsx` — the Dialogue `···` menu; the reach for the chat sheets and exports
 - `src/interface/components/chat/types.ts` — chat row and preference types
@@ -982,4 +1036,4 @@ stays until the user makes one.
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element

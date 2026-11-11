@@ -23,7 +23,8 @@ import {
 
 const DEFAULT_DISPLAY_NAME = 'Human';
 const DEFAULT_THEME: Theme = 'system';
-const DEFAULT_FONT_SIZE: FontSize = 16;
+// Latent Spaces' default message size (LoomApp.swift:33).
+const DEFAULT_FONT_SIZE: FontSize = 17;
 const DEFAULT_VOICE_MODE = false;
 const DEFAULT_TEMPERATURE = 1.0;
 const DEFAULT_VERBOSE_ERROR_ALERTS = false;

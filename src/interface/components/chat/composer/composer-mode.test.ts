@@ -12,6 +12,12 @@ describe('toComposerMode', () => {
     });
   });
 
+  it("addresses the tree's agent by name", () => {
+    expect(toComposerMode(null, 'Claude').composerPlaceholder).toBe(
+      'Reply to Claude'
+    );
+  });
+
   it('describes saving an edit, naming the node', () => {
     expect(
       toComposerMode({ nodeId: '01NODE' as ULID, localId: 'a3f' })
