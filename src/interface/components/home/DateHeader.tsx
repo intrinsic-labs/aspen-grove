@@ -50,6 +50,11 @@ export const DateHeader = ({ displayName }: DateHeaderProps) => {
       <Text
         testID="home-greeting"
         accessibilityRole="header"
+        // Two lines, as Latent Spaces' "Welcome to Loom." fits: "Welcome to
+        // Aspen Grove." is wider, so it shrinks a little rather than wrap.
+        numberOfLines={2}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
         style={[styles.greeting, { color: colors.primary }]}
       >
         {greetingText(now, displayName)}
@@ -81,6 +86,12 @@ const styles = StyleSheet.create({
     paddingTop: tokens.greeting.paddingTop,
     paddingBottom: tokens.greeting.paddingBottom,
     paddingHorizontal: 16,
+    // Shrinking to fit also tightens the lines; hold the two-line block's
+    // height so the date and the list stay where Latent Spaces has them.
+    minHeight:
+      tokens.greeting.paddingTop +
+      tokens.greeting.lineHeight * 2 +
+      tokens.greeting.paddingBottom,
   },
   dateLine: {
     flexDirection: 'row',

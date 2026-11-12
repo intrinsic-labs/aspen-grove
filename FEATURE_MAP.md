@@ -137,7 +137,8 @@ stays until the user makes one.
 - **Where:** Route `index`, the root of the app's stack, under a transparent navigation bar
   with the `···` menu at the top left and the Settings button at the top right. Greeting in
   Cardo 36 ("Good Evening.\nWelcome to Aspen Grove.", or "Good Evening,\n<name>." once a
-  display name is set), the date line ("Sun, November 08") with a time-of-day glyph in the
+  display name other than the default "Human" is set; the welcome line shrinks a little to
+  stay on one line), the date line ("Sun, November 08") with a time-of-day glyph in the
   mono face, the trees as one inset-grouped card, the composer floating at the bottom.
 - **Reach:** Cold start, then `onboarding-skip` on a fresh install. From any pushed screen,
   the native back button (`BackButton`).

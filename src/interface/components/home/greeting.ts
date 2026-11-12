@@ -1,3 +1,5 @@
+import { DEFAULT_DISPLAY_NAME } from '@domain/entities';
+
 /**
  * Home's date header text (DateHeaderView.swift): a greeting by the time of
  * day, the date as "E, MMMM dd" and the symbol beside it.
@@ -16,15 +18,22 @@ const greetingForHour = (hour: number): string => {
   return 'Good Evening';
 };
 
+/** A name the reader set; the fresh-install default counts as none. */
+const chosenName = (name?: string | null): string | null => {
+  const trimmed = name?.trim();
+  return trimmed && trimmed !== DEFAULT_DISPLAY_NAME ? trimmed : null;
+};
+
 /**
  * "Good Evening.\nWelcome to Aspen Grove." with no name, or
- * "Good Evening,\n<name>." (DateHeaderView.swift `getGreeting`).
+ * "Good Evening,\n<name>." (DateHeaderView.swift `getGreeting`, where the
+ * username defaults to empty).
  */
 export const greetingText = (date: Date, name?: string | null): string => {
   const greeting = greetingForHour(date.getHours());
-  const trimmed = name?.trim();
-  return trimmed
-    ? `${greeting},\n${trimmed}.`
+  const chosen = chosenName(name);
+  return chosen
+    ? `${greeting},\n${chosen}.`
     : `${greeting}.\nWelcome to Aspen Grove.`;
 };
 

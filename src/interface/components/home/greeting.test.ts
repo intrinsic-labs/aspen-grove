@@ -17,6 +17,16 @@ describe('greetingText', () => {
     expect(greetingText(at(18), ' Asher ')).toBe('Good Evening,\nAsher.');
     expect(greetingText(at(18), '  ')).toMatch(/Welcome to Aspen Grove\.$/);
   });
+
+  it('treats the default name as no name, like Latent Spaces’ empty one', () => {
+    expect(greetingText(at(18), 'Human')).toBe(
+      'Good Evening.\nWelcome to Aspen Grove.'
+    );
+    expect(greetingText(at(18), null)).toBe(
+      'Good Evening.\nWelcome to Aspen Grove.'
+    );
+    expect(greetingText(at(18), 'Humane')).toBe('Good Evening,\nHumane.');
+  });
 });
 
 describe('headerDateText', () => {

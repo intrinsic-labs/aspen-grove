@@ -191,9 +191,12 @@ export const loomUiTokens = {
       fontSize: 36,
       // Lines sit 49 pt apart (measured).
       lineHeight: 49,
-      // `.padding(.vertical)` + `.padding(.top, 20)` (DateHeaderView.swift:18-19)
+      // `.padding(.vertical)` + `.padding(.top, 20)` (DateHeaderView.swift:18-19).
+      // The bottom is 16 + 7: React Native's line box leaves less room under
+      // Cardo's last line than SwiftUI's, and the date line measured 7 pt
+      // high at 16.
       paddingTop: 36,
-      paddingBottom: 16,
+      paddingBottom: 23,
     },
     dateLine: {
       // Calling Code Regular 18, secondary (DateHeaderView.swift:25-26).

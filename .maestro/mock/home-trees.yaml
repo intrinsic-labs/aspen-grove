@@ -5,7 +5,18 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml
+# Auto-title asks the tree's model for a title after the first reply, and the
+# mock answers that like any prompt ("Mock reply #n. ..."). Turn it off so the
+# rows keep the titles taken from each first message.
+- scrollUntilVisible:
+    element:
+      id: settings-behavior-auto-title
+    centerElement: true
+- tapOn:
+    id: settings-behavior-auto-title
 - runFlow: ../go-home.yaml
+- assertVisible: 'Good .*\.\nWelcome to Aspen Grove\.'
+- takeScreenshot: home-00-empty
 
 # Two trees, each from a first message; wait for each reply to land.
 - runFlow:
@@ -29,10 +40,9 @@ appId: com.intrinsiclabs.aspengrove
       index: 1
     timeout: 60000
 - runFlow: ../go-home.yaml
-# The mock's reply retitles each tree (auto-title), so count rows instead.
-- assertVisible:
-    id: home-trees-row-.*
-    index: 1
+# The row reads as one element: "<title>, <date>, ".
+- assertVisible: 'Name three rivers that\.\.\..*'
+- assertVisible: 'Write me a short\.\.\..*'
 - takeScreenshot: home-02-trees
 
 # The menu.
@@ -62,7 +72,6 @@ appId: com.intrinsiclabs.aspengrove
 - eraseText: 60
 - inputText: The Lighthouse
 - tapOn: Save
-# The row reads as one element: "<title>, <date>, ".
 - extendedWaitUntil:
     visible: 'The Lighthouse.*'
     timeout: 5000
@@ -79,11 +88,7 @@ appId: com.intrinsiclabs.aspengrove
 - extendedWaitUntil:
     notVisible: 'The Lighthouse.*'
     timeout: 5000
-- assertVisible:
-    id: home-trees-row-.*
-- assertNotVisible:
-    id: home-trees-row-.*
-    index: 1
+- assertVisible: 'Name three rivers that\.\.\..*'
 
 # The composer, focused with a draft (left unsent).
 - tapOn:

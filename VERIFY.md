@@ -146,7 +146,9 @@ state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-m
 conversation: that setup, then a tree started from Home's composer with one message, the
 reply streamed to the end, and a screenshot (run it with the mock server and Metro up).
 [.maestro/mock/home-trees.yaml](.maestro/mock/home-trees.yaml) goes on from there: two
-trees on Home, the menu, a rename and a delete by swipe. If 1235 is taken, run the mock on
+trees on Home, the menu, a rename and a delete by swipe. It turns Auto-Title off first: the
+mock answers the titling call like any prompt, so auto-titled trees read "Mock reply #n. …"
+instead of their first message's words. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
