@@ -1,14 +1,16 @@
 # A tree's Model Settings against the mock server (no key): the form, the
 # Provider menu, "Always use maximum allowed" (a parameter) and the System
 # Message editor, then a send with the new settings; reopened, both stuck.
-# The tree's agent "Mock" is a shared library agent, so the edit forks it
-# for this tree: the library keeps "Mock" as it was. The mock's log shows
+# The tree's agent "mock-model" (made by onboarding in setup.yaml) is a
+# shared library agent, so the edit forks it for this tree: the library
+# keeps "mock-model" as it was. The mock's log shows
 # the send's `max_tokens=8192` and the system message.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/tree-model.yaml --test-output-dir "$SHOTS"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml
+# setup.yaml ends on onboarding's empty first tree; start one from Home.
 - runFlow: ../go-home.yaml
 - runFlow:
     file: ../start-tree.yaml
@@ -139,13 +141,14 @@ appId: com.intrinsiclabs.aspengrove
       - tapOn:
           id: BackButton
 
-# The shared agent was forked, not edited: the library still lists "Mock".
+# The shared agent was forked, not edited: the library still lists
+# "mock-model", and not the tree's copy "mock-model (<title>)".
 - runFlow: ../open-settings.yaml
 - tapOn:
     id: settings-link-agents
 # (A row is one accessible element, read as "Edit <name>".)
 - extendedWaitUntil:
-    visible: 'Edit Mock'
+    visible: 'Edit mock-model'
     timeout: 10000
-- assertNotVisible: 'Edit Mock \(.*\)'
+- assertNotVisible: 'Edit mock-model \(.*\)'
 - takeScreenshot: tree-46-library-unchanged

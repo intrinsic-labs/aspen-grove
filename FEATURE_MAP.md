@@ -44,21 +44,23 @@ listed here.
 
 A fresh install, with no keys, no model agent and no trees, opens on **Home**
 (`home-welcome`) and Home at once opens **onboarding** (`onboarding-screen`) over it, once:
-connect a provider, choose an agent, land in a first tree. Startup creates the human owner
+six pages of Latent Spaces' introduction, then connect a model and land in a first tree. Startup creates the human owner
 agent and a grove named "My Grove", but **no model agent**. Onboarding shows only while
 `user_preferences.onboarding_completed_at` is unset and there is no shared model agent
-(`src/application/services/onboarding/first-run.ts`); finishing or skipping sets the date,
-so an install that skipped, or one that already had an agent, stays on Home. After a skip,
+(`src/application/services/onboarding/first-run.ts`); Begin Weaving sets the date, so an
+install that finished, or one that already had an agent, stays on Home. A swipe down
+skips it for that launch. After a skip,
 Home shows a one-line setup hint with its action above its tree list
 (`home-setup-hint` / `home-setup-action`):
-"Set up" reopens onboarding when there is no agent, "Add key" opens the Connections sheet
+"Set up" reopens onboarding on its setup page when there is no agent, "Add key" opens the Connections sheet
 when the default agent is on OpenRouter and no key is stored. Two paths unlock everything
 else, and the Reach lines below refer to them:
 
-- **P1, create an agent:** the onboarding path (`onboarding-provider-openrouter` → paste a
-  key into `connections-openrouter-key-input` → `onboarding-continue` → keep the
-  preselected `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`), which
-  also lands in a tree (P2). From Settings instead: `home-settings-button` →
+- **P1, create an agent:** the onboarding path (`onboarding-next` six times →
+  `onboarding-openrouter-key` → paste a key into `connections-openrouter-key-input` →
+  `connections-openrouter-key-save` → keep the preselected
+  `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`; or LM Studio, see
+  `onboarding.connect`), which also lands in a tree (P2). From Settings instead: `home-settings-button` →
   `settings-link-agents` → `settings-agents-new` → pick a template
   (`agent-editor-template-*`) or a provider tab (`agent-editor-model-provider-openrouter` /
   `-lmstudio`) and a model row (`agent-editor-model-option-<model id>`, or type an id into
@@ -66,7 +68,9 @@ else, and the Reach lines below refer to them:
   `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
   key: the OpenRouter key in Connections, or a reachable LM Studio server. A build with
   `EXPO_PUBLIC_OPENROUTER_API_KEY` set falls back to that key (`provider-key.ts`).
-- **P2, open a tree:** onboarding's `onboarding-begin` opens one. Otherwise, after P1: type
+- **P2, open a tree:** onboarding's `onboarding-begin` opens one.
+  The first tree opened shows Getting Started over it (`onboarding.tree`); `tree-onboarding-begin`
+  closes it. Otherwise, after P1: type
   a first message into Home's `home-composer-input` and tap `home-composer-send`. The tree
   is created, opens on the Dialogue screen (`chat-screen`) and sends that message, and the
   reply streams in (`home.composer`). Once a tree exists, `home-trees-row-<treeId>` on Home
@@ -122,7 +126,8 @@ stays until the user makes one.
 - **Selector:** working — `app-bootstrap-loading` (spinner), `app-bootstrap-error` (failure text)
 - **Code:** `src/interface/composition/AppServicesProvider.tsx#AppBootstrapGate`, `src/infrastructure/bootstrap/run-startup-orchestrator.ts`, `src/application/use-cases/InitializeAppDefaultsUseCase.ts`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, through the Watermelon
-  repositories (schema v9 adds `user_preferences.onboarding_completed_at`)
+  repositories (schema v9 adds `user_preferences.onboarding_completed_at`, v10
+  `user_preferences.tree_onboarding_completed_at`)
 - **Status:** live
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
   The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
@@ -141,7 +146,7 @@ stays until the user makes one.
   display name other than the default "Human" is set; the welcome line shrinks a little to
   stay on one line), the date line ("Sun, November 08") with a time-of-day glyph in the
   mono face, the trees as one inset-grouped card, the composer floating at the bottom.
-- **Reach:** Cold start, then `onboarding-skip` on a fresh install. From any pushed screen,
+- **Reach:** Cold start, then swipe onboarding down on a fresh install. From any pushed screen,
   the native back button (`BackButton`).
 - **Requires:** none
 - **Selector:** working — `home-welcome` (screen), `home-greeting`, `home-date`, `home-error`
@@ -278,7 +283,7 @@ stays until the user makes one.
   or "Add your OpenRouter key to start a tree." with "Add key" (opens the Connections
   sheet).
 - **Where:** Home, above the tree list.
-- **Reach:** Fresh install → `onboarding-skip` → Home shows `home-setup-hint`. For "no key":
+- **Reach:** Fresh install → swipe onboarding down → Home shows `home-setup-hint`. For "no key":
   create an OpenRouter agent in Settings → Agents without storing a key.
 - **Requires:** Not ready to start a tree: no model agent, or an OpenRouter default agent and
   no key. LM Studio reachability is not checked here; a server that is down is reported
@@ -292,62 +297,81 @@ stays until the user makes one.
 
 ## Onboarding
 
-### First-run setup
+### First-run onboarding
 - **ID:** `onboarding.first-run`
-- **Purpose:** On a fresh install, a two-step setup (connect a provider, choose an agent) that
-  ends in a first tree. Skippable from every step.
-- **Where:** Route `onboarding`, a full screen over Home with no stack header. "1 of 2" /
-  "2 of 2" at the top, Back (step 2) at the left, Skip at the right, the step's button at
-  the bottom.
-- **Reach:** Cold start of a fresh install (it opens by itself), `home-setup-action` after
-  a skip, or `home-menu-button` → "Show Onboarding".
+- **Purpose:** Latent Spaces' first-launch sheet (`LoomOnboarding.swift`): the ASPEN GROVE
+  wordmark over pages you swipe or step through with Next. Six pages are Latent Spaces'
+  (three photos with a line each, then icon rows: weaving, keys, trees, help and links),
+  with its words where they are true of Aspen Grove. A seventh connects a model
+  (`onboarding.connect`), and Begin Weaving on it opens a first tree.
+- **Where:** Route `onboarding`, a modal sheet over Home (#1C1C1E, no header, no page dots,
+  no Skip). The wordmark in Cardo, the pager, then one capsule at the bottom: "Next"
+  (bordered) on pages 1-6, "Begin Weaving" (gold) on page 7. The intro pages sit in Latent
+  Spaces' 400 pt box; the setup page takes the whole height down to the button.
+- **Reach:** Cold start of a fresh install (it opens by itself), `home-menu-button` →
+  "Show Onboarding" (opens on page 1), or `home-setup-action` "Set up" and a send with no
+  agent (both open `/onboarding?start=setup`, on page 7).
 - **Requires:** none
-- **Selector:** working — `onboarding-screen`, `onboarding-step-indicator`, `onboarding-skip`, `onboarding-back`, `onboarding-error`
-- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/useOnboardingFlow.ts`, `src/interface/components/onboarding/OnboardingHeading.tsx`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`
-- **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set on finish and on
-  skip)
+- **Selector:** working — `onboarding-screen`, `onboarding-wordmark`, `onboarding-pager`, `onboarding-page-<n>` (1-7), `onboarding-next`, `onboarding-begin`, links `onboarding-link-openloom`, `onboarding-link-project`, `onboarding-link-issues`
+- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
+- **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set by Begin Weaving)
 - **Status:** live
-- **Notes:** Skip goes back to Home, which then shows the setup hint. It opens once per launch
-  at most, and never again after a finish or skip.
+- **Notes:** To skip, swipe the sheet down (`.maestro/skip-onboarding.yaml`). As in Latent
+  Spaces, that records nothing: Home shows the setup hint, and onboarding opens again on
+  the next launch until Begin Weaving is tapped. It opens once per launch at most. The links
+  open Safari. Photo credits are in `assets/images/onboarding/CREDITS.md`. Symbols are SF
+  Symbols through `expo-symbols`.
 
-### Onboarding: connect a provider
+### Onboarding: connect a model
 - **ID:** `onboarding.connect`
-- **Purpose:** Step 1. Choose OpenRouter (paste a key) or LM Studio (a server address and a
-  connection test), using the same fields and storage as Settings → Connections.
-- **Where:** `onboarding` step 1.
-- **Reach:** Fresh install → `onboarding-provider-openrouter` →
-  `connections-openrouter-key-input` → `onboarding-continue`; or
-  `onboarding-provider-lmstudio` → `connections-lmstudio-endpoint-input` →
-  `connections-lmstudio-test` → `onboarding-continue`.
-- **Requires:** none. Continue needs a key (OpenRouter) or an address (LM Studio); a
-  failing LM Studio test does not block it.
-- **Selector:** working — `onboarding-step-provider`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-continue`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/onboarding/ProviderStep.tsx`, `src/interface/components/onboarding/ProviderOption.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`
-- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
-  (secure store and `user_preferences.lmstudio_settings`); Continue saves at once
-- **Status:** live
-- **Notes:** The LM Studio token and auto-load rows are left out here; they stay in Settings.
-
-### Onboarding: choose an agent
-- **ID:** `onboarding.agent`
-- **Purpose:** Step 2. OpenRouter: the agent templates with the first ("Claude Sonnet
-  (Balanced)") preselected, plus "Customize…" for the full agent editor. LM Studio: the
-  models the server reports. Begin creates the agent (the first becomes the default), marks
-  onboarding done and replaces onboarding with a new tree.
-- **Where:** `onboarding` step 2.
-- **Reach:** `onboarding.connect` → `onboarding-continue` → (optionally
-  `onboarding-template-<key>`, or `onboarding-agent-customize` → edit → `agent-editor-submit`
-  "Use"; for LM Studio `onboarding-agent-model-option-<model id>`) → `onboarding-begin`.
+- **Purpose:** Page 7. Choose OpenRouter (add a key, pick a model template) or LM Studio (a
+  server address, a connection test, a model from the server), with the same storage as
+  Settings → Connections. Begin Weaving then creates the agent (the first becomes the
+  default), marks onboarding done and replaces onboarding with a new tree. With nothing
+  chosen yet, Begin Weaving marks onboarding done and closes it.
+- **Where:** `onboarding` page 7, a Form filling the height between the wordmark and Begin
+  Weaving, scrolling under soft top and bottom fades: Provider, then the OpenRouter key
+  rows or the LM Studio server. The Model section (`onboarding-templates` or
+  `onboarding-lmstudio-models`) appears only once a model can be picked: an OpenRouter key
+  is saved (or the build's `EXPO_PUBLIC_` key), or LM Studio's test reads Connected.
+- **Reach:** `onboarding-page-7` → OpenRouter: `onboarding-openrouter-key` → paste into
+  `connections-openrouter-key-input` → `connections-openrouter-key-save` → (optionally
+  `onboarding-template-<key>`) → `onboarding-begin`. LM Studio: `onboarding-provider-lmstudio`
+  → `connections-lmstudio-endpoint-input` → `connections-lmstudio-test` →
+  `onboarding-lmstudio-model-<model id>` → `onboarding-begin`.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
-  `onboarding-agent-model-error` says so in plain words with a refresh button
-  (`onboarding-agent-model-refresh`).
-- **Selector:** working — `onboarding-step-agent`, `onboarding-template-<key>`, `onboarding-agent-customize`, `onboarding-agent-custom`, `onboarding-begin`, LM Studio picker with prefix `onboarding-agent` (as in `settings.agents.model-picker`, provider tabs hidden); the customize sheet is `agent-editor-*` (`settings.agents.editor`)
-- **Code:** `src/interface/components/onboarding/AgentStep.tsx`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
-- **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
-  `onboarding_completed_at`), then the tree tables as in `home.composer`
+  `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
+- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
+- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
+  (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
+  `user_preferences` (`default_model_agent_id`, `onboarding_completed_at`) and the tree
+  tables as in `home.composer`
 - **Status:** live
-- **Notes:** Back from the new tree without sending discards it (`chat.ephemeral-discard`)
-  and returns to Home, which shows New Loom Tree.
+- **Notes:** Agent customizing lives in Settings → Agents only. The LM Studio token and
+  auto-load rows stay in Settings. Back from the new tree without sending discards it
+  (`chat.ephemeral-discard`).
+
+### Tree onboarding (Getting Started)
+- **ID:** `onboarding.tree`
+- **Purpose:** Latent Spaces' `LoomTreeOnboarding`: on the first tree opened, a sheet titled
+  "Loom Trees" / "Getting Started" with three tips (nodes and their menu, the on-branch
+  check, the [n] count) and Begin.
+- **Where:** A page sheet over the Dialogue screen.
+- **Reach:** Open any tree on an install that hasn't tapped Begin (P2), or `chat-menu-button`
+  → "Show Onboarding".
+- **Requires:** A tree.
+- **Selector:** working — `tree-onboarding-sheet`, `tree-onboarding-begin`; menu item none — native context menu item; reach via a tap on `chat-menu-button` ("Show Onboarding")
+- **Code:** `src/interface/components/onboarding/tree/`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/LoomTreeChatView.tsx`
+- **Backend:** WatermelonDB `user_preferences.tree_onboarding_completed_at` (schema v10),
+  set by Begin
+- **Status:** live
+- **Notes:** Swiping it down records nothing, as in Latent Spaces, so it shows again on the
+  next tree. It appears once the tree has slid in (the first tree replaces onboarding, and
+  iOS won't present one sheet while another is going away), and it hides the tree from
+  Maestro while open: wait for `chat-screen|tree-onboarding-begin`, then close it with
+  `.maestro/dismiss-tree-onboarding.yaml`. The perf setup opens the imported tree once,
+  untimed, to get it out of the way.
 
 ## Search
 
@@ -632,7 +656,7 @@ stays until the user makes one.
   Bookmarks submenu between dividers once the tree has a bookmark, Export to OpenLoom Format,
   then Show Onboarding. After a last divider come Aspen Grove's own Tags and Export Path
   (Markdown). Model pushes the tree's Model Settings (`chat.model-settings`); Show Onboarding opens
-  Aspen Grove's onboarding (`onboarding.first-run`).
+  the tree's Getting Started sheet (`onboarding.tree`).
 - **Where:** The `···` button trailing the Dialogue screen's header.
 - **Reach:** P2 → `chat-menu-button`.
 - **Requires:** A tree.
@@ -642,8 +666,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** The side-by-side pair needs `preferredElementSize`, which
   `react-native-context-menu-view` lacks; `patches/react-native-context-menu-view+1.21.0.patch`
-  adds it (iOS 16+). Latent Spaces' Show Onboarding replays its tree tips; Aspen Grove has
-  none, so it opens the app onboarding, as Home's menu does. Flow:
+  adds it (iOS 16+). Show Onboarding replays the tree tips, as Latent Spaces' does (Home's
+  menu opens the app onboarding). Flow:
   `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`).
 
 ### Bookmark a node
@@ -999,8 +1023,7 @@ stays until the user makes one.
 - **ID:** `settings.agents.editor`
 - **Purpose:** Creates or edits a shared agent: quick-start templates (create only), model,
   name, temperature, max tokens and system prompt.
-- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent"; also
-  onboarding's "Customize Agent". A Form in a sheet: glass Cancel and Create/Save capsules
+- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent". A Form in a sheet: glass Cancel and Create/Save capsules
   either side of the title, the error pinned under the bar.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
@@ -1019,15 +1042,15 @@ stays until the user makes one.
 - **Purpose:** Picks the provider (OpenRouter or LM Studio) and a model: from the cached,
   searchable OpenRouter catalog, from live LM Studio discovery, or by typing a custom
   OpenRouter id.
-- **Where:** The Provider and Model sections of the agent editor (Form rows), and
-  onboarding's LM Studio step (`ModelPickerField`). A tree's Model Settings
-  (`chat.model-settings`) reads the same lists through `useModelPickerData`.
+- **Where:** The Provider and Model sections of the agent editor (Form rows). Onboarding's
+  LM Studio model (`LmStudioModelSection`) and a tree's Model Settings
+  (`chat.model-settings`) read the same lists through `useModelPickerData`.
 - **Reach:** `settings-agents-new` → `agent-editor-model-provider-openrouter` →
   `agent-editor-model-search-input` → `agent-editor-model-option-<model id>`.
 - **Requires:** OpenRouter: network for the catalog. LM Studio: a reachable endpoint (set in
   `settings.connections.lmstudio`).
-- **Selector:** working — with prefix `agent-editor` (or `onboarding-agent`): `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
-- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/interface/components/settings/agents/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
+- **Selector:** working — with prefix `agent-editor`: `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
+- **Code:** `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/interface/components/settings/agents/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models` (cached for 24 h); LM
   Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
@@ -1053,9 +1076,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
   Cancel or a swipe down discards the edit. Saving an empty field removes the key. The
-  section footer says whether a key is stored. Settings has no show/hide button any more
-  (`connections-openrouter-key-reveal` lives on in onboarding only), as Latent Spaces'
-  SecureField has none. The links open Safari.
+  section footer says whether a key is stored. Neither Settings nor onboarding has a show/hide
+  button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open Safari.
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
 - **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
@@ -1081,14 +1103,15 @@ stays until the user makes one.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
-- **Notes:** In Settings the fields are Form rows (`LmStudioFormSection`); onboarding keeps
-  `LmStudioConnectionSection` with the same ids. `connections-lmstudio-status` reads one of
-  Untested, Checking…, Connected or Not reachable (onboarding prefixes "Status: "). When the
+- **Notes:** The fields are Form rows (`LmStudioFormSection`), in Settings and on
+  onboarding's setup page (without the token and auto-load rows) with the same ids.
+  `connections-lmstudio-status` reads one of Untested, Checking…, Connected or Not
+  reachable. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
   again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold

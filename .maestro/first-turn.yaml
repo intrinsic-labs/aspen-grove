@@ -6,8 +6,8 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml
-# A fresh install opens onboarding; skip it and take the Settings path, which works with
-# the EXPO_PUBLIC_ key fallback (onboarding's Continue wants a key typed in).
+# A fresh install opens onboarding; skip it and take the Settings path (the P1 path
+# through Settings), which works with the EXPO_PUBLIC_ key fallback.
 - runFlow: skip-onboarding.yaml
 
 # P1: create an agent from the first template.

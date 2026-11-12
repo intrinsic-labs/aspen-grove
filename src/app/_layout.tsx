@@ -121,12 +121,12 @@ const RootLayout = () => {
                       'System Message'
                     )}
                   />
+                  {/* Latent Spaces' onboarding `.sheet` (HomeScreenView.swift:203-205). */}
                   <Stack.Screen
                     name="onboarding"
                     options={{
                       headerShown: false,
-                      animation: 'fade',
-                      gestureEnabled: false,
+                      presentation: 'modal',
                     }}
                   />
                   <Stack.Screen

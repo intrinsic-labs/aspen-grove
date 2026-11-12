@@ -1,14 +1,15 @@
-# First real turn with no API key: a cleared install wired to the mock server
-# (setup.yaml), then a tree started from Home's composer with one message,
-# and the reply streamed to the end.
+# First real turn with no API key: a cleared install set up through
+# onboarding against the mock server (setup.yaml), then a tree started from
+# Home's composer with one message, and the reply streamed to the end.
 # Needs the mock server on 1235 and Metro up (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml
 
-# P2: back to Home (setup.yaml ends on Settings) and start a tree from its
-# composer; the tree opens and sends the message.
+# P2: back to Home (setup.yaml ends on onboarding's empty first tree, which
+# leaving discards) and start a tree from its composer; the tree opens and
+# sends the message.
 - runFlow: ../go-home.yaml
 - takeScreenshot: mock-03-home
 - runFlow:

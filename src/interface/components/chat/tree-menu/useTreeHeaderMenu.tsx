@@ -1,6 +1,5 @@
 import { useLayoutEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
 import type { TreeMenuBookmark, TreeMenuCommand } from './tree-menu';
 import { TreeToolbarMenu } from './TreeToolbarMenu';
@@ -17,6 +16,11 @@ type UseTreeHeaderMenuInput = {
   readonly openExport: () => void;
   readonly openTags: () => void;
   readonly exportPath: () => Promise<void>;
+  /**
+   * Show Onboarding: the tree's Getting Started sheet, as Latent Spaces'
+   * (ToolbarMenu.swift:97-101 sets LoomTreeView's `showingPopupSheet`).
+   */
+  readonly showOnboarding: () => void;
 };
 
 /** Puts the tree menu in the header's trailing slot and runs its commands. */
@@ -31,9 +35,9 @@ export const useTreeHeaderMenu = ({
   openExport,
   openTags,
   exportPath,
+  showOnboarding,
 }: UseTreeHeaderMenuInput) => {
   const navigation = useNavigation();
-  const router = useRouter();
 
   useLayoutEffect(() => {
     const onCommand = (command: TreeMenuCommand) => {
@@ -57,7 +61,7 @@ export const useTreeHeaderMenu = ({
           openExport();
           break;
         case 'onboarding':
-          router.push('/onboarding');
+          showOnboarding();
           break;
         case 'tags':
           openTags();
@@ -88,8 +92,8 @@ export const useTreeHeaderMenu = ({
     openExport,
     openModel,
     openTags,
-    router,
     setVoiceModeEnabled,
+    showOnboarding,
     voiceModeEnabled,
   ]);
 };

@@ -16,6 +16,8 @@ import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useTreeHeaderMenu } from './chat/tree-menu/useTreeHeaderMenu';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
+import { TreeOnboardingSheet } from './onboarding/tree/TreeOnboardingSheet';
+import { useTreeOnboarding } from './onboarding/tree/useTreeOnboarding';
 import { useVoiceMode } from './voice';
 
 const LoomTreeChatView = () => {
@@ -23,6 +25,7 @@ const LoomTreeChatView = () => {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const controller = useLoomTreeChatController();
+  const treeOnboarding = useTreeOnboarding();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
   const { messageFontFamily, messageFontSize, messageLineHeight } =
@@ -48,6 +51,7 @@ const LoomTreeChatView = () => {
     openExport: controller.exportSheet.open,
     openTags: controller.tags.open,
     exportPath: controller.exportPath,
+    showOnboarding: treeOnboarding.open,
   });
 
   return (
@@ -142,6 +146,12 @@ const LoomTreeChatView = () => {
         visible={controller.tags.visible}
         treeId={controller.tags.treeId}
         onClose={controller.tags.close}
+      />
+
+      <TreeOnboardingSheet
+        visible={treeOnboarding.visible}
+        onBegin={treeOnboarding.begin}
+        onDismiss={treeOnboarding.dismiss}
       />
     </AppScreen>
   );
