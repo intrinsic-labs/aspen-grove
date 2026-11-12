@@ -20,7 +20,6 @@
     "@expo/vector-icons": "^15.0.3",
     "@nozbe/watermelondb": "^0.28.0",
     "@react-native-community/slider": "5.0.1",
-    "@react-navigation/drawer": "^7.12.8",
     "@types/react-syntax-highlighter": "^15.5.13",
     "babel-preset-expo": "~54.0.10",
     "base64-js": "^1.5.1",

@@ -1,12 +1,13 @@
 # Clean start for a perf run: clear state, create an agent, import ${TREE_FILE}
 # from Files ("On My iPhone"), timed from picking the file to the
-# "Import complete" alert. Ends on the Loom Trees screen.
+# "Import complete" alert. Ends on Home.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: ../open-app.yaml
 - runFlow: ../skip-onboarding.yaml
 # An agent first, so the imported tree has one to continue with.
 - runFlow: ../create-agent.yaml
+- runFlow: ../go-home.yaml
 - runFlow:
     file: ../import-tree.yaml
     env:

@@ -79,7 +79,7 @@ src/
 ├── interface/
 │   ├── composition/      AppServicesProvider: the composition root that wires
 │   │                     repositories, providers and use cases
-│   ├── components/       screens and feature components (chat/, settings/, drawer/, home/)
+│   ├── components/       screens and feature components (home/, chat/, settings/, onboarding/)
 │   ├── hooks/, services/ (file share/pick), ui/ (tokens, primitives)
 └── app/                  expo-router routes; thin files that render interface components
 ```
