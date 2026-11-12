@@ -38,10 +38,11 @@ env:
       id: connections-lmstudio-status
       text: 'Connected'
     timeout: 10000
+# The Model section appears once the test reads Connected; the page may
+# need a scroll to reach its rows (not centered: it can't scroll that far).
 - scrollUntilVisible:
     element:
       id: onboarding-lmstudio-model-${MOCK_MODEL}
-    centerElement: true
     timeout: 10000
 - tapOn:
     id: onboarding-lmstudio-model-${MOCK_MODEL}

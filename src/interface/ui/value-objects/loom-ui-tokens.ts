@@ -466,6 +466,11 @@ export const loomUiTokens = {
     },
     // `.frame(maxHeight: 400)` on the TabView (LoomOnboarding.swift:105).
     pagerHeight: 400,
+    // The setup page scrolls under soft edges (#1C1C1E to clear).
+    setupFade: {
+      top: 16,
+      bottom: 40,
+    },
     page: {
       // `.frame(width: 180).clipShape(Circle())`, `VStack(spacing: 20)`,
       // `.frame(maxWidth: 300).padding(.horizontal, 30)`.

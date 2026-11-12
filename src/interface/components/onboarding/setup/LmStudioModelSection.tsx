@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
@@ -9,31 +8,22 @@ import {
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { FormCheckRow } from '../../settings/agents/editor/FormCheckRow';
 import { useModelPickerData } from '../../settings/agents/useModelPickerData';
-import type { LmStudioConnectionStatus } from '../../settings/connections/useConnectionsController';
 
 type LmStudioModelSectionProps = {
-  readonly connectionStatus: LmStudioConnectionStatus;
   readonly modelId: string;
   readonly onSelect: (modelId: string) => void;
 };
 
 /**
- * The models the LM Studio server reports, as an inline Form picker. The
- * list reloads once a connection test succeeds.
+ * The models the LM Studio server reports, as an inline Form picker. Shown
+ * once a connection test succeeds, it loads the list as it mounts.
  */
 export const LmStudioModelSection = ({
-  connectionStatus,
   modelId,
   onSelect,
 }: LmStudioModelSectionProps) => {
   const picker = useModelPickerData('lmstudio');
   const { refresh } = picker;
-
-  useEffect(() => {
-    if (connectionStatus === 'connected') {
-      void refresh();
-    }
-  }, [connectionStatus, refresh]);
 
   const footer = picker.error ? (
     <Text

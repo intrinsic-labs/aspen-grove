@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { AspenGroveWordmark } from './intro/AspenGroveWordmark';
+import { OnboardingIntroFrame } from './intro/OnboardingIntroFrame';
 import { ONBOARDING_INTRO_PAGES } from './intro/onboarding-pages';
 import { OnboardingItemsPage } from './intro/OnboardingItemsPage';
 import { OnboardingPhotoPage } from './intro/OnboardingPhotoPage';
@@ -39,29 +40,25 @@ const OnboardingView = () => {
       <OnboardingPager
         pagerRef={pager.pagerRef}
         pageWidth={pager.pageWidth}
+        pageHeight={pager.pageHeight}
         onLayout={pager.onLayout}
         onPageSettled={pager.onPageSettled}
       >
-        {ONBOARDING_INTRO_PAGES.map((page, index) =>
-          page.kind === 'photo' ? (
-            <OnboardingPhotoPage
-              key={index}
-              image={page.image}
-              imageFrameHeight={page.imageFrameHeight}
-              text={page.text}
-            />
-          ) : (
-            <OnboardingItemsPage
-              key={index}
-              items={page.items}
-              compact={page.compact}
-            />
-          )
-        )}
+        {ONBOARDING_INTRO_PAGES.map((page, index) => (
+          <OnboardingIntroFrame key={index}>
+            {page.kind === 'photo' ? (
+              <OnboardingPhotoPage
+                image={page.image}
+                imageFrameHeight={page.imageFrameHeight}
+                text={page.text}
+              />
+            ) : (
+              <OnboardingItemsPage items={page.items} compact={page.compact} />
+            )}
+          </OnboardingIntroFrame>
+        ))}
         <OnboardingSetupPage setup={setup} error={finish.error} />
       </OnboardingPager>
-      {/* `Spacer()` twice under the pages. */}
-      <View style={styles.doubleSpacer} />
       <View style={{ paddingBottom: insets.bottom }}>
         {pager.isLastPage ? (
           <OnboardingButton
@@ -94,8 +91,5 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
-  },
-  doubleSpacer: {
-    flex: 2,
   },
 });

@@ -8,11 +8,12 @@ import type {
 
 /**
  * The page shown and how to move between pages, for a paging ScrollView.
- * Opens on `startPage` once the pager knows its width.
+ * Opens on `startPage` once the pager knows its size.
  */
 export const useOnboardingPager = (pageCount: number, startPage: number) => {
   const pagerRef = useRef<ScrollView>(null);
-  const [pageWidth, setPageWidth] = useState(0);
+  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
+  const pageWidth = pageSize.width;
   const [page, setPage] = useState(startPage);
 
   useEffect(() => {
@@ -23,7 +24,8 @@ export const useOnboardingPager = (pageCount: number, startPage: number) => {
   }, [pageWidth]);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
-    setPageWidth(event.nativeEvent.layout.width);
+    const { width, height } = event.nativeEvent.layout;
+    setPageSize({ width, height });
   }, []);
 
   const onPageSettled = useCallback(
@@ -45,6 +47,7 @@ export const useOnboardingPager = (pageCount: number, startPage: number) => {
   return {
     pagerRef,
     pageWidth,
+    pageHeight: pageSize.height,
     page,
     isLastPage: page === pageCount - 1,
     onLayout,

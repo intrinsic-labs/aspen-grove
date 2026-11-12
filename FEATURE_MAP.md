@@ -305,8 +305,9 @@ stays until the user makes one.
   with its words where they are true of Aspen Grove. A seventh connects a model
   (`onboarding.connect`), and Begin Weaving on it opens a first tree.
 - **Where:** Route `onboarding`, a modal sheet over Home (#1C1C1E, no header, no page dots,
-  no Skip). The wordmark in Cardo, the pager 400 pt tall, then one capsule at the bottom:
-  "Next" (bordered) on pages 1-6, "Begin Weaving" (gold) on page 7.
+  no Skip). The wordmark in Cardo, the pager, then one capsule at the bottom: "Next"
+  (bordered) on pages 1-6, "Begin Weaving" (gold) on page 7. The intro pages sit in Latent
+  Spaces' 400 pt box; the setup page takes the whole height down to the button.
 - **Reach:** Cold start of a fresh install (it opens by itself), `home-menu-button` →
   "Show Onboarding" (opens on page 1), or `home-setup-action` "Set up" and a send with no
   agent (both open `/onboarding?start=setup`, on page 7).
@@ -328,8 +329,11 @@ stays until the user makes one.
   Settings → Connections. Begin Weaving then creates the agent (the first becomes the
   default), marks onboarding done and replaces onboarding with a new tree. With nothing
   chosen yet, Begin Weaving marks onboarding done and closes it.
-- **Where:** `onboarding` page 7, a Form in the pager (Provider, then OpenRouter Key and
-  Model, or the LM Studio server and Model).
+- **Where:** `onboarding` page 7, a Form filling the height between the wordmark and Begin
+  Weaving, scrolling under soft top and bottom fades: Provider, then the OpenRouter key
+  rows or the LM Studio server. The Model section (`onboarding-templates` or
+  `onboarding-lmstudio-models`) appears only once a model can be picked: an OpenRouter key
+  is saved (or the build's `EXPO_PUBLIC_` key), or LM Studio's test reads Connected.
 - **Reach:** `onboarding-page-7` → OpenRouter: `onboarding-openrouter-key` → paste into
   `connections-openrouter-key-input` → `connections-openrouter-key-save` → (optionally
   `onboarding-template-<key>`) → `onboarding-begin`. LM Studio: `onboarding-provider-lmstudio`

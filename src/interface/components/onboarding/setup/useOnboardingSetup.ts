@@ -21,6 +21,8 @@ export const useOnboardingSetup = () => {
   const [templateKey, setTemplateKey] = useState(DEFAULT_AGENT_TEMPLATE.key);
   const [lmStudioModelId, setLmStudioModelId] = useState('');
   const [editingKey, setEditingKey] = useState(false);
+  // Counts saves from the key sheet, so the page can reveal the Model rows.
+  const [keySaves, setKeySaves] = useState(0);
 
   const draft: AgentDraft = useMemo(() => {
     if (provider === 'lmstudio') {
@@ -49,6 +51,7 @@ export const useOnboardingSetup = () => {
     (key: string) => {
       connections.setApiKeyInput(key);
       setEditingKey(false);
+      setKeySaves((count) => count + 1);
     },
     [connections]
   );
@@ -66,6 +69,7 @@ export const useOnboardingSetup = () => {
     openKeyEditor: useCallback(() => setEditingKey(true), []),
     closeKeyEditor: useCallback(() => setEditingKey(false), []),
     saveKey,
+    keySaves,
     draft,
     ready,
   };
