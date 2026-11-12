@@ -17,7 +17,7 @@ type BookmarkRow = {
   readonly nodeId: ULID;
   readonly localId: string;
   readonly label?: string;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: Node['authorType'];
   readonly previewText: string;
   readonly createdAt: Date;
 };

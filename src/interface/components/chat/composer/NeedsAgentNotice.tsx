@@ -20,7 +20,7 @@ export const NeedsAgentNotice = ({ onChooseAgent }: NeedsAgentNoticeProps) => {
 
   return (
     <MaterialView
-      variant="regular"
+      variant="systemThinDark"
       style={[styles.notice, { borderColor: colors.secondary }]}
     >
       <AppText
@@ -59,10 +59,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: loomUiTokens.composer.inputRowGap,
+    gap: loomUiTokens.composer.sectionGap,
     minHeight: loomUiTokens.composer.inputMinHeight,
     borderWidth: 1,
-    borderRadius: loomUiTokens.composer.inputRowRadius,
+    borderRadius: loomUiTokens.composer.fieldRadius,
     paddingLeft: loomUiTokens.composer.inputControlEdgePadding * 1.6,
     paddingRight: loomUiTokens.composer.inputControlEdgePadding,
     paddingVertical: loomUiTokens.composer.inputControlEdgePadding,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: loomUiTokens.composer.editBannerIconGap,
-    borderRadius: loomUiTokens.composer.inputRowRadius,
+    borderRadius: loomUiTokens.composer.fieldRadius,
     paddingHorizontal: loomUiTokens.composer.inputControlEdgePadding * 1.2,
     paddingVertical: loomUiTokens.composer.editBannerIconGap,
   },

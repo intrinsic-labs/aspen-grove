@@ -90,7 +90,7 @@ Building on that insight, we could explore how Thomas represents...
 
 **Metadata shown per node:**
 - **localId** — Short identifier in brackets
-- **authorType** — `human` or `model`
+- **authorType** — `human`, `model` or `system`
 - **relative timestamp** — How long ago created
 - **continuations** — Count of child nodes (if any)
 - **annotations** — Count of annotations (if any)

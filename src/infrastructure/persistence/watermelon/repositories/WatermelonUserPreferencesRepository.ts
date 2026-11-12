@@ -11,7 +11,10 @@ import type {
   Theme,
   UserPreferences as UserPreferencesEntity,
 } from '@domain/entities';
-import { DEFAULT_LMSTUDIO_SETTINGS } from '@domain/entities';
+import {
+  DEFAULT_DISPLAY_NAME,
+  DEFAULT_LMSTUDIO_SETTINGS,
+} from '@domain/entities';
 import { createULID, type ULID } from '@domain/value-objects';
 
 import UserPreferencesModel from '../model/UserPreferences';
@@ -21,9 +24,9 @@ import {
   parseLMStudioSettings,
 } from './lmstudio-settings';
 
-const DEFAULT_DISPLAY_NAME = 'Human';
 const DEFAULT_THEME: Theme = 'system';
-const DEFAULT_FONT_SIZE: FontSize = 16;
+// Latent Spaces' default message size (LoomApp.swift:33).
+const DEFAULT_FONT_SIZE: FontSize = 17;
 const DEFAULT_VOICE_MODE = false;
 const DEFAULT_TEMPERATURE = 1.0;
 const DEFAULT_VERBOSE_ERROR_ALERTS = false;
