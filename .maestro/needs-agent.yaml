@@ -26,24 +26,24 @@ appId: com.intrinsiclabs.aspengrove
     id: chat-composer-input
 - takeScreenshot: 21-needs-agent
 
-# The notice's button opens Dialogue Settings, which says the same.
+# The notice's button pushes the tree's Model Settings, which asks for a model.
 - tapOn:
     id: chat-needs-agent-choose
 - extendedWaitUntil:
     visible:
-      id: dialogue-settings-needs-agent
+      id: tree-model-screen
     timeout: 10000
 - waitForAnimationToEnd
+- assertVisible: 'Choose a model for this tree.'
 - takeScreenshot: 22-needs-agent-settings
-# Retry a Done tap that lands mid-presentation.
 - repeat:
     times: 3
     while:
-      visible:
-        id: dialogue-settings-sheet
+      notVisible:
+        id: chat-needs-agent
     commands:
       - tapOn:
-          id: dialogue-settings-done
+          id: BackButton
       - waitForAnimationToEnd
 
 # Create an agent elsewhere; back on the tree, it has adopted it.

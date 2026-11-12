@@ -148,7 +148,10 @@ reply streamed to the end, and a screenshot (run it with the mock server and Met
 [.maestro/mock/home-trees.yaml](.maestro/mock/home-trees.yaml) goes on from there: two
 trees on Home, the menu, a rename and a delete by swipe. Auto-Title stays on: the mock
 recognises the titling call and answers "Mock title #n" (n is the request number), so each
-tree's row ends up with that title in place of its first message's words. If 1235 is taken, run the mock on
+tree's row ends up with that title in place of its first message's words.
+[.maestro/mock/tree-model.yaml](.maestro/mock/tree-model.yaml) opens a tree's Model Settings,
+turns on "Always use maximum allowed", writes a system message and sends; the mock's log
+line for that send shows `max_tokens=8192` and the system message. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
@@ -194,7 +197,7 @@ and simulator, three runs or more, by median. No key needed.
 
 [needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
 `perf-tiny.openloom` before any agent exists: the tree opens with its messages and the
-"needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
+"needs an agent" notice, whose button opens the tree's Model Settings; once an agent is created,
 reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
 live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboarding; flows
 that set up through Settings or an import skip it), `create-agent.yaml` and

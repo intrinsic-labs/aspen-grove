@@ -21,12 +21,21 @@ appId: com.intrinsiclabs.aspengrove
     when:
       true: ${!!METRO_PORT}
     commands:
-      - tapOn: 'Enter URL manually'
-      # The URL field opens under the row; it has no label to tap by.
+      # Listed already? Tap it. (With other sessions' servers listed too,
+      # the manual field below sits lower than the tap point expects.)
       - tapOn:
-          point: '50%,33%'
-      - inputText: http://localhost:${METRO_PORT}
-      - tapOn: 'Connect'
+          text: 'http://localhost:${METRO_PORT}'
+          optional: true
+      - runFlow:
+          when:
+            visible: 'Enter URL manually'
+          commands:
+            - tapOn: 'Enter URL manually'
+            # The URL field opens under the row; it has no label to tap by.
+            - tapOn:
+                point: '50%,33%'
+            - inputText: http://localhost:${METRO_PORT}
+            - tapOn: 'Connect'
 # Each cleared install shows the dev menu's one-time intro sheet once the
 # bundle loads (the first Metro bundle can take a minute to build).
 - extendedWaitUntil:
