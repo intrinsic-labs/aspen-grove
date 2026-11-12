@@ -23,6 +23,7 @@ export type NodeSheetData = {
   readonly createdAt: Date;
   readonly editedFrom?: ULID;
   readonly bookmarked: boolean;
+  readonly bookmarkLabel?: string;
   readonly pruned: boolean;
   readonly excluded: boolean;
   readonly contentHash: string;
@@ -103,6 +104,7 @@ export const useNodeSheetData = (input: UseNodeSheetDataInput) => {
         createdAt: node.createdAt,
         editedFrom: node.editedFrom,
         bookmarked: node.metadata.bookmarked,
+        bookmarkLabel: node.metadata.bookmarkLabel,
         pruned: node.metadata.pruned,
         excluded: node.metadata.excluded,
         contentHash: String(node.contentHash),

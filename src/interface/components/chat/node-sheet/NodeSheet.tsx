@@ -11,18 +11,13 @@ import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
-import {
-  buildContinuationMenuSections,
-  type ContinuationMenuAction,
-} from '../continuation-menu';
+import type { ContinuationMenuAction } from '../continuation-menu';
+import type { BookmarkMenuAction } from './bookmark-menu';
 import { toNodeBranchPosition } from './node-branch-position';
-import {
-  buildNodeInfoMenuSections,
-  type NodeInfoMenuAction,
-} from './node-info-menu';
-import { nodeSheetTitle, type NodeSheetTarget } from './node-sheet-target';
+import type { NodeInfoMenuAction } from './node-info-menu';
+import type { NodeSheetTarget } from './node-sheet-target';
 import { NodeSheetDetails } from './NodeSheetDetails';
-import { NodeSheetHeader } from './NodeSheetHeader';
+import { NodeSheetKindHeader } from './NodeSheetKindHeader';
 import { useNodeSheetData } from './useNodeSheetData';
 
 const sheet = loomUiTokens.nodeSheet;
@@ -45,12 +40,17 @@ type NodeSheetProps = {
     nodeId: ULID,
     action: ContinuationMenuAction
   ) => void | Promise<void>;
+  readonly onBookmarkAction: (
+    nodeId: ULID,
+    action: BookmarkMenuAction,
+    label: string | undefined
+  ) => void | Promise<void>;
 };
 
 /**
  * A node in a sheet, as Latent Spaces shows one: "Node Info" from a
- * message's menu, "Continuation Node" from a card. The toolbar names the
- * model and the branch length; the body is the node's whole text,
+ * message's menu, "Continuation Node" from a card, a bookmark from the tree
+ * menu. The toolbar names the model; the body is the node's whole text,
  * selectable, with Aspen Grove's metadata and provenance under it.
  */
 export const NodeSheet = ({
@@ -61,6 +61,7 @@ export const NodeSheet = ({
   onDismissed,
   onInfoAction,
   onContinuationAction,
+  onBookmarkAction,
 }: NodeSheetProps) => {
   const { repositories } = useAppServices();
   // The last target stays drawn while the sheet slides away.
@@ -83,18 +84,12 @@ export const NodeSheet = ({
   const position = shown
     ? toNodeBranchPosition(shown.nodeId, activePathNodeIds)
     : null;
-  const runInfoAction = async (action: NodeInfoMenuAction) => {
+  // Every action reloads the sheet, for those that leave it open.
+  const run = async (act: (nodeId: ULID) => void | Promise<void>) => {
     if (!data) {
       return;
     }
-    await onInfoAction(data.nodeId, action);
-    await reload();
-  };
-  const runContinuationAction = async (action: ContinuationMenuAction) => {
-    if (!data) {
-      return;
-    }
-    await onContinuationAction(data.nodeId, action);
+    await act(data.nodeId);
     await reload();
   };
 
@@ -110,37 +105,23 @@ export const NodeSheet = ({
       }}
     >
       <View testID="node-sheet" style={styles.sheet}>
-        {kind === 'info' ? (
-          <NodeSheetHeader
-            title={nodeSheetTitle.info}
-            modelLabel={data?.modelLabel}
-            count={position?.count}
-            checked={false}
-            menu={
-              data && position
-                ? buildNodeInfoMenuSections({
-                    isCurrent: position.isCurrent,
-                    bookmarked: data.bookmarked,
-                    pruned: data.pruned,
-                  })
-                : undefined
-            }
-            onMenuAction={(action) => void runInfoAction(action)}
-            onBack={onClose}
-          />
-        ) : (
-          <NodeSheetHeader
-            title={nodeSheetTitle.continuation}
-            modelLabel={data?.modelLabel}
-            count={position?.count}
-            checked={position?.onActivePath ?? false}
-            menu={
-              data ? buildContinuationMenuSections(data.bookmarked) : undefined
-            }
-            onMenuAction={(action) => void runContinuationAction(action)}
-            onBack={onClose}
-          />
-        )}
+        <NodeSheetKindHeader
+          kind={kind}
+          data={data}
+          position={position}
+          onInfoAction={(action) =>
+            void run((nodeId) => onInfoAction(nodeId, action))
+          }
+          onContinuationAction={(action) =>
+            void run((nodeId) => onContinuationAction(nodeId, action))
+          }
+          onBookmarkAction={(action) =>
+            void run((nodeId) =>
+              onBookmarkAction(nodeId, action, data?.bookmarkLabel)
+            )
+          }
+          onBack={onClose}
+        />
 
         {error ? (
           <AppText

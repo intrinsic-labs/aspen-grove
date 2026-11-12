@@ -13,6 +13,9 @@ const setup = () => {
     toggleBookmark: jest.fn(async (_nodeId: ULID) => {}),
     togglePrune: jest.fn(async (_nodeId: ULID) => {}),
     startEditForNode: jest.fn(async (_nodeId: ULID) => {}),
+    renameBookmark: jest.fn(
+      async (_nodeId: ULID, _label: string | undefined) => {}
+    ),
   };
   const hook = renderHook(() => useNodeSheet(actions), undefined);
   return { hook, actions };
@@ -59,5 +62,35 @@ describe('useNodeSheet', () => {
 
     await act(() => hook.result.current.onDismissed());
     expect(actions.startEditForNode).toHaveBeenCalledWith(nodeId);
+  });
+
+  it('renames a bookmark and keeps its sheet open', async () => {
+    const { hook, actions } = setup();
+    await act(() => hook.result.current.open(nodeId, 'bookmark'));
+    await act(() =>
+      hook.result.current.onBookmarkAction(nodeId, 'rename', 'Tools v1')
+    );
+    expect(actions.renameBookmark).toHaveBeenCalledWith(nodeId, 'Tools v1');
+    expect(hook.result.current.target).not.toBeNull();
+  });
+
+  it('closes a bookmark sheet when its bookmark is removed', async () => {
+    const { hook, actions } = setup();
+    await act(() => hook.result.current.open(nodeId, 'bookmark'));
+    await act(() =>
+      hook.result.current.onBookmarkAction(nodeId, 'bookmark', undefined)
+    );
+    expect(actions.toggleBookmark).toHaveBeenCalledWith(nodeId);
+    expect(hook.result.current.target).toBeNull();
+  });
+
+  it('makes a bookmark current and closes its sheet', async () => {
+    const { hook, actions } = setup();
+    await act(() => hook.result.current.open(nodeId, 'bookmark'));
+    await act(() =>
+      hook.result.current.onBookmarkAction(nodeId, 'makeCurrent', undefined)
+    );
+    expect(actions.rewindToNode).toHaveBeenCalledWith(nodeId);
+    expect(hook.result.current.target).toBeNull();
   });
 });

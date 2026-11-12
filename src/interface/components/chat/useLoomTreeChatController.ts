@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
+import { useTextPrompt } from '@/interface/ui/components/text-prompt/useTextPrompt';
 import { canSubmitComposer } from './composer/can-submit-composer';
 import { toComposerMode } from './composer/composer-mode';
 import { useComposerDraft } from './composer/useComposerDraft';
@@ -18,6 +19,7 @@ import { useMessageActions } from './node-actions/useMessageActions';
 import { useNodeActions } from './node-actions/useNodeActions';
 import { useRetraceBranch } from './node-actions/useRetraceBranch';
 import { useRewindToNode } from './node-actions/useRewindToNode';
+import { renameBookmarkPrompt } from './node-sheet/bookmark-menu';
 import { useNodeSheet } from './node-sheet/useNodeSheet';
 import { useRouteNodeSheet } from './node-sheet/useRouteNodeSheet';
 import { useParallelRail } from './parallel/useParallelRail';
@@ -33,6 +35,7 @@ import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendFirstMessage } from './turns/useSendFirstMessage';
 import { useSendTurn } from './turns/useSendTurn';
 import { useStopGeneration } from './turns/useStopGeneration';
+import { useTreeMenuSheets } from './tree-menu/useTreeMenuSheets';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
@@ -72,11 +75,14 @@ export const useLoomTreeChatController = () => {
   } = state;
   const [sending, setSending] = useState(false);
   const providerError = useProviderErrorNotice({ error, setError });
+  const textPrompt = useTextPrompt();
   const title = useTreeTitle({
     navigation,
     treeRepo: repositories.treeRepo,
     sessionTreeId: session?.treeId,
     activeTreeIdRef,
+    prompt: textPrompt.prompt,
+    setError,
   });
 
   const streaming = useStreamingAssistantRow();
@@ -267,6 +273,12 @@ export const useLoomTreeChatController = () => {
     toggleBookmark: nodeActions.toggleBookmark,
     togglePrune: nodeActions.togglePrune,
     startEditForNode,
+    renameBookmark: async (nodeId, label) => {
+      const next = await textPrompt.prompt(renameBookmarkPrompt(label));
+      if (next !== null) {
+        await nodeActions.renameBookmark(nodeId, next);
+      }
+    },
   });
   const openNodeSheet = nodeSheet.open;
   const openNodeInfo = useCallback(
@@ -306,11 +318,18 @@ export const useLoomTreeChatController = () => {
       openContinuationSheet,
     });
 
+  const treeId = session?.treeId ?? activeTreeIdRef.current;
   const sheets = useChatSheets({
-    treeId: session?.treeId ?? activeTreeIdRef.current,
-    rewindToNode,
-    openNodeInfo,
+    treeId,
     onSessionInvalidated: reinitializeSession,
+  });
+  const menuSheets = useTreeMenuSheets({
+    treeId,
+    treeRepo: repositories.treeRepo,
+    nodeRepo: repositories.nodeRepo,
+    exportTree: exports.exportTree,
+    setError,
+    refreshKey: rows,
   });
   const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.
@@ -369,7 +388,8 @@ export const useLoomTreeChatController = () => {
       onStopSlot: parallelRail.stop,
       error: continuations.error,
     },
-    bookmarks: sheets.bookmarks,
+    bookmarks: menuSheets.bookmarks,
+    openBookmark: (nodeId: ULID) => openNodeSheet(nodeId, 'bookmark'),
     nodeSheet: {
       target: nodeSheet.target,
       activePathNodeIds,
@@ -377,16 +397,15 @@ export const useLoomTreeChatController = () => {
       onDismissed: nodeSheet.onDismissed,
       onInfoAction: nodeSheet.onInfoAction,
       onContinuationAction: nodeSheet.onContinuationAction,
+      onBookmarkAction: nodeSheet.onBookmarkAction,
     },
     dialogueSettings: sheets.dialogueSettings,
-    titleEditor: {
-      visible: title.titleEditorVisible,
-      title: title.treeTitle,
-      open: () => title.setTitleEditorVisible(true),
-      close: () => title.setTitleEditorVisible(false),
-      save: title.saveTreeTitle,
-    },
-    exports,
+    editTitle: () => void title.editTreeTitle(),
+    // Android's stand-in for the alerts with a text field.
+    textPrompt: textPrompt.pending,
+    description: menuSheets.description,
+    exportSheet: menuSheets.exportSheet,
+    exportPath: exports.exportPathMarkdown,
     tags: sheets.tags,
     scrollRef,
     inputRef,

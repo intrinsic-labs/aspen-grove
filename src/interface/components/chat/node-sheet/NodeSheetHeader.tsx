@@ -12,13 +12,24 @@ import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 const sheet = loomUiTokens.nodeSheet;
 const header = loomUiTokens.sheetHeader;
 
+/**
+ * The symbol before the model: a green check on a continuation the active
+ * path runs through, a bookmark (filled while set) on a bookmark's sheet.
+ */
+export type NodeSheetBadge = 'check' | 'bookmark' | 'bookmarked';
+
+const BADGE_ICON = {
+  check: 'checkmark-circle',
+  bookmark: 'bookmark-outline',
+  bookmarked: 'bookmark',
+} as const;
+
 type NodeSheetHeaderProps<Action extends string> = {
   readonly title: string;
   /** The model it came from; absent while the node loads. */
   readonly modelLabel?: string;
   readonly count?: number;
-  /** A continuation the active path runs through gets the green check. */
-  readonly checked: boolean;
+  readonly badge?: NodeSheetBadge;
   /** Absent while the node loads. */
   readonly menu?: NativeMenuSections<Action>;
   readonly onMenuAction: (action: Action) => void;
@@ -26,14 +37,15 @@ type NodeSheetHeaderProps<Action extends string> = {
 };
 
 /**
- * A node sheet's toolbar (NodeSheetView.swift:26-53): a glass back button,
- * the title over the model and `[n]`, and a glass menu button.
+ * A node sheet's toolbar (NodeSheetView.swift:26-53, BookmarkSheet.swift:
+ * 30-58): a glass back button, the title over the model (and `[n]`), and a
+ * glass menu button.
  */
 export const NodeSheetHeader = <Action extends string>({
   title,
   modelLabel,
   count,
-  checked,
+  badge,
   menu,
   onMenuAction,
   onBack,
@@ -53,12 +65,18 @@ export const NodeSheetHeader = <Action extends string>({
       </Text>
       {modelLabel !== undefined ? (
         <View testID="node-sheet-subtitle" style={styles.subtitle}>
-          {checked ? (
+          {badge ? (
             <Ionicons
-              testID="node-sheet-check"
-              name="checkmark-circle"
+              testID={
+                badge === 'check' ? 'node-sheet-check' : 'node-sheet-bookmark'
+              }
+              name={BADGE_ICON[badge]}
               size={sheet.subtitleSize + 2}
-              color={loomUiTokens.colors.green}
+              color={
+                badge === 'check'
+                  ? loomUiTokens.colors.green
+                  : loomUiTokens.settingsForm.colors.secondaryLabel
+              }
             />
           ) : null}
           <Text numberOfLines={1} style={[styles.caption, styles.model]}>

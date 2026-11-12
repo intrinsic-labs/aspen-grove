@@ -9,9 +9,9 @@ import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useCreateLoomTree } from '@/interface/hooks/useCreateLoomTree';
 import { useSetupStatus } from '@/interface/hooks/useSetupStatus';
+import { TextPromptDialog } from '@/interface/ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
-import { EditTreeTitleSheet } from '../chat/EditTreeTitleSheet';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
 import { useFirstRunRedirect } from '../onboarding/useFirstRunRedirect';
 import { DateHeader } from './DateHeader';
@@ -112,12 +112,7 @@ const HomeView = () => {
         onLayoutHeight={setComposerHeight}
       />
 
-      <EditTreeTitleSheet
-        visible={rowActions.renameTarget !== null}
-        initialTitle={rowActions.renameTarget?.title ?? ''}
-        onCancel={rowActions.closeRename}
-        onSubmit={rowActions.saveRename}
-      />
+      <TextPromptDialog pending={rowActions.renamePrompt} />
     </AppScreen>
   );
 };

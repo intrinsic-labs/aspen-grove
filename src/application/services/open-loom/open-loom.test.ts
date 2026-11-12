@@ -123,6 +123,59 @@ describe('open-loom export', () => {
     });
     expect(document.trees[0].systemContext).toBeUndefined();
   });
+
+  it('applies the export sheet’s title, description and toggles', async () => {
+    const modelAgent: Agent = {
+      ...humanAgent,
+      id: 'agent-model' as ULID,
+      name: 'Model',
+      type: 'model',
+      modelRef: 'openrouter:test/model' as Agent['modelRef'],
+      configuration: { systemPrompt: 'You are a loom.', temperature: 1 },
+    };
+    const document = await buildOpenLoomDocument({
+      tree: { ...tree, description: 'Saved description' },
+      nodes: [
+        makeNode({
+          id: 'node-a',
+          text: 'Hello',
+          authorType: 'model',
+          bookmarked: true,
+        }),
+      ],
+      edges: [],
+      agentsById: new Map([[modelAgent.id, modelAgent]]),
+      rawResponsesByNodeId: new Map(),
+      options: {
+        title: 'Exported title',
+        description: null,
+        includeBookmarks: false,
+        includeAgentSystemPrompts: false,
+      },
+    });
+    const exported = document.trees[0];
+    expect(exported.title).toBe('Exported title');
+    expect(exported.description).toBeUndefined();
+    expect(exported.nodes['node-a'].meta?.bookmarked).toBeUndefined();
+    expect(
+      exported.agents?.['agent-model']?.configuration?.systemPrompt
+    ).toBeUndefined();
+    expect(exported.agents?.['agent-model']?.configuration?.temperature).toBe(
+      1
+    );
+  });
+
+  it('keeps the saved description unless the sheet replaces it', async () => {
+    const document = await buildOpenLoomDocument({
+      tree: { ...tree, description: 'Saved description' },
+      nodes: [makeNode({ id: 'node-a', text: 'Hello', authorType: 'human' })],
+      edges: [],
+      agentsById: new Map(),
+      rawResponsesByNodeId: new Map(),
+      options: { description: 'Edited' },
+    });
+    expect(document.trees[0].description).toBe('Edited');
+  });
 });
 
 describe('renderPathMarkdown', () => {
