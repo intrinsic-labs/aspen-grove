@@ -1,125 +1,101 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  AppPillButton,
-  AppScreen,
-  AppText,
-} from '@/interface/ui/value-objects';
-import { AgentStep } from './AgentStep';
-import { ProviderStep } from './ProviderStep';
-import { useOnboardingFlow } from './useOnboardingFlow';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { AspenGroveWordmark } from './intro/AspenGroveWordmark';
+import { ONBOARDING_INTRO_PAGES } from './intro/onboarding-pages';
+import { OnboardingItemsPage } from './intro/OnboardingItemsPage';
+import { OnboardingPhotoPage } from './intro/OnboardingPhotoPage';
+import { OnboardingButton } from './OnboardingButton';
+import { OnboardingPager } from './OnboardingPager';
+import { OnboardingSetupPage } from './setup/OnboardingSetupPage';
+import { useFinishOnboarding } from './setup/useFinishOnboarding';
+import { useOnboardingSetup } from './setup/useOnboardingSetup';
+import { useOnboardingPager } from './useOnboardingPager';
+
+const PAGE_COUNT = ONBOARDING_INTRO_PAGES.length + 1;
 
 /**
- * First-run setup, shown once on a fresh install (and from the "Set up"
- * hints after a skip): connect a provider, choose an agent, then open a
- * first tree. Skippable from every step.
+ * Latent Spaces' first-launch sheet (LoomOnboarding.swift): the wordmark,
+ * pages you swipe or step through with Next, and Begin Weaving on the last.
+ * Aspen Grove's last page connects a model, so Begin Weaving can open a
+ * first tree that answers. Opened with `?start=setup`, it opens on that
+ * page.
  */
 const OnboardingView = () => {
   const insets = useSafeAreaInsets();
-  const flow = useOnboardingFlow();
-  const onAgentStep = flow.step === 'agent';
+  const { start } = useLocalSearchParams<{ start?: string }>();
+  const pager = useOnboardingPager(
+    PAGE_COUNT,
+    start === 'setup' ? PAGE_COUNT - 1 : 0
+  );
+  const setup = useOnboardingSetup();
+  const finish = useFinishOnboarding(setup);
 
   return (
-    <AppScreen testID="onboarding-screen">
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.headerSide}>
-          {onAgentStep ? (
-            <Pressable
-              testID="onboarding-back"
-              onPress={flow.goBack}
-              disabled={flow.busy}
-              hitSlop={10}
-            >
-              <AppText variant="meta" tone="secondary">
-                Back
-              </AppText>
-            </Pressable>
-          ) : null}
-        </View>
-        <AppText
-          testID="onboarding-step-indicator"
-          variant="meta"
-          tone="muted"
-        >
-          {onAgentStep ? '2 of 2' : '1 of 2'}
-        </AppText>
-        <View style={[styles.headerSide, styles.headerRight]}>
-          <Pressable
-            testID="onboarding-skip"
-            onPress={() => void flow.skip()}
-            disabled={flow.busy}
-            hitSlop={10}
-          >
-            <AppText variant="meta" tone="secondary">
-              Skip
-            </AppText>
-          </Pressable>
-        </View>
-      </View>
-
-      <KeyboardAwareScrollView
-        enabled
-        bottomOffset={24}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+    <View testID="onboarding-screen" style={styles.sheet}>
+      <View style={styles.spacer} />
+      <AspenGroveWordmark />
+      <OnboardingPager
+        pagerRef={pager.pagerRef}
+        pageWidth={pager.pageWidth}
+        onLayout={pager.onLayout}
+        onPageSettled={pager.onPageSettled}
       >
-        {onAgentStep ? <AgentStep flow={flow} /> : <ProviderStep flow={flow} />}
-
-        {flow.error ? (
-          <AppText testID="onboarding-error" variant="meta" tone="accent">
-            {flow.error}
-          </AppText>
-        ) : null}
-      </KeyboardAwareScrollView>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        {onAgentStep ? (
-          <AppPillButton
+        {ONBOARDING_INTRO_PAGES.map((page, index) =>
+          page.kind === 'photo' ? (
+            <OnboardingPhotoPage
+              key={index}
+              image={page.image}
+              imageFrameHeight={page.imageFrameHeight}
+              text={page.text}
+            />
+          ) : (
+            <OnboardingItemsPage
+              key={index}
+              items={page.items}
+              compact={page.compact}
+            />
+          )
+        )}
+        <OnboardingSetupPage setup={setup} error={finish.error} />
+      </OnboardingPager>
+      {/* `Spacer()` twice under the pages. */}
+      <View style={styles.doubleSpacer} />
+      <View style={{ paddingBottom: insets.bottom }}>
+        {pager.isLastPage ? (
+          <OnboardingButton
             testID="onboarding-begin"
-            label={flow.busy ? 'Starting…' : 'Begin'}
-            variant="outline"
-            disabled={!flow.canBegin}
-            onPress={() => void flow.begin()}
+            label="Begin Weaving"
+            prominent
+            busy={finish.busy}
+            onPress={() => void finish.finish()}
           />
         ) : (
-          <AppPillButton
-            testID="onboarding-continue"
-            label="Continue"
-            variant="outline"
-            disabled={!flow.canContinue || flow.busy}
-            onPress={() => void flow.goToAgentStep()}
+          <OnboardingButton
+            testID="onboarding-next"
+            label="Next"
+            prominent={false}
+            onPress={pager.next}
           />
         )}
       </View>
-    </AppScreen>
+    </View>
   );
 };
 
 export default OnboardingView;
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    paddingBottom: 6,
+  sheet: {
+    flex: 1,
+    backgroundColor: loomUiTokens.onboarding.background,
+    gap: loomUiTokens.onboarding.stackSpacing,
   },
-  headerSide: {
-    minWidth: 60,
+  spacer: {
+    flex: 1,
   },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  content: {
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 32,
-    gap: 20,
-  },
-  footer: {
-    paddingHorizontal: 22,
-    paddingTop: 12,
+  doubleSpacer: {
+    flex: 2,
   },
 });

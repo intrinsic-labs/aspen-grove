@@ -17,8 +17,9 @@ appId: com.intrinsiclabs.aspengrove
     id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
-      id: chat-message-row-.*
+      id: chat-message-row-.*|tree-onboarding-begin
     timeout: 30000
+- runFlow: dismiss-tree-onboarding.yaml
 - assertVisible: 'The lantern is lit.'
 - assertVisible:
     id: chat-needs-agent

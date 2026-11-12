@@ -95,8 +95,10 @@ finds on its own, which can be another session's Metro and not yours: with Metro
 other than 8081, pass `-e METRO_PORT=<port>` to every flow and it types the URL in by hand.
 
 A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
-(`onboarding-screen`): connect a provider, choose an agent, land in a first tree. Skip it
-with `onboarding-skip`; Home then shows a setup hint (`home-setup-action`) above its tree
+(`onboarding-screen`): Latent Spaces' six intro pages (`onboarding-next`), then a page that
+connects a model, and Begin Weaving (`onboarding-begin`) lands in a first tree, which shows
+its Getting Started sheet until its Begin (`tree-onboarding-begin`) is tapped. Skip onboarding by
+swiping the sheet down ([skip-onboarding.yaml](.maestro/skip-onboarding.yaml)); Home then shows a setup hint (`home-setup-action`) above its tree
 list until a model agent exists. Home is the one top-level screen, as in Latent Spaces: the
 `···` menu (`home-menu-button`: import, Search, tag filter) at the top left, Settings
 (`home-settings-button`) at the top right, and a composer at the bottom whose first message
@@ -141,7 +143,9 @@ streaming states: at `--pace 20` a parallel-continuation card finishes in about 
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
 a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
 [.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
-state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+state and goes through onboarding the way a new user does: the six pages, then LM Studio
+on the mock at 1235, the model `mock-model` and Begin Weaving, which creates the agent
+(named `mock-model`) and opens a first tree.
 [.maestro/mock/first-turn.yaml](.maestro/mock/first-turn.yaml) is the no-key path to a working
 conversation: that setup, then a tree started from Home's composer with one message, the
 reply streamed to the end, and a screenshot (run it with the mock server and Metro up).
@@ -197,7 +201,9 @@ and simulator, three runs or more, by median. No key needed.
 "needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
 reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
 live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboarding; flows
-that set up through Settings or an import skip it), `create-agent.yaml` and
+that set up through Settings or an import swipe it away), `walk-onboarding.yaml` (Next
+through the six intro pages), `dismiss-tree-onboarding.yaml` (the first tree's Getting
+Started sheet), `create-agent.yaml` and
 `import-tree.yaml`.
 
 For a one-off screenshot or deep link without Maestro:

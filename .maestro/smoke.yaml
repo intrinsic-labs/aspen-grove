@@ -1,24 +1,24 @@
-# Cold-start smoke walk: onboarding, then skip, then every screen a fresh install can reach
-# without a provider key (Home, its menu, Search, Settings, Connections, Agents).
+# Cold-start smoke walk: onboarding's pages and its setup page, then skip, then every screen a
+# fresh install can reach without a provider key (Home, its menu, Search, Settings,
+# Connections, Agents).
 # Run from the repo root with the app installed on a booted simulator:
 #   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml
-# A fresh install opens onboarding over Home. Capture step 1 with each provider, then skip.
-- assertVisible:
-    id: onboarding-step-provider
-- takeScreenshot: 01-onboarding-openrouter
+# A fresh install opens onboarding over Home: Latent Spaces' six pages, then the setup page
+# with each provider. Then skip it.
+- runFlow: walk-onboarding.yaml
+- takeScreenshot: 01-onboarding-setup-openrouter
 - tapOn:
     id: onboarding-provider-lmstudio
 - assertVisible:
     id: connections-lmstudio-endpoint-input
-- takeScreenshot: 02-onboarding-lmstudio
+- takeScreenshot: 02-onboarding-setup-lmstudio
 - tapOn:
     id: onboarding-provider-openrouter
-- tapOn:
-    id: onboarding-skip
+- runFlow: skip-onboarding.yaml
 
 - extendedWaitUntil:
     visible:
@@ -34,6 +34,17 @@ appId: com.intrinsiclabs.aspengrove
 - runFlow: open-home-menu.yaml
 - assertVisible: 'Show Onboarding'
 - takeScreenshot: 04-home-menu
+# Show Onboarding reopens it on its first page.
+- tapOn: 'Show Onboarding'
+- extendedWaitUntil:
+    visible:
+      id: onboarding-page-1
+    timeout: 10000
+- assertVisible:
+    id: onboarding-next
+- takeScreenshot: 05-onboarding-reopened
+- runFlow: skip-onboarding.yaml
+- runFlow: open-home-menu.yaml
 - tapOn: Search
 - assertVisible:
     id: search-screen

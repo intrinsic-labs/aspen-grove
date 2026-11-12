@@ -11,7 +11,8 @@ type ChatHeaderMenuAction =
   | 'editTitle'
   | 'tags'
   | 'exportTree'
-  | 'exportPath';
+  | 'exportPath'
+  | 'onboarding';
 
 type ChatHeaderMenuItem = {
   readonly action: ChatHeaderMenuAction;
@@ -56,6 +57,12 @@ const MENU_ITEMS: readonly ChatHeaderMenuItem[] = [
     title: 'Export Path (Markdown)',
     systemIcon: 'doc.plaintext',
   },
+  {
+    // Latent Spaces' last tree menu item (ToolbarMenu.swift:96-101).
+    action: 'onboarding',
+    title: 'Show Onboarding',
+    systemIcon: 'questionmark.circle',
+  },
 ];
 
 type ChatHeaderMenuProps = {
@@ -68,6 +75,7 @@ type ChatHeaderMenuProps = {
   readonly onOpenTags: () => void;
   readonly onExportTree: () => void;
   readonly onExportPath: () => void;
+  readonly onShowOnboarding: () => void;
 };
 
 export const ChatHeaderMenu = ({
@@ -79,6 +87,7 @@ export const ChatHeaderMenu = ({
   onOpenTags,
   onExportTree,
   onExportPath,
+  onShowOnboarding,
 }: ChatHeaderMenuProps) => {
   const actions: ContextMenuAction[] = MENU_ITEMS.map((item) => ({
     title: item.title,
@@ -116,6 +125,9 @@ export const ChatHeaderMenu = ({
             break;
           case 'exportPath':
             onExportPath();
+            break;
+          case 'onboarding':
+            onShowOnboarding();
             break;
         }
       }}

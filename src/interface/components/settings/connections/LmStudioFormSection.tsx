@@ -34,6 +34,9 @@ const STATUS_COLOR: Record<LmStudioConnectionStatus, string> = {
 
 type LmStudioFormSectionProps = {
   readonly controller: ConnectionsController;
+  /** The token and auto-load rows. Onboarding leaves them to Settings. */
+  readonly showAdvanced?: boolean;
+  readonly footer?: string;
 };
 
 /**
@@ -42,6 +45,8 @@ type LmStudioFormSectionProps = {
  */
 export const LmStudioFormSection = ({
   controller,
+  showAdvanced = true,
+  footer = 'Connect to your LM Studio server for local inference. Models are picked when you create an agent.',
 }: LmStudioFormSectionProps) => {
   const status = controller.lmstudioConnectionStatus;
   const showError =
@@ -61,10 +66,7 @@ export const LmStudioFormSection = ({
               {controller.lmstudioConnectionError}
             </Text>
           ) : null}
-          <Text style={formText.footer}>
-            Connect to your LM Studio server for local inference. Models are
-            picked when you create an agent.
-          </Text>
+          <Text style={formText.footer}>{footer}</Text>
         </>
       }
     >
@@ -78,42 +80,48 @@ export const LmStudioFormSection = ({
         autoCorrect={false}
         keyboardType="url"
       />
-      <FormRow>
-        <FormLabel title="API Token" />
-        <TextInput
-          testID="connections-lmstudio-token-input"
-          value={controller.lmstudioApiTokenInput}
-          onChangeText={controller.setLmstudioApiTokenInput}
-          placeholder="Optional"
-          placeholderTextColor={form.colors.tertiaryLabel}
-          selectionColor={loomUiTokens.colors.accentColor}
-          keyboardAppearance="dark"
-          secureTextEntry={!controller.showLmstudioToken}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={[formText.value, styles.tokenField]}
-        />
-        <Pressable
-          testID="connections-lmstudio-token-reveal"
-          onPress={() => controller.setShowLmstudioToken((visible) => !visible)}
-          accessibilityLabel={
-            controller.showLmstudioToken ? 'Hide token' : 'Show token'
-          }
-          hitSlop={8}
-        >
-          <Ionicons
-            name={controller.showLmstudioToken ? 'eye-off' : 'eye'}
-            size={18}
-            color={form.colors.secondaryLabel}
+      {showAdvanced ? (
+        <FormRow>
+          <FormLabel title="API Token" />
+          <TextInput
+            testID="connections-lmstudio-token-input"
+            value={controller.lmstudioApiTokenInput}
+            onChangeText={controller.setLmstudioApiTokenInput}
+            placeholder="Optional"
+            placeholderTextColor={form.colors.tertiaryLabel}
+            selectionColor={loomUiTokens.colors.accentColor}
+            keyboardAppearance="dark"
+            secureTextEntry={!controller.showLmstudioToken}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[formText.value, styles.tokenField]}
           />
-        </Pressable>
-      </FormRow>
-      <FormToggleRow
-        testID="connections-lmstudio-auto-load"
-        title="Auto-load Models"
-        value={controller.lmstudioAutoLoadModels}
-        onValueChange={controller.setLmstudioAutoLoadModels}
-      />
+          <Pressable
+            testID="connections-lmstudio-token-reveal"
+            onPress={() =>
+              controller.setShowLmstudioToken((visible) => !visible)
+            }
+            accessibilityLabel={
+              controller.showLmstudioToken ? 'Hide token' : 'Show token'
+            }
+            hitSlop={8}
+          >
+            <Ionicons
+              name={controller.showLmstudioToken ? 'eye-off' : 'eye'}
+              size={18}
+              color={form.colors.secondaryLabel}
+            />
+          </Pressable>
+        </FormRow>
+      ) : null}
+      {showAdvanced ? (
+        <FormToggleRow
+          testID="connections-lmstudio-auto-load"
+          title="Auto-load Models"
+          value={controller.lmstudioAutoLoadModels}
+          onValueChange={controller.setLmstudioAutoLoadModels}
+        />
+      ) : null}
       <FormRow>
         <FormLabel title="Status" />
         <View style={styles.status}>

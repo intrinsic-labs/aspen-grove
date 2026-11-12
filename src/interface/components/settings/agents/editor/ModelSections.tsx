@@ -1,10 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import {
-  SELECTABLE_PROVIDERS,
-  type SelectableProvider,
-} from '@domain/entities';
+import type { SelectableProvider } from '@domain/entities';
 import { FormRow, FormSection, formText } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import {
@@ -14,13 +11,9 @@ import {
 import { useModelPickerData } from '../useModelPickerData';
 import { FormCheckRow } from './FormCheckRow';
 import { ModelSearchRow } from './ModelSearchRow';
+import { ProviderSection } from './ProviderSection';
 
 const form = loomUiTokens.settingsForm;
-
-const PROVIDER_LABELS: Record<SelectableProvider, string> = {
-  openrouter: 'OpenRouter',
-  lmstudio: 'LM Studio',
-};
 
 type ModelSectionsProps = {
   readonly provider: SelectableProvider;
@@ -70,23 +63,15 @@ export const ModelSections = ({
 
   return (
     <>
-      <FormSection header="Provider">
-        {SELECTABLE_PROVIDERS.map((candidate) => (
-          <FormCheckRow
-            key={candidate}
-            testID={`${testIDPrefix}-model-provider-${candidate}`}
-            title={PROVIDER_LABELS[candidate]}
-            selected={candidate === provider}
-            onPress={() => {
-              if (candidate !== provider) {
-                onChangeProvider(candidate);
-                onChangeModelIdentifier('');
-                setSearch('');
-              }
-            }}
-          />
-        ))}
-      </FormSection>
+      <ProviderSection
+        provider={provider}
+        testIDPrefix={`${testIDPrefix}-model-provider`}
+        onChange={(candidate) => {
+          onChangeProvider(candidate);
+          onChangeModelIdentifier('');
+          setSearch('');
+        }}
+      />
 
       <FormSection
         testID={`${testIDPrefix}-model`}
