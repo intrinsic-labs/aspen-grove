@@ -54,12 +54,17 @@ appId: com.intrinsiclabs.aspengrove
     id: settings-agents-new
 - tapOn:
     id: agent-editor-model-provider-lmstudio
-- extendedWaitUntil:
-    visible:
+# The model list can sit below the fold (mock-missing lists first).
+- scrollUntilVisible:
+    element:
       id: agent-editor-model-option-${MOCK_MODEL}
     timeout: 10000
 - tapOn:
     id: agent-editor-model-option-${MOCK_MODEL}
+- scrollUntilVisible:
+    element:
+      id: agent-editor-name-input
+    direction: UP
 - tapOn:
     id: agent-editor-name-input
 - inputText: Mock

@@ -66,13 +66,20 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 60000
 - takeScreenshot: 13-first-reply
 
-# Node info for the reply: generation details and the provenance check.
+# Node Info sheet for the reply: generation details and the provenance check,
+# under the text.
 - longPressOn:
     id: chat-message-row-.*
     index: 1
 - tapOn: Node Info
 - extendedWaitUntil:
     visible:
-      id: node-detail-provenance-status
+      id: node-sheet-text
     timeout: 10000
-- takeScreenshot: 14-node-detail
+- scrollUntilVisible:
+    element:
+      id: node-sheet-provenance-status
+    timeout: 10000
+- takeScreenshot: 14-node-sheet
+- tapOn:
+    id: node-sheet-back

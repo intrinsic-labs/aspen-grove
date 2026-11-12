@@ -91,10 +91,10 @@ stays until the user makes one.
   the trigger (for a message or a continuation card), or tap it for the `···` header menus,
   then pick the item by its visible title. Those entries say `none — native context menu
   item; reach via long-press on <testID>`.
-- The three `···` header triggers (`trees-menu-button`, `chat-menu-button`,
-  `node-detail-menu-button`) are `HeaderIconButton` Pressables with no `onPress`, inside a
-  native `ContextMenu` in `dropdownMenuMode`. A tap on them reaches the native view, which opens
-  the menu.
+- The three `···` triggers (`trees-menu-button`, `chat-menu-button`,
+  `node-sheet-menu-button`) are Pressables with no `onPress` (`HeaderIconButton`, or the
+  sheet's `GlassIconButton`), inside a native `ContextMenu` in `dropdownMenuMode`. A tap on
+  them reaches the native view, which opens the menu.
 - **Nested Pressables on iOS.** A `Pressable` is `accessible` by default. On iOS that can hide
   a nested Pressable's identifier from XCUITest-based drivers such as Maestro (Detox walks the
   view tree and is less affected). Two places nest a Pressable this way:
@@ -323,17 +323,20 @@ stays until the user makes one.
 ### Search node content
 - **ID:** `search.nodes`
 - **Purpose:** Full-text search across every tree's nodes, grouped by tree. Tap a result to
-  open its node detail, or tap a tree header to open the tree.
+  open its tree on that node's Node Info sheet (`node.sheet`), or tap a tree header to open
+  the tree.
 - **Where:** Drawer → Search. The search bar is at the top.
 - **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-search` → type at least two
   characters into `search-input`.
 - **Requires:** Nodes to search. When empty it prompts "Type at least two characters".
 - **Selector:** working — `search-screen`, `search-input`, `search-clear-button`, `search-done-button`, `search-results-list`, tree headers `search-results-tree-<treeId>`, rows `search-results-row-<nodeId>`
-- **Code:** `src/interface/components/SearchView.tsx`, `src/app/(drawer)/search.tsx`
+- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/(drawer)/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#searchByContent` (limit 100);
   `loom_trees` for titles
 - **Status:** live
-- **Notes:** The query is debounced by 250 ms. Archived trees are dropped from results.
+- **Notes:** The query is debounced by 250 ms. Archived trees are dropped from results. A
+  result pushes `tree/[treeId]` with a `nodeSheetId` param; the sheet opens once the tree has
+  loaded.
 
 ## Dialogue
 
@@ -421,26 +424,30 @@ stays until the user makes one.
 
 ### Message menu (copy, node info)
 - **ID:** `chat.message-menu`
-- **Purpose:** The long-press menu on a message, titled with its local id. It offers
-  Regenerate (model rows only), Continuations, Edit, Rewind To Node, Copy Text, Node Info,
-  Bookmark / Remove Bookmark, and Prune / Restore.
-- **Where:** A native context menu over the message bubble.
+- **Purpose:** The long-press menu on a message, untitled and in Latent Spaces' order
+  (NodeView.swift): [Regenerate Response · Continuations], Rewind To Node and Copy Text, a
+  divider, Node Info and Bookmark / Remove Bookmark, then Aspen Grove's Edit and Prune /
+  Restore after one more divider. Regenerate Response is on every node; Continuations is
+  disabled on a node without children and Rewind To Node on the current (last) node.
+- **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
+  horizontal ControlGroup; `react-native-context-menu-view` has none, so it is an inline
+  section.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuItems`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
-- **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info pushes the node
-  detail route (`node.detail`). The other items have their own entries below.
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
+- **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
+  sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
 
 ### Regenerate a response
 - **ID:** `chat.regenerate`
-- **Purpose:** Replaces a model response with a new sibling generation from the same context.
-  Both are kept as branches.
-- **Where:** The "Regenerate" item in a model message's long-press menu.
-- **Reach:** P2 → send once → long-press the model row `chat-message-row-<nodeId>` →
-  "Regenerate".
-- **Requires:** A model message, plus a reachable provider.
+- **Purpose:** On a model message, draws a new sibling response from the same context (both
+  are kept as branches). On a human or system message, draws a reply under it, which is how a
+  send that failed gets its reply.
+- **Where:** "Regenerate Response" in any message's long-press menu.
+- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Regenerate Response".
+- **Requires:** A message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
 - **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
@@ -454,7 +461,8 @@ stays until the user makes one.
 - **ID:** `chat.edit-branch`
 - **Purpose:** Edits a message. Saving creates an edited sibling node, so the original branch
   is kept, and the active path moves onto the edit.
-- **Where:** The "Edit" item in a message's long-press menu, or in the node detail `···` menu.
+- **Where:** The "Edit" item in a message's long-press menu, or in the Node Info sheet's `···`
+  menu.
   An "Editing <localId>" banner appears above the composer.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Edit" → change text
   in `chat-composer-input` → `chat-composer-send` (Save). Cancel with
@@ -466,14 +474,15 @@ stays until the user makes one.
   `path_states`. Editing a human turn then generates a reply through the provider call in
   `chat.composer`.
 - **Status:** live
-- **Notes:** Edit from node detail navigates back to `tree/[treeId]` with
-  `editNodeId` / `editRequestId` params, which start the same flow.
+- **Notes:** Edit from the Node Info sheet closes the sheet, then starts the same flow once
+  it has gone (`useNodeSheet`).
 
 ### Read a message aloud (Voice Mode)
 - **ID:** `chat.read-aloud`
 - **Purpose:** With Voice Mode on, reads messages aloud in the chosen character voice (Latent
   Spaces' voices): a double-tap on a message reads it, each new model response is read once it
-  has finished generating, and a tap on any message stops speech. The message being read is
+  has finished generating, and a tap on any message while speech plays only stops it (it
+  doesn't also open that row's rail). The message being read is
   drawn in its voice's color. Fenced code blocks are read as "You can see the code on this loom
   tree branch." The `···` menu's "Voice Mode" item (checked when on) toggles Voice Mode app-wide.
 - **Where:** Message rows on the Dialogue screen; "Voice Mode" in the Dialogue `···` menu.
@@ -499,33 +508,41 @@ stays until the user makes one.
 - **ID:** `chat.rewind`
 - **Purpose:** Makes an earlier node, or a node on another branch, the current one, so the
   active path is re-pointed through it.
-- **Where:** "Rewind To Node" in the message menu. Also "Make Current Node" on a continuation
-  card or in the node detail menu, a double-tap on a continuation card, or a tap on a
-  bookmark row.
+- **Where:** "Rewind To Node" in the message menu or the Node Info sheet's menu. Also "Make
+  Current Node" or "Retrace Branch" on a continuation card or in its sheet's menu, a
+  double-tap on a continuation card, or a tap on a bookmark row.
 - **Reach:** P2 → send twice → long-press an earlier `chat-message-row-<nodeId>` →
   "Rewind To Node".
 - **Requires:** More than one node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
+- **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/interface/components/chat/node-actions/useRetraceBranch.ts`, `src/application/services/resolve-branch-leaf.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
 - **Backend:** WatermelonDB `path_states`, `path_nodes`, `path_selections` via `WatermelonPathRepository` and `WatermelonPathStateRepository`
 - **Status:** live
+- **Notes:** Retrace Branch makes current the end of the card's branch: along the active path
+  while it runs through the card, then the newest continuation at each step (Aspen Grove keeps
+  no per-node remembered child, which Latent Spaces follows).
 
 ### Inline continuation rail
 - **ID:** `chat.continuation-rail`
-- **Purpose:** Shows a node's continuations (its child branches) inline as a horizontal row of
-  cards. A tap opens a card's node detail, a double-tap retraces that branch, and a long-press
-  gives Make Current Node, Copy Text and Bookmark. Its header also holds the generate control
-  (`chat.parallel-continuations`).
-- **Where:** A band directly under the tapped message, inside the message list.
+- **Purpose:** Shows a node's continuations (its child branches) inline, as Latent Spaces
+  does (ChildNodesView): the hint "Tap to expand. Double tap to make current node. Long press
+  for more options.", then a horizontal row of tan cards, each captioned with its model (a
+  green check on the one the active path runs through) and `[n]`, then a divider. A tap opens
+  the card's "Continuation Node" sheet (`node.sheet`), a double-tap makes it current, and a
+  long-press gives Make Current Node and Retrace Branch, a divider, then Copy Text and
+  Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
+  hint.
+- **Where:** Directly under the tapped message, inside the message list. It scales in and out
+  (0.3 s) and the list scrolls to center it when it opens.
 - **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
-- **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`
-- **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`
+- **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
-  half a second before asserting on `node-detail-screen`. A double-tap needs two taps less than
+  half a second before asserting on `node-sheet`. A double-tap needs two taps less than
   300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
   a tap on a message row waits the same 320 ms before the rail opens.
 
@@ -536,8 +553,7 @@ stays until the user makes one.
   siblings. A card can be stopped on its own; one failing or being stopped doesn't stop the
   others. Each finished (or stopped-with-text) card is saved as a sibling model node with its
   own raw response and hash chain, and a double-tap on it makes it current like any sibling.
-- **Where:** The control row under the rail's "Continuations for …" title: `−` count `+` and
-  "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
+- **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
   the rail's card row.
 - **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
@@ -556,8 +572,9 @@ stays until the user makes one.
   count is remembered app-wide in WatermelonDB local storage
   (`aspen_grove.parallel_continuations.count`, default 1).
 - **Status:** live
-- **Notes:** Card states: `pending` ("Waiting for the model…", request sent, no text yet),
-  `streaming` (text plus a character count), `stopping`, `done`, `stopped`, `interrupted
+- **Notes:** A card's caption shows its state in brackets where a saved card has `[n]`, with
+  its stop button beside it. Card states: `pending` ("Waiting for the model…", request sent,
+  no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
   convention: a stop after text saves the partial text as is (no marker, so the next turn
   doesn't send one to the model); a network, timeout or provider interruption after text saves
@@ -580,8 +597,8 @@ stays until the user makes one.
 - **ID:** `chat.bookmark`
 - **Purpose:** Toggles a bookmark on a node. Bookmarked nodes show a bookmark glyph in their
   caption and are listed in the Bookmarks sheet.
-- **Where:** "Bookmark" / "Remove Bookmark" in the message menu, on a continuation card's menu
-  or in the node detail menu.
+- **Where:** "Bookmark" / "Remove Bookmark" in the message menu; "Bookmark" / "Bookmarked" on
+  a continuation card's menu or in a node sheet's menu.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Bookmark".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
@@ -592,7 +609,7 @@ stays until the user makes one.
 ### Bookmarks sheet
 - **ID:** `chat.bookmarks`
 - **Purpose:** Lists this tree's bookmarked nodes, newest first. Tap a row to rewind to it, or
-  tap "Details" to open its node detail.
+  tap "Details" to open its Node Info sheet (once the bookmarks sheet has slid away).
 - **Where:** A page sheet from the Dialogue `···` menu.
 - **Reach:** P2 → `chat-menu-button` → "Bookmarks".
 - **Requires:** A tree. When empty it shows the "No bookmarks in this tree yet" hint.
@@ -604,7 +621,8 @@ stays until the user makes one.
 ### Prune or restore a node
 - **ID:** `chat.prune`
 - **Purpose:** Marks a node as pruned, which dims it and captions it "Pruned", or restores it.
-- **Where:** "Prune" (destructive) / "Restore" in the message menu or the node detail menu.
+- **Where:** "Prune" (destructive) / "Restore" in the message menu or the Node Info sheet's
+  menu.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Prune".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
@@ -623,6 +641,8 @@ stays until the user makes one.
 - **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/header-actions/useTreeTitle.ts`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
+- **Notes:** The field takes focus once the sheet has finished presenting (Modal `onShow`),
+  so the keyboard is up and the first tap edits the title.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -756,33 +776,43 @@ stays until the user makes one.
   `expo-sharing`.
 - **Status:** live
 
-## Node detail
+## Node sheet
 
-### Node detail
-- **ID:** `node.detail`
-- **Purpose:** One node in full: its text (selectable, with Copy), its metadata (local id,
-  author, created time, edited-from, flags, content hash) and, for model nodes, its generation
-  info (provider, model, request id, latency, tokens).
-- **Where:** Route `tree/[treeId]/node/[nodeId]`, a stack screen titled "Node <localId>".
+### Node sheet (Node Info, Continuation Node)
+- **ID:** `node.sheet`
+- **Purpose:** One node in a page sheet, as Latent Spaces shows it: "Node Info" from a
+  message's menu, "Continuation Node" from a continuation card. The toolbar has a glass back
+  button, the title over the node's model (a green check on a continuation the active path
+  runs through) and `[n]`, and a glass `···` menu. The body is the node's whole text in the
+  message font, selectable, and under it Aspen Grove's metadata (local id, author, created
+  time, edited-from, flags, content hash) and, for model nodes, generation info (provider,
+  model, request id, latency, tokens) and provenance (`node.provenance`).
+- **Where:** A page sheet over the Dialogue screen.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Node Info". Or tap a
-  continuation card, a search result (`search-results-row-<nodeId>`) or a bookmark's
-  "Details".
+  continuation card `chat-continuation-card-<nodeId>` (Continuation Node), a search result
+  (`search-results-row-<nodeId>`) or a bookmark's "Details".
 - **Requires:** A node.
-- **Selector:** working — `node-detail-screen`, `node-detail-content`, `node-detail-text`, `node-detail-copy`, `node-detail-generation`, `node-detail-error`, `node-detail-action-error`, `node-detail-not-found`
-- **Code:** `src/interface/components/chat/node-detail/NodeDetailView.tsx`, `src/interface/components/chat/node-detail/useNodeDetailData.ts`, `src/app/tree/*/node/*.tsx`
-- **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses` via the Watermelon repositories
+- **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`
+- **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
+- **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the
+  continuation cards do. Swipe down or `node-sheet-back` closes it.
 
-### Node actions menu
+### Node sheet menu
 - **ID:** `node.menu`
-- **Purpose:** From node detail: Make Current Node (returns to the dialogue), Edit (returns to
-  the dialogue in edit mode), Copy Text, Bookmark / Remove Bookmark, Prune / Restore.
-- **Where:** `···` at the right of the node detail header.
-- **Reach:** Open `node.detail` → `node-detail-menu-button`.
+- **Purpose:** Node Info: Copy All Text, Rewind To Node (disabled on the current node),
+  Bookmark / Bookmarked, then Aspen Grove's Edit and Prune / Restore after a divider.
+  Continuation Node: the card's menu (Make Current Node, Retrace Branch, Copy Text, Bookmark /
+  Bookmarked). Rewind, Make Current, Retrace and Node Info's Bookmark close the sheet, as in
+  Latent Spaces; Edit closes it and starts the edit; Copy, Prune and the continuation's
+  Bookmark leave it open and it reloads.
+- **Where:** The glass `···` at the right of the sheet's toolbar.
+- **Reach:** Open `node.sheet` → `node-sheet-menu-button`.
 - **Requires:** A loaded node. The button is hidden while loading.
-- **Selector:** working — `node-detail-menu-button`; items none — native context menu item; reach via a tap on `node-detail-menu-button`
-- **Code:** `src/app/tree/*/node/*.tsx`, `src/interface/components/chat/node-detail/NodeDetailView.tsx#buildDetailMenuItems`
-- **Backend:** Make Current uses `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
+- **Selector:** working — `node-sheet-menu-button`; items none — native context menu item; reach via a tap on `node-sheet-menu-button`
+- **Code:** `src/interface/components/chat/node-sheet/node-info-menu.ts#buildNodeInfoMenuSections`, `src/interface/components/chat/continuation-menu.ts#buildContinuationMenuSections`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`
+- **Backend:** Rewind, Make Current and Retrace use `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
   Prune update `nodes` metadata via `WatermelonNodeRepository#updateMetadata`. Copy is
   client-only.
 - **Status:** live
@@ -792,12 +822,12 @@ stays until the user makes one.
 - **Purpose:** For a model node, re-verifies the hash chain against the stored raw API
   response and shows Verified or the failure reason, plus chain details (parent count, raw
   response id and hash, expected hash on a mismatch).
-- **Where:** The PROVENANCE block at the bottom of node detail.
+- **Where:** The PROVENANCE block at the bottom of a node sheet.
 - **Reach:** P2 → send once → long-press the model `chat-message-row-<nodeId>` →
-  "Node Info" → scroll `node-detail-content`.
+  "Node Info" → scroll `node-sheet-content`.
 - **Requires:** A model-authored node. The block is absent for human nodes.
-- **Selector:** working — `node-detail-provenance`, `node-detail-provenance-status`
-- **Code:** `src/application/services/provenance/verify-model-node-provenance.ts`, `src/application/services/content-hash-service.ts`, `src/interface/components/chat/node-detail/useNodeDetailData.ts`
+- **Selector:** working — `node-sheet-provenance`, `node-sheet-provenance-status`
+- **Code:** `src/application/services/provenance/verify-model-node-provenance.ts`, `src/application/services/content-hash-service.ts`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/provenance-status-label.ts`
 - **Backend:** WatermelonDB `raw_api_responses`, `nodes` via `WatermelonRawApiResponseRepository` and `WatermelonNodeRepository`
 - **Status:** live
 - **Notes:** "Provenance as it stands": hash-chain verification only. There is no RFC 3161
@@ -1036,4 +1066,4 @@ stays until the user makes one.
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, the native-menu section helpers in `native-menu.ts`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
