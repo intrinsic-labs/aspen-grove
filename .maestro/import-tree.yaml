@@ -1,14 +1,10 @@
-# Import ${TREE_FILE} from Files ("On My iPhone"), from any top-level screen.
+# Import ${TREE_FILE} from Files ("On My iPhone"), starting on Home.
 # Prints `PERF import_ms`, from picking the file to the "Import complete"
-# alert. Ends on the Loom Trees screen.
+# alert. Ends on Home, with the tree in its list.
 appId: com.intrinsiclabs.aspengrove
 ---
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-trees
-- tapOn:
-    id: trees-menu-button
-- tapOn: Import Tree
+- runFlow: open-home-menu.yaml
+- tapOn: Import OpenLoom Tree
 - tapOn: Browse
 - waitForAnimationToEnd
 # The picker reopens where it was last left: from the Browse root, step into

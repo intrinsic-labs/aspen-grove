@@ -1,14 +1,12 @@
 # Point Settings → Connections → LM Studio at the mock server
 # (scripts/mock-llm-server, default http://localhost:1235), test the
-# connection and create a shared agent on its model. Starts from any
-# top-level screen; ends on Settings. No key needed.
+# connection and create a shared agent on its model. Starts on Home; ends on
+# Settings. No key needed.
 #   maestro test .maestro/mock/connect-mock.yaml -e MOCK_URL=http://localhost:1235 -e MOCK_MODEL=mock-model
 # Needs MOCK_URL and MOCK_MODEL (setup.yaml passes them).
 appId: com.intrinsiclabs.aspengrove
 ---
-- runFlow: ../open-drawer.yaml
-- tapOn:
-    id: drawer-nav-settings
+- runFlow: ../open-settings.yaml
 - tapOn:
     id: settings-link-connections
 # The LM Studio section sits below the API Keys card.
@@ -52,23 +50,21 @@ appId: com.intrinsiclabs.aspengrove
     id: settings-link-agents
 - tapOn:
     id: settings-agents-new
-- tapOn:
-    id: agent-editor-model-provider-lmstudio
-# The model list can sit below the fold (mock-missing lists first).
-- scrollUntilVisible:
-    element:
-      id: agent-editor-model-option-${MOCK_MODEL}
-    timeout: 10000
-- tapOn:
-    id: agent-editor-model-option-${MOCK_MODEL}
-- scrollUntilVisible:
-    element:
-      id: agent-editor-name-input
-    direction: UP
+# Name first, while the field is on screen and before the sheet scrolls.
 - tapOn:
     id: agent-editor-name-input
 - inputText: Mock
 - hideKeyboard
+- tapOn:
+    id: agent-editor-model-provider-lmstudio
+# The model list can run below the sheet's fold: scroll the model up.
+- scrollUntilVisible:
+    element:
+      id: agent-editor-model-option-${MOCK_MODEL}
+    centerElement: true
+    timeout: 10000
+- tapOn:
+    id: agent-editor-model-option-${MOCK_MODEL}
 - takeScreenshot: mock-02-agent-editor
 - tapOn:
     id: agent-editor-submit

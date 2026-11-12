@@ -14,6 +14,8 @@ type ComposerSendButtonProps = {
   /** Stop was pressed; the partial reply is being saved. */
   readonly stopping: boolean;
   readonly onStop: () => void;
+  /** The send control's testID (Home's composer has its own). */
+  readonly sendTestID?: string;
 };
 
 /**
@@ -34,6 +36,7 @@ export const ComposerSendButton = ({
   canStop,
   stopping,
   onStop,
+  sendTestID = 'chat-composer-send',
 }: ComposerSendButtonProps) => {
   const { colors } = useAspenGroveTheme();
   const visible = hasText || sending || canStop;
@@ -63,7 +66,7 @@ export const ComposerSendButton = ({
 
   return (
     <Pressable
-      testID="chat-composer-send"
+      testID={sendTestID}
       onPress={onSend}
       disabled={!canSend || !visible}
       accessibilityLabel={sendLabel}

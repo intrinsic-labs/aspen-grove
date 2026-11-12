@@ -1,0 +1,55 @@
+import { useMemo } from 'react';
+import ContextMenu from 'react-native-context-menu-view';
+import type { Tag } from '@domain/entities';
+import type { ULID } from '@domain/value-objects';
+import { HeaderIconButton } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import {
+  buildHomeMenu,
+  commandAt,
+  toContextMenuActions,
+  type HomeMenuCommand,
+} from './home-menu';
+
+type HomeMenuProps = {
+  readonly tags: readonly Tag[];
+  readonly activeTagId: ULID | null;
+  readonly busy: boolean;
+  readonly onCommand: (command: HomeMenuCommand) => void;
+};
+
+/**
+ * Home's leading toolbar menu, `ellipsis.circle` (HomeScreenView.swift:
+ * 124-155): a native pull-down menu on a tap.
+ */
+export const HomeMenu = ({
+  tags,
+  activeTagId,
+  busy,
+  onCommand,
+}: HomeMenuProps) => {
+  const menu = useMemo(
+    () => buildHomeMenu(tags, activeTagId),
+    [tags, activeTagId]
+  );
+
+  return (
+    <ContextMenu
+      dropdownMenuMode
+      actions={toContextMenuActions(menu)}
+      onPress={(event) => {
+        const command = commandAt(menu, event.nativeEvent.indexPath);
+        if (command && !busy) {
+          onCommand(command);
+        }
+      }}
+    >
+      <HeaderIconButton
+        icon={busy ? 'hourglass-outline' : 'ellipsis-horizontal-circle-outline'}
+        iconSize={loomUiTokens.home.header.menuIconSize}
+        accessibilityLabel="Home menu"
+        testID="home-menu-button"
+      />
+    </ContextMenu>
+  );
+};

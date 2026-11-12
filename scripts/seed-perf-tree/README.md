@@ -37,16 +37,14 @@ rest. Delete the cache file to regenerate. Changing `--seed`, `--nodes`,
 ## Import into the app
 
 Copy the file to the simulator or device (drag it onto the simulator, or AirDrop
-or Files), then: `drawer-menu-button` > `drawer-nav-trees` > `trees-menu-button`
-
-> "Import Tree" > pick the `.openloom` file. An "Import complete" alert reports
-> the tree and node count. See `trees.import` in `FEATURE_MAP.md`.
+or Files), then on Home: `home-menu-button` > "Import OpenLoom Tree" > pick the
+`.openloom` file. An "Import complete" alert reports the tree and node count. See `trees.import` in `FEATURE_MAP.md`.
 
 ## What to time
 
 The imported tree opens on its deepest path (about 45 messages).
 
-1. **Open the tree:** tap `trees-list-row-<treeId>` (or `drawer-recents-row-<treeId>`)
+1. **Open the tree:** tap `home-trees-row-<treeId>` on Home
    until `chat-message-list` has rows.
 2. **Scroll to the bottom:** fling `chat-message-list` up and down end to end;
    watch for dropped frames with long markdown and code messages.
@@ -59,5 +57,5 @@ The imported tree opens on its deepest path (about 45 messages).
    (`chat-continuation-rail-list`). A single tap waits 320 ms to rule out a
    double-tap.
 
-Also worth a look: search (`drawer-nav-search`) for a common word, and the
+Also worth a look: search (`home-menu-button` > "Search") for a common word, and the
 bookmarks sheet (a few nodes are pre-bookmarked).

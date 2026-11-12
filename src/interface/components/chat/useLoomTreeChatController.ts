@@ -30,6 +30,7 @@ import { useChatSessionState } from './session/useChatSessionState';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
+import { useSendFirstMessage } from './turns/useSendFirstMessage';
 import { useSendTurn } from './turns/useSendTurn';
 import { useStopGeneration } from './turns/useStopGeneration';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
@@ -235,7 +236,7 @@ export const useLoomTreeChatController = () => {
     generateDialogueContinuationUseCase:
       useCases.generateDialogueContinuationUseCase,
   });
-  const onSend = useSendTurn({
+  const { onSend, sendPrompt } = useSendTurn({
     session,
     sending: generating,
     setSending,
@@ -314,6 +315,13 @@ export const useLoomTreeChatController = () => {
   const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.
   const needsAgent = !loading && session !== null && session.model === null;
+  useSendFirstMessage({
+    treeId: session?.treeId,
+    loaded: !loading && session !== null,
+    canGenerate: !needsAgent,
+    sendPrompt,
+    keepAsDraft: setInput,
+  });
 
   return {
     loading,

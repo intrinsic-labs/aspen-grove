@@ -49,8 +49,8 @@ agent and a grove named "My Grove", but **no model agent**. Onboarding shows onl
 `user_preferences.onboarding_completed_at` is unset and there is no shared model agent
 (`src/application/services/onboarding/first-run.ts`); finishing or skipping sets the date,
 so an install that skipped, or one that already had an agent, stays on Home. After a skip,
-Home and an empty Loom Trees list show a one-line setup hint with its action
-(`home-setup-hint` / `home-setup-action`, `trees-setup-hint` / `trees-setup-action`):
+Home shows a one-line setup hint with its action above its tree list
+(`home-setup-hint` / `home-setup-action`):
 "Set up" reopens onboarding when there is no agent, "Add key" opens the Connections sheet
 when the default agent is on OpenRouter and no key is stored. Two paths unlock everything
 else, and the Reach lines below refer to them:
@@ -58,20 +58,19 @@ else, and the Reach lines below refer to them:
 - **P1, create an agent:** the onboarding path (`onboarding-provider-openrouter` → paste a
   key into `connections-openrouter-key-input` → `onboarding-continue` → keep the
   preselected `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`), which
-  also lands in a tree (P2). From Settings instead: `drawer-menu-button` →
-  `drawer-nav-settings` → `settings-link-agents` → `settings-agents-new` → pick a template
+  also lands in a tree (P2). From Settings instead: `home-settings-button` →
+  `settings-link-agents` → `settings-agents-new` → pick a template
   (`agent-editor-template-*`) or a provider tab (`agent-editor-model-provider-openrouter` /
   `-lmstudio`) and a model row (`agent-editor-model-option-<model id>`, or type an id into
   `agent-editor-model-search-input` and tap `agent-editor-model-custom`) →
   `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
   key: the OpenRouter key in Connections, or a reachable LM Studio server. A build with
   `EXPO_PUBLIC_OPENROUTER_API_KEY` set falls back to that key (`provider-key.ts`).
-- **P2, open a tree:** onboarding's `onboarding-begin` opens one. Otherwise, after P1:
-  `home-new-tree-button` on Home, `trees-empty-new-tree` on an empty Loom Trees list, or
-  `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` → "New Tree". This opens
-  the Dialogue screen (`chat-screen`) on an empty, *ephemeral* tree. If you go back without
-  sending, the tree is deleted (see `chat.ephemeral-discard`). Once a tree exists,
-  `drawer-recents-row-<treeId>` or `trees-list-row-<treeId>` reopens it.
+- **P2, open a tree:** onboarding's `onboarding-begin` opens one. Otherwise, after P1: type
+  a first message into Home's `home-composer-input` and tap `home-composer-send`. The tree
+  is created, opens on the Dialogue screen (`chat-screen`) and sends that message, and the
+  reply streams in (`home.composer`). Once a tree exists, `home-trees-row-<treeId>` on Home
+  reopens it. Every pushed screen returns to Home with the native back button (`BackButton`).
 
 Startup does not seed a tree: `runStartupOrchestrator` can create a "First Loom Tree", but
 `AppServicesProvider` calls it with `ensureDialogueSmokeTreeIfEmpty: false`. So "no trees"
@@ -84,14 +83,14 @@ stays until the user makes one.
 - A few ids exist in code only as templates (`settings-link-${route}`,
   `settings-voice-${name}`), so grepping for the literal id finds nothing. The entries name the
   template; search for its prefix.
-- An id written like `trees-list-row-<treeId>` has a ULID or other runtime suffix. Find the
-  static parent (`trees-list`) first, then the row by its visible text, or read ids from the
-  database.
+- An id written like `home-trees-row-<treeId>` has a ULID or other runtime suffix. Find the
+  static parent (`home-trees-list`) first, then the row by its visible text, or read ids from
+  the database.
 - **Native context-menu items have no testID** (`react-native-context-menu-view`). Long-press
   the trigger (for a message or a continuation card), or tap it for the `···` header menus,
   then pick the item by its visible title. Those entries say `none — native context menu
   item; reach via long-press on <testID>`.
-- The three `···` triggers (`trees-menu-button`, `chat-menu-button`,
+- The three `···` triggers (`home-menu-button`, `chat-menu-button`,
   `node-sheet-menu-button`) are Pressables with no `onPress` (`HeaderIconButton`, or the
   sheet's `GlassIconButton`), inside a native `ContextMenu` in `dropdownMenuMode`. A tap on
   them reaches the native view, which opens the menu.
@@ -127,96 +126,127 @@ stays until the user makes one.
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
   The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
 
-### Navigation drawer
-- **ID:** `nav.drawer`
-- **Purpose:** A slide-out drawer with the main destinations: Loom Trees, Search and Settings.
-  Home is reached through the drawer route `index`.
-- **Where:** Hamburger at the top left of Home, Loom Trees, Search and Settings. The drawer
-  slides in from the left over 82% of the width.
-- **Reach:** Cold start → `drawer-menu-button`.
-- **Requires:** none
-- **Selector:** working — `drawer-menu-button` (opens), `drawer-root` (drawer panel), `drawer-nav-trees`, `drawer-nav-search`, `drawer-nav-settings`
-- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`, `src/interface/components/drawer/DrawerMenuButton.tsx`, `src/interface/components/drawer/useDrawerHeaderStyle.ts`, `src/app/(drawer)/_layout.tsx`
-- **Backend:** none — client-only
-- **Status:** live
-- **Notes:** The drawer has no Home row. `NAV_ITEMS` holds trees, search and settings only,
-  although `(drawer)/_layout.tsx` declares `index` with the label "Home". Once you leave
-  Home, iOS has no in-app way back to it. Android's back button returns to the drawer's first
-  route (Home). To reach Home on iOS, relaunch the app. Confirm on the first walk.
-
-### Recent trees (drawer)
-- **ID:** `nav.recents`
-- **Purpose:** Lists dialogue trees by most recent message, so you can jump straight into one.
-- **Where:** Drawer, under the "Recents" label.
-- **Reach:** Cold start → `drawer-menu-button`. Rows appear once a tree exists (P2, then send).
-- **Requires:** At least one non-archived dialogue tree, for rows to show.
-- **Selector:** working — `drawer-recents-list`, rows `drawer-recents-row-<treeId>`
-- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`
-- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`
-- **Status:** live
-- **Notes:** The list reloads each time the drawer opens. When empty it shows "No loom trees yet."
-
 ## Home and trees
 
-### Home (welcome)
+### Home
 - **ID:** `home.welcome`
-- **Purpose:** A quiet landing screen with a greeting and one entry point into a new tree. Until
-  a tree can start, the entry point is the step that unblocks it (`setup.hints`). On a first
-  run it opens onboarding.
-- **Where:** The drawer's initial screen.
-- **Reach:** Cold start, then `onboarding-skip` on a fresh install. The drawer has no Home row
-  (see `nav.drawer`).
+- **Purpose:** Latent Spaces' one landing screen (`HomeScreenView.swift`): a greeting by the
+  time of day and the date, every dialogue tree most recent first, and a composer whose first
+  message starts a new tree. There is no drawer: what it reached lives behind the toolbar
+  (`home.menu`, `home.settings-button`). On a first run it opens onboarding.
+- **Where:** Route `index`, the root of the app's stack, under a transparent navigation bar
+  with the `···` menu at the top left and the Settings button at the top right. Greeting in
+  Cardo 36 ("Good Evening.\nWelcome to Aspen Grove.", or "Good Evening,\n<name>." once a
+  display name other than the default "Human" is set; the welcome line shrinks a little to
+  stay on one line), the date line ("Sun, November 08") with a time-of-day glyph in the
+  mono face, the trees as one inset-grouped card, the composer floating at the bottom.
+- **Reach:** Cold start, then `onboarding-skip` on a fresh install. From any pushed screen,
+  the native back button (`BackButton`).
 - **Requires:** none
-- **Selector:** working — `home-welcome` (screen), `home-new-tree-button` (only once ready), `home-setup-hint`, `home-setup-action`, `home-error`
-- **Code:** `src/interface/components/home/WelcomeView.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/(drawer)/index.tsx`
+- **Selector:** working — `home-welcome` (screen), `home-greeting`, `home-date`, `home-error`
+- **Code:** `src/interface/components/home/HomeView.tsx`, `src/interface/components/home/DateHeader.tsx`, `src/interface/components/home/greeting.ts`, `src/interface/components/home/useDisplayName.ts`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/index.tsx`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences.display_name` via `WatermelonUserPreferencesRepository#get`; setup status as in `setup.hints`
 - **Status:** live
-- **Notes:** The greeting changes with the time of day ("Up late", "Morning", "Afternoon",
-  "Evening"). No screen sets `displayName`, so no name is shown. Nothing shows under the
-  greeting for the moment the setup status takes to load.
+- **Notes:** The greeting hours are Latent Spaces': "Good Early Morning" before 5,
+  "Good Morning" to 12, "Good Afternoon" to 17, "Good Evening" after; the time is re-read when
+  Home comes back into view. No screen sets `displayName` yet, so the nameless greeting shows.
+  A tap on the greeting dismisses the keyboard. Errors from the list, import, rename or
+  delete show in `home-error` above the list.
 
-### Create a loom tree
-- **ID:** `trees.create`
-- **Purpose:** Creates a new dialogue tree with the default model agent and opens it with the
-  composer focused.
-- **Where:** The New Loom Tree button on Home, or the "New Tree" item in the Loom Trees `···`
-  menu.
-- **Reach:** P1, then `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
-  "New Tree". From a cold start you can use Home's `home-new-tree-button` instead.
-- **Requires:** A model agent (P1). Without one, the menu's "New Tree" opens onboarding
-  instead (there is no "No agents yet" error any more).
-- **Selector:** working — `home-new-tree-button`, `trees-empty-new-tree`; menu item none — native context menu item; reach via a tap on `trees-menu-button`
-- **Code:** `src/interface/hooks/useCreateLoomTree.ts`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
-- **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
-  and `user_preferences.default_model_agent_id`
+### Home toolbar menu
+- **ID:** `home.menu`
+- **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
+  Grove's Search and tag filter: Import OpenLoom Tree (its own group), OpenLoom Docs, Info &
+  Tutorials, Show Onboarding, then Search and Filter by Tag.
+- **Where:** Home, top left (`ellipsis.circle`), a native pull-down menu.
+- **Reach:** Cold start → `home-menu-button`, then the item by its title.
+- **Requires:** none. "Filter by Tag" shows once the grove has a tag.
+- **Selector:** working — `home-menu-button`; items none — native context menu item; reach via a tap on `home-menu-button` ("Import OpenLoom Tree", "OpenLoom Docs", "Info & Tutorials", "Show Onboarding", "Search", "Filter by Tag")
+- **Code:** `src/interface/components/home/HomeMenu.tsx`, `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeHeader.tsx`, `src/interface/components/home/home-links.ts`
+- **Backend:** none — client-only (each item's own feature has its backend)
 - **Status:** live
-- **Notes:** The new tree opens with `ephemeral: '1'` and is deleted if you go back before
-  sending (`chat.ephemeral-discard`).
+- **Notes:** OpenLoom Docs opens the Open Loom spec in the repository and Info & Tutorials
+  the repository's README, in Safari (Latent Spaces links to its author's site). Show
+  Onboarding opens `onboarding.first-run`. Search pushes `search.nodes`.
 
-### Loom tree list
-- **ID:** `trees.list`
-- **Purpose:** All dialogue trees in the grove, most recent first, each with its last-message
-  time. Tap a row to open it.
-- **Where:** Drawer → Loom Trees.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees`.
-- **Requires:** none. When empty it shows "No loom trees yet." with a New Loom Tree button
-  (`trees-empty-new-tree`), or, before a tree can start, the setup hint (`setup.hints`).
-  With a tag filter on and no match it shows "No trees with this tag."
-- **Selector:** working — `trees-screen`, `trees-list`, rows `trees-list-row-<treeId>`, `trees-empty`, `trees-empty-new-tree`, `trees-setup-hint`, `trees-setup-action`, `trees-error`, `trees-menu-button`
-- **Code:** `src/interface/components/LoomTreeListView.tsx`, `src/interface/components/trees/TreesEmptyState.tsx`, `src/app/(drawer)/trees.tsx`
+### Settings button
+- **ID:** `home.settings-button`
+- **Purpose:** Pushes Settings from Home, as Latent Spaces' `figure.wave.circle.fill`
+  toolbar button does (`HomeScreenView.swift:157-163`).
+- **Where:** Home, top right: a white disc with a waving figure.
+- **Reach:** Cold start → `home-settings-button`.
+- **Requires:** none
+- **Selector:** working — `home-settings-button`
+- **Code:** `src/interface/components/home/HomeSettingsButton.tsx`
+- **Backend:** none — client-only
+- **Status:** live
+
+### Start a tree from Home's composer
+- **ID:** `home.composer`
+- **Purpose:** "Begin a new loom tree": the first message creates a tree with the default
+  model agent, opens it and sends the message there through the tree's own send path, so the
+  reply streams in with the thinking indicator and stop button. The tree takes the message's
+  first four words as its title.
+- **Where:** Home, a composer floating at the bottom (the tree chat's field: thin material,
+  radius 20, green stroke while focused, send arrow only with text). It rides the keyboard.
+- **Reach:** P1 → `home-composer-input` → type → `home-composer-send`.
+- **Requires:** A model agent (P1). Without one, sending opens onboarding instead and keeps
+  the text. Generating the reply needs a key or server, as `chat.composer`.
+- **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
+- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
+- **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
+  and `user_preferences.default_model_agent_id`; then as `chat.composer`
+- **Status:** live
+- **Notes:** The field focuses itself once, when Home first appears after launch (not over
+  onboarding), as Latent Spaces' does. The message waits in memory until the tree has loaded,
+  then is sent; nothing is written before that. The tree opens `ephemeral`: if the message
+  can't be saved (no key, say), it goes back into the tree's composer, and leaving without
+  sending deletes the empty tree (`chat.ephemeral-discard`). A tree that loads without a
+  usable agent keeps the message as its draft.
+
+### Recent trees
+- **ID:** `home.trees`
+- **Purpose:** Every active dialogue tree in the grove, most recent first (last message, else
+  last edit), each with its title on one line and its date. Tap a row to open it.
+- **Where:** Home, one inset-grouped card under the date line; it scrolls under the greeting.
+- **Reach:** Cold start; rows appear once a tree exists (P2, or `trees.import`).
+- **Requires:** none. With no trees the card is simply absent, as in Latent Spaces.
+- **Selector:** working — `home-trees-list`, rows `home-trees-row-<treeId>`
+- **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
+- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (IBM Plex
+  Mono standing in for Calling Code), the date is `Date.formatted()`'s "3/4/2025, 2:01 PM".
+
+### Rename or delete a tree (swipe)
+- **ID:** `home.trees-swipe`
+- **Purpose:** Latent Spaces' swipe actions on a tree row (`HomeScreenView.swift:77-98`):
+  swipe right for an orange "Edit Name", which asks for a new title in a "Loom Tree Name"
+  alert; swipe left for a red Delete, which removes the tree with its nodes at once.
+- **Where:** Home, on a tree row. One row is open at a time.
+- **Reach:** A tree exists → swipe right on `home-trees-row-<treeId>` →
+  `home-trees-rename-<treeId>` → type → "Save"; or swipe left →
+  `home-trees-delete-<treeId>`.
+- **Requires:** A tree.
+- **Selector:** working — `home-trees-rename-<treeId>`, `home-trees-delete-<treeId>`; the rename alert is native (buttons "Save", "Cancel")
+- **Code:** `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/TreeRowAction.tsx`, `src/interface/components/home/useTreeRowActions.ts`, `src/interface/components/chat/EditTreeTitleSheet.tsx` (Android)
+- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#update` (rename) and
+  `#hardDelete` (delete: nodes, edges, paths and tree-owned agents too)
+- **Status:** live
+- **Notes:** Delete asks nothing first, as in Latent Spaces. Android has no alert with a
+  text field, so it renames in the title sheet the tree chat uses.
 
 ### Filter trees by tag
 - **ID:** `trees.tag-filter`
-- **Purpose:** Narrows the tree list to trees carrying one tag. Tap the active chip again to
-  clear it.
-- **Where:** A row of tag chips above the Loom Trees list.
+- **Purpose:** Narrows Home's list to the trees carrying one tag. "All Trees", or the clear
+  button by the tag's name, shows every tree again.
+- **Where:** Home menu → "Filter by Tag" submenu (the active tag is checked); while a tag
+  filters, its name sits above the card with a clear button.
 - **Reach:** P2 → `chat-menu-button` → "Tags" → create a tag (see `chat.tags`) → back →
-  `drawer-menu-button` → `drawer-nav-trees` → `trees-tag-filter-chip-<tagId>`.
-- **Requires:** At least one tag in the grove. The chip row is hidden otherwise.
-- **Selector:** working — `trees-tag-filter`, chips `trees-tag-filter-chip-<tagId>`
-- **Code:** `src/interface/components/LoomTreeListView.tsx`
+  `home-menu-button` → "Filter by Tag" → the tag's name.
+- **Requires:** At least one tag in the grove; the submenu is hidden otherwise.
+- **Selector:** working — `home-tag-filter`, `home-tag-filter-clear`; submenu items none — native context menu item; reach via a tap on `home-menu-button`
+- **Code:** `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/HomeListHeader.tsx`
 - **Backend:** WatermelonDB `tag_assignments` via `WatermelonTagRepository#findItemsByTag`
 - **Status:** live
 
@@ -225,19 +255,19 @@ stays until the user makes one.
 - **Purpose:** Picks a file and imports it as one or more dialogue trees. It accepts Open Loom
   v1 and v2, and the legacy MiniLoom, Socketteer Loom and Loomsidian formats, then reports
   what was imported.
-- **Where:** The "Import Tree" item in the Loom Trees `···` menu. The result appears in a
-  native "Import complete" alert.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
-  "Import Tree" → OS document picker.
+- **Where:** The "Import OpenLoom Tree" item at the top of Home's `···` menu. The result
+  appears in a native "Import complete" alert, and the tree in Home's list.
+- **Reach:** Cold start → `home-menu-button` → "Import OpenLoom Tree" → OS document picker.
 - **Requires:** A file on the device, simulator or Files app. No agent needed.
-- **Selector:** none — native context menu item; reach via a tap on `trees-menu-button`; the picker and the alert are native
-- **Code:** `src/interface/components/LoomTreeListView.tsx#onImportTree`, `src/interface/services/loom-file-sharing.ts#pickAndReadTextFile`, `src/application/use-cases/ImportLoomTreeUseCase.ts`, `src/application/services/open-loom/import/`
+- **Selector:** none — native context menu item; reach via a tap on `home-menu-button`; the picker and the alert are native
+- **Code:** `src/interface/components/home/useImportTree.ts`, `src/interface/services/loom-file-sharing.ts#pickAndReadTextFile`, `src/application/use-cases/ImportLoomTreeUseCase.ts`, `src/application/services/open-loom/import/`
 - **Backend:** WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`, `path_states`
 - **Status:** live
-- **Notes:** Errors land in `trees-error`. The format is sniffed from content
+- **Notes:** Errors land in `home-error`. The format is sniffed from content
   (`detect.ts`), not from the file extension. Node roles map to `human`, `model` and
   `system` (`mixed` reads as human); system nodes render and send as system messages
-  (`chat.dialogue`) and export back as `author.role: "system"`.
+  (`chat.dialogue`) and export back as `author.role: "system"`. The menu's glyph shows an
+  hourglass while an import runs.
 
 ### Setup hints (no agent, no key)
 - **ID:** `setup.hints`
@@ -245,14 +275,13 @@ stays until the user makes one.
   under it: "Choose a model to start your first tree." with "Set up" (opens onboarding),
   or "Add your OpenRouter key to start a tree." with "Add key" (opens the Connections
   sheet).
-- **Where:** Home, in place of New Loom Tree; the empty Loom Trees list, under "No loom
-  trees yet."
+- **Where:** Home, above the tree list.
 - **Reach:** Fresh install → `onboarding-skip` → Home shows `home-setup-hint`. For "no key":
   create an OpenRouter agent in Settings → Agents without storing a key.
 - **Requires:** Not ready to start a tree: no model agent, or an OpenRouter default agent and
   no key. LM Studio reachability is not checked here; a server that is down is reported
   when generation fails (`chat.dialogue`).
-- **Selector:** working — `home-setup-hint`, `home-setup-action`, `trees-setup-hint`, `trees-setup-action`
+- **Selector:** working — `home-setup-hint`, `home-setup-action`
 - **Code:** `src/interface/components/setup/SetupHint.tsx`, `src/interface/components/setup/setup-hint-copy.ts`, `src/interface/hooks/useSetupStatus.ts`, `src/application/use-cases/GetSetupStatusUseCase.ts`, `src/application/services/onboarding/setup-status.ts`
 - **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
   `onboarding_completed_at`); `expo-secure-store` `openrouter_api_key` (read only)
@@ -268,8 +297,8 @@ stays until the user makes one.
 - **Where:** Route `onboarding`, a full screen over Home with no stack header. "1 of 2" /
   "2 of 2" at the top, Back (step 2) at the left, Skip at the right, the step's button at
   the bottom.
-- **Reach:** Cold start of a fresh install (it opens by itself), or `home-setup-action` /
-  `trees-setup-action` after a skip.
+- **Reach:** Cold start of a fresh install (it opens by itself), `home-setup-action` after
+  a skip, or `home-menu-button` → "Show Onboarding".
 - **Requires:** none
 - **Selector:** working — `onboarding-screen`, `onboarding-step-indicator`, `onboarding-skip`, `onboarding-back`, `onboarding-error`
 - **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/useOnboardingFlow.ts`, `src/interface/components/onboarding/OnboardingHeading.tsx`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`
@@ -313,7 +342,7 @@ stays until the user makes one.
 - **Selector:** working — `onboarding-step-agent`, `onboarding-template-<key>`, `onboarding-agent-customize`, `onboarding-agent-custom`, `onboarding-begin`, LM Studio picker with prefix `onboarding-agent` (as in `settings.agents.model-picker`, provider tabs hidden); the customize sheet is `agent-editor-*` (`settings.agents.editor`)
 - **Code:** `src/interface/components/onboarding/AgentStep.tsx`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
-  `onboarding_completed_at`), then the tree tables as in `trees.create`
+  `onboarding_completed_at`), then the tree tables as in `home.composer`
 - **Status:** live
 - **Notes:** Back from the new tree without sending discards it (`chat.ephemeral-discard`)
   and returns to Home, which shows New Loom Tree.
@@ -325,12 +354,13 @@ stays until the user makes one.
 - **Purpose:** Full-text search across every tree's nodes, grouped by tree. Tap a result to
   open its tree on that node's Node Info sheet (`node.sheet`), or tap a tree header to open
   the tree.
-- **Where:** Drawer → Search. The search bar is at the top.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-search` → type at least two
+- **Where:** Route `search`, pushed from Home's menu, with the native back button. The
+  search bar is at the top.
+- **Reach:** Cold start → `home-menu-button` → "Search" → type at least two
   characters into `search-input`.
 - **Requires:** Nodes to search. When empty it prompts "Type at least two characters".
 - **Selector:** working — `search-screen`, `search-input`, `search-clear-button`, `search-done-button`, `search-results-list`, tree headers `search-results-tree-<treeId>`, rows `search-results-row-<nodeId>`
-- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/(drawer)/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
+- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#searchByContent` (limit 100);
   `loom_trees` for titles
 - **Status:** live
@@ -348,7 +378,7 @@ stays until the user makes one.
   continuation count and pruned state.
 - **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
   title, `···` at the right).
-- **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
+- **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
@@ -388,7 +418,7 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -668,8 +698,8 @@ stays until the user makes one.
   message, so empty trees don't pile up.
 - **Where:** Dialogue screen, on navigating back.
 - **Reach:** P2 → native back without sending.
-- **Requires:** A tree opened with the `ephemeral` param, which only `trees.create` sets.
-- **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `trees-list`
+- **Requires:** A tree opened with the `ephemeral` param, which `home.composer` and onboarding set.
+- **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `home-trees-list`
 - **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#hardDelete`
 - **Status:** live
@@ -725,7 +755,7 @@ stays until the user makes one.
 - **Where:** In place of the composer input on the Dialogue screen, and at the top of
   Dialogue Settings.
 - **Reach:** Cold start → import a tree before creating any agent (`trees.import`) →
-  `trees-list-row-<treeId>` → `chat-needs-agent-choose` →
+  `home-trees-row-<treeId>` → `chat-needs-agent-choose` →
   `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** A tree without a usable agent, and no default model agent to adopt.
 - **Selector:** working — `chat-needs-agent` (the message), `chat-needs-agent-choose`, `dialogue-settings-needs-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`
@@ -840,18 +870,16 @@ stays until the user makes one.
 - **Purpose:** Latent Spaces' one settings Form (`LoomSettingsView.swift`): links to
   Connections ("API Settings") and Agents ("New loom tree Settings"), then the User Interface
   settings, their live preview and Voice Mode, all edited in place.
-- **Where:** Drawer → Settings, a nested stack with its own header and drawer button. A 34 pt
+- **Where:** Route `settings`, pushed from Home, with the native back button. A 34 pt
   "Settings" large title scrolls away and becomes the inline header title.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
+- **Reach:** Cold start → `home-settings-button`.
 - **Requires:** none
 - **Selector:** working — `settings-screen`, `settings-link-connections`, `settings-link-agents`
-- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/settings/home/SettingsLinkSections.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/interface/ui/components/form/`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
+- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/settings/home/SettingsLinkSections.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/settings-screen-options.ts`, `src/interface/ui/components/form/`, `src/app/settings/index.tsx`
 - **Backend:** none — client-only
 - **Status:** live
-- **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
-  stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
-  gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
-  it off. The pushed sub-screens keep native headers with a system back button. The former
+- **Notes:** Settings, Agents and Connections are screens of the root stack, each with the
+  native header and back button (a Liquid Glass circle on iOS 26, as in Latent Spaces). The pushed sub-screens keep native headers with a system back button. The former
   sub-screens Message Typography, App Behavior and Voice Mode (routes `settings/typography`,
   `settings/behavior`, `settings/voice`) are now sections of this Form, so
   `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`,
@@ -862,11 +890,11 @@ stays until the user makes one.
   it, "Make Default" to pin it for new trees, "Delete" to remove it (after a native confirm),
   or "New Agent" to create one.
 - **Where:** Settings → Agents.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-link-agents`.
 - **Requires:** none. A fresh install shows "No agents yet. Create one to start weaving."
 - **Selector:** working — `settings-agents-screen`, `settings-agents-list`, `settings-agents-new`, rows `settings-agents-row-<agentId>`, `settings-agents-row-make-default-<agentId>` and `settings-agents-row-delete-<agentId>` (nested, see the driving notes), `settings-agents-error`
-- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/AgentRow.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/AgentRow.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository#findSharedModels`;
   `user_preferences.default_model_agent_id` for the default
 - **Status:** live
@@ -917,12 +945,12 @@ stays until the user makes one.
   card on how keys are kept, "Edit OpenRouter API Key" (a sheet with one secure field,
   Cancel and Save) and links to OpenRouter's key docs, keys and credits pages.
 - **Where:** Settings → Connections, the top card and the OpenRouter section.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-link-connections` → `connections-openrouter-edit` →
   `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
 - **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
+- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
@@ -937,7 +965,7 @@ stays until the user makes one.
   an LM Studio server that is down can be fixed without leaving a tree.
 - **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
   the top.
-- **Reach:** `home-setup-action` ("Add key"), `trees-setup-action` ("Add key") or
+- **Reach:** `home-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
 - **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.openrouter` and `settings.connections.lmstudio`
@@ -975,7 +1003,7 @@ stays until the user makes one.
   user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
   sample messages.
 - **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-typography-font` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
@@ -995,7 +1023,7 @@ stays until the user makes one.
 - **ID:** `settings.behavior.auto-title`
 - **Purpose:** Turns the after-first-reply tree titling (`chat.auto-title`) on or off.
 - **Where:** Settings → User Interface Settings, the "Auto-Title Conversations" toggle.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-behavior-auto-title` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-auto-title`
@@ -1006,7 +1034,7 @@ stays until the user makes one.
 - **ID:** `settings.behavior.verbose-errors`
 - **Purpose:** A switch meant to show detailed provider failures in the UI.
 - **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
-- **Reach:** `drawer-nav-settings` → `settings-behavior-verbose-errors` (scroll down).
+- **Reach:** `home-settings-button` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
 - **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
@@ -1019,7 +1047,7 @@ stays until the user makes one.
 - **Purpose:** Turns Voice Mode (beta) on or off, shows the current voice and opens the voice
   chooser. The footer explains double-tap to listen and tap to stop.
 - **Where:** Settings, the "Voice Mode" section near the bottom.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-voice-mode-toggle` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
@@ -1039,7 +1067,7 @@ stays until the user makes one.
   replays it, and Select saves the voice shown.
 - **Where:** A page sheet over Settings, with no visible title (as in Latent Spaces, whose
   `navigationTitle` has no navigation bar to show it in).
-- **Reach:** `drawer-nav-settings` → `settings-voice-choose` → swipe `settings-voice-pager` →
+- **Reach:** `home-settings-button` → `settings-voice-choose` → swipe `settings-voice-pager` →
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
@@ -1051,9 +1079,7 @@ stays until the user makes one.
   without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
 
 ## Coverage
-- `src/app/_layout.tsx` — root stack, providers and theme (the Startup gate references it); no feature of its own
-- `src/app/(drawer)/_layout.tsx` — drawer navigator config; referenced by `nav.drawer`
-- `src/app/(drawer)/settings/_layout.tsx` — settings stack headers; referenced by `settings.home`
+- `src/app/_layout.tsx` — root stack (Home, Search, Settings and the tree screens), providers and theme; referenced by `app.bootstrap` and `home.welcome`
 - `./index.ts` — legacy root entry; `package.json` `main` is `src/entry.ts`
 - `src/entry.ts` — app entry (registers expo-router)
 - `src/interface/components/settings/index.ts` — barrel export
