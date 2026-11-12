@@ -96,18 +96,19 @@ stays until the user makes one.
   them reaches the native view, which opens the menu.
 - **Nested Pressables on iOS.** A `Pressable` is `accessible` by default. On iOS that can hide
   a nested Pressable's identifier from XCUITest-based drivers such as Maestro (Detox walks the
-  view tree and is less affected). Two places nest a Pressable this way:
-  `bookmarks-sheet-row-details-<nodeId>` inside `bookmarks-sheet-row-<nodeId>`, and
+  view tree and is less affected). One place nests a Pressable this way:
   `settings-agents-row-make-default-<agentId>` / `settings-agents-row-delete-<agentId>`
-  inside `settings-agents-row-<agentId>`. They were left as they are, because changing
+  inside `settings-agents-row-<agentId>`. It was left as it is, because changing
   `accessible` would change VoiceOver behavior. If the inner id isn't found, tap its visible
-  text ("Details", "Make Default", "Delete").
+  text ("Make Default", "Delete").
 - Settings screens **autosave** about 450 ms after the last change. There is no Save button,
   except in the OpenRouter key sheet (`connections-openrouter-key-save`), as in Latent Spaces.
   `settings-status-saving` shows while a save runs and `settings-status-error` shows if it
   fails.
-- System dialogs (`Alert.alert`, the document picker, the share sheet) are native and have no
-  testIDs.
+- System dialogs (`Alert.alert`, `Alert.prompt`, the document picker, the share sheet) are
+  native and have no testIDs; pick their buttons by title. On Android an alert with a text
+  field is `TextPromptDialog` instead: `text-prompt`, `text-prompt-input`,
+  `text-prompt-save`, `text-prompt-cancel`.
 
 ## App shell
 
@@ -229,12 +230,13 @@ stays until the user makes one.
   `home-trees-delete-<treeId>`.
 - **Requires:** A tree.
 - **Selector:** working — `home-trees-rename-<treeId>`, `home-trees-delete-<treeId>`; the rename alert is native (buttons "Save", "Cancel")
-- **Code:** `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/TreeRowAction.tsx`, `src/interface/components/home/useTreeRowActions.ts`, `src/interface/components/chat/EditTreeTitleSheet.tsx` (Android)
+- **Code:** `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/TreeRowAction.tsx`, `src/interface/components/home/useTreeRowActions.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#update` (rename) and
   `#hardDelete` (delete: nodes, edges, paths and tree-owned agents too)
 - **Status:** live
 - **Notes:** Delete asks nothing first, as in Latent Spaces. Android has no alert with a
-  text field, so it renames in the title sheet the tree chat uses.
+  text field, so it asks in `TextPromptDialog` (see the driving notes), as the tree's Edit
+  Title does.
 
 ### Filter trees by tag
 - **ID:** `trees.tag-filter`
@@ -515,14 +517,14 @@ stays until the user makes one.
   doesn't also open that row's rail). The message being read is
   drawn in its voice's color. Fenced code blocks are read as "You can see the code on this loom
   tree branch." The `···` menu's "Voice Mode" item (checked when on) toggles Voice Mode app-wide.
-- **Where:** Message rows on the Dialogue screen; "Voice Mode" in the Dialogue `···` menu.
+- **Where:** Message rows on the Dialogue screen; "Voice Mode" in the tree menu (`chat.tree-menu`).
 - **Reach:** P2 → `chat-menu-button` → "Voice Mode" (or `settings.voice`) → send once → wait
   for the reply to finish (it is read aloud) → double-tap `chat-message-row-<nodeId>` to hear
   it again → tap any row to stop.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
   up; it plays with the iOS silent switch on, as in Latent Spaces.
 - **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
+- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
 - **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
 - **Status:** live
@@ -539,8 +541,8 @@ stays until the user makes one.
 - **Purpose:** Makes an earlier node, or a node on another branch, the current one, so the
   active path is re-pointed through it.
 - **Where:** "Rewind To Node" in the message menu or the Node Info sheet's menu. Also "Make
-  Current Node" or "Retrace Branch" on a continuation card or in its sheet's menu, a
-  double-tap on a continuation card, or a tap on a bookmark row.
+  Current Node" or "Retrace Branch" on a continuation card or in its sheet's menu (or a
+  bookmark's sheet's menu), or a double-tap on a continuation card.
 - **Reach:** P2 → send twice → long-press an earlier `chat-message-row-<nodeId>` →
   "Rewind To Node".
 - **Requires:** More than one node.
@@ -623,12 +625,34 @@ stays until the user makes one.
   point the tree's agent at a model id that doesn't exist (`agent-editor-model-custom`).
   Parallel continuations are not read aloud.
 
+### Tree menu
+- **ID:** `chat.tree-menu`
+- **Purpose:** Latent Spaces' tree toolbar menu (ToolbarMenu.swift:31-102): Model and Voice
+  Mode side by side (Voice Mode checked while on), Edit Title and Edit Description, the
+  Bookmarks submenu between dividers once the tree has a bookmark, Export to OpenLoom Format,
+  then Show Onboarding. After a last divider come Aspen Grove's own Tags and Export Path
+  (Markdown). Model opens Dialogue Settings (`chat.dialogue-settings`); Show Onboarding opens
+  Aspen Grove's onboarding (`onboarding.first-run`).
+- **Where:** The `···` button trailing the Dialogue screen's header.
+- **Reach:** P2 → `chat-menu-button`.
+- **Requires:** A tree.
+- **Selector:** working — `chat-menu-button`; items none — native context menu item; reach via a tap on `chat-menu-button`
+- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/ui/components/native-menu-tree.ts`
+- **Backend:** none (each item's own entry)
+- **Status:** live
+- **Notes:** The side-by-side pair needs `preferredElementSize`, which
+  `react-native-context-menu-view` lacks; `patches/react-native-context-menu-view+1.21.0.patch`
+  adds it (iOS 16+). Latent Spaces' Show Onboarding replays its tree tips; Aspen Grove has
+  none, so it opens the app onboarding, as Home's menu does. Flow:
+  `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`).
+
 ### Bookmark a node
 - **ID:** `chat.bookmark`
 - **Purpose:** Toggles a bookmark on a node. Bookmarked nodes show a bookmark glyph in their
-  caption and are listed in the Bookmarks sheet.
+  caption and are listed in the tree menu's Bookmarks (`chat.bookmarks`).
 - **Where:** "Bookmark" / "Remove Bookmark" in the message menu; "Bookmark" / "Bookmarked" on
-  a continuation card's menu or in a node sheet's menu.
+  a continuation card's menu or in a node sheet's menu. A bookmark's own sheet removes it
+  with "Bookmarked" (`chat.bookmarks`).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Bookmark".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
@@ -636,17 +660,31 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `nodes` metadata (`bookmarked`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
 
-### Bookmarks sheet
+### Bookmarks
 - **ID:** `chat.bookmarks`
-- **Purpose:** Lists this tree's bookmarked nodes, newest first. Tap a row to rewind to it, or
-  tap "Details" to open its Node Info sheet (once the bookmarks sheet has slid away).
-- **Where:** A page sheet from the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Bookmarks".
-- **Requires:** A tree. When empty it shows the "No bookmarks in this tree yet" hint.
-- **Selector:** working — `bookmarks-sheet`, `bookmarks-sheet-done`, `bookmarks-sheet-list`, rows `bookmarks-sheet-row-<nodeId>`, `bookmarks-sheet-row-details-<nodeId>` (nested, see the driving notes), `bookmarks-sheet-empty`, `bookmarks-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/bookmarks/BookmarksSheet.tsx`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useChatSheets.ts`
-- **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked`
+- **Purpose:** Latent Spaces' bookmarks (ToolbarMenu.swift:64-77, BookmarkSheet.swift): the
+  tree menu's "Bookmarks" submenu lists this tree's bookmarked nodes, oldest first, each by
+  its label or else its text, with `sparkles` for a model node and `person.fill` for the
+  user's. Choosing one opens its sheet: the label (or "Bookmarked Node") over a bookmark
+  symbol and the node's model, the node's text, and a `···` menu with Rename Bookmark, then
+  Make Current Node and Retrace Branch, then Copy Text and Bookmarked. Rename Bookmark asks
+  in a "Rename Bookmark" alert ("Enter a new title for this bookmark"); Bookmarked removes the
+  bookmark, clears its label and closes the sheet.
+- **Where:** The tree menu (`chat.tree-menu`), between dividers, once the tree has a
+  bookmark; the sheet is the node sheet (`node.sheet`) in its bookmark form.
+- **Reach:** P2 → send once → bookmark a node (`chat.bookmark`) → `chat-menu-button` →
+  "Bookmarks" → the bookmark by its title → `node-sheet-menu-button` → "Rename Bookmark".
+- **Requires:** A bookmarked node; the submenu is absent until there is one.
+- **Selector:** working — `node-sheet`, `node-sheet-title`, `node-sheet-bookmark` (the symbol), `node-sheet-menu-button`, `node-sheet-back`; submenu and menu items none — native context menu item; reach via a tap on `chat-menu-button` ("Bookmarks") or `node-sheet-menu-button`; the rename alert is native (`text-prompt-*` on Android)
+- **Code:** `src/interface/components/chat/bookmarks/useTreeBookmarks.ts`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/chat/node-sheet/bookmark-menu.ts`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/useNodeSheet.ts#onBookmarkAction`, `src/interface/components/chat/node-actions/useNodeActions.ts#renameBookmark`
+- **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked` (the list)
+  and `#updateMetadata` (`bookmarked`, `bookmark_label`); Make Current and Retrace use
+  `SwitchDialoguePathUseCase` (`path_states`)
 - **Status:** live
+- **Notes:** Aspen Grove keeps no time a bookmark was added, so the list is in node creation
+  order where Latent Spaces lists bookmarks in the order they were added. An empty rename
+  clears the label. Under the text the sheet shows Aspen Grove's node details, as Node Info
+  does.
 
 ### Prune or restore a node
 - **ID:** `chat.prune`
@@ -662,17 +700,35 @@ stays until the user makes one.
 
 ### Edit tree title
 - **ID:** `chat.title-edit`
-- **Purpose:** Renames the tree.
-- **Where:** A page sheet from the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Edit Title" → `chat-title-sheet-input` →
-  `chat-title-sheet-save`.
+- **Purpose:** Renames the tree in Latent Spaces' "Loom Tree Name" alert with a text field,
+  Cancel and Save (ToolbarMenu.swift:107-117). An empty name keeps the old one.
+- **Where:** "Edit Title" in the tree menu (`chat.tree-menu`); a native alert.
+- **Reach:** P2 → `chat-menu-button` → "Edit Title" → type → "Save".
 - **Requires:** A tree.
-- **Selector:** working — `chat-title-sheet`, `chat-title-sheet-input`, `chat-title-sheet-save`, `chat-title-sheet-cancel`, `chat-title-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/header-actions/useTreeTitle.ts`
+- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the alert is native (buttons "Save", "Cancel"; `text-prompt-*` on Android)
+- **Code:** `src/interface/components/chat/header-actions/useTreeTitle.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/useTextPrompt.ts`, `src/interface/ui/components/text-prompt/TextPromptDialog.tsx`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
-- **Notes:** The field takes focus once the sheet has finished presenting (Modal `onShow`),
-  so the keyboard is up and the first tap edits the title.
+- **Notes:** iOS's `Alert.prompt` has no placeholder, so the empty field doesn't read
+  "Name" there; Android's dialog does. An untitled tree opens the alert empty.
+
+### Edit tree description
+- **ID:** `chat.description-edit`
+- **Purpose:** Edits the tree's description in Latent Spaces' full-screen editor
+  (ToolbarMenu.swift:118-131, FullScreenTextEditor.swift): "Loom Tree Description" inline,
+  a `···` menu (Copy text, Clear text) leading and Save trailing, the text in the message
+  font, focused as it opens, with a keyboard "Done". Save writes it and closes; a swipe down
+  drops the edit.
+- **Where:** "Edit Description" in the tree menu; a page sheet.
+- **Reach:** P2 → `chat-menu-button` → "Edit Description" → type into
+  `tree-description-sheet-input` → `tree-description-sheet-save`.
+- **Requires:** A tree.
+- **Selector:** working — `tree-description-sheet`, `tree-description-sheet-input`, `tree-description-sheet-save`, `tree-description-sheet-menu-button`, `keyboard-done`; menu items none — native context menu item; reach via a tap on `tree-description-sheet-menu-button`
+- **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`
+- **Backend:** WatermelonDB `loom_trees.description` via `WatermelonLoomTreeRepository`
+- **Status:** live
+- **Notes:** The description shows nowhere else in the app yet; it goes out with an Open Loom
+  export and heads a Markdown export.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -708,8 +764,9 @@ stays until the user makes one.
 - **ID:** `chat.dialogue-settings`
 - **Purpose:** Shows this tree's agent (name, model, shared or private) and edits the
   tree-level system context, which is added after the agent's system prompt.
-- **Where:** A page sheet from the Dialogue `···` menu ("Dialogue Settings").
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings".
+- **Where:** A page sheet from the tree menu's "Model" (Latent Spaces' Model button opens its
+  tree model settings; Aspen Grove's are here).
+- **Reach:** P2 → `chat-menu-button` → "Model".
 - **Requires:** A tree.
 - **Selector:** working — `dialogue-settings-sheet`, `dialogue-settings-done`, `dialogue-settings-system-context-input`, `dialogue-settings-system-context-save` (shown once edited), `dialogue-settings-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx`, `src/interface/components/chat/dialogue-settings/useDialogueSettingsController.ts`
@@ -723,7 +780,7 @@ stays until the user makes one.
   tree.
 - **Where:** "Edit agent" in Dialogue Settings. A native alert offers the shared-or-fork
   choice, and then the sheet shows the Edit Agent sub-view.
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings" →
+- **Reach:** P2 → `chat-menu-button` → "Model" →
   `dialogue-settings-edit-agent` → (alert) → edit the fields →
   `dialogue-settings-edit-agent-save`.
 - **Requires:** A tree with an agent.
@@ -737,7 +794,7 @@ stays until the user makes one.
 - **ID:** `chat.dialogue-settings.switch-agent`
 - **Purpose:** Points the tree at another shared agent. The history is unchanged.
 - **Where:** "Switch agent" in Dialogue Settings.
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings" →
+- **Reach:** P2 → `chat-menu-button` → "Model" →
   `dialogue-settings-switch-agent` → `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** At least two shared agents. Otherwise it says "No other shared agents".
 - **Selector:** working — `dialogue-settings-switch-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`, `dialogue-settings-back`
@@ -771,7 +828,7 @@ stays until the user makes one.
 ### Tree tags
 - **ID:** `chat.tags`
 - **Purpose:** Toggles grove tags on this tree, or creates a new tag and assigns it.
-- **Where:** A page sheet from the Dialogue `···` menu ("Tags").
+- **Where:** A page sheet from the tree menu ("Tags", after its last divider).
 - **Reach:** P2 → `chat-menu-button` → "Tags" → `tags-sheet-new-input` →
   `tags-sheet-new-add`. Toggle an existing tag with `tags-sheet-row-<tagId>`.
 - **Requires:** A tree.
@@ -782,26 +839,37 @@ stays until the user makes one.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
-- **Purpose:** Exports the whole tree as an Open Loom JSON file and hands it to the OS share
-  sheet.
-- **Where:** "Export Tree (OpenLoom)" in the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Export Tree (OpenLoom)" → share sheet.
+- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero
+  ("Generate OpenLoom Tree", "Changes made here will not affect your saved loom tree."), the
+  file's Title and Description, Include System Message and Include Bookmarks, and a link to
+  the Open Loom docs. The share button closes the sheet and exports the whole tree as an
+  Open Loom JSON file to the OS share sheet; the back button drops the edits.
+- **Where:** "Export to OpenLoom Format" in the tree menu (`chat.tree-menu`); a page sheet.
+- **Reach:** P2 → `chat-menu-button` → "Export to OpenLoom Format" →
+  `export-sheet-share` → share sheet.
 - **Requires:** A tree, and sharing available on the device.
-- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
-- **Code:** `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useTreeExports.ts`
+- **Selector:** working — `export-sheet`, `export-sheet-back`, `export-sheet-share`, `export-sheet-title-input`, `export-sheet-description-input`, `export-sheet-include-system-message`, `export-sheet-include-bookmarks`, `export-sheet-docs`, `keyboard-done`; the share sheet is native
+- **Code:** `src/interface/components/chat/export-sheet/OpenLoomExportSheet.tsx`, `src/interface/components/chat/export-sheet/ExportSheetHero.tsx`, `src/interface/components/chat/export-sheet/useOpenLoomExportSheet.ts`, `src/interface/components/chat/export-sheet/export-sheet-options.ts`, `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`. Writes
-  a cache file (`expo-file-system`), then calls `expo-sharing`.
+  a cache file (`expo-file-system`), then calls `expo-sharing`. Nothing in the sheet is saved
+  to the tree.
 - **Status:** live
-- **Notes:** Errors land in `chat-error`.
+- **Notes:** Errors land in `chat-error`. An empty description is left out. Include System
+  Message off drops the tree's system context and the agents' system prompts (Aspen Grove's
+  counterpart of Latent Spaces' one system message); Include Bookmarks off drops bookmark
+  flags and labels. The file goes to the share sheet, which offers Save to Files, where Latent
+  Spaces opens the file exporter. The docs link opens the Open Loom spec in the repository,
+  as Home's does.
 
 ### Export path (Markdown)
 - **ID:** `chat.export-path`
 - **Purpose:** Exports the active path as a Markdown transcript through the share sheet.
-- **Where:** "Export Path (Markdown)" in the Dialogue `···` menu.
+- **Where:** "Export Path (Markdown)" in the tree menu, after its last divider (Aspen Grove
+  only).
 - **Reach:** P2 → `chat-menu-button` → "Export Path (Markdown)" → share sheet.
 - **Requires:** A tree with a loaded session.
 - **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
-- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
+- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`
 - **Backend:** Reads WatermelonDB `paths`, `path_nodes`, `nodes`. Writes a cache file and calls
   `expo-sharing`.
 - **Status:** live
@@ -811,7 +879,8 @@ stays until the user makes one.
 ### Node sheet (Node Info, Continuation Node)
 - **ID:** `node.sheet`
 - **Purpose:** One node in a page sheet, as Latent Spaces shows it: "Node Info" from a
-  message's menu, "Continuation Node" from a continuation card. The toolbar has a glass back
+  message's menu, "Continuation Node" from a continuation card, and a bookmark's sheet from
+  the tree menu's Bookmarks (`chat.bookmarks`: its label, a bookmark symbol, no `[n]`). The toolbar has a glass back
   button, the title over the node's model (a green check on a continuation the active path
   runs through) and `[n]`, and a glass `···` menu. The body is the node's whole text in the
   message font, selectable, and under it Aspen Grove's metadata (local id, author, created
@@ -820,10 +889,10 @@ stays until the user makes one.
 - **Where:** A page sheet over the Dialogue screen.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Node Info". Or tap a
   continuation card `chat-continuation-card-<nodeId>` (Continuation Node), a search result
-  (`search-results-row-<nodeId>`) or a bookmark's "Details".
+  (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
-- **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
-- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`
+- **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-bookmark`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`
 - **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
 - **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the
@@ -834,14 +903,15 @@ stays until the user makes one.
 - **Purpose:** Node Info: Copy All Text, Rewind To Node (disabled on the current node),
   Bookmark / Bookmarked, then Aspen Grove's Edit and Prune / Restore after a divider.
   Continuation Node: the card's menu (Make Current Node, Retrace Branch, Copy Text, Bookmark /
-  Bookmarked). Rewind, Make Current, Retrace and Node Info's Bookmark close the sheet, as in
+  Bookmarked). A bookmark: Rename Bookmark, then the continuation's items; its Bookmarked
+  removes the bookmark and closes the sheet (`chat.bookmarks`). Rewind, Make Current, Retrace and Node Info's Bookmark close the sheet, as in
   Latent Spaces; Edit closes it and starts the edit; Copy, Prune and the continuation's
   Bookmark leave it open and it reloads.
 - **Where:** The glass `···` at the right of the sheet's toolbar.
 - **Reach:** Open `node.sheet` → `node-sheet-menu-button`.
 - **Requires:** A loaded node. The button is hidden while loading.
 - **Selector:** working — `node-sheet-menu-button`; items none — native context menu item; reach via a tap on `node-sheet-menu-button`
-- **Code:** `src/interface/components/chat/node-sheet/node-info-menu.ts#buildNodeInfoMenuSections`, `src/interface/components/chat/continuation-menu.ts#buildContinuationMenuSections`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`
+- **Code:** `src/interface/components/chat/node-sheet/node-info-menu.ts#buildNodeInfoMenuSections`, `src/interface/components/chat/continuation-menu.ts#buildContinuationMenuSections`, `src/interface/components/chat/node-sheet/bookmark-menu.ts#buildBookmarkMenuSections`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`
 - **Backend:** Rewind, Make Current and Retrace use `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
   Prune update `nodes` metadata via `WatermelonNodeRepository#updateMetadata`. Copy is
   client-only.
@@ -1086,10 +1156,9 @@ stays until the user makes one.
 - `src/interface/components/settings/types.ts` — shared type
 - `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, large title, keyboard toolbar, spinner)
 - `src/interface/components/settings/SettingsStatus.tsx` — shared saving and error text (the settings-status testIDs)
-- `src/interface/components/chat/ChatHeaderMenu.tsx` — the Dialogue `···` menu; the reach for the chat sheets and exports
 - `src/interface/components/chat/types.ts` — chat row and preference types
 - `src/interface/components/chat/route-params.ts` — route param parsing helper
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, the native-menu section helpers in `native-menu.ts`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, `KeyboardDoneBar`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
