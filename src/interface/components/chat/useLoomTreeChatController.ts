@@ -1,20 +1,27 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
+import { useTextPrompt } from '@/interface/ui/components/text-prompt/useTextPrompt';
 import { canSubmitComposer } from './composer/can-submit-composer';
 import { toComposerMode } from './composer/composer-mode';
 import { useComposerDraft } from './composer/useComposerDraft';
 import { useComposerFocus } from './composer/useComposerFocus';
 import { useEditNode } from './composer/useEditNode';
 import { useAutoTreeTitle } from './header-actions/useAutoTreeTitle';
+import { useFirstMessageTreeTitle } from './header-actions/useFirstMessageTreeTitle';
 import { useChatSheets } from './header-actions/useChatSheets';
 import { useTreeExports } from './header-actions/useTreeExports';
 import { useTreeTitle } from './header-actions/useTreeTitle';
 import { useContinuationGestures } from './node-actions/useContinuationGestures';
 import { useMessageActions } from './node-actions/useMessageActions';
 import { useNodeActions } from './node-actions/useNodeActions';
+import { useRetraceBranch } from './node-actions/useRetraceBranch';
 import { useRewindToNode } from './node-actions/useRewindToNode';
+import { renameBookmarkPrompt } from './node-sheet/bookmark-menu';
+import { useNodeSheet } from './node-sheet/useNodeSheet';
+import { useRouteNodeSheet } from './node-sheet/useRouteNodeSheet';
 import { useParallelRail } from './parallel/useParallelRail';
 import { useChatReadAloud } from './read-aloud/useChatReadAloud';
 import { useReadAloudTaps } from './read-aloud/useReadAloudTaps';
@@ -25,7 +32,10 @@ import { useChatSessionState } from './session/useChatSessionState';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
+import { useSendFirstMessage } from './turns/useSendFirstMessage';
 import { useSendTurn } from './turns/useSendTurn';
+import { useStopGeneration } from './turns/useStopGeneration';
+import { useTreeMenuSheets } from './tree-menu/useTreeMenuSheets';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useNodeContinuations } from './useNodeContinuations';
 import { useStreamingAssistantRow } from './useStreamingAssistantRow';
@@ -38,7 +48,7 @@ import { useStreamingAssistantRow } from './useStreamingAssistantRow';
  * Hook order is load-bearing: React runs effects in declaration order, and
  * this order matches the original single-file controller (draft sync,
  * ephemeral guard, session load, focus reload, auto-scroll, autofocus,
- * route-driven edit, tap-timer cleanup).
+ * route-driven node sheet, tap-timer cleanup).
  */
 export const useLoomTreeChatController = () => {
   const router = useRouter();
@@ -49,16 +59,10 @@ export const useLoomTreeChatController = () => {
     treeId?: string | string[];
     autofocus?: string | string[];
     ephemeral?: string | string[];
-    editNodeId?: string | string[];
-    editRequestId?: string | string[];
+    nodeSheetId?: string | string[];
   }>();
-  const {
-    treeIdParam,
-    shouldAutofocus,
-    shouldDeleteEmptyOnBlur,
-    editNodeId,
-    editRequestId,
-  } = toDialogueRouteParams(routeParams);
+  const { treeIdParam, shouldAutofocus, shouldDeleteEmptyOnBlur, nodeSheetId } =
+    toDialogueRouteParams(routeParams);
 
   const state = useChatSessionState();
   const {
@@ -71,18 +75,24 @@ export const useLoomTreeChatController = () => {
   } = state;
   const [sending, setSending] = useState(false);
   const providerError = useProviderErrorNotice({ error, setError });
+  const textPrompt = useTextPrompt();
   const title = useTreeTitle({
     navigation,
     treeRepo: repositories.treeRepo,
     sessionTreeId: session?.treeId,
     activeTreeIdRef,
+    prompt: textPrompt.prompt,
+    setError,
   });
 
   const streaming = useStreamingAssistantRow();
+  const stopGeneration = useStopGeneration();
   const continuations = useNodeContinuations({
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
     pathRepo: repositories.pathRepo,
+    rawApiResponseRepo: repositories.rawApiResponseRepo,
+    agentRepo: repositories.agentRepo,
     pathId: session?.pathId,
   });
   const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
@@ -133,6 +143,11 @@ export const useLoomTreeChatController = () => {
     generateTreeTitleUseCase: useCases.generateTreeTitleUseCase,
     applyTreeTitle: title.applyTreeTitle,
   });
+  const titleFromFirstMessage = useFirstMessageTreeTitle({
+    treeId: session?.treeId,
+    titleTreeFromFirstMessageUseCase: useCases.titleTreeFromFirstMessageUseCase,
+    applyTreeTitle: title.applyTreeTitle,
+  });
   const exports = useTreeExports({
     session,
     activeTreeIdRef,
@@ -162,8 +177,6 @@ export const useLoomTreeChatController = () => {
   const nodeActions = useNodeActions({
     rows,
     session,
-    activeTreeIdRef,
-    router,
     nodeRepo: repositories.nodeRepo,
     refreshRowsAndContinuations,
   });
@@ -194,10 +207,12 @@ export const useLoomTreeChatController = () => {
   // A single generation waits while several stream, so the path and rows
   // aren't rebuilt under them. Making a card current (rewind) still works.
   const generating = sending || parallelRail.running;
+  const retraceBranch = useRetraceBranch({
+    rows,
+    edgeRepo: repositories.edgeRepo,
+    rewindToNode,
+  });
   const { editTarget, setEditTarget, startEditForNode } = useEditNode({
-    session,
-    editNodeId,
-    editRequestId,
     getRowById: nodeActions.getRowById,
     nodeRepo: repositories.nodeRepo,
     continuations,
@@ -217,6 +232,7 @@ export const useLoomTreeChatController = () => {
     getRowById: nodeActions.getRowById,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     continuations,
     refreshRows,
     refreshRowsAndContinuations,
@@ -226,7 +242,7 @@ export const useLoomTreeChatController = () => {
     generateDialogueContinuationUseCase:
       useCases.generateDialogueContinuationUseCase,
   });
-  const onSend = useSendTurn({
+  const { onSend, sendPrompt } = useSendTurn({
     session,
     sending: generating,
     setSending,
@@ -238,13 +254,45 @@ export const useLoomTreeChatController = () => {
     setEditTarget,
     shouldAutoScrollRef,
     streaming,
+    stopGeneration: stopGeneration.run,
     markAsNonEphemeral,
     refreshRowsAndContinuations,
     maybeGenerateTreeTitle,
+    titleFromFirstMessage,
     credentialStore: adapters.credentialStore,
     onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
     editDialogueNodeUseCase: useCases.editDialogueNodeUseCase,
     sendDialogueTurnUseCase: useCases.sendDialogueTurnUseCase,
+  });
+
+  const activePathNodeIds = useMemo(() => rows.map((row) => row.id), [rows]);
+  const nodeSheet = useNodeSheet({
+    rewindToNode,
+    retraceBranch,
+    copyNodeText: nodeActions.copyNodeText,
+    toggleBookmark: nodeActions.toggleBookmark,
+    togglePrune: nodeActions.togglePrune,
+    startEditForNode,
+    renameBookmark: async (nodeId, label) => {
+      const next = await textPrompt.prompt(renameBookmarkPrompt(label));
+      if (next !== null) {
+        await nodeActions.renameBookmark(nodeId, next);
+      }
+    },
+  });
+  const openNodeSheet = nodeSheet.open;
+  const openNodeInfo = useCallback(
+    (nodeId: ULID) => openNodeSheet(nodeId, 'info'),
+    [openNodeSheet]
+  );
+  const openContinuationSheet = useCallback(
+    (nodeId: ULID) => openNodeSheet(nodeId, 'continuation'),
+    [openNodeSheet]
+  );
+  useRouteNodeSheet({
+    nodeSheetId,
+    ready: !loading && session !== null,
+    openNodeInfo,
   });
 
   const { onMessageAction, onNodeTap: toggleRailForNode } = useMessageActions({
@@ -253,7 +301,7 @@ export const useLoomTreeChatController = () => {
     startEditForNode,
     rewindToNode,
     copyNodeText: nodeActions.copyNodeText,
-    openNodeDetail: nodeActions.openNodeDetail,
+    openNodeInfo,
     toggleBookmark: nodeActions.toggleBookmark,
     togglePrune: nodeActions.togglePrune,
   });
@@ -265,19 +313,34 @@ export const useLoomTreeChatController = () => {
     useContinuationGestures({
       continuations,
       rewindToNode,
+      retraceBranch,
       copyNodeText: nodeActions.copyNodeText,
-      openNodeDetail: nodeActions.openNodeDetail,
+      openContinuationSheet,
     });
 
+  const treeId = session?.treeId ?? activeTreeIdRef.current;
   const sheets = useChatSheets({
-    treeId: session?.treeId ?? activeTreeIdRef.current,
-    rewindToNode,
-    openNodeDetail: nodeActions.openNodeDetail,
+    treeId,
     onSessionInvalidated: reinitializeSession,
   });
-  const composerMode = toComposerMode(editTarget);
+  const menuSheets = useTreeMenuSheets({
+    treeId,
+    treeRepo: repositories.treeRepo,
+    nodeRepo: repositories.nodeRepo,
+    exportTree: exports.exportTree,
+    setError,
+    refreshKey: rows,
+  });
+  const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.
   const needsAgent = !loading && session !== null && session.model === null;
+  useSendFirstMessage({
+    treeId: session?.treeId,
+    loaded: !loading && session !== null,
+    canGenerate: !needsAgent,
+    sendPrompt,
+    keepAsDraft: setInput,
+  });
 
   return {
     loading,
@@ -290,6 +353,10 @@ export const useLoomTreeChatController = () => {
     rows,
     streamingAssistantText: streaming.streamingText,
     onSend,
+    // A send or regenerate is streaming and can be stopped from the composer.
+    canStop: stopGeneration.stoppable,
+    stopping: stopGeneration.stopping,
+    onStop: stopGeneration.stop,
     onMessageAction,
     onMessageListScroll,
     onComposerFocus,
@@ -306,8 +373,8 @@ export const useLoomTreeChatController = () => {
       visible: continuations.visible,
       loading: continuations.loading,
       sourceNodeId: continuations.sourceNodeId,
-      sourceLocalId: continuations.sourceLocalId,
       cards: parallelRail.cards,
+      streamingModelLabel: session?.model?.modelIdentifier ?? '',
       generation: {
         count: parallelRail.count,
         onChangeCount: parallelRail.setCount,
@@ -321,16 +388,24 @@ export const useLoomTreeChatController = () => {
       onStopSlot: parallelRail.stop,
       error: continuations.error,
     },
-    bookmarks: sheets.bookmarks,
-    dialogueSettings: sheets.dialogueSettings,
-    titleEditor: {
-      visible: title.titleEditorVisible,
-      title: title.treeTitle,
-      open: () => title.setTitleEditorVisible(true),
-      close: () => title.setTitleEditorVisible(false),
-      save: title.saveTreeTitle,
+    bookmarks: menuSheets.bookmarks,
+    openBookmark: (nodeId: ULID) => openNodeSheet(nodeId, 'bookmark'),
+    nodeSheet: {
+      target: nodeSheet.target,
+      activePathNodeIds,
+      close: nodeSheet.close,
+      onDismissed: nodeSheet.onDismissed,
+      onInfoAction: nodeSheet.onInfoAction,
+      onContinuationAction: nodeSheet.onContinuationAction,
+      onBookmarkAction: nodeSheet.onBookmarkAction,
     },
-    exports,
+    dialogueSettings: sheets.dialogueSettings,
+    editTitle: () => void title.editTreeTitle(),
+    // Android's stand-in for the alerts with a text field.
+    textPrompt: textPrompt.pending,
+    description: menuSheets.description,
+    exportSheet: menuSheets.exportSheet,
+    exportPath: exports.exportPathMarkdown,
     tags: sheets.tags,
     scrollRef,
     inputRef,

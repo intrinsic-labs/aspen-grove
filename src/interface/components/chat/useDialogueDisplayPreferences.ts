@@ -2,9 +2,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import type { IUserPreferencesRepository } from '@application/repositories';
 import { sameDisplayPreferences } from './display-preferences-equality';
+import { toMessageType } from './message-type';
 import type { ChatDisplayPreferences } from './types';
+import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 
-const DEFAULT_FONT_SIZE = 17;
+// LoomApp.swift:33
+const DEFAULT_FONT_SIZE = loomUiTokens.typography.defaultMessageFontSize;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 30;
 const DEFAULT_CORNER_RADIUS = 8;
@@ -19,9 +22,6 @@ const SUPPORTED_FONT_FAMILIES = new Set<string>([
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
-const toMessageLineHeight = (messageFontSize: number): number =>
-  Math.round(messageFontSize * 1.58);
-
 const normalizeFontFamily = (fontFace?: string): string | undefined => {
   if (!fontFace) {
     return undefined;
@@ -30,13 +30,16 @@ const normalizeFontFamily = (fontFace?: string): string | undefined => {
   return SUPPORTED_FONT_FAMILIES.has(normalized) ? normalized : undefined;
 };
 
-const createDefaults = (): ChatDisplayPreferences => ({
-  userNodeViewStyle: 'filled',
-  userNodeCornerRadius: DEFAULT_CORNER_RADIUS,
-  messageFontSize: DEFAULT_FONT_SIZE,
-  messageLineHeight: toMessageLineHeight(DEFAULT_FONT_SIZE),
-  messageFontFamily: undefined,
-});
+const createDefaults = (): ChatDisplayPreferences => {
+  const type = toMessageType(DEFAULT_FONT_SIZE, undefined);
+  return {
+    userNodeViewStyle: 'filled',
+    userNodeCornerRadius: DEFAULT_CORNER_RADIUS,
+    messageFontSize: type.fontSize,
+    messageLineHeight: type.lineHeight,
+    messageFontFamily: undefined,
+  };
+};
 
 export type DialogueDisplayPreferences = {
   readonly preferences: ChatDisplayPreferences;
@@ -62,10 +65,10 @@ export const useDialogueDisplayPreferences = ({
   const load = useCallback(async () => {
     try {
       const userPreferences = await userPreferencesRepo.get();
-      const messageFontSize = clamp(
-        userPreferences.fontSize,
-        MIN_FONT_SIZE,
-        MAX_FONT_SIZE
+      const messageFontFamily = normalizeFontFamily(userPreferences.fontFace);
+      const type = toMessageType(
+        clamp(userPreferences.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE),
+        messageFontFamily
       );
 
       const next: ChatDisplayPreferences = {
@@ -75,9 +78,9 @@ export const useDialogueDisplayPreferences = ({
           0,
           MAX_CORNER_RADIUS
         ),
-        messageFontSize,
-        messageLineHeight: toMessageLineHeight(messageFontSize),
-        messageFontFamily: normalizeFontFamily(userPreferences.fontFace),
+        messageFontSize: type.fontSize,
+        messageLineHeight: type.lineHeight,
+        messageFontFamily,
       };
       // Every focus reloads; keep the same object when nothing changed so
       // the message list doesn't re-render.

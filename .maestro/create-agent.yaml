@@ -1,10 +1,8 @@
-# Create a shared agent from the first template (P1), from any top-level
-# screen. Needs no key: nothing is sent. Ends on the Settings screen.
+# Create a shared agent from the first template (P1), starting on Home.
+# Needs no key: nothing is sent. Ends on the Settings screen.
 appId: com.intrinsiclabs.aspengrove
 ---
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-settings
+- runFlow: open-settings.yaml
 - tapOn:
     id: settings-link-agents
 - tapOn:

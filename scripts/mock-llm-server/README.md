@@ -46,6 +46,11 @@ Replies are deterministic: "Mock reply #<request number>." then words seeded by
 the request number and the last message, so parallel cards differ but a rerun
 in the same order repeats them.
 
+Auto-Title's call (non-streaming, with the "You title conversations." system
+prompt or a user message opening "Title this conversation.";
+`title-request.ts`) is answered with a title instead: "Mock title #<request
+number>". It counts as a request, so `--fail-every` can fail it too.
+
 Two things about failures, both from the app's retry policy
 (`src/application/services/llm/retry.ts`):
 

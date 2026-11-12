@@ -44,34 +44,37 @@ listed here.
 
 A fresh install, with no keys, no model agent and no trees, opens on **Home**
 (`home-welcome`) and Home at once opens **onboarding** (`onboarding-screen`) over it, once:
-connect a provider, choose an agent, land in a first tree. Startup creates the human owner
+six pages of Latent Spaces' introduction, then connect a model and land in a first tree. Startup creates the human owner
 agent and a grove named "My Grove", but **no model agent**. Onboarding shows only while
 `user_preferences.onboarding_completed_at` is unset and there is no shared model agent
-(`src/application/services/onboarding/first-run.ts`); finishing or skipping sets the date,
-so an install that skipped, or one that already had an agent, stays on Home. After a skip,
-Home and an empty Loom Trees list show a one-line setup hint with its action
-(`home-setup-hint` / `home-setup-action`, `trees-setup-hint` / `trees-setup-action`):
-"Set up" reopens onboarding when there is no agent, "Add key" opens the Connections sheet
+(`src/application/services/onboarding/first-run.ts`); Begin Weaving sets the date, so an
+install that finished, or one that already had an agent, stays on Home. A swipe down
+skips it for that launch. After a skip,
+Home shows a one-line setup hint with its action above its tree list
+(`home-setup-hint` / `home-setup-action`):
+"Set up" reopens onboarding on its setup page when there is no agent, "Add key" opens the Connections sheet
 when the default agent is on OpenRouter and no key is stored. Two paths unlock everything
 else, and the Reach lines below refer to them:
 
-- **P1, create an agent:** the onboarding path (`onboarding-provider-openrouter` → paste a
-  key into `connections-openrouter-key-input` → `onboarding-continue` → keep the
-  preselected `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`), which
-  also lands in a tree (P2). From Settings instead: `drawer-menu-button` →
-  `drawer-nav-settings` → `settings-link-agents` → `settings-agents-new` → pick a template
+- **P1, create an agent:** the onboarding path (`onboarding-next` six times →
+  `onboarding-openrouter-key` → paste a key into `connections-openrouter-key-input` →
+  `connections-openrouter-key-save` → keep the preselected
+  `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`; or LM Studio, see
+  `onboarding.connect`), which also lands in a tree (P2). From Settings instead: `home-settings-button` →
+  `settings-link-agents` → `settings-agents-new` → pick a template
   (`agent-editor-template-*`) or a provider tab (`agent-editor-model-provider-openrouter` /
   `-lmstudio`) and a model row (`agent-editor-model-option-<model id>`, or type an id into
   `agent-editor-model-search-input` and tap `agent-editor-model-custom`) →
   `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
   key: the OpenRouter key in Connections, or a reachable LM Studio server. A build with
   `EXPO_PUBLIC_OPENROUTER_API_KEY` set falls back to that key (`provider-key.ts`).
-- **P2, open a tree:** onboarding's `onboarding-begin` opens one. Otherwise, after P1:
-  `home-new-tree-button` on Home, `trees-empty-new-tree` on an empty Loom Trees list, or
-  `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` → "New Tree". This opens
-  the Dialogue screen (`chat-screen`) on an empty, *ephemeral* tree. If you go back without
-  sending, the tree is deleted (see `chat.ephemeral-discard`). Once a tree exists,
-  `drawer-recents-row-<treeId>` or `trees-list-row-<treeId>` reopens it.
+- **P2, open a tree:** onboarding's `onboarding-begin` opens one.
+  The first tree opened shows Getting Started over it (`onboarding.tree`); `tree-onboarding-begin`
+  closes it. Otherwise, after P1: type
+  a first message into Home's `home-composer-input` and tap `home-composer-send`. The tree
+  is created, opens on the Dialogue screen (`chat-screen`) and sends that message, and the
+  reply streams in (`home.composer`). Once a tree exists, `home-trees-row-<treeId>` on Home
+  reopens it. Every pushed screen returns to Home with the native back button (`BackButton`).
 
 Startup does not seed a tree: `runStartupOrchestrator` can create a "First Loom Tree", but
 `AppServicesProvider` calls it with `ensureDialogueSmokeTreeIfEmpty: false`. So "no trees"
@@ -84,30 +87,32 @@ stays until the user makes one.
 - A few ids exist in code only as templates (`settings-link-${route}`,
   `settings-voice-${name}`), so grepping for the literal id finds nothing. The entries name the
   template; search for its prefix.
-- An id written like `trees-list-row-<treeId>` has a ULID or other runtime suffix. Find the
-  static parent (`trees-list`) first, then the row by its visible text, or read ids from the
-  database.
+- An id written like `home-trees-row-<treeId>` has a ULID or other runtime suffix. Find the
+  static parent (`home-trees-list`) first, then the row by its visible text, or read ids from
+  the database.
 - **Native context-menu items have no testID** (`react-native-context-menu-view`). Long-press
   the trigger (for a message or a continuation card), or tap it for the `···` header menus,
   then pick the item by its visible title. Those entries say `none — native context menu
   item; reach via long-press on <testID>`.
-- The three `···` header triggers (`trees-menu-button`, `chat-menu-button`,
-  `node-detail-menu-button`) are `HeaderIconButton` Pressables with no `onPress`, inside a
-  native `ContextMenu` in `dropdownMenuMode`. A tap on them reaches the native view, which opens
-  the menu.
+- The three `···` triggers (`home-menu-button`, `chat-menu-button`,
+  `node-sheet-menu-button`) are Pressables with no `onPress` (`HeaderIconButton`, or the
+  sheet's `GlassIconButton`), inside a native `ContextMenu` in `dropdownMenuMode`. A tap on
+  them reaches the native view, which opens the menu.
 - **Nested Pressables on iOS.** A `Pressable` is `accessible` by default. On iOS that can hide
   a nested Pressable's identifier from XCUITest-based drivers such as Maestro (Detox walks the
-  view tree and is less affected). Two places nest a Pressable this way:
-  `bookmarks-sheet-row-details-<nodeId>` inside `bookmarks-sheet-row-<nodeId>`, and
+  view tree and is less affected). One place nests a Pressable this way:
   `settings-agents-row-make-default-<agentId>` / `settings-agents-row-delete-<agentId>`
-  inside `settings-agents-row-<agentId>`. They were left as they are, because changing
+  inside `settings-agents-row-<agentId>`. It was left as it is, because changing
   `accessible` would change VoiceOver behavior. If the inner id isn't found, tap its visible
-  text ("Details", "Make default", "Delete").
-- Settings screens **autosave** about 450 ms after the last change. There is no Save button.
+  text ("Make Default", "Delete").
+- Settings screens **autosave** about 450 ms after the last change. There is no Save button,
+  except in the OpenRouter key sheet (`connections-openrouter-key-save`), as in Latent Spaces.
   `settings-status-saving` shows while a save runs and `settings-status-error` shows if it
   fails.
-- System dialogs (`Alert.alert`, the document picker, the share sheet) are native and have no
-  testIDs.
+- System dialogs (`Alert.alert`, `Alert.prompt`, the document picker, the share sheet) are
+  native and have no testIDs; pick their buttons by title. On Android an alert with a text
+  field is `TextPromptDialog` instead: `text-prompt`, `text-prompt-input`,
+  `text-prompt-save`, `text-prompt-cancel`.
 
 ## App shell
 
@@ -121,101 +126,134 @@ stays until the user makes one.
 - **Selector:** working — `app-bootstrap-loading` (spinner), `app-bootstrap-error` (failure text)
 - **Code:** `src/interface/composition/AppServicesProvider.tsx#AppBootstrapGate`, `src/infrastructure/bootstrap/run-startup-orchestrator.ts`, `src/application/use-cases/InitializeAppDefaultsUseCase.ts`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, through the Watermelon
-  repositories (schema v9 adds `user_preferences.onboarding_completed_at`)
+  repositories (schema v9 adds `user_preferences.onboarding_completed_at`, v10
+  `user_preferences.tree_onboarding_completed_at`)
 - **Status:** live
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
   The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
 
-### Navigation drawer
-- **ID:** `nav.drawer`
-- **Purpose:** A slide-out drawer with the main destinations: Loom Trees, Search and Settings.
-  Home is reached through the drawer route `index`.
-- **Where:** Hamburger at the top left of Home, Loom Trees, Search and Settings. The drawer
-  slides in from the left over 82% of the width.
-- **Reach:** Cold start → `drawer-menu-button`.
-- **Requires:** none
-- **Selector:** working — `drawer-menu-button` (opens), `drawer-root` (drawer panel), `drawer-nav-trees`, `drawer-nav-search`, `drawer-nav-settings`
-- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`, `src/interface/components/drawer/DrawerMenuButton.tsx`, `src/interface/components/drawer/useDrawerHeaderStyle.ts`, `src/app/(drawer)/_layout.tsx`
-- **Backend:** none — client-only
-- **Status:** live
-- **Notes:** The drawer has no Home row. `NAV_ITEMS` holds trees, search and settings only,
-  although `(drawer)/_layout.tsx` declares `index` with the label "Home". Once you leave
-  Home, iOS has no in-app way back to it. Android's back button returns to the drawer's first
-  route (Home). To reach Home on iOS, relaunch the app. Confirm on the first walk.
-
-### Recent trees (drawer)
-- **ID:** `nav.recents`
-- **Purpose:** Lists dialogue trees by most recent message, so you can jump straight into one.
-- **Where:** Drawer, under the "Recents" label.
-- **Reach:** Cold start → `drawer-menu-button`. Rows appear once a tree exists (P2, then send).
-- **Requires:** At least one non-archived dialogue tree, for rows to show.
-- **Selector:** working — `drawer-recents-list`, rows `drawer-recents-row-<treeId>`
-- **Code:** `src/interface/components/drawer/AppDrawerContent.tsx`
-- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`
-- **Status:** live
-- **Notes:** The list reloads each time the drawer opens. When empty it shows "No loom trees yet."
-
 ## Home and trees
 
-### Home (welcome)
+### Home
 - **ID:** `home.welcome`
-- **Purpose:** A quiet landing screen with a greeting and one entry point into a new tree. Until
-  a tree can start, the entry point is the step that unblocks it (`setup.hints`). On a first
-  run it opens onboarding.
-- **Where:** The drawer's initial screen.
-- **Reach:** Cold start, then `onboarding-skip` on a fresh install. The drawer has no Home row
-  (see `nav.drawer`).
+- **Purpose:** Latent Spaces' one landing screen (`HomeScreenView.swift`): a greeting by the
+  time of day and the date, every dialogue tree most recent first, and a composer whose first
+  message starts a new tree. There is no drawer: what it reached lives behind the toolbar
+  (`home.menu`, `home.settings-button`). On a first run it opens onboarding.
+- **Where:** Route `index`, the root of the app's stack, under a transparent navigation bar
+  with the `···` menu at the top left and the Settings button at the top right. Greeting in
+  Cardo 36 ("Good Evening.\nWelcome to Aspen Grove.", or "Good Evening,\n<name>." once a
+  display name other than the default "Human" is set; the welcome line shrinks a little to
+  stay on one line), the date line ("Sun, November 08") with a time-of-day glyph in the
+  mono face, the trees as one inset-grouped card, the composer floating at the bottom.
+- **Reach:** Cold start, then swipe onboarding down on a fresh install. From any pushed screen,
+  the native back button (`BackButton`).
 - **Requires:** none
-- **Selector:** working — `home-welcome` (screen), `home-new-tree-button` (only once ready), `home-setup-hint`, `home-setup-action`, `home-error`
-- **Code:** `src/interface/components/home/WelcomeView.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/(drawer)/index.tsx`
+- **Selector:** working — `home-welcome` (screen), `home-greeting`, `home-date`, `home-error`
+- **Code:** `src/interface/components/home/HomeView.tsx`, `src/interface/components/home/DateHeader.tsx`, `src/interface/components/home/greeting.ts`, `src/interface/components/home/useDisplayName.ts`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/index.tsx`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences.display_name` via `WatermelonUserPreferencesRepository#get`; setup status as in `setup.hints`
 - **Status:** live
-- **Notes:** The greeting changes with the time of day ("Up late", "Morning", "Afternoon",
-  "Evening"). No screen sets `displayName`, so no name is shown. Nothing shows under the
-  greeting for the moment the setup status takes to load.
+- **Notes:** The greeting hours are Latent Spaces': "Good Early Morning" before 5,
+  "Good Morning" to 12, "Good Afternoon" to 17, "Good Evening" after; the time is re-read when
+  Home comes back into view. No screen sets `displayName` yet, so the nameless greeting shows.
+  A tap on the greeting dismisses the keyboard. Errors from the list, import, rename or
+  delete show in `home-error` above the list.
 
-### Create a loom tree
-- **ID:** `trees.create`
-- **Purpose:** Creates a new dialogue tree with the default model agent and opens it with the
-  composer focused.
-- **Where:** The New Loom Tree button on Home, or the "New Tree" item in the Loom Trees `···`
-  menu.
-- **Reach:** P1, then `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
-  "New Tree". From a cold start you can use Home's `home-new-tree-button` instead.
-- **Requires:** A model agent (P1). Without one, the menu's "New Tree" opens onboarding
-  instead (there is no "No agents yet" error any more).
-- **Selector:** working — `home-new-tree-button`, `trees-empty-new-tree`; menu item none — native context menu item; reach via a tap on `trees-menu-button`
-- **Code:** `src/interface/hooks/useCreateLoomTree.ts`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
-- **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
-  and `user_preferences.default_model_agent_id`
+### Home toolbar menu
+- **ID:** `home.menu`
+- **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
+  Grove's Search and tag filter: Import OpenLoom Tree (its own group), OpenLoom Docs, Info &
+  Tutorials, Show Onboarding, then Search and Filter by Tag.
+- **Where:** Home, top left (`ellipsis.circle`), a native pull-down menu.
+- **Reach:** Cold start → `home-menu-button`, then the item by its title.
+- **Requires:** none. "Filter by Tag" shows once the grove has a tag.
+- **Selector:** working — `home-menu-button`; items none — native context menu item; reach via a tap on `home-menu-button` ("Import OpenLoom Tree", "OpenLoom Docs", "Info & Tutorials", "Show Onboarding", "Search", "Filter by Tag")
+- **Code:** `src/interface/components/home/HomeMenu.tsx`, `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeHeader.tsx`, `src/interface/components/home/home-links.ts`
+- **Backend:** none — client-only (each item's own feature has its backend)
 - **Status:** live
-- **Notes:** The new tree opens with `ephemeral: '1'` and is deleted if you go back before
-  sending (`chat.ephemeral-discard`).
+- **Notes:** OpenLoom Docs opens the Open Loom spec in the repository and Info & Tutorials
+  the repository's README, in Safari (Latent Spaces links to its author's site). Show
+  Onboarding opens `onboarding.first-run`. Search pushes `search.nodes`.
 
-### Loom tree list
-- **ID:** `trees.list`
-- **Purpose:** All dialogue trees in the grove, most recent first, each with its last-message
-  time. Tap a row to open it.
-- **Where:** Drawer → Loom Trees.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees`.
-- **Requires:** none. When empty it shows "No loom trees yet." with a New Loom Tree button
-  (`trees-empty-new-tree`), or, before a tree can start, the setup hint (`setup.hints`).
-  With a tag filter on and no match it shows "No trees with this tag."
-- **Selector:** working — `trees-screen`, `trees-list`, rows `trees-list-row-<treeId>`, `trees-empty`, `trees-empty-new-tree`, `trees-setup-hint`, `trees-setup-action`, `trees-error`, `trees-menu-button`
-- **Code:** `src/interface/components/LoomTreeListView.tsx`, `src/interface/components/trees/TreesEmptyState.tsx`, `src/app/(drawer)/trees.tsx`
+### Settings button
+- **ID:** `home.settings-button`
+- **Purpose:** Pushes Settings from Home, as Latent Spaces' `figure.wave.circle.fill`
+  toolbar button does (`HomeScreenView.swift:157-163`).
+- **Where:** Home, top right: a white disc with a waving figure.
+- **Reach:** Cold start → `home-settings-button`.
+- **Requires:** none
+- **Selector:** working — `home-settings-button`
+- **Code:** `src/interface/components/home/HomeSettingsButton.tsx`
+- **Backend:** none — client-only
+- **Status:** live
+
+### Start a tree from Home's composer
+- **ID:** `home.composer`
+- **Purpose:** "Begin a new loom tree": the first message creates a tree with the default
+  model agent, opens it and sends the message there through the tree's own send path, so the
+  reply streams in with the thinking indicator and stop button. The tree takes the message's
+  first four words as its title.
+- **Where:** Home, a composer floating at the bottom (the tree chat's field: thin material,
+  radius 20, green stroke while focused, send arrow only with text). It rides the keyboard.
+- **Reach:** P1 → `home-composer-input` → type → `home-composer-send`.
+- **Requires:** A model agent (P1). Without one, sending opens onboarding instead and keeps
+  the text. Generating the reply needs a key or server, as `chat.composer`.
+- **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
+- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
+- **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
+  and `user_preferences.default_model_agent_id`; then as `chat.composer`
+- **Status:** live
+- **Notes:** The field focuses itself once, when Home first appears after launch (not over
+  onboarding), as Latent Spaces' does. The message waits in memory until the tree has loaded,
+  then is sent; nothing is written before that. The tree opens `ephemeral`: if the message
+  can't be saved (no key, say), it goes back into the tree's composer, and leaving without
+  sending deletes the empty tree (`chat.ephemeral-discard`). A tree that loads without a
+  usable agent keeps the message as its draft.
+
+### Recent trees
+- **ID:** `home.trees`
+- **Purpose:** Every active dialogue tree in the grove, most recent first (last message, else
+  last edit), each with its title on one line and its date. Tap a row to open it.
+- **Where:** Home, one inset-grouped card under the date line; it scrolls under the greeting.
+- **Reach:** Cold start; rows appear once a tree exists (P2, or `trees.import`).
+- **Requires:** none. With no trees the card is simply absent, as in Latent Spaces.
+- **Selector:** working — `home-trees-list`, rows `home-trees-row-<treeId>`
+- **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
+- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (IBM Plex
+  Mono standing in for Calling Code), the date is `Date.formatted()`'s "3/4/2025, 2:01 PM".
+
+### Rename or delete a tree (swipe)
+- **ID:** `home.trees-swipe`
+- **Purpose:** Latent Spaces' swipe actions on a tree row (`HomeScreenView.swift:77-98`):
+  swipe right for an orange "Edit Name", which asks for a new title in a "Loom Tree Name"
+  alert; swipe left for a red Delete, which removes the tree with its nodes at once.
+- **Where:** Home, on a tree row. One row is open at a time.
+- **Reach:** A tree exists → swipe right on `home-trees-row-<treeId>` →
+  `home-trees-rename-<treeId>` → type → "Save"; or swipe left →
+  `home-trees-delete-<treeId>`.
+- **Requires:** A tree.
+- **Selector:** working — `home-trees-rename-<treeId>`, `home-trees-delete-<treeId>`; the rename alert is native (buttons "Save", "Cancel")
+- **Code:** `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/TreeRowAction.tsx`, `src/interface/components/home/useTreeRowActions.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/`
+- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#update` (rename) and
+  `#hardDelete` (delete: nodes, edges, paths and tree-owned agents too)
+- **Status:** live
+- **Notes:** Delete asks nothing first, as in Latent Spaces. Android has no alert with a
+  text field, so it asks in `TextPromptDialog` (see the driving notes), as the tree's Edit
+  Title does.
 
 ### Filter trees by tag
 - **ID:** `trees.tag-filter`
-- **Purpose:** Narrows the tree list to trees carrying one tag. Tap the active chip again to
-  clear it.
-- **Where:** A row of tag chips above the Loom Trees list.
+- **Purpose:** Narrows Home's list to the trees carrying one tag. "All Trees", or the clear
+  button by the tag's name, shows every tree again.
+- **Where:** Home menu → "Filter by Tag" submenu (the active tag is checked); while a tag
+  filters, its name sits above the card with a clear button.
 - **Reach:** P2 → `chat-menu-button` → "Tags" → create a tag (see `chat.tags`) → back →
-  `drawer-menu-button` → `drawer-nav-trees` → `trees-tag-filter-chip-<tagId>`.
-- **Requires:** At least one tag in the grove. The chip row is hidden otherwise.
-- **Selector:** working — `trees-tag-filter`, chips `trees-tag-filter-chip-<tagId>`
-- **Code:** `src/interface/components/LoomTreeListView.tsx`
+  `home-menu-button` → "Filter by Tag" → the tag's name.
+- **Requires:** At least one tag in the grove; the submenu is hidden otherwise.
+- **Selector:** working — `home-tag-filter`, `home-tag-filter-clear`; submenu items none — native context menu item; reach via a tap on `home-menu-button`
+- **Code:** `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/HomeListHeader.tsx`
 - **Backend:** WatermelonDB `tag_assignments` via `WatermelonTagRepository#findItemsByTag`
 - **Status:** live
 
@@ -224,17 +262,19 @@ stays until the user makes one.
 - **Purpose:** Picks a file and imports it as one or more dialogue trees. It accepts Open Loom
   v1 and v2, and the legacy MiniLoom, Socketteer Loom and Loomsidian formats, then reports
   what was imported.
-- **Where:** The "Import Tree" item in the Loom Trees `···` menu. The result appears in a
-  native "Import complete" alert.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-trees` → `trees-menu-button` →
-  "Import Tree" → OS document picker.
+- **Where:** The "Import OpenLoom Tree" item at the top of Home's `···` menu. The result
+  appears in a native "Import complete" alert, and the tree in Home's list.
+- **Reach:** Cold start → `home-menu-button` → "Import OpenLoom Tree" → OS document picker.
 - **Requires:** A file on the device, simulator or Files app. No agent needed.
-- **Selector:** none — native context menu item; reach via a tap on `trees-menu-button`; the picker and the alert are native
-- **Code:** `src/interface/components/LoomTreeListView.tsx#onImportTree`, `src/interface/services/loom-file-sharing.ts#pickAndReadTextFile`, `src/application/use-cases/ImportLoomTreeUseCase.ts`, `src/application/services/open-loom/import/`
+- **Selector:** none — native context menu item; reach via a tap on `home-menu-button`; the picker and the alert are native
+- **Code:** `src/interface/components/home/useImportTree.ts`, `src/interface/services/loom-file-sharing.ts#pickAndReadTextFile`, `src/application/use-cases/ImportLoomTreeUseCase.ts`, `src/application/services/open-loom/import/`
 - **Backend:** WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`, `path_states`
 - **Status:** live
-- **Notes:** Errors land in `trees-error`. The format is sniffed from content
-  (`detect.ts`), not from the file extension.
+- **Notes:** Errors land in `home-error`. The format is sniffed from content
+  (`detect.ts`), not from the file extension. Node roles map to `human`, `model` and
+  `system` (`mixed` reads as human); system nodes render and send as system messages
+  (`chat.dialogue`) and export back as `author.role: "system"`. The menu's glyph shows an
+  hourglass while an import runs.
 
 ### Setup hints (no agent, no key)
 - **ID:** `setup.hints`
@@ -242,14 +282,13 @@ stays until the user makes one.
   under it: "Choose a model to start your first tree." with "Set up" (opens onboarding),
   or "Add your OpenRouter key to start a tree." with "Add key" (opens the Connections
   sheet).
-- **Where:** Home, in place of New Loom Tree; the empty Loom Trees list, under "No loom
-  trees yet."
-- **Reach:** Fresh install → `onboarding-skip` → Home shows `home-setup-hint`. For "no key":
+- **Where:** Home, above the tree list.
+- **Reach:** Fresh install → swipe onboarding down → Home shows `home-setup-hint`. For "no key":
   create an OpenRouter agent in Settings → Agents without storing a key.
 - **Requires:** Not ready to start a tree: no model agent, or an OpenRouter default agent and
   no key. LM Studio reachability is not checked here; a server that is down is reported
   when generation fails (`chat.dialogue`).
-- **Selector:** working — `home-setup-hint`, `home-setup-action`, `trees-setup-hint`, `trees-setup-action`
+- **Selector:** working — `home-setup-hint`, `home-setup-action`
 - **Code:** `src/interface/components/setup/SetupHint.tsx`, `src/interface/components/setup/setup-hint-copy.ts`, `src/interface/hooks/useSetupStatus.ts`, `src/application/use-cases/GetSetupStatusUseCase.ts`, `src/application/services/onboarding/setup-status.ts`
 - **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
   `onboarding_completed_at`); `expo-secure-store` `openrouter_api_key` (read only)
@@ -258,93 +297,117 @@ stays until the user makes one.
 
 ## Onboarding
 
-### First-run setup
+### First-run onboarding
 - **ID:** `onboarding.first-run`
-- **Purpose:** On a fresh install, a two-step setup (connect a provider, choose an agent) that
-  ends in a first tree. Skippable from every step.
-- **Where:** Route `onboarding`, a full screen over Home with no stack header. "1 of 2" /
-  "2 of 2" at the top, Back (step 2) at the left, Skip at the right, the step's button at
-  the bottom.
-- **Reach:** Cold start of a fresh install (it opens by itself), or `home-setup-action` /
-  `trees-setup-action` after a skip.
+- **Purpose:** Latent Spaces' first-launch sheet (`LoomOnboarding.swift`): the ASPEN GROVE
+  wordmark over pages you swipe or step through with Next. Six pages are Latent Spaces'
+  (three photos with a line each, then icon rows: weaving, keys, trees, help and links),
+  with its words where they are true of Aspen Grove. A seventh connects a model
+  (`onboarding.connect`), and Begin Weaving on it opens a first tree.
+- **Where:** Route `onboarding`, a modal sheet over Home (#1C1C1E, no header, no page dots,
+  no Skip). The wordmark in Cardo, the pager, then one capsule at the bottom: "Next"
+  (bordered) on pages 1-6, "Begin Weaving" (gold) on page 7. The intro pages sit in Latent
+  Spaces' 400 pt box; the setup page takes the whole height down to the button.
+- **Reach:** Cold start of a fresh install (it opens by itself), `home-menu-button` →
+  "Show Onboarding" (opens on page 1), or `home-setup-action` "Set up" and a send with no
+  agent (both open `/onboarding?start=setup`, on page 7).
 - **Requires:** none
-- **Selector:** working — `onboarding-screen`, `onboarding-step-indicator`, `onboarding-skip`, `onboarding-back`, `onboarding-error`
-- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/useOnboardingFlow.ts`, `src/interface/components/onboarding/OnboardingHeading.tsx`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`
-- **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set on finish and on
-  skip)
+- **Selector:** working — `onboarding-screen`, `onboarding-wordmark`, `onboarding-pager`, `onboarding-page-<n>` (1-7), `onboarding-next`, `onboarding-begin`, links `onboarding-link-openloom`, `onboarding-link-project`, `onboarding-link-issues`
+- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
+- **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set by Begin Weaving)
 - **Status:** live
-- **Notes:** Skip goes back to Home, which then shows the setup hint. It opens once per launch
-  at most, and never again after a finish or skip.
+- **Notes:** To skip, swipe the sheet down (`.maestro/skip-onboarding.yaml`). As in Latent
+  Spaces, that records nothing: Home shows the setup hint, and onboarding opens again on
+  the next launch until Begin Weaving is tapped. It opens once per launch at most. The links
+  open Safari. Photo credits are in `assets/images/onboarding/CREDITS.md`. Symbols are SF
+  Symbols through `expo-symbols`.
 
-### Onboarding: connect a provider
+### Onboarding: connect a model
 - **ID:** `onboarding.connect`
-- **Purpose:** Step 1. Choose OpenRouter (paste a key) or LM Studio (a server address and a
-  connection test), using the same fields and storage as Settings → Connections.
-- **Where:** `onboarding` step 1.
-- **Reach:** Fresh install → `onboarding-provider-openrouter` →
-  `connections-openrouter-key-input` → `onboarding-continue`; or
-  `onboarding-provider-lmstudio` → `connections-lmstudio-endpoint-input` →
-  `connections-lmstudio-test` → `onboarding-continue`.
-- **Requires:** none. Continue needs a key (OpenRouter) or an address (LM Studio); a
-  failing LM Studio test does not block it.
-- **Selector:** working — `onboarding-step-provider`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-continue`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/onboarding/ProviderStep.tsx`, `src/interface/components/onboarding/ProviderOption.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`
-- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
-  (secure store and `user_preferences.lmstudio_settings`); Continue saves at once
-- **Status:** live
-- **Notes:** The LM Studio token and auto-load rows are left out here; they stay in Settings.
-
-### Onboarding: choose an agent
-- **ID:** `onboarding.agent`
-- **Purpose:** Step 2. OpenRouter: the agent templates with the first ("Claude Sonnet
-  (Balanced)") preselected, plus "Customize…" for the full agent editor. LM Studio: the
-  models the server reports. Begin creates the agent (the first becomes the default), marks
-  onboarding done and replaces onboarding with a new tree.
-- **Where:** `onboarding` step 2.
-- **Reach:** `onboarding.connect` → `onboarding-continue` → (optionally
-  `onboarding-template-<key>`, or `onboarding-agent-customize` → edit → `agent-editor-submit`
-  "Use"; for LM Studio `onboarding-agent-model-option-<model id>`) → `onboarding-begin`.
+- **Purpose:** Page 7. Choose OpenRouter (add a key, pick a model template) or LM Studio (a
+  server address, a connection test, a model from the server), with the same storage as
+  Settings → Connections. Begin Weaving then creates the agent (the first becomes the
+  default), marks onboarding done and replaces onboarding with a new tree. With nothing
+  chosen yet, Begin Weaving marks onboarding done and closes it.
+- **Where:** `onboarding` page 7, a Form filling the height between the wordmark and Begin
+  Weaving, scrolling under soft top and bottom fades: Provider, then the OpenRouter key
+  rows or the LM Studio server. The Model section (`onboarding-templates` or
+  `onboarding-lmstudio-models`) appears only once a model can be picked: an OpenRouter key
+  is saved (or the build's `EXPO_PUBLIC_` key), or LM Studio's test reads Connected.
+- **Reach:** `onboarding-page-7` → OpenRouter: `onboarding-openrouter-key` → paste into
+  `connections-openrouter-key-input` → `connections-openrouter-key-save` → (optionally
+  `onboarding-template-<key>`) → `onboarding-begin`. LM Studio: `onboarding-provider-lmstudio`
+  → `connections-lmstudio-endpoint-input` → `connections-lmstudio-test` →
+  `onboarding-lmstudio-model-<model id>` → `onboarding-begin`.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
-  `onboarding-agent-model-error` says so in plain words with a refresh button
-  (`onboarding-agent-model-refresh`).
-- **Selector:** working — `onboarding-step-agent`, `onboarding-template-<key>`, `onboarding-agent-customize`, `onboarding-agent-custom`, `onboarding-begin`, LM Studio picker with prefix `onboarding-agent` (as in `settings.agents.model-picker`, provider tabs hidden); the customize sheet is `agent-editor-*` (`settings.agents.editor`)
-- **Code:** `src/interface/components/onboarding/AgentStep.tsx`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
-- **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
-  `onboarding_completed_at`), then the tree tables as in `trees.create`
+  `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
+- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
+- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
+  (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
+  `user_preferences` (`default_model_agent_id`, `onboarding_completed_at`) and the tree
+  tables as in `home.composer`
 - **Status:** live
-- **Notes:** Back from the new tree without sending discards it (`chat.ephemeral-discard`)
-  and returns to Home, which shows New Loom Tree.
+- **Notes:** Agent customizing lives in Settings → Agents only. The LM Studio token and
+  auto-load rows stay in Settings. Back from the new tree without sending discards it
+  (`chat.ephemeral-discard`).
+
+### Tree onboarding (Getting Started)
+- **ID:** `onboarding.tree`
+- **Purpose:** Latent Spaces' `LoomTreeOnboarding`: on the first tree opened, a sheet titled
+  "Loom Trees" / "Getting Started" with three tips (nodes and their menu, the on-branch
+  check, the [n] count) and Begin.
+- **Where:** A page sheet over the Dialogue screen.
+- **Reach:** Open any tree on an install that hasn't tapped Begin (P2), or `chat-menu-button`
+  → "Show Onboarding".
+- **Requires:** A tree.
+- **Selector:** working — `tree-onboarding-sheet`, `tree-onboarding-begin`; menu item none — native context menu item; reach via a tap on `chat-menu-button` ("Show Onboarding")
+- **Code:** `src/interface/components/onboarding/tree/`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/LoomTreeChatView.tsx`
+- **Backend:** WatermelonDB `user_preferences.tree_onboarding_completed_at` (schema v10),
+  set by Begin
+- **Status:** live
+- **Notes:** Swiping it down records nothing, as in Latent Spaces, so it shows again on the
+  next tree. It appears once the tree has slid in (the first tree replaces onboarding, and
+  iOS won't present one sheet while another is going away), and it hides the tree from
+  Maestro while open: wait for `chat-screen|tree-onboarding-begin`, then close it with
+  `.maestro/dismiss-tree-onboarding.yaml`. The perf setup opens the imported tree once,
+  untimed, to get it out of the way.
 
 ## Search
 
 ### Search node content
 - **ID:** `search.nodes`
 - **Purpose:** Full-text search across every tree's nodes, grouped by tree. Tap a result to
-  open its node detail, or tap a tree header to open the tree.
-- **Where:** Drawer → Search. The search bar is at the top.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-search` → type at least two
+  open its tree on that node's Node Info sheet (`node.sheet`), or tap a tree header to open
+  the tree.
+- **Where:** Route `search`, pushed from Home's menu, with the native back button. The
+  search bar is at the top.
+- **Reach:** Cold start → `home-menu-button` → "Search" → type at least two
   characters into `search-input`.
 - **Requires:** Nodes to search. When empty it prompts "Type at least two characters".
 - **Selector:** working — `search-screen`, `search-input`, `search-clear-button`, `search-done-button`, `search-results-list`, tree headers `search-results-tree-<treeId>`, rows `search-results-row-<nodeId>`
-- **Code:** `src/interface/components/SearchView.tsx`, `src/app/(drawer)/search.tsx`
+- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#searchByContent` (limit 100);
   `loom_trees` for titles
 - **Status:** live
-- **Notes:** The query is debounced by 250 ms. Archived trees are dropped from results.
+- **Notes:** The query is debounced by 250 ms. Archived trees are dropped from results. A
+  result pushes `tree/[treeId]` with a `nodeSheetId` param; the sheet opens once the tree has
+  loaded.
 
 ## Dialogue
 
 ### Dialogue view
 - **ID:** `chat.dialogue`
 - **Purpose:** Shows the active path of a tree as a conversation: human bubbles on the right,
-  model text in markdown on the left, and a caption under each node for bookmarks,
+  model text in markdown on the left, system messages centered without a bubble at 0.6
+  opacity (as Latent Spaces draws them), and a caption under each node for bookmarks,
   continuation count and pruned state.
 - **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
   title, `···` at the right).
-- **Reach:** P2, or `drawer-recents-row-<treeId>` / `trees-list-row-<treeId>`.
+- **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -357,6 +420,19 @@ stays until the user makes one.
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
   provider errors keep their `[provider:code]` detail.
+  **Thinking indicator:** while a single send or regenerate is in flight (the same state
+  that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
+  the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
+  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on, and
+  is not shown for parallel continuation cards.
+  **System messages:** a node with `authorType` `system` (an Open Loom node with
+  `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
+  `trees.import`; the app has no control that writes one yet) renders centered in the
+  message font at 0.6 opacity with no background, and its row is the same
+  `chat-message-row-<nodeId>`. It goes to the model in place on the path with the `system`
+  role; the agent prompt and tree context still go first, once
+  (`src/application/services/context/assemble-dialogue-context.ts`). Editing one saves an
+  edited system message. Export writes it back as `author.role: "system"`.
 
 ### Compose and send
 - **ID:** `chat.composer`
@@ -367,15 +443,22 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
-- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
-- **Notes:** The send icon shows `···` while sending and a checkmark while editing (label
-  "Save"). The provider key is read from SecureStore first, then from
+- **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
+  while the input is empty and shows a checkmark while editing (label "Save"). **Stop:**
+  while a reply (or a regenerate) streams, the button is a stop circle,
+  `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request
+  through the same `AbortSignal` a parallel card's stop uses. Text that already streamed is
+  saved as the reply with no marker (Latent Spaces' `stopStreaming`, LLMManager.swift:45),
+  exactly as a stopped parallel card is, and no error shows; a stop before any text keeps the user's message
+  and saves no reply. Leaving the screen stops it too. Saving an edit streams nothing and
+  shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
   Connections to generate." with `chat-error-action`.
@@ -397,37 +480,45 @@ stays until the user makes one.
 
 ### Message menu (copy, node info)
 - **ID:** `chat.message-menu`
-- **Purpose:** The long-press menu on a message, titled with its local id. It offers
-  Regenerate (model rows only), Continuations, Edit, Rewind To Node, Copy Text, Node Info,
-  Bookmark / Remove Bookmark, and Prune / Restore.
-- **Where:** A native context menu over the message bubble.
+- **Purpose:** The long-press menu on a message, untitled and in Latent Spaces' order
+  (NodeView.swift): [Regenerate Response · Continuations], Rewind To Node and Copy Text, a
+  divider, Node Info and Bookmark / Remove Bookmark, then Aspen Grove's Edit and Prune /
+  Restore after one more divider. Regenerate Response is on every node; Continuations is
+  disabled on a node without children and Rewind To Node on the current (last) node.
+- **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
+  horizontal ControlGroup; `react-native-context-menu-view` has none, so it is an inline
+  section.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuItems`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
-- **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info pushes the node
-  detail route (`node.detail`). The other items have their own entries below.
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`
+- **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
+  sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
 
 ### Regenerate a response
 - **ID:** `chat.regenerate`
-- **Purpose:** Replaces a model response with a new sibling generation from the same context.
-  Both are kept as branches.
-- **Where:** The "Regenerate" item in a model message's long-press menu.
-- **Reach:** P2 → send once → long-press the model row `chat-message-row-<nodeId>` →
-  "Regenerate".
-- **Requires:** A model message, plus a reachable provider.
+- **Purpose:** On a model message, draws a new sibling response from the same context (both
+  are kept as branches). On a human or system message, draws a reply under it, which is how a
+  send that failed gets its reply.
+- **Where:** "Regenerate Response" in any message's long-press menu.
+- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Regenerate Response".
+- **Requires:** A message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
+- **Notes:** While it streams, `chat-composer-stop` stops it as it stops a send: streamed
+  text is kept, unmarked, as the new sibling; a stop before
+  any text saves nothing and the old response comes back.
 
 ### Edit as branch
 - **ID:** `chat.edit-branch`
 - **Purpose:** Edits a message. Saving creates an edited sibling node, so the original branch
   is kept, and the active path moves onto the edit.
-- **Where:** The "Edit" item in a message's long-press menu, or in the node detail `···` menu.
+- **Where:** The "Edit" item in a message's long-press menu, or in the Node Info sheet's `···`
+  menu.
   An "Editing <localId>" banner appears above the composer.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Edit" → change text
   in `chat-composer-input` → `chat-composer-send` (Save). Cancel with
@@ -439,24 +530,25 @@ stays until the user makes one.
   `path_states`. Editing a human turn then generates a reply through the provider call in
   `chat.composer`.
 - **Status:** live
-- **Notes:** Edit from node detail navigates back to `tree/[treeId]` with
-  `editNodeId` / `editRequestId` params, which start the same flow.
+- **Notes:** Edit from the Node Info sheet closes the sheet, then starts the same flow once
+  it has gone (`useNodeSheet`).
 
 ### Read a message aloud (Voice Mode)
 - **ID:** `chat.read-aloud`
 - **Purpose:** With Voice Mode on, reads messages aloud in the chosen character voice (Latent
   Spaces' voices): a double-tap on a message reads it, each new model response is read once it
-  has finished generating, and a tap on any message stops speech. The message being read is
+  has finished generating, and a tap on any message while speech plays only stops it (it
+  doesn't also open that row's rail). The message being read is
   drawn in its voice's color. Fenced code blocks are read as "You can see the code on this loom
   tree branch." The `···` menu's "Voice Mode" item (checked when on) toggles Voice Mode app-wide.
-- **Where:** Message rows on the Dialogue screen; "Voice Mode" in the Dialogue `···` menu.
+- **Where:** Message rows on the Dialogue screen; "Voice Mode" in the tree menu (`chat.tree-menu`).
 - **Reach:** P2 → `chat-menu-button` → "Voice Mode" (or `settings.voice`) → send once → wait
   for the reply to finish (it is read aloud) → double-tap `chat-message-row-<nodeId>` to hear
   it again → tap any row to stop.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
   up; it plays with the iOS silent switch on, as in Latent Spaces.
 - **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
+- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
 - **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
 - **Status:** live
@@ -472,33 +564,41 @@ stays until the user makes one.
 - **ID:** `chat.rewind`
 - **Purpose:** Makes an earlier node, or a node on another branch, the current one, so the
   active path is re-pointed through it.
-- **Where:** "Rewind To Node" in the message menu. Also "Make Current Node" on a continuation
-  card or in the node detail menu, a double-tap on a continuation card, or a tap on a
-  bookmark row.
+- **Where:** "Rewind To Node" in the message menu or the Node Info sheet's menu. Also "Make
+  Current Node" or "Retrace Branch" on a continuation card or in its sheet's menu (or a
+  bookmark's sheet's menu), or a double-tap on a continuation card.
 - **Reach:** P2 → send twice → long-press an earlier `chat-message-row-<nodeId>` →
   "Rewind To Node".
 - **Requires:** More than one node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
+- **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/interface/components/chat/node-actions/useRetraceBranch.ts`, `src/application/services/resolve-branch-leaf.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
 - **Backend:** WatermelonDB `path_states`, `path_nodes`, `path_selections` via `WatermelonPathRepository` and `WatermelonPathStateRepository`
 - **Status:** live
+- **Notes:** Retrace Branch makes current the end of the card's branch: along the active path
+  while it runs through the card, then the newest continuation at each step (Aspen Grove keeps
+  no per-node remembered child, which Latent Spaces follows).
 
 ### Inline continuation rail
 - **ID:** `chat.continuation-rail`
-- **Purpose:** Shows a node's continuations (its child branches) inline as a horizontal row of
-  cards. A tap opens a card's node detail, a double-tap retraces that branch, and a long-press
-  gives Make Current Node, Copy Text and Bookmark. Its header also holds the generate control
-  (`chat.parallel-continuations`).
-- **Where:** A band directly under the tapped message, inside the message list.
+- **Purpose:** Shows a node's continuations (its child branches) inline, as Latent Spaces
+  does (ChildNodesView): the hint "Tap to expand. Double tap to make current node. Long press
+  for more options.", then a horizontal row of tan cards, each captioned with its model (a
+  green check on the one the active path runs through) and `[n]`, then a divider. A tap opens
+  the card's "Continuation Node" sheet (`node.sheet`), a double-tap makes it current, and a
+  long-press gives Make Current Node and Retrace Branch, a divider, then Copy Text and
+  Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
+  hint.
+- **Where:** Directly under the tapped message, inside the message list. It scales in and out
+  (0.3 s) and the list scrolls to center it when it opens.
 - **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
-- **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`
-- **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`
+- **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
-  half a second before asserting on `node-detail-screen`. A double-tap needs two taps less than
+  half a second before asserting on `node-sheet`. A double-tap needs two taps less than
   300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
   a tap on a message row waits the same 320 ms before the rail opens.
 
@@ -509,8 +609,7 @@ stays until the user makes one.
   siblings. A card can be stopped on its own; one failing or being stopped doesn't stop the
   others. Each finished (or stopped-with-text) card is saved as a sibling model node with its
   own raw response and hash chain, and a double-tap on it makes it current like any sibling.
-- **Where:** The control row under the rail's "Continuations for …" title: `−` count `+` and
-  "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
+- **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
   the rail's card row.
 - **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
@@ -529,12 +628,14 @@ stays until the user makes one.
   count is remembered app-wide in WatermelonDB local storage
   (`aspen_grove.parallel_continuations.count`, default 1).
 - **Status:** live
-- **Notes:** Card states: `pending` ("Waiting for the model…", request sent, no text yet),
-  `streaming` (text plus a character count), `stopping`, `done`, `stopped`, `interrupted
+- **Notes:** A card's caption shows its state in brackets where a saved card has `[n]`, with
+  its stop button beside it. Card states: `pending` ("Waiting for the model…", request sent,
+  no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
-  convention: a stop or interruption after text saves the partial text with a
-  `[stream interrupted: <reason>]` line appended (so a stopped node stays marked after a
-  restart); a failure or stop before any text saves nothing. A finished run's cards stay while
+  convention: a stop after text saves the partial text as is (no marker, so the next turn
+  doesn't send one to the model); a network, timeout or provider interruption after text saves
+  it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
+  saves nothing. A finished run's cards stay while
   the rail shows that node; once the rail closes or moves, the saved ones show as ordinary
   sibling cards. Closing the rail, or making a card current (which closes it), leaves the
   others streaming; leaving the Dialogue screen stops them all. A saved card reloads the rail
@@ -548,12 +649,34 @@ stays until the user makes one.
   point the tree's agent at a model id that doesn't exist (`agent-editor-model-custom`).
   Parallel continuations are not read aloud.
 
+### Tree menu
+- **ID:** `chat.tree-menu`
+- **Purpose:** Latent Spaces' tree toolbar menu (ToolbarMenu.swift:31-102): Model and Voice
+  Mode side by side (Voice Mode checked while on), Edit Title and Edit Description, the
+  Bookmarks submenu between dividers once the tree has a bookmark, Export to OpenLoom Format,
+  then Show Onboarding. After a last divider come Aspen Grove's own Tags and Export Path
+  (Markdown). Model opens Dialogue Settings (`chat.dialogue-settings`); Show Onboarding opens
+  the tree's Getting Started sheet (`onboarding.tree`).
+- **Where:** The `···` button trailing the Dialogue screen's header.
+- **Reach:** P2 → `chat-menu-button`.
+- **Requires:** A tree.
+- **Selector:** working — `chat-menu-button`; items none — native context menu item; reach via a tap on `chat-menu-button`
+- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/ui/components/native-menu-tree.ts`
+- **Backend:** none (each item's own entry)
+- **Status:** live
+- **Notes:** The side-by-side pair needs `preferredElementSize`, which
+  `react-native-context-menu-view` lacks; `patches/react-native-context-menu-view+1.21.0.patch`
+  adds it (iOS 16+). Show Onboarding replays the tree tips, as Latent Spaces' does (Home's
+  menu opens the app onboarding). Flow:
+  `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`).
+
 ### Bookmark a node
 - **ID:** `chat.bookmark`
 - **Purpose:** Toggles a bookmark on a node. Bookmarked nodes show a bookmark glyph in their
-  caption and are listed in the Bookmarks sheet.
-- **Where:** "Bookmark" / "Remove Bookmark" in the message menu, on a continuation card's menu
-  or in the node detail menu.
+  caption and are listed in the tree menu's Bookmarks (`chat.bookmarks`).
+- **Where:** "Bookmark" / "Remove Bookmark" in the message menu; "Bookmark" / "Bookmarked" on
+  a continuation card's menu or in a node sheet's menu. A bookmark's own sheet removes it
+  with "Bookmarked" (`chat.bookmarks`).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Bookmark".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
@@ -561,22 +684,37 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `nodes` metadata (`bookmarked`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
 
-### Bookmarks sheet
+### Bookmarks
 - **ID:** `chat.bookmarks`
-- **Purpose:** Lists this tree's bookmarked nodes, newest first. Tap a row to rewind to it, or
-  tap "Details" to open its node detail.
-- **Where:** A page sheet from the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Bookmarks".
-- **Requires:** A tree. When empty it shows the "No bookmarks in this tree yet" hint.
-- **Selector:** working — `bookmarks-sheet`, `bookmarks-sheet-done`, `bookmarks-sheet-list`, rows `bookmarks-sheet-row-<nodeId>`, `bookmarks-sheet-row-details-<nodeId>` (nested, see the driving notes), `bookmarks-sheet-empty`, `bookmarks-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/bookmarks/BookmarksSheet.tsx`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useChatSheets.ts`
-- **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked`
+- **Purpose:** Latent Spaces' bookmarks (ToolbarMenu.swift:64-77, BookmarkSheet.swift): the
+  tree menu's "Bookmarks" submenu lists this tree's bookmarked nodes, oldest first, each by
+  its label or else its text, with `sparkles` for a model node and `person.fill` for the
+  user's. Choosing one opens its sheet: the label (or "Bookmarked Node") over a bookmark
+  symbol and the node's model, the node's text, and a `···` menu with Rename Bookmark, then
+  Make Current Node and Retrace Branch, then Copy Text and Bookmarked. Rename Bookmark asks
+  in a "Rename Bookmark" alert ("Enter a new title for this bookmark"); Bookmarked removes the
+  bookmark, clears its label and closes the sheet.
+- **Where:** The tree menu (`chat.tree-menu`), between dividers, once the tree has a
+  bookmark; the sheet is the node sheet (`node.sheet`) in its bookmark form.
+- **Reach:** P2 → send once → bookmark a node (`chat.bookmark`) → `chat-menu-button` →
+  "Bookmarks" → the bookmark by its title → `node-sheet-menu-button` → "Rename Bookmark".
+- **Requires:** A bookmarked node; the submenu is absent until there is one.
+- **Selector:** working — `node-sheet`, `node-sheet-title`, `node-sheet-bookmark` (the symbol), `node-sheet-menu-button`, `node-sheet-back`; submenu and menu items none — native context menu item; reach via a tap on `chat-menu-button` ("Bookmarks") or `node-sheet-menu-button`; the rename alert is native (`text-prompt-*` on Android)
+- **Code:** `src/interface/components/chat/bookmarks/useTreeBookmarks.ts`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/chat/node-sheet/bookmark-menu.ts`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/useNodeSheet.ts#onBookmarkAction`, `src/interface/components/chat/node-actions/useNodeActions.ts#renameBookmark`
+- **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked` (the list)
+  and `#updateMetadata` (`bookmarked`, `bookmark_label`); Make Current and Retrace use
+  `SwitchDialoguePathUseCase` (`path_states`)
 - **Status:** live
+- **Notes:** Aspen Grove keeps no time a bookmark was added, so the list is in node creation
+  order where Latent Spaces lists bookmarks in the order they were added. An empty rename
+  clears the label. Under the text the sheet shows Aspen Grove's node details, as Node Info
+  does.
 
 ### Prune or restore a node
 - **ID:** `chat.prune`
 - **Purpose:** Marks a node as pruned, which dims it and captions it "Pruned", or restores it.
-- **Where:** "Prune" (destructive) / "Restore" in the message menu or the node detail menu.
+- **Where:** "Prune" (destructive) / "Restore" in the message menu or the Node Info sheet's
+  menu.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Prune".
 - **Requires:** A node.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
@@ -586,15 +724,35 @@ stays until the user makes one.
 
 ### Edit tree title
 - **ID:** `chat.title-edit`
-- **Purpose:** Renames the tree.
-- **Where:** A page sheet from the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Edit Title" → `chat-title-sheet-input` →
-  `chat-title-sheet-save`.
+- **Purpose:** Renames the tree in Latent Spaces' "Loom Tree Name" alert with a text field,
+  Cancel and Save (ToolbarMenu.swift:107-117). An empty name keeps the old one.
+- **Where:** "Edit Title" in the tree menu (`chat.tree-menu`); a native alert.
+- **Reach:** P2 → `chat-menu-button` → "Edit Title" → type → "Save".
 - **Requires:** A tree.
-- **Selector:** working — `chat-title-sheet`, `chat-title-sheet-input`, `chat-title-sheet-save`, `chat-title-sheet-cancel`, `chat-title-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/EditTreeTitleSheet.tsx`, `src/interface/components/chat/header-actions/useTreeTitle.ts`
+- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the alert is native (buttons "Save", "Cancel"; `text-prompt-*` on Android)
+- **Code:** `src/interface/components/chat/header-actions/useTreeTitle.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/useTextPrompt.ts`, `src/interface/ui/components/text-prompt/TextPromptDialog.tsx`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
+- **Notes:** iOS's `Alert.prompt` has no placeholder, so the empty field doesn't read
+  "Name" there; Android's dialog does. An untitled tree opens the alert empty.
+
+### Edit tree description
+- **ID:** `chat.description-edit`
+- **Purpose:** Edits the tree's description in Latent Spaces' full-screen editor
+  (ToolbarMenu.swift:118-131, FullScreenTextEditor.swift): "Loom Tree Description" inline,
+  a `···` menu (Copy text, Clear text) leading and Save trailing, the text in the message
+  font, focused as it opens, with a keyboard "Done". Save writes it and closes; a swipe down
+  drops the edit.
+- **Where:** "Edit Description" in the tree menu; a page sheet.
+- **Reach:** P2 → `chat-menu-button` → "Edit Description" → type into
+  `tree-description-sheet-input` → `tree-description-sheet-save`.
+- **Requires:** A tree.
+- **Selector:** working — `tree-description-sheet`, `tree-description-sheet-input`, `tree-description-sheet-save`, `tree-description-sheet-menu-button`, `keyboard-done`; menu items none — native context menu item; reach via a tap on `tree-description-sheet-menu-button`
+- **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`
+- **Backend:** WatermelonDB `loom_trees.description` via `WatermelonLoomTreeRepository`
+- **Status:** live
+- **Notes:** The description shows nowhere else in the app yet; it goes out with an Open Loom
+  export and heads a Markdown export.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -605,11 +763,14 @@ stays until the user makes one.
 - **Requires:** "Auto-Title Conversations" on (`settings.behavior.auto-title`), plus a
   reachable provider.
 - **Selector:** none — renders into the native stack header title, which has no testID; assert on the visible title text
-- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`
+- **Code:** `src/application/use-cases/GenerateTreeTitleUseCase.ts`, `src/application/use-cases/TitleTreeFromFirstMessageUseCase.ts`, `src/application/services/tree-title.ts`, `src/interface/components/chat/header-actions/useAutoTreeTitle.ts`, `src/interface/components/chat/header-actions/useFirstMessageTreeTitle.ts`
 - **Backend:** The same provider chat-completions call as `chat.composer`. Writes
   `loom_trees.title`.
 - **Status:** live
-- **Notes:** It fails silently and keeps the default title on any error.
+- **Notes:** A new tree shows a blank header title until the first message. Sending it
+  titles the tree with that message's first four words (plus "..." when longer), as Latent
+  Spaces does, whether or not auto-title is on. Auto-title then replaces that provisional
+  title, or a default one. It fails silently and keeps the current title on any error.
 
 ### Discard an empty new tree
 - **ID:** `chat.ephemeral-discard`
@@ -617,8 +778,8 @@ stays until the user makes one.
   message, so empty trees don't pile up.
 - **Where:** Dialogue screen, on navigating back.
 - **Reach:** P2 → native back without sending.
-- **Requires:** A tree opened with the `ephemeral` param, which only `trees.create` sets.
-- **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `trees-list`
+- **Requires:** A tree opened with the `ephemeral` param, which `home.composer` and onboarding set.
+- **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `home-trees-list`
 - **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#hardDelete`
 - **Status:** live
@@ -627,8 +788,9 @@ stays until the user makes one.
 - **ID:** `chat.dialogue-settings`
 - **Purpose:** Shows this tree's agent (name, model, shared or private) and edits the
   tree-level system context, which is added after the agent's system prompt.
-- **Where:** A page sheet from the Dialogue `···` menu ("Dialogue Settings").
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings".
+- **Where:** A page sheet from the tree menu's "Model" (Latent Spaces' Model button opens its
+  tree model settings; Aspen Grove's are here).
+- **Reach:** P2 → `chat-menu-button` → "Model".
 - **Requires:** A tree.
 - **Selector:** working — `dialogue-settings-sheet`, `dialogue-settings-done`, `dialogue-settings-system-context-input`, `dialogue-settings-system-context-save` (shown once edited), `dialogue-settings-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/dialogue-settings/DialogueSettingsSheet.tsx`, `src/interface/components/chat/dialogue-settings/useDialogueSettingsController.ts`
@@ -642,7 +804,7 @@ stays until the user makes one.
   tree.
 - **Where:** "Edit agent" in Dialogue Settings. A native alert offers the shared-or-fork
   choice, and then the sheet shows the Edit Agent sub-view.
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings" →
+- **Reach:** P2 → `chat-menu-button` → "Model" →
   `dialogue-settings-edit-agent` → (alert) → edit the fields →
   `dialogue-settings-edit-agent-save`.
 - **Requires:** A tree with an agent.
@@ -656,7 +818,7 @@ stays until the user makes one.
 - **ID:** `chat.dialogue-settings.switch-agent`
 - **Purpose:** Points the tree at another shared agent. The history is unchanged.
 - **Where:** "Switch agent" in Dialogue Settings.
-- **Reach:** P2 → `chat-menu-button` → "Dialogue Settings" →
+- **Reach:** P2 → `chat-menu-button` → "Model" →
   `dialogue-settings-switch-agent` → `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** At least two shared agents. Otherwise it says "No other shared agents".
 - **Selector:** working — `dialogue-settings-switch-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`, `dialogue-settings-back`
@@ -674,7 +836,7 @@ stays until the user makes one.
 - **Where:** In place of the composer input on the Dialogue screen, and at the top of
   Dialogue Settings.
 - **Reach:** Cold start → import a tree before creating any agent (`trees.import`) →
-  `trees-list-row-<treeId>` → `chat-needs-agent-choose` →
+  `home-trees-row-<treeId>` → `chat-needs-agent-choose` →
   `dialogue-settings-switch-agent-row-<agentId>`.
 - **Requires:** A tree without a usable agent, and no default model agent to adopt.
 - **Selector:** working — `chat-needs-agent` (the message), `chat-needs-agent-choose`, `dialogue-settings-needs-agent`, rows `dialogue-settings-switch-agent-row-<agentId>`
@@ -690,7 +852,7 @@ stays until the user makes one.
 ### Tree tags
 - **ID:** `chat.tags`
 - **Purpose:** Toggles grove tags on this tree, or creates a new tag and assigns it.
-- **Where:** A page sheet from the Dialogue `···` menu ("Tags").
+- **Where:** A page sheet from the tree menu ("Tags", after its last divider).
 - **Reach:** P2 → `chat-menu-button` → "Tags" → `tags-sheet-new-input` →
   `tags-sheet-new-add`. Toggle an existing tag with `tags-sheet-row-<tagId>`.
 - **Requires:** A tree.
@@ -701,57 +863,80 @@ stays until the user makes one.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
-- **Purpose:** Exports the whole tree as an Open Loom JSON file and hands it to the OS share
-  sheet.
-- **Where:** "Export Tree (OpenLoom)" in the Dialogue `···` menu.
-- **Reach:** P2 → `chat-menu-button` → "Export Tree (OpenLoom)" → share sheet.
+- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero
+  ("Generate OpenLoom Tree", "Changes made here will not affect your saved loom tree."), the
+  file's Title and Description, Include System Message and Include Bookmarks, and a link to
+  the Open Loom docs. The share button closes the sheet and exports the whole tree as an
+  Open Loom JSON file to the OS share sheet; the back button drops the edits.
+- **Where:** "Export to OpenLoom Format" in the tree menu (`chat.tree-menu`); a page sheet.
+- **Reach:** P2 → `chat-menu-button` → "Export to OpenLoom Format" →
+  `export-sheet-share` → share sheet.
 - **Requires:** A tree, and sharing available on the device.
-- **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
-- **Code:** `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/ChatHeaderMenu.tsx`, `src/interface/components/chat/header-actions/useTreeExports.ts`
+- **Selector:** working — `export-sheet`, `export-sheet-back`, `export-sheet-share`, `export-sheet-title-input`, `export-sheet-description-input`, `export-sheet-include-system-message`, `export-sheet-include-bookmarks`, `export-sheet-docs`, `keyboard-done`; the share sheet is native
+- **Code:** `src/interface/components/chat/export-sheet/OpenLoomExportSheet.tsx`, `src/interface/components/chat/export-sheet/ExportSheetHero.tsx`, `src/interface/components/chat/export-sheet/useOpenLoomExportSheet.ts`, `src/interface/components/chat/export-sheet/export-sheet-options.ts`, `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`. Writes
-  a cache file (`expo-file-system`), then calls `expo-sharing`.
+  a cache file (`expo-file-system`), then calls `expo-sharing`. Nothing in the sheet is saved
+  to the tree.
 - **Status:** live
-- **Notes:** Errors land in `chat-error`.
+- **Notes:** Errors land in `chat-error`. An empty description is left out. Include System
+  Message off drops the tree's system context and the agents' system prompts (Aspen Grove's
+  counterpart of Latent Spaces' one system message); Include Bookmarks off drops bookmark
+  flags and labels. The file goes to the share sheet, which offers Save to Files, where Latent
+  Spaces opens the file exporter. The docs link opens the Open Loom spec in the repository,
+  as Home's does.
 
 ### Export path (Markdown)
 - **ID:** `chat.export-path`
 - **Purpose:** Exports the active path as a Markdown transcript through the share sheet.
-- **Where:** "Export Path (Markdown)" in the Dialogue `···` menu.
+- **Where:** "Export Path (Markdown)" in the tree menu, after its last divider (Aspen Grove
+  only).
 - **Reach:** P2 → `chat-menu-button` → "Export Path (Markdown)" → share sheet.
 - **Requires:** A tree with a loaded session.
 - **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the share sheet is native
-- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
+- **Code:** `src/application/use-cases/ExportPathMarkdownUseCase.ts`, `src/application/services/open-loom/export-markdown.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`
 - **Backend:** Reads WatermelonDB `paths`, `path_nodes`, `nodes`. Writes a cache file and calls
   `expo-sharing`.
 - **Status:** live
 
-## Node detail
+## Node sheet
 
-### Node detail
-- **ID:** `node.detail`
-- **Purpose:** One node in full: its text (selectable, with Copy), its metadata (local id,
-  author, created time, edited-from, flags, content hash) and, for model nodes, its generation
-  info (provider, model, request id, latency, tokens).
-- **Where:** Route `tree/[treeId]/node/[nodeId]`, a stack screen titled "Node <localId>".
+### Node sheet (Node Info, Continuation Node)
+- **ID:** `node.sheet`
+- **Purpose:** One node in a page sheet, as Latent Spaces shows it: "Node Info" from a
+  message's menu, "Continuation Node" from a continuation card, and a bookmark's sheet from
+  the tree menu's Bookmarks (`chat.bookmarks`: its label, a bookmark symbol, no `[n]`). The toolbar has a glass back
+  button, the title over the node's model (a green check on a continuation the active path
+  runs through) and `[n]`, and a glass `···` menu. The body is the node's whole text in the
+  message font, selectable, and under it Aspen Grove's metadata (local id, author, created
+  time, edited-from, flags, content hash) and, for model nodes, generation info (provider,
+  model, request id, latency, tokens) and provenance (`node.provenance`).
+- **Where:** A page sheet over the Dialogue screen.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Node Info". Or tap a
-  continuation card, a search result (`search-results-row-<nodeId>`) or a bookmark's
-  "Details".
+  continuation card `chat-continuation-card-<nodeId>` (Continuation Node), a search result
+  (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
-- **Selector:** working — `node-detail-screen`, `node-detail-content`, `node-detail-text`, `node-detail-copy`, `node-detail-generation`, `node-detail-error`, `node-detail-action-error`, `node-detail-not-found`
-- **Code:** `src/interface/components/chat/node-detail/NodeDetailView.tsx`, `src/interface/components/chat/node-detail/useNodeDetailData.ts`, `src/app/tree/*/node/*.tsx`
-- **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses` via the Watermelon repositories
+- **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-bookmark`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`
+- **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
+- **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the
+  continuation cards do. Swipe down or `node-sheet-back` closes it.
 
-### Node actions menu
+### Node sheet menu
 - **ID:** `node.menu`
-- **Purpose:** From node detail: Make Current Node (returns to the dialogue), Edit (returns to
-  the dialogue in edit mode), Copy Text, Bookmark / Remove Bookmark, Prune / Restore.
-- **Where:** `···` at the right of the node detail header.
-- **Reach:** Open `node.detail` → `node-detail-menu-button`.
+- **Purpose:** Node Info: Copy All Text, Rewind To Node (disabled on the current node),
+  Bookmark / Bookmarked, then Aspen Grove's Edit and Prune / Restore after a divider.
+  Continuation Node: the card's menu (Make Current Node, Retrace Branch, Copy Text, Bookmark /
+  Bookmarked). A bookmark: Rename Bookmark, then the continuation's items; its Bookmarked
+  removes the bookmark and closes the sheet (`chat.bookmarks`). Rewind, Make Current, Retrace and Node Info's Bookmark close the sheet, as in
+  Latent Spaces; Edit closes it and starts the edit; Copy, Prune and the continuation's
+  Bookmark leave it open and it reloads.
+- **Where:** The glass `···` at the right of the sheet's toolbar.
+- **Reach:** Open `node.sheet` → `node-sheet-menu-button`.
 - **Requires:** A loaded node. The button is hidden while loading.
-- **Selector:** working — `node-detail-menu-button`; items none — native context menu item; reach via a tap on `node-detail-menu-button`
-- **Code:** `src/app/tree/*/node/*.tsx`, `src/interface/components/chat/node-detail/NodeDetailView.tsx#buildDetailMenuItems`
-- **Backend:** Make Current uses `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
+- **Selector:** working — `node-sheet-menu-button`; items none — native context menu item; reach via a tap on `node-sheet-menu-button`
+- **Code:** `src/interface/components/chat/node-sheet/node-info-menu.ts#buildNodeInfoMenuSections`, `src/interface/components/chat/continuation-menu.ts#buildContinuationMenuSections`, `src/interface/components/chat/node-sheet/bookmark-menu.ts#buildBookmarkMenuSections`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`
+- **Backend:** Rewind, Make Current and Retrace use `SwitchDialoguePathUseCase` (`path_states`). Bookmark and
   Prune update `nodes` metadata via `WatermelonNodeRepository#updateMetadata`. Copy is
   client-only.
 - **Status:** live
@@ -761,12 +946,12 @@ stays until the user makes one.
 - **Purpose:** For a model node, re-verifies the hash chain against the stored raw API
   response and shows Verified or the failure reason, plus chain details (parent count, raw
   response id and hash, expected hash on a mismatch).
-- **Where:** The PROVENANCE block at the bottom of node detail.
+- **Where:** The PROVENANCE block at the bottom of a node sheet.
 - **Reach:** P2 → send once → long-press the model `chat-message-row-<nodeId>` →
-  "Node Info" → scroll `node-detail-content`.
+  "Node Info" → scroll `node-sheet-content`.
 - **Requires:** A model-authored node. The block is absent for human nodes.
-- **Selector:** working — `node-detail-provenance`, `node-detail-provenance-status`
-- **Code:** `src/application/services/provenance/verify-model-node-provenance.ts`, `src/application/services/content-hash-service.ts`, `src/interface/components/chat/node-detail/useNodeDetailData.ts`
+- **Selector:** working — `node-sheet-provenance`, `node-sheet-provenance-status`
+- **Code:** `src/application/services/provenance/verify-model-node-provenance.ts`, `src/application/services/content-hash-service.ts`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/provenance-status-label.ts`
 - **Backend:** WatermelonDB `raw_api_responses`, `nodes` via `WatermelonRawApiResponseRepository` and `WatermelonNodeRepository`
 - **Status:** live
 - **Notes:** "Provenance as it stands": hash-chain verification only. There is no RFC 3161
@@ -776,31 +961,34 @@ stays until the user makes one.
 
 ### Settings home
 - **ID:** `settings.home`
-- **Purpose:** Lists the settings sub-screens: Agents, Connections, Message Typography, App
-  Behavior and Voice Mode.
-- **Where:** Drawer → Settings, a nested stack with its own header and drawer button.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings`.
+- **Purpose:** Latent Spaces' one settings Form (`LoomSettingsView.swift`): links to
+  Connections ("API Settings") and Agents ("New loom tree Settings"), then the User Interface
+  settings, their live preview and Voice Mode, all edited in place.
+- **Where:** Route `settings`, pushed from Home, with the native back button. A 34 pt
+  "Settings" large title scrolls away and becomes the inline header title.
+- **Reach:** Cold start → `home-settings-button`.
 - **Requires:** none
-- **Selector:** working — `settings-screen`, `settings-link-agents`, `settings-link-connections`, `settings-link-typography`, `settings-link-behavior`, `settings-link-voice` (all built from the template `settings-link-${route}` in `SettingsHomeView.tsx`)
-- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/drawer/DrawerScreenHeader.tsx`, `src/app/(drawer)/settings/index.tsx`, `src/app/(drawer)/settings/_layout.tsx`
+- **Selector:** working — `settings-screen`, `settings-link-connections`, `settings-link-agents`
+- **Code:** `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/settings/home/SettingsLinkSections.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/settings-screen-options.ts`, `src/interface/ui/components/form/`, `src/app/settings/index.tsx`
 - **Backend:** none — client-only
 - **Status:** live
-- **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
-  stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
-  gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
-  it off. The pushed sub-screens keep native headers with a system back button.
-
+- **Notes:** Settings, Agents and Connections are screens of the root stack, each with the
+  native header and back button (a Liquid Glass circle on iOS 26, as in Latent Spaces). The pushed sub-screens keep native headers with a system back button. The former
+  sub-screens Message Typography, App Behavior and Voice Mode (routes `settings/typography`,
+  `settings/behavior`, `settings/voice`) are now sections of this Form, so
+  `settings-link-typography`, `settings-link-behavior`, `settings-link-voice`,
+  `settings-typography-screen`, `settings-behavior-screen` and `settings-voice-screen` are gone.
 ### Agents library
 - **ID:** `settings.agents`
 - **Purpose:** Lists the shared model agents with their model and settings. Tap one to edit
-  it, "Make default" to pin it for new trees, "Delete" to remove it (after a native confirm),
+  it, "Make Default" to pin it for new trees, "Delete" to remove it (after a native confirm),
   or "New Agent" to create one.
 - **Where:** Settings → Agents.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
+- **Reach:** Cold start → `home-settings-button` →
   `settings-link-agents`.
 - **Requires:** none. A fresh install shows "No agents yet. Create one to start weaving."
 - **Selector:** working — `settings-agents-screen`, `settings-agents-list`, `settings-agents-new`, rows `settings-agents-row-<agentId>`, `settings-agents-row-make-default-<agentId>` and `settings-agents-row-delete-<agentId>` (nested, see the driving notes), `settings-agents-error`
-- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/(drawer)/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentsSection.tsx`, `src/interface/components/settings/agents/AgentRow.tsx`, `src/interface/components/settings/agents/useAgentsLibraryController.ts`, `src/interface/components/settings/screens/AgentsSettingsScreen.tsx`, `src/app/settings/agents.tsx`, `src/application/use-cases/DeleteAgentUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository#findSharedModels`;
   `user_preferences.default_model_agent_id` for the default
 - **Status:** live
@@ -809,30 +997,34 @@ stays until the user makes one.
 - **ID:** `settings.agents.editor`
 - **Purpose:** Creates or edits a shared agent: quick-start templates (create only), model,
   name, temperature, max tokens and system prompt.
-- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent".
+- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent"; also
+  Dialogue Settings → Edit agent. A Form in a sheet: glass Cancel and Create/Save capsules
+  either side of the title, the error pinned under the bar.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
 - **Requires:** none
 - **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/AgentConfigFields.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/AgentTemplateList.tsx`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
+- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
-- **Notes:** Template keys come from `agent-templates.ts`. Templates are one full-width row
-  each (name, then model id and temperature); a tapped row is checked in gold. Their model
-  ids are OpenRouter `~…-latest` aliases. Validation errors show in `agent-editor-error`.
+- **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
+  then model id and temperature) with the gold checkmark in its own trailing column. Their
+  model ids are OpenRouter `~…-latest` aliases. Validation errors show in
+  `agent-editor-error`, pinned under the sheet's bar so they are always in view.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
 - **Purpose:** Picks the provider (OpenRouter or LM Studio) and a model: from the cached,
   searchable OpenRouter catalog, from live LM Studio discovery, or by typing a custom
   OpenRouter id.
-- **Where:** The MODEL block of the agent editor, and of Dialogue Settings → Edit agent.
+- **Where:** The Provider and Model sections of the agent editor (Form rows), and the MODEL
+  block of Dialogue Settings → Edit agent (`ModelPickerField`).
 - **Reach:** `settings-agents-new` → `agent-editor-model-provider-openrouter` →
   `agent-editor-model-search-input` → `agent-editor-model-option-<model id>`.
 - **Requires:** OpenRouter: network for the catalog. LM Studio: a reachable endpoint (set in
   `settings.connections.lmstudio`).
 - **Selector:** working — with prefix `agent-editor` (or `dialogue-settings-edit-agent`): `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
-- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
+- **Code:** `src/interface/components/settings/agents/ModelPickerField.tsx`, `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models` (cached for 24 h); LM
   Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
@@ -843,26 +1035,30 @@ stays until the user makes one.
 
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
-- **Purpose:** Stores, shows or hides, or clears the OpenRouter API key.
-- **Where:** Settings → Connections, in the OpenRouter section.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-connections` → `connections-openrouter-key-input`.
+- **Purpose:** Latent Spaces' API Keys page (`APIKeySettingsView.swift`) for OpenRouter: a
+  card on how keys are kept, "Edit OpenRouter API Key" (a sheet with one secure field,
+  Cancel and Save) and links to OpenRouter's key docs, keys and credits pages.
+- **Where:** Settings → Connections, the top card and the OpenRouter section.
+- **Reach:** Cold start → `home-settings-button` →
+  `settings-link-connections` → `connections-openrouter-edit` →
+  `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
-- **Selector:** working — `settings-connections-screen`, `connections-openrouter`, `connections-openrouter-key-input`, `connections-openrouter-key-reveal`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ConnectionsSection.tsx`, `src/interface/components/settings/connections/OpenRouterConnectionSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/(drawer)/settings/connections.tsx`
+- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
-- **Notes:** Autosaves about 450 ms after typing, and saves a pending edit when the screen
-  closes. The section footer reports whether a key is stored. Clearing the field removes the
-  key.
-
+- **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
+  Cancel or a swipe down discards the edit. Saving an empty field removes the key. The
+  section footer says whether a key is stored. Neither Settings nor onboarding has a show/hide
+  button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open Safari.
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
 - **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
   an LM Studio server that is down can be fixed without leaving a tree.
-- **Where:** Route `connections`, a modal page sheet with "Connections" and Done at the top.
-- **Reach:** `home-setup-action` ("Add key"), `trees-setup-action` ("Add key") or
+- **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
+  the top.
+- **Reach:** `home-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
 - **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.openrouter` and `settings.connections.lmstudio`
@@ -875,58 +1071,67 @@ stays until the user makes one.
 - **ID:** `settings.connections.lmstudio`
 - **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
   auto-load, and tests the connection.
-- **Where:** Settings → Connections, in the LM Studio section.
+- **Where:** Settings → Connections, the LM Studio section below OpenRouter (scroll down).
 - **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioConnectionSection.tsx`, `src/interface/components/settings/connections/connection-styles.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
-- **Notes:** The status text is one of Untested, Checking…, Connected or Not reachable. When
-  the test fails, the button reads "Test again" and `connections-lmstudio-error` explains
-  it: "LM Studio isn't answering at <address>. Start its local server, then try again.",
-  plus a phone hint when the address is localhost. The Auto-load switch is gold when on and
-  a dim track when off (`AppSwitch`).
+- **Notes:** The fields are Form rows (`LmStudioFormSection`), in Settings and on
+  onboarding's setup page (without the token and auto-load rows) with the same ids.
+  `connections-lmstudio-status` reads one of Untested, Checking…, Connected or Not
+  reachable. When the
+  test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
+  the footer: "LM Studio isn't answering at <address>. Start its local server, then try
+  again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold
+  when on.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (Serif, Mono or Sans), the font size, the user-bubble
-  style (Filled or Outlined) and the corner radius.
-- **Where:** Settings → Message Typography.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-typography`.
+- **Purpose:** Sets the dialogue font (IBM Plex Mono, Cardo or Open Sans), the font size, the
+  user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
+  sample messages.
+- **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
+- **Reach:** Cold start → `home-settings-button` →
+  `settings-typography-font` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-typography-screen`, `settings-typography-section`, `settings-typography-font` with options `settings-typography-font-Cardo-Regular`, `-IBMPlexMono-Regular`, `-OpenSans-Regular`, `settings-typography-font-size` (slider), `settings-typography-message-style` with `-filled` / `-outlined`, `settings-typography-corner-radius` (slider)
-- **Code:** `src/interface/components/settings/MessageTypographySection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/components/settings/screens/TypographySettingsScreen.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`, `src/app/(drawer)/settings/typography.tsx`
+- **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
-- **Notes:** Sliders are native, so drive them by swipe or by coordinate.
+- **Notes:** The four rows are Latent Spaces' Pickers (`LoomSettingsView.swift:233-275`): a
+  tap opens a native pull-down menu (react-native-context-menu-view) with the current value
+  checked. Menu items are native and have no testIDs; tap their visible text ("Cardo",
+  "Outlined", "20 (material design plebeian)"). Font size offers 12–26, corner radius 0–20 in
+  steps of 2. The former per-option ids (`settings-typography-font-<face>`,
+  `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
+  (Cardo) renders 1 pt above the chosen size.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`
 - **Purpose:** Turns the after-first-reply tree titling (`chat.auto-title`) on or off.
-- **Where:** Settings → App Behavior, the "Auto-Title Conversations" switch.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-behavior` → `settings-behavior-auto-title`.
+- **Where:** Settings → User Interface Settings, the "Auto-Title Conversations" toggle.
+- **Reach:** Cold start → `home-settings-button` →
+  `settings-behavior-auto-title` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-behavior-screen`, `settings-behavior-auto-title`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/screens/BehaviorSettingsScreen.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/AppSwitch.tsx`, `src/app/(drawer)/settings/behavior.tsx`
+- **Selector:** working — `settings-behavior-auto-title`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormToggleRow.tsx`
 - **Backend:** WatermelonDB `user_preferences.auto_title_enabled`
 - **Status:** live
-
 ### Verbose error alerts setting
 - **ID:** `settings.behavior.verbose-errors`
 - **Purpose:** A switch meant to show detailed provider failures in the UI.
-- **Where:** Settings → App Behavior, the "Verbose Error Alerts" switch.
-- **Reach:** `settings-link-behavior` → `settings-behavior-verbose-errors`.
+- **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
+- **Reach:** `home-settings-button` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
-- **Code:** `src/interface/components/settings/AppBehaviorSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
 - **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
 - **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
@@ -935,12 +1140,12 @@ stays until the user makes one.
 - **ID:** `settings.voice`
 - **Purpose:** Turns Voice Mode (beta) on or off, shows the current voice and opens the voice
   chooser. The footer explains double-tap to listen and tap to stop.
-- **Where:** Settings → Voice Mode, the "Voice Mode" section.
-- **Reach:** Cold start → `drawer-menu-button` → `drawer-nav-settings` →
-  `settings-link-voice` → `settings-voice-mode-toggle`.
+- **Where:** Settings, the "Voice Mode" section near the bottom.
+- **Reach:** Cold start → `home-settings-button` →
+  `settings-voice-mode-toggle` (scroll down).
 - **Requires:** none
-- **Selector:** working — `settings-voice-screen`, `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/screens/VoiceSettingsScreen.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/app/(drawer)/settings/voice.tsx`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
+- **Selector:** working — `settings-voice-section`, `settings-voice-mode-toggle`, `settings-voice-current` ("Current voice: <name>"), `settings-voice-choose`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/voice/VoiceModeSection.tsx`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useVoicePreferences.ts`, `src/interface/components/voice/useVoiceModeToggle.ts`, `src/infrastructure/persistence/watermelon/repositories/WatermelonVoicePreferencesRepository.ts`
 - **Backend:** WatermelonDB `user_preferences.default_voice_mode_enabled` (on/off) and the
   WatermelonDB local key `aspen_grove.voice_mode.voice_name` (the voice), via
   `WatermelonVoicePreferencesRepository`
@@ -954,8 +1159,9 @@ stays until the user makes one.
 - **Purpose:** Picks the character voice (Lily, Jefferson, Eve). Swipe between voice cards;
   each card plays its sample line as it comes into view, a tap on the colored circle stops or
   replays it, and Select saves the voice shown.
-- **Where:** A page sheet over Settings → Voice Mode, titled "Choose a voice".
-- **Reach:** `settings-link-voice` → `settings-voice-choose` → swipe `settings-voice-pager` →
+- **Where:** A page sheet over Settings, with no visible title (as in Latent Spaces, whose
+  `navigationTitle` has no navigation bar to show it in).
+- **Reach:** `home-settings-button` → `settings-voice-choose` → swipe `settings-voice-pager` →
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
@@ -967,19 +1173,16 @@ stays until the user makes one.
   without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
 
 ## Coverage
-- `src/app/_layout.tsx` — root stack, providers and theme (the Startup gate references it); no feature of its own
-- `src/app/(drawer)/_layout.tsx` — drawer navigator config; referenced by `nav.drawer`
-- `src/app/(drawer)/settings/_layout.tsx` — settings stack headers; referenced by `settings.home`
+- `src/app/_layout.tsx` — root stack (Home, Search, Settings and the tree screens), providers and theme; referenced by `app.bootstrap` and `home.welcome`
 - `./index.ts` — legacy root entry; `package.json` `main` is `src/entry.ts`
 - `src/entry.ts` — app entry (registers expo-router)
 - `src/interface/components/settings/index.ts` — barrel export
 - `src/interface/components/settings/types.ts` — shared type
-- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, keyboard toolbar, spinner)
+- `src/interface/components/settings/SettingsScreenScaffold.tsx` — shared settings shell (scroll, large title, keyboard toolbar, spinner)
 - `src/interface/components/settings/SettingsStatus.tsx` — shared saving and error text (the settings-status testIDs)
-- `src/interface/components/chat/ChatHeaderMenu.tsx` — the Dialogue `···` menu; the reach for the chat sheets and exports
 - `src/interface/components/chat/types.ts` — chat row and preference types
 - `src/interface/components/chat/route-params.ts` — route param parsing helper
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `MaterialView`, settings-list rows); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, `KeyboardDoneBar`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element

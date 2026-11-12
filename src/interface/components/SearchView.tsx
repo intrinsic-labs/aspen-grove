@@ -120,9 +120,10 @@ const SearchView = () => {
   const openResult = useCallback(
     (node: Node) => {
       Keyboard.dismiss();
+      // The tree opens on the result's Node Info sheet.
       router.push({
-        pathname: '/tree/[treeId]/node/[nodeId]',
-        params: { treeId: node.loomTreeId, nodeId: node.id },
+        pathname: '/tree/[treeId]',
+        params: { treeId: node.loomTreeId, nodeSheetId: node.id },
       });
     },
     [router]
@@ -240,7 +241,7 @@ const SearchView = () => {
                 tone="secondary"
                 style={styles.resultMeta}
               >
-                {item.authorType === 'model' ? 'model' : 'human'} ·{' '}
+                {item.authorType} ·{' '}
                 {item.createdAt.toLocaleDateString()}
               </AppText>
               <AppText tone="primary" style={styles.resultSnippet}>

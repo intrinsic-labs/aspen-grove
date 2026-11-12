@@ -1,7 +1,8 @@
-import type {
-  Agent,
-  Grove,
-  UserPreferences,
+import {
+  DEFAULT_DISPLAY_NAME,
+  type Agent,
+  type Grove,
+  type UserPreferences,
 } from '@domain/entities';
 import type {
   IAgentRepository,
@@ -63,13 +64,15 @@ export class InitializeAppDefaultsUseCase {
     const ownerAgent =
       (await this.findAnyActiveHumanAgent()) ??
       (await this.agentRepository.create({
-        name: userPreferences.displayName ?? 'Human',
+        name: userPreferences.displayName ?? DEFAULT_DISPLAY_NAME,
         type: 'human',
         configuration: {},
         permissions: OWNER_PERMISSIONS,
       }));
 
-    const existingGrove = await this.groveRepository.findByOwnerAgentId(ownerAgent.id);
+    const existingGrove = await this.groveRepository.findByOwnerAgentId(
+      ownerAgent.id
+    );
     const grove =
       existingGrove ??
       (await this.groveRepository.create({

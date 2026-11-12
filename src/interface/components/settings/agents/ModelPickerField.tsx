@@ -4,14 +4,16 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { SelectableProvider } from '@domain/entities';
 import { SELECTABLE_PROVIDERS } from '@domain/entities';
 import { AppInput, AppText } from '@/interface/ui/value-objects';
+import {
+  customModelIdentifier,
+  filterModelOptions,
+} from './model-option-filter';
 import { useModelPickerData } from './useModelPickerData';
 
 const PROVIDER_LABELS: Record<SelectableProvider, string> = {
   openrouter: 'OpenRouter',
   lmstudio: 'LM Studio',
 };
-
-const MAX_VISIBLE_OPTIONS = 25;
 
 type ModelPickerFieldProps = {
   readonly provider: SelectableProvider;
@@ -28,8 +30,6 @@ type ModelPickerFieldProps = {
    * stays addressable in the agent editor and the dialogue settings sheet.
    */
   readonly testIDPrefix: string;
-  /** Hide the provider tabs (onboarding has already chosen one). */
-  readonly lockProvider?: boolean;
 };
 
 /**
@@ -45,32 +45,26 @@ export const ModelPickerField = ({
   onChangeModelIdentifier,
   colors,
   testIDPrefix,
-  lockProvider = false,
 }: ModelPickerFieldProps) => {
   const picker = useModelPickerData(provider);
   const [search, setSearch] = useState('');
 
-  const filteredOptions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const matches = query
-      ? picker.options.filter(
-          (option) =>
-            option.id.toLowerCase().includes(query) ||
-            option.label.toLowerCase().includes(query)
-        )
-      : picker.options;
-    return matches.slice(0, MAX_VISIBLE_OPTIONS);
-  }, [picker.options, search]);
+  const filteredOptions = useMemo(
+    () => filterModelOptions(picker.options, search),
+    [picker.options, search]
+  );
 
-  const trimmedSearch = search.trim();
-  const showCustomRow =
-    provider === 'openrouter' &&
-    trimmedSearch.length > 0 &&
-    !picker.options.some((option) => option.id === trimmedSearch);
+  const customIdentifier = customModelIdentifier(
+    provider,
+    search,
+    picker.options
+  );
+  const showCustomRow = customIdentifier !== null;
+  const trimmedSearch = customIdentifier ?? '';
 
   return (
     <View testID={`${testIDPrefix}-model`} style={styles.container}>
-      <View style={[styles.providerRow, lockProvider && styles.hidden]}>
+      <View style={styles.providerRow}>
         {SELECTABLE_PROVIDERS.map((candidate) => {
           const isSelected = candidate === provider;
           return (
@@ -231,11 +225,7 @@ export const ModelPickerField = ({
                   </AppText>
                 </View>
                 {isSelected ? (
-                  <Ionicons
-                    name="checkmark"
-                    size={16}
-                    color={colors.primary}
-                  />
+                  <Ionicons name="checkmark" size={16} color={colors.primary} />
                 ) : null}
               </Pressable>
             );
@@ -264,9 +254,6 @@ const styles = StyleSheet.create({
   providerRow: {
     flexDirection: 'row',
     gap: 20,
-  },
-  hidden: {
-    display: 'none',
   },
   providerTab: {
     paddingVertical: 6,

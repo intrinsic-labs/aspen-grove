@@ -42,6 +42,7 @@ export type InitializedChatSession = {
 
 const toSessionModel = (agent: UsableModelAgent): ChatSessionModel => ({
   modelAgentId: agent.id,
+  agentName: agent.name,
   modelIdentifier: modelRefIdentifier(agent.modelRef),
   provider: selectableProviderFromModelRef(agent.modelRef),
 });

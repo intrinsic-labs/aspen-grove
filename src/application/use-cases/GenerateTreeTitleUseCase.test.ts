@@ -138,6 +138,16 @@ describe('GenerateTreeTitleUseCase', () => {
     expect(result).toEqual({ title: null, skippedReason: 'disabled' });
   });
 
+  it("replaces the title taken from the first message's words", async () => {
+    const { useCase } = buildUseCase({
+      autoTitleEnabled: true,
+      treeTitle: 'What are aspens?',
+      completionContent: 'Aspen Clonal Colonies',
+    });
+    const result = await execute(useCase);
+    expect(result.title).toBe('Aspen Clonal Colonies');
+  });
+
   it('skips trees the user already renamed', async () => {
     const { useCase } = buildUseCase({
       autoTitleEnabled: true,

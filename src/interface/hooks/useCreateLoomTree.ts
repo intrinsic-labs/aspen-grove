@@ -3,19 +3,27 @@ import { useRouter } from 'expo-router';
 import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
+import { setFirstMessage } from '@interface/components/chat/turns/first-message-store';
+import { ONBOARDING_SETUP_HREF } from '@interface/components/onboarding/onboarding-routes';
 
 export type CreateLoomTreeOptions = {
   /** Use this agent instead of the pinned/default one. */
   readonly agentId?: ULID;
   /** Replace the current screen instead of pushing (onboarding's last step). */
   readonly replace?: boolean;
+  /**
+   * Home's composer: the tree opens and sends this as its first message
+   * (HomeScreenView.swift `createtree`), instead of opening empty with the
+   * composer focused.
+   */
+  readonly firstMessage?: string;
 };
 
 /**
  * Creates a new dialogue loom tree with the pinned/default model agent and
- * navigates into it. Shared by Home, the Loom Trees list (menu and empty
- * state) and onboarding. With no model agent yet, it opens first-run setup
- * instead of failing.
+ * navigates into it. Shared by Home's composer and onboarding. With no model
+ * agent yet, it opens onboarding on its setup page instead of failing. Resolves to
+ * whether the tree opened.
  */
 export const useCreateLoomTree = (onError?: (message: string) => void) => {
   const router = useRouter();
@@ -27,9 +35,9 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
   const [creating, setCreating] = useState(false);
 
   const createTree = useCallback(
-    async (options: CreateLoomTreeOptions = {}) => {
+    async (options: CreateLoomTreeOptions = {}): Promise<boolean> => {
       if (!bootstrap || creating) {
-        return;
+        return false;
       }
 
       try {
@@ -48,8 +56,8 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
             })
           )?.id;
         if (!agentId) {
-          router.push('/onboarding');
-          return;
+          router.push(ONBOARDING_SETUP_HREF);
+          return false;
         }
 
         const created = await useCases.createDialogueLoomTreeUseCase.execute({
@@ -63,12 +71,17 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
           pathName: 'Main',
         });
 
+        const firstMessage = options.firstMessage?.trim();
+        if (firstMessage) {
+          setFirstMessage(created.tree.id, firstMessage);
+        }
         const target = {
           pathname: '/tree/[treeId]' as const,
           params: {
             treeId: created.tree.id,
-            autofocus: '1',
+            // Until its first message is saved, leaving deletes the tree.
             ephemeral: '1',
+            ...(firstMessage ? {} : { autofocus: '1' }),
           },
         };
         if (options.replace) {
@@ -76,8 +89,10 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
         } else {
           router.push(target);
         }
+        return true;
       } catch (caught) {
         onError?.(caught instanceof Error ? caught.message : String(caught));
+        return false;
       } finally {
         setCreating(false);
       }

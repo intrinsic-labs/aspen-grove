@@ -12,6 +12,12 @@ import { ULID } from '../value-objects';
  * tokens) for the LM Studio provider lives here for now because there is no
  * better home for it — credentials remain in secure storage.
  */
+/**
+ * The display name a fresh install starts with. It stands for "no name set":
+ * Home greets it without a name.
+ */
+export const DEFAULT_DISPLAY_NAME = 'Human';
+
 export interface UserPreferences {
   readonly id: ULID;
   readonly displayName?: string;
@@ -52,6 +58,12 @@ export interface UserPreferences {
    * onboarded.
    */
   readonly onboardingCompletedAt?: Date;
+
+  /**
+   * When the user closed the first tree's "Loom Trees / Getting Started"
+   * sheet with Begin. Unset until then, which shows it on the next tree.
+   */
+  readonly treeOnboardingCompletedAt?: Date;
 
   // Node display
   readonly nodeViewStyle: NodeViewStyle;

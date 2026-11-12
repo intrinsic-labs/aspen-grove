@@ -1,66 +1,59 @@
-import { useLayoutEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { TextEditorSheet } from '../ui/components/text-editor/TextEditorSheet';
+import { TextPromptDialog } from '../ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '../ui/value-objects';
-import { BookmarksSheet } from './chat/bookmarks/BookmarksSheet';
-import { ChatHeaderMenu } from './chat/ChatHeaderMenu';
+import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
-import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
+import { OpenLoomExportSheet } from './chat/export-sheet/OpenLoomExportSheet';
+import { toMessageTextStyle } from './chat/message-list/message-text-style';
+import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
+import { useTreeHeaderMenu } from './chat/tree-menu/useTreeHeaderMenu';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
+import { TreeOnboardingSheet } from './onboarding/tree/TreeOnboardingSheet';
+import { useTreeOnboarding } from './onboarding/tree/useTreeOnboarding';
 import { useVoiceMode } from './voice';
 
 const LoomTreeChatView = () => {
   const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const navigation = useNavigation();
   const controller = useLoomTreeChatController();
+  const treeOnboarding = useTreeOnboarding();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
+  const { messageFontFamily, messageFontSize, messageLineHeight } =
+    controller.displayPreferences;
+  const sheetTextStyle = useMemo(
+    () =>
+      toMessageTextStyle({
+        messageFontFamily,
+        messageFontSize,
+        messageLineHeight,
+      }),
+    [messageFontFamily, messageFontSize, messageLineHeight]
+  );
 
-  const openDialogueSettings = controller.dialogueSettings.open;
-  const openBookmarks = controller.bookmarks.open;
-  const openTitleEditor = controller.titleEditor.open;
-  const exportTree = controller.exports.exportTree;
-  const exportPath = controller.exports.exportPathMarkdown;
-  const openTags = controller.tags.open;
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRightContainerStyle: {
-        paddingRight: 14,
-      },
-      headerRight: () => (
-        <ChatHeaderMenu
-          onOpenBookmarks={openBookmarks}
-          onOpenDialogueSettings={openDialogueSettings}
-          voiceModeEnabled={voiceModeEnabled}
-          onToggleVoiceMode={() => setVoiceModeEnabled(!voiceModeEnabled)}
-          onEditTitle={openTitleEditor}
-          onOpenTags={openTags}
-          onExportTree={() => void exportTree()}
-          onExportPath={() => void exportPath()}
-        />
-      ),
-    });
-  }, [
-    colors.primary,
-    navigation,
-    openBookmarks,
-    openDialogueSettings,
-    openTitleEditor,
-    openTags,
-    exportTree,
-    exportPath,
+  useTreeHeaderMenu({
+    bookmarks: controller.bookmarks,
     voiceModeEnabled,
     setVoiceModeEnabled,
-  ]);
+    openModel: controller.dialogueSettings.open,
+    editTitle: controller.editTitle,
+    editDescription: controller.description.open,
+    openBookmark: controller.openBookmark,
+    openExport: controller.exportSheet.open,
+    openTags: controller.tags.open,
+    exportPath: controller.exportPath,
+    showOnboarding: treeOnboarding.open,
+  });
 
   return (
     <AppScreen testID="chat-screen" style={styles.container}>
@@ -71,6 +64,7 @@ const LoomTreeChatView = () => {
         streamingAssistantText={controller.streamingAssistantText}
         composerHeight={composerHeight}
         headerHeight={headerHeight}
+        bottomInset={insets.bottom}
         error={controller.error}
         errorAction={controller.errorAction}
         onErrorAction={controller.onErrorAction}
@@ -83,15 +77,14 @@ const LoomTreeChatView = () => {
         displayPreferences={controller.displayPreferences}
       />
 
-      <View
-        style={[styles.bottomFade, { height: composerHeight * 0.8, bottom: 0 }]}
+      {/* The whole screen fades to black over its last 10%
+          (MessageInputView.swift:24-34). */}
+      <LinearGradient
         pointerEvents="none"
-      >
-        <LinearGradient
-          colors={['transparent', colors.oppositePrimary]}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+        colors={['transparent', 'transparent', colors.oppositePrimary]}
+        locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
+        style={StyleSheet.absoluteFill}
+      />
 
       <ChatComposer
         input={controller.input}
@@ -104,6 +97,9 @@ const LoomTreeChatView = () => {
         onCancelEdit={controller.onCancelEdit}
         loading={controller.loading}
         sending={controller.sending}
+        canStop={controller.canStop}
+        stopping={controller.stopping}
+        onStop={controller.onStop}
         inputRef={controller.inputRef}
         onInputFocus={controller.onComposerFocus}
         onComposerLayout={setComposerHeight}
@@ -121,25 +117,49 @@ const LoomTreeChatView = () => {
         onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
       />
 
-      <BookmarksSheet
-        visible={controller.bookmarks.visible}
-        treeId={controller.bookmarks.treeId}
-        onClose={controller.bookmarks.close}
-        onSelectNode={controller.bookmarks.onSelectNode}
-        onShowDetail={controller.bookmarks.onShowDetail}
+      <NodeSheet
+        target={controller.nodeSheet.target}
+        activePathNodeIds={controller.nodeSheet.activePathNodeIds}
+        textStyle={sheetTextStyle}
+        onClose={controller.nodeSheet.close}
+        onDismissed={controller.nodeSheet.onDismissed}
+        onInfoAction={controller.nodeSheet.onInfoAction}
+        onContinuationAction={controller.nodeSheet.onContinuationAction}
+        onBookmarkAction={controller.nodeSheet.onBookmarkAction}
       />
 
-      <EditTreeTitleSheet
-        visible={controller.titleEditor.visible}
-        initialTitle={controller.titleEditor.title}
-        onCancel={controller.titleEditor.close}
-        onSubmit={controller.titleEditor.save}
+      <TextEditorSheet
+        testID="tree-description-sheet"
+        title="Loom Tree Description"
+        visible={controller.description.visible}
+        text={controller.description.draft}
+        onChangeText={controller.description.setDraft}
+        onSave={controller.description.save}
+        onClose={controller.description.close}
+        textStyle={sheetTextStyle}
       />
+
+      <OpenLoomExportSheet
+        visible={controller.exportSheet.visible}
+        draft={controller.exportSheet.draft}
+        onChange={controller.exportSheet.update}
+        onBack={controller.exportSheet.close}
+        onShare={controller.exportSheet.share}
+        onDismissed={controller.exportSheet.onDismissed}
+      />
+
+      <TextPromptDialog pending={controller.textPrompt} />
 
       <TreeTagsSheet
         visible={controller.tags.visible}
         treeId={controller.tags.treeId}
         onClose={controller.tags.close}
+      />
+
+      <TreeOnboardingSheet
+        visible={treeOnboarding.visible}
+        onBegin={treeOnboarding.begin}
+        onDismiss={treeOnboarding.dismiss}
       />
     </AppScreen>
   );
@@ -150,10 +170,5 @@ export default LoomTreeChatView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
   },
 });

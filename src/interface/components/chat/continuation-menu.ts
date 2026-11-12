@@ -1,21 +1,33 @@
-export type ContinuationMenuAction = 'makeCurrent' | 'copy' | 'bookmark';
+import type { NativeMenuSections } from '@/interface/ui/components/native-menu';
 
-export type ContinuationMenuItem = {
-  readonly action: ContinuationMenuAction;
-  readonly title: string;
-  readonly systemIcon?: string;
-};
+export type ContinuationMenuAction =
+  | 'makeCurrent'
+  | 'retrace'
+  | 'copy'
+  | 'bookmark';
 
-/** A continuation card's long-press menu. */
-export const buildContinuationMenuItems = (
+/**
+ * A continuation's menu, on the card's long press and in its "Continuation
+ * Node" sheet (ChildNodeView.swift:120-145): Make Current Node and Retrace
+ * Branch, a divider, then Copy Text and Bookmark ("Bookmarked" once set).
+ */
+export const buildContinuationMenuSections = (
   bookmarked: boolean
-): readonly ContinuationMenuItem[] =>
+): NativeMenuSections<ContinuationMenuAction> => [
   [
     {
       action: 'makeCurrent',
       title: 'Make Current Node',
-      systemIcon: 'checkmark.circle',
+      systemIcon: 'text.line.last.and.arrowtriangle.forward',
     },
+    {
+      action: 'retrace',
+      title: 'Retrace Branch',
+      systemIcon:
+        'point.bottomleft.forward.to.point.topright.filled.scurvepath',
+    },
+  ],
+  [
     {
       action: 'copy',
       title: 'Copy Text',
@@ -23,7 +35,8 @@ export const buildContinuationMenuItems = (
     },
     {
       action: 'bookmark',
-      title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
-      systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
+      title: bookmarked ? 'Bookmarked' : 'Bookmark',
+      systemIcon: bookmarked ? 'bookmark.fill' : 'bookmark',
     },
-  ] as const;
+  ],
+];

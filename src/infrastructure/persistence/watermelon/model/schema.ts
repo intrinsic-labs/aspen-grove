@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const aspenGroveSchema = appSchema({
-  version: 9,
+  version: 10,
   tables: [
     /**
      * Grove table schema
@@ -66,6 +66,13 @@ export const aspenGroveSchema = appSchema({
         // fresh install, which is what shows onboarding.
         {
           name: 'onboarding_completed_at',
+          type: 'number',
+          isOptional: true,
+        },
+
+        // When the first tree's tips sheet was closed with Begin (v10).
+        {
+          name: 'tree_onboarding_completed_at',
           type: 'number',
           isOptional: true,
         },
