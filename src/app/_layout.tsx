@@ -101,6 +101,26 @@ const RootLayout = () => {
                       headerShown: false,
                     }}
                   />
+                  {/* The tree's Model Settings and its pages, pushed as
+                      Latent Spaces pushes them (ToolbarMenu.swift:34-38). */}
+                  <Stack.Screen
+                    name="tree/[treeId]/model/index"
+                    options={settingsScreenOptions(
+                      colors.primary,
+                      'Model Settings'
+                    )}
+                  />
+                  <Stack.Screen
+                    name="tree/[treeId]/model/models"
+                    options={settingsScreenOptions(colors.primary, 'Model')}
+                  />
+                  <Stack.Screen
+                    name="tree/[treeId]/model/system-message"
+                    options={settingsScreenOptions(
+                      colors.primary,
+                      'System Message'
+                    )}
+                  />
                   <Stack.Screen
                     name="onboarding"
                     options={{

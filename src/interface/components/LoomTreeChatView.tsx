@@ -10,7 +10,6 @@ import { AppScreen } from '../ui/value-objects';
 import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
-import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { OpenLoomExportSheet } from './chat/export-sheet/OpenLoomExportSheet';
 import { toMessageTextStyle } from './chat/message-list/message-text-style';
 import { NodeSheet } from './chat/node-sheet/NodeSheet';
@@ -42,7 +41,7 @@ const LoomTreeChatView = () => {
     bookmarks: controller.bookmarks,
     voiceModeEnabled,
     setVoiceModeEnabled,
-    openModel: controller.dialogueSettings.open,
+    openModel: controller.openModelSettings,
     editTitle: controller.editTitle,
     editDescription: controller.description.open,
     openBookmark: controller.openBookmark,
@@ -104,13 +103,6 @@ const LoomTreeChatView = () => {
         displayPreferences={controller.displayPreferences}
         needsAgent={controller.needsAgent}
         onChooseAgent={controller.onChooseAgent}
-      />
-
-      <DialogueSettingsSheet
-        visible={controller.dialogueSettings.visible}
-        treeId={controller.dialogueSettings.treeId}
-        onClose={controller.dialogueSettings.close}
-        onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
       />
 
       <NodeSheet

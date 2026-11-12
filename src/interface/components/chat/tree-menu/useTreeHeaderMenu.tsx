@@ -9,7 +9,7 @@ type UseTreeHeaderMenuInput = {
   readonly bookmarks: readonly TreeMenuBookmark[];
   readonly voiceModeEnabled: boolean;
   readonly setVoiceModeEnabled: (enabled: boolean) => void;
-  /** Model: the tree's agent, today in Dialogue Settings. */
+  /** Model: pushes the tree's Model Settings. */
   readonly openModel: () => void;
   readonly editTitle: () => void;
   readonly editDescription: () => void;

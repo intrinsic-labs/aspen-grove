@@ -21,7 +21,8 @@ type FormToggleRowProps = {
  * forces dark). Under a dark system the switch's own off track is exactly
  * Latent Spaces'; under a light one it would be near-white on the dark
  * row, so the off track is filled instead (`ios_backgroundColor`, which
- * `trackColor.false` alone only outlines on iOS).
+ * `trackColor.false` alone only outlines on iOS). A disabled toggle that is
+ * on greys out, as SwiftUI's does.
  */
 export const FormToggleRow = ({
   title,
@@ -46,7 +47,9 @@ export const FormToggleRow = ({
           disabled={disabled}
           trackColor={{
             false: offTrack,
-            true: loomUiTokens.colors.accentColor,
+            true: disabled
+              ? form.colors.toggleDisabledOnTrack
+              : loomUiTokens.colors.accentColor,
           }}
           ios_backgroundColor={offTrack}
         />

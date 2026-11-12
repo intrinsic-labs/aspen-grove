@@ -14,7 +14,6 @@ import {
   EditDialogueNodeUseCase,
   ExportLoomTreeUseCase,
   ExportPathMarkdownUseCase,
-  ForkAgentForTreeUseCase,
   GenerateDialogueContinuationUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
@@ -24,7 +23,7 @@ import {
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
   UpdateAgentConfigurationUseCase,
-  UpdateTreeDefaultAgentUseCase,
+  UpdateTreeModelSettingsUseCase,
 } from '@application/use-cases';
 import {
   LMStudioAdapter,
@@ -57,7 +56,7 @@ import { findProviderApiKey } from '@/interface/components/chat/provider-key';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 
-type AppServices = {
+export type AppServices = {
   readonly repositories: {
     readonly agentRepo: WatermelonAgentRepository;
     readonly continuationCountRepo: WatermelonContinuationCountPreferenceRepository;
@@ -87,7 +86,6 @@ type AppServices = {
     readonly editDialogueNodeUseCase: EditDialogueNodeUseCase;
     readonly exportLoomTreeUseCase: ExportLoomTreeUseCase;
     readonly exportPathMarkdownUseCase: ExportPathMarkdownUseCase;
-    readonly forkAgentForTreeUseCase: ForkAgentForTreeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
@@ -97,7 +95,7 @@ type AppServices = {
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
     readonly updateAgentConfigurationUseCase: UpdateAgentConfigurationUseCase;
-    readonly updateTreeDefaultAgentUseCase: UpdateTreeDefaultAgentUseCase;
+    readonly updateTreeModelSettingsUseCase: UpdateTreeModelSettingsUseCase;
   };
 };
 
@@ -209,20 +207,16 @@ const buildAppServices = (): AppServices => {
       nodeRepository: repositories.nodeRepo,
       edgeRepository: repositories.edgeRepo,
     }),
-    // Agent management use cases (used by chat ⚙️ sheet and Settings → Agents)
+    // Agents: Settings → Agents, and a tree's Model Settings
     createSharedAgentUseCase: new CreateSharedAgentUseCase({
       agentRepository: repositories.agentRepo,
     }),
     updateAgentConfigurationUseCase: new UpdateAgentConfigurationUseCase({
       agentRepository: repositories.agentRepo,
     }),
-    forkAgentForTreeUseCase: new ForkAgentForTreeUseCase({
+    updateTreeModelSettingsUseCase: new UpdateTreeModelSettingsUseCase({
       agentRepository: repositories.agentRepo,
       loomTreeRepository: repositories.treeRepo,
-    }),
-    updateTreeDefaultAgentUseCase: new UpdateTreeDefaultAgentUseCase({
-      loomTreeRepository: repositories.treeRepo,
-      agentRepository: repositories.agentRepo,
     }),
     deleteAgentUseCase: new DeleteAgentUseCase({
       agentRepository: repositories.agentRepo,

@@ -343,6 +343,10 @@ export const loomUiTokens = {
       // native one would be near-white; Latent Spaces' renders (90, 90, 94)
       // on a #1C1C1E row (measured), as the system's dark one does.
       toggleOffTrack: 'rgba(120, 120, 128, 0.67)',
+      // On track of a disabled Toggle: SwiftUI greys it, (96, 96, 98) on a
+      // #1C1C1E row (measured, shot 42); the switch draws a disabled track
+      // at half opacity, so this is the colour that lands there.
+      toggleDisabledOnTrack: '#A4A4A6',
     },
     // Card inset from the screen edge (measured 16).
     sectionInset: 16,

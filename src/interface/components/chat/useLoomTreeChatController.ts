@@ -12,6 +12,7 @@ import { useEditNode } from './composer/useEditNode';
 import { useAutoTreeTitle } from './header-actions/useAutoTreeTitle';
 import { useFirstMessageTreeTitle } from './header-actions/useFirstMessageTreeTitle';
 import { useChatSheets } from './header-actions/useChatSheets';
+import { treeModelRoutes } from './tree-model/tree-model-routes';
 import { useTreeExports } from './header-actions/useTreeExports';
 import { useTreeTitle } from './header-actions/useTreeTitle';
 import { useContinuationGestures } from './node-actions/useContinuationGestures';
@@ -119,22 +120,21 @@ export const useLoomTreeChatController = () => {
     navigation,
   });
 
-  const { refreshRows, refreshRowsAndContinuations, reinitializeSession } =
-    useChatSessionLoader({
-      treeIdParam,
-      repositories,
-      navigation,
-      session,
-      activeTreeIdRef,
-      setLoading: state.setLoading,
-      setError,
-      setRows: state.setRows,
-      setSession: state.setSession,
-      continuationSourceNodeId: continuations.sourceNodeId,
-      showContinuationsForNode: continuations.showForNode,
-      resetEphemeralState,
-      applyTreeTitle: title.applyTreeTitle,
-    });
+  const { refreshRows, refreshRowsAndContinuations } = useChatSessionLoader({
+    treeIdParam,
+    repositories,
+    navigation,
+    session,
+    activeTreeIdRef,
+    setLoading: state.setLoading,
+    setError,
+    setRows: state.setRows,
+    setSession: state.setSession,
+    continuationSourceNodeId: continuations.sourceNodeId,
+    showContinuationsForNode: continuations.showForNode,
+    resetEphemeralState,
+    applyTreeTitle: title.applyTreeTitle,
+  });
 
   const maybeGenerateTreeTitle = useAutoTreeTitle({
     session,
@@ -319,10 +319,14 @@ export const useLoomTreeChatController = () => {
     });
 
   const treeId = session?.treeId ?? activeTreeIdRef.current;
-  const sheets = useChatSheets({
-    treeId,
-    onSessionInvalidated: reinitializeSession,
-  });
+  const sheets = useChatSheets({ treeId });
+  // Model Settings is pushed, as Latent Spaces pushes it; the session is
+  // re-read when the tree comes back into focus (useChatSessionLoader).
+  const openModelSettings = () => {
+    if (treeId) {
+      router.push(treeModelRoutes.settings(treeId));
+    }
+  };
   const menuSheets = useTreeMenuSheets({
     treeId,
     treeRepo: repositories.treeRepo,
@@ -399,7 +403,7 @@ export const useLoomTreeChatController = () => {
       onContinuationAction: nodeSheet.onContinuationAction,
       onBookmarkAction: nodeSheet.onBookmarkAction,
     },
-    dialogueSettings: sheets.dialogueSettings,
+    openModelSettings,
     editTitle: () => void title.editTreeTitle(),
     // Android's stand-in for the alerts with a text field.
     textPrompt: textPrompt.pending,
@@ -417,7 +421,7 @@ export const useLoomTreeChatController = () => {
       input,
     }),
     needsAgent,
-    onChooseAgent: sheets.dialogueSettings.open,
+    onChooseAgent: openModelSettings,
     composerPlaceholder: composerMode.composerPlaceholder,
     sendLabel: composerMode.sendLabel,
     displayPreferences,
