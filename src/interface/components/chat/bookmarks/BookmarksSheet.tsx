@@ -17,7 +17,7 @@ type BookmarkRow = {
   readonly nodeId: ULID;
   readonly localId: string;
   readonly label?: string;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: Node['authorType'];
   readonly previewText: string;
   readonly createdAt: Date;
 };
@@ -28,8 +28,10 @@ type BookmarksSheetProps = {
   readonly onClose: () => void;
   /** Rewind the active path to this node (controller closes the sheet). */
   readonly onSelectNode: (nodeId: ULID) => void | Promise<void>;
-  /** Open the node detail sheet for this node. */
+  /** Open this node's Node Info sheet (once this one has gone). */
   readonly onShowDetail: (nodeId: ULID) => void;
+  /** The sheet has finished sliding away. */
+  readonly onDismissed: () => void;
 };
 
 const PREVIEW_LIMIT = 160;
@@ -54,7 +56,7 @@ const toBookmarkRow = (node: Node): BookmarkRow => {
 
 /**
  * Browse this tree's bookmarked nodes. Tap a row to rewind the active path
- * to that node; tap "Details" for the node detail sheet.
+ * to that node; tap "Details" for its Node Info sheet.
  */
 export const BookmarksSheet = ({
   visible,
@@ -62,6 +64,7 @@ export const BookmarksSheet = ({
   onClose,
   onSelectNode,
   onShowDetail,
+  onDismissed,
 }: BookmarksSheetProps) => {
   const { colors } = useAspenGroveTheme();
   const { repositories } = useAppServices();
@@ -109,6 +112,7 @@ export const BookmarksSheet = ({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
       <View
         testID="bookmarks-sheet"

@@ -1,23 +1,15 @@
-# One timed open of the first tree in the Loom Trees list: tap the row, wait for
-# the first message row. Starts and ends on the Loom Trees screen.
+# One timed open of the first tree in Home's list: tap the row, wait for the
+# first message row. Starts and ends on Home.
 appId: com.intrinsiclabs.aspengrove
 ---
 - waitForAnimationToEnd
 - evalScript: ${output.t0 = Date.now()}
 - tapOn:
-    id: trees-list-row-.*
+    id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
       id: chat-message-row-.*
     timeout: 60000
 - evalScript: ${console.log('PERF open_tree_ms=' + (Date.now() - output.t0))}
 - waitForAnimationToEnd
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: trees-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+- runFlow: ../go-home.yaml

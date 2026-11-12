@@ -1,6 +1,7 @@
 import { useCallback, useState, type MutableRefObject } from 'react';
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import type { ILoomTreeRepository } from '@application/repositories';
+import { isDefaultTreeTitle } from '@application/services/tree-title';
 import type { ULID } from '@domain/value-objects';
 
 type UseTreeTitleInput = {
@@ -26,7 +27,8 @@ export const useTreeTitle = ({
   const applyTreeTitle = useCallback(
     (title: string) => {
       setTreeTitle(title);
-      navigation.setOptions({ title });
+      // An untitled tree shows no title until its first message names it.
+      navigation.setOptions({ title: isDefaultTreeTitle(title) ? '' : title });
     },
     [navigation]
   );

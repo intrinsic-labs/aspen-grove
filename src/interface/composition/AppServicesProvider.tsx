@@ -18,6 +18,7 @@ import {
   GenerateDialogueContinuationUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
+  TitleTreeFromFirstMessageUseCase,
   GetSetupStatusUseCase,
   ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
@@ -90,6 +91,7 @@ type AppServices = {
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
+    readonly titleTreeFromFirstMessageUseCase: TitleTreeFromFirstMessageUseCase;
     readonly getSetupStatusUseCase: GetSetupStatusUseCase;
     readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
@@ -254,6 +256,9 @@ const buildAppServices = (): AppServices => {
       agentRepository: repositories.agentRepo,
       userPreferencesRepository: repositories.userPreferencesRepo,
       providerRegistry: adapters.providerRegistry,
+    }),
+    titleTreeFromFirstMessageUseCase: new TitleTreeFromFirstMessageUseCase({
+      loomTreeRepository: repositories.treeRepo,
     }),
     // First-run onboarding and the Home / Loom Trees empty states.
     getSetupStatusUseCase: new GetSetupStatusUseCase({

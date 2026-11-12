@@ -146,7 +146,7 @@ Process for verifying the integrity of a Node and its ancestry.
 1. Retrieve Node and its incoming Continuation edges
 2. Retrieve parent Nodes via edge sources
 3. Check `Node.authorType` to determine hash algorithm:
-   - `human` → use human-authored algorithm
+   - `human` or `system` → use human-authored algorithm
    - `model` → use model-generated algorithm
 4. Recompute expected contentHash:
    - **For human-authored nodes**: content + parent hashes + createdAt + authorAgentId

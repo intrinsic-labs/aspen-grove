@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -6,12 +6,15 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen } from '../ui/value-objects';
+import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
 import { BookmarksSheet } from './chat/bookmarks/BookmarksSheet';
 import { ChatHeaderMenu } from './chat/ChatHeaderMenu';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
+import { toMessageTextStyle } from './chat/message-list/message-text-style';
+import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 import { useVoiceMode } from './voice';
@@ -24,6 +27,17 @@ const LoomTreeChatView = () => {
   const controller = useLoomTreeChatController();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
+  const { messageFontFamily, messageFontSize, messageLineHeight } =
+    controller.displayPreferences;
+  const sheetTextStyle = useMemo(
+    () =>
+      toMessageTextStyle({
+        messageFontFamily,
+        messageFontSize,
+        messageLineHeight,
+      }),
+    [messageFontFamily, messageFontSize, messageLineHeight]
+  );
 
   const openDialogueSettings = controller.dialogueSettings.open;
   const openBookmarks = controller.bookmarks.open;
@@ -71,6 +85,7 @@ const LoomTreeChatView = () => {
         streamingAssistantText={controller.streamingAssistantText}
         composerHeight={composerHeight}
         headerHeight={headerHeight}
+        bottomInset={insets.bottom}
         error={controller.error}
         errorAction={controller.errorAction}
         onErrorAction={controller.onErrorAction}
@@ -83,15 +98,14 @@ const LoomTreeChatView = () => {
         displayPreferences={controller.displayPreferences}
       />
 
-      <View
-        style={[styles.bottomFade, { height: composerHeight * 0.8, bottom: 0 }]}
+      {/* The whole screen fades to black over its last 10%
+          (MessageInputView.swift:24-34). */}
+      <LinearGradient
         pointerEvents="none"
-      >
-        <LinearGradient
-          colors={['transparent', colors.oppositePrimary]}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+        colors={['transparent', 'transparent', colors.oppositePrimary]}
+        locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
+        style={StyleSheet.absoluteFill}
+      />
 
       <ChatComposer
         input={controller.input}
@@ -104,6 +118,9 @@ const LoomTreeChatView = () => {
         onCancelEdit={controller.onCancelEdit}
         loading={controller.loading}
         sending={controller.sending}
+        canStop={controller.canStop}
+        stopping={controller.stopping}
+        onStop={controller.onStop}
         inputRef={controller.inputRef}
         onInputFocus={controller.onComposerFocus}
         onComposerLayout={setComposerHeight}
@@ -127,6 +144,17 @@ const LoomTreeChatView = () => {
         onClose={controller.bookmarks.close}
         onSelectNode={controller.bookmarks.onSelectNode}
         onShowDetail={controller.bookmarks.onShowDetail}
+        onDismissed={controller.bookmarks.onDismissed}
+      />
+
+      <NodeSheet
+        target={controller.nodeSheet.target}
+        activePathNodeIds={controller.nodeSheet.activePathNodeIds}
+        textStyle={sheetTextStyle}
+        onClose={controller.nodeSheet.close}
+        onDismissed={controller.nodeSheet.onDismissed}
+        onInfoAction={controller.nodeSheet.onInfoAction}
+        onContinuationAction={controller.nodeSheet.onContinuationAction}
       />
 
       <EditTreeTitleSheet
@@ -150,10 +178,5 @@ export default LoomTreeChatView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
   },
 });
