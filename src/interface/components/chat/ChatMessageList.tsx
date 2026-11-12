@@ -35,8 +35,9 @@ import { ChatMessageRows } from './message-list/ChatMessageRows';
 import {
   keyboardExtraSpace,
   messageListBottomPadding,
-  visibleContentBottom,
 } from './message-list/list-insets';
+import { centeredRailOffset } from './message-list/rail-centering';
+import { toMessageTextStyle } from './message-list/message-text-style';
 import type { ContinuationRailState } from './message-list/continuation-rail-state';
 import type { ChatMessageMenuAction } from './message-list/message-menu';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
@@ -75,6 +76,9 @@ type ChatMessageListProps = {
  */
 const keepVisibleContentInPlace = { minIndexForVisible: 0 } as const;
 
+/** How long a rail's layout gets to settle before it is centered. */
+const RAIL_REVEAL_SETTLE_MS = 60;
+
 export const ChatMessageList = memo(
   ({
     loading,
@@ -102,6 +106,7 @@ export const ChatMessageList = memo(
     const scrollMetricsRef = useRef({
       offsetY: 0,
       viewportHeight: 0,
+      contentHeight: 0,
     });
     const rowLayoutsRef = useRef(
       new Map<string, { y: number; height: number }>()
@@ -117,19 +122,16 @@ export const ChatMessageList = memo(
       continuationRail.visible && continuationRail.sourceNodeId
         ? continuationRail.sourceNodeId
         : null;
+    const { messageFontFamily, messageFontSize, messageLineHeight } =
+      displayPreferences;
     const messageTextStyle = useMemo<TextStyle>(
-      () => ({
-        fontSize: displayPreferences.messageFontSize,
-        lineHeight: displayPreferences.messageLineHeight,
-        ...(displayPreferences.messageFontFamily
-          ? { fontFamily: displayPreferences.messageFontFamily }
-          : {}),
-      }),
-      [
-        displayPreferences.messageFontFamily,
-        displayPreferences.messageFontSize,
-        displayPreferences.messageLineHeight,
-      ]
+      () =>
+        toMessageTextStyle({
+          messageFontFamily,
+          messageFontSize,
+          messageLineHeight,
+        }),
+      [messageFontFamily, messageFontSize, messageLineHeight]
     );
     const streamingTextStyle = useMemo<TextStyle>(
       () => ({
@@ -139,38 +141,38 @@ export const ChatMessageList = memo(
       [messageTextStyle]
     );
 
+    // Each rail is centered once, when it opens and its cards are in; later
+    // layout changes (cards streaming, growing) leave the scroll alone.
+    const centeredRailRef = useRef<ULID | null>(null);
+    const railLoadingRef = useRef(continuationRail.loading);
+    railLoadingRef.current = continuationRail.loading;
+
     const revealContinuationRail = useCallback(
       (nodeId: ULID) => {
+        if (centeredRailRef.current === nodeId) {
+          return;
+        }
         const rowLayout = rowLayoutsRef.current.get(nodeId);
         const railLayout = railLayoutsRef.current.get(nodeId);
-        const { offsetY, viewportHeight } = scrollMetricsRef.current;
+        const { offsetY, viewportHeight, contentHeight } =
+          scrollMetricsRef.current;
         if (!rowLayout || !railLayout || viewportHeight <= 0) {
           return;
         }
 
-        const railTop = rowLayout.y + railLayout.y;
-        const railBottom = railTop + railLayout.height;
-        const visibleTop =
-          offsetY + headerHeight + loomUiTokens.messageList.topPadding;
-        const visibleBottom = visibleContentBottom(
-          offsetY,
+        const y = centeredRailOffset({
+          railTop: rowLayout.y + railLayout.y,
+          railHeight: railLayout.height,
+          headerHeight,
           viewportHeight,
-          composerHeight
-        );
-
-        if (railBottom > visibleBottom) {
-          scrollRef.current?.scrollTo({
-            y: Math.max(0, offsetY + railBottom - visibleBottom),
-            animated: true,
-          });
-          return;
+          composerHeight,
+          contentHeight,
+        });
+        if (!railLoadingRef.current) {
+          centeredRailRef.current = nodeId;
         }
-
-        if (railTop < visibleTop) {
-          scrollRef.current?.scrollTo({
-            y: Math.max(0, railTop - headerHeight),
-            animated: true,
-          });
+        if (Math.abs(y - offsetY) > 1) {
+          scrollRef.current?.scrollTo({ y, animated: true });
         }
       },
       [composerHeight, headerHeight, scrollRef]
@@ -181,12 +183,10 @@ export const ChatMessageList = memo(
         if (revealRailTimeoutRef.current) {
           clearTimeout(revealRailTimeoutRef.current);
         }
-
-        requestAnimationFrame(() => {
-          revealRailTimeoutRef.current = setTimeout(() => {
-            revealContinuationRail(nodeId);
-          }, 210);
-        });
+        // Let the row, rail and content size report in before measuring.
+        revealRailTimeoutRef.current = setTimeout(() => {
+          revealContinuationRail(nodeId);
+        }, RAIL_REVEAL_SETTLE_MS);
       },
       [revealContinuationRail]
     );
@@ -202,15 +202,14 @@ export const ChatMessageList = memo(
 
     useEffect(() => {
       if (!activeRailNodeId) {
+        centeredRailRef.current = null;
         return;
       }
+      if (centeredRailRef.current !== activeRailNodeId) {
+        centeredRailRef.current = null;
+      }
       scheduleRailReveal(activeRailNodeId);
-    }, [
-      activeRailNodeId,
-      continuationRail.cards.length,
-      continuationRail.loading,
-      scheduleRailReveal,
-    ]);
+    }, [activeRailNodeId, continuationRail.loading, scheduleRailReveal]);
 
     const handleScroll = useCallback(
       (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -218,10 +217,21 @@ export const ChatMessageList = memo(
         scrollMetricsRef.current = {
           offsetY: contentOffset.y,
           viewportHeight: layoutMeasurement.height,
+          contentHeight: event.nativeEvent.contentSize.height,
         };
         onScroll(event);
       },
       [onScroll]
+    );
+
+    const handleContentSizeChange = useCallback(
+      (_width: number, height: number) => {
+        scrollMetricsRef.current = {
+          ...scrollMetricsRef.current,
+          contentHeight: height,
+        };
+      },
+      []
     );
 
     const handleScrollLayout = useCallback((event: LayoutChangeEvent) => {
@@ -299,6 +309,7 @@ export const ChatMessageList = memo(
           filling ? keepVisibleContentInPlace : undefined
         }
         onLayout={handleScrollLayout}
+        onContentSizeChange={handleContentSizeChange}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >

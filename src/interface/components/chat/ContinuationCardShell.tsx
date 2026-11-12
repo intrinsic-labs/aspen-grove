@@ -1,26 +1,25 @@
 import type { ReactNode } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import type { ULID } from '@domain/value-objects';
-import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import {
-  buildContinuationMenuItems,
+  findNativeMenuItem,
+  toNativeMenuActions,
+} from '@/interface/ui/components/native-menu';
+import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+import { continuationCardStyles } from './continuation-card-styles';
+import {
+  buildContinuationMenuSections,
   type ContinuationMenuAction,
 } from './continuation-menu';
 
 type ContinuationCardShellProps = {
   /** The saved node. Without one the card is display-only (still streaming, or failed). */
   readonly nodeId?: ULID;
-  /** The long-press menu's title (the node's local id). */
-  readonly menuTitle?: string;
   readonly isBookmarked?: boolean;
-  readonly style?: StyleProp<ViewStyle>;
+  /** The line above the card. */
+  readonly caption: ReactNode;
+  readonly cardStyle?: StyleProp<ViewStyle>;
   readonly testID?: string;
   readonly onSelect: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
@@ -28,66 +27,53 @@ type ContinuationCardShellProps = {
 };
 
 /**
- * The tan continuation card (Latent Spaces' ChildNodeView). A card with a
- * saved node takes the sibling gestures: tap for details, double tap to make
- * it current, long press for the menu. Its pressable carries
- * `chat-continuation-card-<nodeId>`.
+ * A continuation as Latent Spaces draws it (ChildNodeView): a caption over
+ * a tan card. A card with a saved node takes the gestures: tap to expand it
+ * into its sheet, double tap to make it current, long press for its menu.
+ * Its pressable carries `chat-continuation-card-<nodeId>`.
  */
 export const ContinuationCardShell = ({
   nodeId,
-  menuTitle,
   isBookmarked = false,
-  style,
+  caption,
+  cardStyle,
   testID,
   onSelect,
   onMenuAction,
   children,
 }: ContinuationCardShellProps) => {
-  const cardStyle = [styles.card, style];
+  const style = [continuationCardStyles.card, cardStyle];
+  const sections = buildContinuationMenuSections(isBookmarked);
 
-  if (!nodeId) {
-    return (
-      <View testID={testID} style={cardStyle}>
-        {children}
-      </View>
-    );
-  }
-
-  const menuItems = buildContinuationMenuItems(isBookmarked);
   return (
-    <View testID={testID}>
-      <ContextMenu
-        title={menuTitle}
-        actions={menuItems.map((item) => ({
-          title: item.title,
-          systemIcon: item.systemIcon,
-        }))}
-        onPress={(event) => {
-          const menuItem = menuItems[event.nativeEvent.index];
-          if (menuItem) {
-            onMenuAction(nodeId, menuItem.action);
-          }
-        }}
-      >
-        <Pressable
-          testID={`chat-continuation-card-${nodeId}`}
-          onPress={() => onSelect(nodeId)}
-          style={cardStyle}
+    <View testID={testID} style={continuationCardStyles.column}>
+      {caption}
+      {nodeId ? (
+        <ContextMenu
+          actions={toNativeMenuActions(sections)}
+          borderRadius={loomUiTokens.continuationRail.cardRadius}
+          previewBackgroundColor={loomUiTokens.continuationRail.cardFill}
+          onPress={(event) => {
+            const menuItem = findNativeMenuItem(
+              sections,
+              event.nativeEvent.indexPath
+            );
+            if (menuItem) {
+              onMenuAction(nodeId, menuItem.action);
+            }
+          }}
         >
-          {children}
-        </Pressable>
-      </ContextMenu>
+          <Pressable
+            testID={`chat-continuation-card-${nodeId}`}
+            onPress={() => onSelect(nodeId)}
+            style={style}
+          >
+            {children}
+          </Pressable>
+        </ContextMenu>
+      ) : (
+        <View style={style}>{children}</View>
+      )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    width: loomUiTokens.continuationRail.cardWidth,
-    height: loomUiTokens.continuationRail.cardHeight,
-    borderRadius: loomUiTokens.continuationRail.cardRadius,
-    padding: loomUiTokens.continuationRail.cardPadding,
-    gap: loomUiTokens.continuationRail.cardGap,
-    backgroundColor: loomUiTokens.colors.accentColor,
-  },
-});

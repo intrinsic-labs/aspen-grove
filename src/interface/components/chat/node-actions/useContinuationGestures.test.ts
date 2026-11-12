@@ -15,18 +15,20 @@ const cardNodeId = '01KCARD0000000000000000000' as ULID;
 
 const setup = () => {
   const rewindToNode = jest.fn(async (_nodeId: ULID) => {});
-  const openNodeDetail = jest.fn((_nodeId: ULID) => {});
+  const retraceBranch = jest.fn(async (_nodeId: ULID) => {});
+  const openContinuationSheet = jest.fn((_nodeId: ULID) => {});
   const hook = renderHook(
     () =>
       useContinuationGestures({
         continuations: { toggleBookmark: async () => {} },
         rewindToNode,
+        retraceBranch,
         copyNodeText: async () => {},
-        openNodeDetail,
+        openContinuationSheet,
       }),
     undefined
   );
-  return { hook, rewindToNode, openNodeDetail };
+  return { hook, rewindToNode, retraceBranch, openContinuationSheet };
 };
 
 describe('useContinuationGestures (choosing a card)', () => {
@@ -37,8 +39,8 @@ describe('useContinuationGestures (choosing a card)', () => {
     jest.useRealTimers();
   });
 
-  it('makes a card current on double tap, without opening its details', async () => {
-    const { hook, rewindToNode, openNodeDetail } = setup();
+  it('makes a card current on double tap, without opening its sheet', async () => {
+    const { hook, rewindToNode, openContinuationSheet } = setup();
 
     await act(() => {
       hook.result.current.onContinuationSelect(cardNodeId);
@@ -48,18 +50,18 @@ describe('useContinuationGestures (choosing a card)', () => {
     });
 
     expect(rewindToNode).toHaveBeenCalledWith(cardNodeId);
-    expect(openNodeDetail).not.toHaveBeenCalled();
+    expect(openContinuationSheet).not.toHaveBeenCalled();
   });
 
-  it('opens details on a single tap, once the double-tap window passes', async () => {
-    const { hook, rewindToNode, openNodeDetail } = setup();
+  it('opens the continuation sheet on a single tap, once the double-tap window passes', async () => {
+    const { hook, rewindToNode, openContinuationSheet } = setup();
 
     await act(() => {
       hook.result.current.onContinuationSelect(cardNodeId);
       jest.advanceTimersByTime(SINGLE_TAP_DELAY_MS + 10);
     });
 
-    expect(openNodeDetail).toHaveBeenCalledWith(cardNodeId);
+    expect(openContinuationSheet).toHaveBeenCalledWith(cardNodeId);
     expect(rewindToNode).not.toHaveBeenCalled();
   });
 
@@ -71,5 +73,16 @@ describe('useContinuationGestures (choosing a card)', () => {
     );
 
     expect(rewindToNode).toHaveBeenCalledWith(cardNodeId);
+  });
+
+  it('retraces a card’s branch from its menu', async () => {
+    const { hook, rewindToNode, retraceBranch } = setup();
+
+    await act(() =>
+      hook.result.current.onContinuationMenuAction(cardNodeId, 'retrace')
+    );
+
+    expect(retraceBranch).toHaveBeenCalledWith(cardNodeId);
+    expect(rewindToNode).not.toHaveBeenCalled();
   });
 });

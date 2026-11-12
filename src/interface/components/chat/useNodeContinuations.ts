@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
+  IAgentRepository,
   IEdgeRepository,
   INodeRepository,
   IPathRepository,
+  IRawApiResponseRepository,
 } from '@application/repositories';
+import { resolveNodeModelLabels } from '@application/services/resolve-node-model-labels';
 import type { Node } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { ContinuationPreview } from './types';
@@ -12,15 +15,21 @@ type UseNodeContinuationsInput = {
   readonly edgeRepo: Pick<IEdgeRepository, 'findBySourceNodeId'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById' | 'updateMetadata'>;
   readonly pathRepo: Pick<IPathRepository, 'getNodeSequence'>;
+  readonly rawApiResponseRepo: Pick<
+    IRawApiResponseRepository,
+    'findModelIdentifiersByNodeIds'
+  >;
+  readonly agentRepo: Pick<IAgentRepository, 'findById'>;
   readonly pathId?: ULID;
 };
 
 const toContinuationPreview = (input: {
   readonly node: Node;
+  readonly modelLabel: string;
   readonly activePathNodeIds: readonly ULID[];
   readonly activeIndexByNodeId: ReadonlyMap<ULID, number>;
 }): ContinuationPreview => {
-  const { node, activePathNodeIds, activeIndexByNodeId } = input;
+  const { node, modelLabel, activePathNodeIds, activeIndexByNodeId } = input;
   const activeIndex = activeIndexByNodeId.get(node.id);
   const onBranchCount =
     activeIndex !== undefined ? activePathNodeIds.length - activeIndex : 1;
@@ -28,6 +37,7 @@ const toContinuationPreview = (input: {
   return {
     nodeId: node.id,
     localId: String(node.localId),
+    modelLabel,
     previewText:
       node.content.type === 'text'
         ? node.content.text
@@ -39,7 +49,14 @@ const toContinuationPreview = (input: {
 };
 
 export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
-  const { edgeRepo, nodeRepo, pathRepo, pathId } = input;
+  const {
+    edgeRepo,
+    nodeRepo,
+    pathRepo,
+    rawApiResponseRepo,
+    agentRepo,
+    pathId,
+  } = input;
 
   const [sourceNodeId, setSourceNodeIdState] = useState<ULID | null>(null);
   // The node the rail shows right now, readable after an await: a load
@@ -49,9 +66,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     sourceRef.current = next;
     setSourceNodeIdState(next);
   }, []);
-  const [sourceLocalId, setSourceLocalId] = useState<string | undefined>(
-    undefined
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ContinuationPreview[]>([]);
@@ -60,7 +74,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
 
   const hide = useCallback(() => {
     setSourceNodeId(null);
-    setSourceLocalId(undefined);
     setItems([]);
     setLoading(false);
     setError(null);
@@ -75,7 +88,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
       const isChangingSource = nextSourceNodeId !== sourceRef.current;
       if (isChangingSource) {
         setSourceNodeId(nextSourceNodeId);
-        setSourceLocalId(undefined);
         setItems([]);
       }
 
@@ -83,15 +95,13 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
       setError(null);
 
       try {
-        const [sourceNode, outgoingEdges, pathNodes] = await Promise.all([
-          nodeRepo.findById(nextSourceNodeId, true),
+        const [outgoingEdges, pathNodes] = await Promise.all([
           edgeRepo.findBySourceNodeId(nextSourceNodeId),
           pathRepo.getNodeSequence(pathId),
         ]);
         if (sourceRef.current !== nextSourceNodeId) {
           return;
         }
-        setSourceLocalId(sourceNode ? String(sourceNode.localId) : undefined);
 
         const continuationTargets = outgoingEdges
           .filter((edge) => edge.edgeType === 'continuation')
@@ -105,6 +115,10 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         resolved.sort(
           (left, right) => left.createdAt.getTime() - right.createdAt.getTime()
         );
+        const modelLabels = await resolveNodeModelLabels(resolved, {
+          rawApiResponseRepository: rawApiResponseRepo,
+          agentRepository: agentRepo,
+        });
 
         const activePathNodeIds = pathNodes.map((node) => node.nodeId);
         const activeIndexByNodeId = new Map<ULID, number>();
@@ -118,6 +132,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         const nextItems = resolved.map((node) =>
           toContinuationPreview({
             node,
+            modelLabel: modelLabels.get(node.id) ?? '',
             activePathNodeIds,
             activeIndexByNodeId,
           })
@@ -135,7 +150,15 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
         }
       }
     },
-    [edgeRepo, nodeRepo, pathId, pathRepo, setSourceNodeId]
+    [
+      agentRepo,
+      edgeRepo,
+      nodeRepo,
+      pathId,
+      pathRepo,
+      rawApiResponseRepo,
+      setSourceNodeId,
+    ]
   );
 
   /**
@@ -179,7 +202,6 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
   return {
     visible,
     sourceNodeId,
-    sourceLocalId,
     loading,
     error,
     items,

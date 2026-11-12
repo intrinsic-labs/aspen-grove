@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { canSubmitComposer } from './composer/can-submit-composer';
 import { toComposerMode } from './composer/composer-mode';
@@ -15,7 +16,10 @@ import { useTreeTitle } from './header-actions/useTreeTitle';
 import { useContinuationGestures } from './node-actions/useContinuationGestures';
 import { useMessageActions } from './node-actions/useMessageActions';
 import { useNodeActions } from './node-actions/useNodeActions';
+import { useRetraceBranch } from './node-actions/useRetraceBranch';
 import { useRewindToNode } from './node-actions/useRewindToNode';
+import { useNodeSheet } from './node-sheet/useNodeSheet';
+import { useRouteNodeSheet } from './node-sheet/useRouteNodeSheet';
 import { useParallelRail } from './parallel/useParallelRail';
 import { useChatReadAloud } from './read-aloud/useChatReadAloud';
 import { useReadAloudTaps } from './read-aloud/useReadAloudTaps';
@@ -40,7 +44,7 @@ import { useStreamingAssistantRow } from './useStreamingAssistantRow';
  * Hook order is load-bearing: React runs effects in declaration order, and
  * this order matches the original single-file controller (draft sync,
  * ephemeral guard, session load, focus reload, auto-scroll, autofocus,
- * route-driven edit, tap-timer cleanup).
+ * route-driven node sheet, tap-timer cleanup).
  */
 export const useLoomTreeChatController = () => {
   const router = useRouter();
@@ -51,16 +55,10 @@ export const useLoomTreeChatController = () => {
     treeId?: string | string[];
     autofocus?: string | string[];
     ephemeral?: string | string[];
-    editNodeId?: string | string[];
-    editRequestId?: string | string[];
+    nodeSheetId?: string | string[];
   }>();
-  const {
-    treeIdParam,
-    shouldAutofocus,
-    shouldDeleteEmptyOnBlur,
-    editNodeId,
-    editRequestId,
-  } = toDialogueRouteParams(routeParams);
+  const { treeIdParam, shouldAutofocus, shouldDeleteEmptyOnBlur, nodeSheetId } =
+    toDialogueRouteParams(routeParams);
 
   const state = useChatSessionState();
   const {
@@ -86,6 +84,8 @@ export const useLoomTreeChatController = () => {
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
     pathRepo: repositories.pathRepo,
+    rawApiResponseRepo: repositories.rawApiResponseRepo,
+    agentRepo: repositories.agentRepo,
     pathId: session?.pathId,
   });
   const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
@@ -170,8 +170,6 @@ export const useLoomTreeChatController = () => {
   const nodeActions = useNodeActions({
     rows,
     session,
-    activeTreeIdRef,
-    router,
     nodeRepo: repositories.nodeRepo,
     refreshRowsAndContinuations,
   });
@@ -202,10 +200,12 @@ export const useLoomTreeChatController = () => {
   // A single generation waits while several stream, so the path and rows
   // aren't rebuilt under them. Making a card current (rewind) still works.
   const generating = sending || parallelRail.running;
+  const retraceBranch = useRetraceBranch({
+    rows,
+    edgeRepo: repositories.edgeRepo,
+    rewindToNode,
+  });
   const { editTarget, setEditTarget, startEditForNode } = useEditNode({
-    session,
-    editNodeId,
-    editRequestId,
     getRowById: nodeActions.getRowById,
     nodeRepo: repositories.nodeRepo,
     continuations,
@@ -258,13 +258,37 @@ export const useLoomTreeChatController = () => {
     sendDialogueTurnUseCase: useCases.sendDialogueTurnUseCase,
   });
 
+  const activePathNodeIds = useMemo(() => rows.map((row) => row.id), [rows]);
+  const nodeSheet = useNodeSheet({
+    rewindToNode,
+    retraceBranch,
+    copyNodeText: nodeActions.copyNodeText,
+    toggleBookmark: nodeActions.toggleBookmark,
+    togglePrune: nodeActions.togglePrune,
+    startEditForNode,
+  });
+  const openNodeSheet = nodeSheet.open;
+  const openNodeInfo = useCallback(
+    (nodeId: ULID) => openNodeSheet(nodeId, 'info'),
+    [openNodeSheet]
+  );
+  const openContinuationSheet = useCallback(
+    (nodeId: ULID) => openNodeSheet(nodeId, 'continuation'),
+    [openNodeSheet]
+  );
+  useRouteNodeSheet({
+    nodeSheetId,
+    ready: !loading && session !== null,
+    openNodeInfo,
+  });
+
   const { onMessageAction, onNodeTap: toggleRailForNode } = useMessageActions({
     continuations,
     regenerateFromNode,
     startEditForNode,
     rewindToNode,
     copyNodeText: nodeActions.copyNodeText,
-    openNodeDetail: nodeActions.openNodeDetail,
+    openNodeInfo,
     toggleBookmark: nodeActions.toggleBookmark,
     togglePrune: nodeActions.togglePrune,
   });
@@ -276,14 +300,15 @@ export const useLoomTreeChatController = () => {
     useContinuationGestures({
       continuations,
       rewindToNode,
+      retraceBranch,
       copyNodeText: nodeActions.copyNodeText,
-      openNodeDetail: nodeActions.openNodeDetail,
+      openContinuationSheet,
     });
 
   const sheets = useChatSheets({
     treeId: session?.treeId ?? activeTreeIdRef.current,
     rewindToNode,
-    openNodeDetail: nodeActions.openNodeDetail,
+    openNodeInfo,
     onSessionInvalidated: reinitializeSession,
   });
   const composerMode = toComposerMode(editTarget, session?.model?.agentName);
@@ -321,8 +346,8 @@ export const useLoomTreeChatController = () => {
       visible: continuations.visible,
       loading: continuations.loading,
       sourceNodeId: continuations.sourceNodeId,
-      sourceLocalId: continuations.sourceLocalId,
       cards: parallelRail.cards,
+      streamingModelLabel: session?.model?.modelIdentifier ?? '',
       generation: {
         count: parallelRail.count,
         onChangeCount: parallelRail.setCount,
@@ -337,6 +362,14 @@ export const useLoomTreeChatController = () => {
       error: continuations.error,
     },
     bookmarks: sheets.bookmarks,
+    nodeSheet: {
+      target: nodeSheet.target,
+      activePathNodeIds,
+      close: nodeSheet.close,
+      onDismissed: nodeSheet.onDismissed,
+      onInfoAction: nodeSheet.onInfoAction,
+      onContinuationAction: nodeSheet.onContinuationAction,
+    },
     dialogueSettings: sheets.dialogueSettings,
     titleEditor: {
       visible: title.titleEditorVisible,

@@ -56,16 +56,6 @@ const RootLayout = () => {
                     }}
                   />
                   <Stack.Screen
-                    name="tree/[treeId]/node/[nodeId]"
-                    options={{
-                      title: 'Node',
-                      headerTransparent: true,
-                      headerShadowVisible: false,
-                      headerBackTitle: '',
-                      headerBackButtonDisplayMode: 'minimal',
-                    }}
-                  />
-                  <Stack.Screen
                     name="tree/[treeId]/compose"
                     options={{
                       headerShown: false,

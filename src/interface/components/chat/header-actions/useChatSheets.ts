@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ULID } from '@domain/value-objects';
 
 type UseChatSheetsInput = {
   readonly treeId: ULID | null;
   readonly rewindToNode: (nodeId: ULID) => Promise<void>;
-  readonly openNodeDetail: (nodeId: ULID) => void;
+  /** Opens a node's "Node Info" sheet. */
+  readonly openNodeInfo: (nodeId: ULID) => void;
   readonly onSessionInvalidated: () => Promise<void>;
 };
 
@@ -15,10 +16,12 @@ type UseChatSheetsInput = {
 export const useChatSheets = ({
   treeId,
   rewindToNode,
-  openNodeDetail,
+  openNodeInfo,
   onSessionInvalidated,
 }: UseChatSheetsInput) => {
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
+  // The node whose sheet opens once the bookmarks sheet has gone.
+  const detailAfterBookmarksRef = useRef<ULID | null>(null);
   const [dialogueSettingsVisible, setDialogueSettingsVisible] = useState(false);
   const [tagsVisible, setTagsVisible] = useState(false);
 
@@ -32,11 +35,18 @@ export const useChatSheets = ({
         setBookmarksVisible(false);
         await rewindToNode(nodeId);
       },
-      // iOS can't reliably present two sibling RN Modals at once, so the
-      // bookmarks sheet closes before the detail route opens.
+      // iOS can't present two sibling RN Modals at once, so the bookmarks
+      // sheet slides away before the node's sheet comes up.
       onShowDetail: (nodeId: ULID) => {
+        detailAfterBookmarksRef.current = nodeId;
         setBookmarksVisible(false);
-        openNodeDetail(nodeId);
+      },
+      onDismissed: () => {
+        const nodeId = detailAfterBookmarksRef.current;
+        detailAfterBookmarksRef.current = null;
+        if (nodeId) {
+          openNodeInfo(nodeId);
+        }
       },
     },
     dialogueSettings: {

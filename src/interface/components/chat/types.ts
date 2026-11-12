@@ -47,6 +47,8 @@ export type ChatRow = {
 export type ContinuationPreview = {
   readonly nodeId: ULID;
   readonly localId: string;
+  /** The model it came from ("User" or "System" otherwise), as Latent Spaces captions it. */
+  readonly modelLabel: string;
   readonly previewText: string;
   readonly isOnActivePath: boolean;
   readonly onBranchCount: number;

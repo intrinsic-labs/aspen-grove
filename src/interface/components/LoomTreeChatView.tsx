@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -13,6 +13,8 @@ import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
+import { toMessageTextStyle } from './chat/message-list/message-text-style';
+import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 import { useVoiceMode } from './voice';
@@ -25,6 +27,17 @@ const LoomTreeChatView = () => {
   const controller = useLoomTreeChatController();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
+  const { messageFontFamily, messageFontSize, messageLineHeight } =
+    controller.displayPreferences;
+  const sheetTextStyle = useMemo(
+    () =>
+      toMessageTextStyle({
+        messageFontFamily,
+        messageFontSize,
+        messageLineHeight,
+      }),
+    [messageFontFamily, messageFontSize, messageLineHeight]
+  );
 
   const openDialogueSettings = controller.dialogueSettings.open;
   const openBookmarks = controller.bookmarks.open;
@@ -131,6 +144,17 @@ const LoomTreeChatView = () => {
         onClose={controller.bookmarks.close}
         onSelectNode={controller.bookmarks.onSelectNode}
         onShowDetail={controller.bookmarks.onShowDetail}
+        onDismissed={controller.bookmarks.onDismissed}
+      />
+
+      <NodeSheet
+        target={controller.nodeSheet.target}
+        activePathNodeIds={controller.nodeSheet.activePathNodeIds}
+        textStyle={sheetTextStyle}
+        onClose={controller.nodeSheet.close}
+        onDismissed={controller.nodeSheet.onDismissed}
+        onInfoAction={controller.nodeSheet.onInfoAction}
+        onContinuationAction={controller.nodeSheet.onContinuationAction}
       />
 
       <EditTreeTitleSheet

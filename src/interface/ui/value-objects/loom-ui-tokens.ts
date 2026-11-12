@@ -7,9 +7,9 @@
  * capture of the reference build (iPhone 17 Pro, iOS 26) where the value is a
  * system default rather than a number in the source.
  *
- * The tree chat (Dialogue) screen is ported against these. The continuation
- * rail and expanded composer tokens are still Aspen Grove's provisional
- * values until those screens are ported.
+ * The tree chat (Dialogue) screen, its continuation row and node sheets are
+ * ported against these. The expanded composer tokens are still Aspen
+ * Grove's provisional values until that screen is ported.
  */
 export const loomUiTokens = {
   colors: {
@@ -157,28 +157,77 @@ export const loomUiTokens = {
     // Symbols module in the build yet), sized to match its width (measured).
     menuIconSize: 27,
   },
+  // The continuations row under a node (ChildNodesView.swift) and its cards
+  // (ChildNodeView.swift).
   continuationRail: {
-    verticalPadding: 8,
-    headerVerticalPadding: 4,
-    headerBottomMargin: 8,
-    hintBottomMargin: 8,
-    hintTopMargin: 10,
-    hintVerticalPadding: 4,
-    emptyVerticalPadding: 10,
-    headerLetterSpacing: 0.6,
-    contentGap: 10,
-    cardWidth: 260,
-    cardHeight: 212,
-    cardRadius: 10,
-    cardPadding: 12,
-    cardGap: 8,
-    metaLetterSpacing: 0.4,
-    previewTextSize: 16,
-    previewTextLineHeight: 23,
+    // The hint: Calling Code 14, gray, centered, `.padding([.top,
+    // .horizontal])` (ChildNodesView.swift:16-20). IBM Plex Mono stands in.
+    hintFontFamily: 'IBMPlexMono-Regular',
+    hintTextSize: 14,
+    hintLineHeight: 18,
+    hintPadding: 16,
+    // `HStack(spacing: 22)` in `.padding()`, then `.padding(.bottom, 18)`
+    // and a Divider with `.padding(.bottom, 22)` (ChildNodesView.swift:21-31).
+    cardSpacing: 22,
+    rowPadding: 16,
+    rowBottomPadding: 18,
+    dividerBottomMargin: 22,
+    // SwiftUI `.gray`, the hint's and the caption's color.
+    gray: '#8E8E93',
+    // `.secondary`, dark: the caption's `[n]`.
+    secondary: 'rgba(235, 235, 245, 0.6)',
+    // `VStack(spacing: 8)`: caption over card (ChildNodeView.swift:19).
+    captionGap: 8,
+    // `.caption.italic()` (ChildNodeView.swift:27-32); the HStack's default
+    // 8 pt spacing between check, model and count.
+    captionTextSize: 12,
+    captionItemGap: 8,
+    // `checkmark.circle.fill` in `.caption`, AppColors.green.
+    captionCheckSize: 13,
+    // Text 275 wide in `.padding(8)`, `cornerRadius: 4`, at most 7 lines
+    // (ChildNodeView.swift:34-41).
+    cardWidth: 275,
+    cardPadding: 8,
+    cardRadius: 4,
     previewTextMaxLines: 7,
-    useButtonMarginTop: 2,
-    useButtonHitSlop: 8,
-    closeHitSlop: 10,
+    // `Color.orange.saturation(0.3)` (ChildNodeView.swift:39), measured.
+    cardFill: '#BE9D80',
+    // `AppColors.oppositePrimary.opacity(0.8)`: black at 0.8 in dark mode.
+    cardText: 'rgba(0, 0, 0, 0.8)',
+    // `.transition(.scale)` with the rail's easeInOut 0.3 toggle
+    // (ChildNodesView.swift:32, LoomTreeContentView.swift:40).
+    transitionMs: 300,
+    // AG's streaming cards: the stop control and the failed card's dimming.
+    stopHitSlop: 10,
+    stopIconSize: 20,
+    failedOpacity: 0.75,
+    emptyVerticalPadding: 10,
+  },
+  // A node's sheet: "Node Info" (NodeSheetView.swift) and "Continuation
+  // Node" (ChildNodeView.swift:53-96).
+  nodeSheet: {
+    // The sheet background (systemBackground, elevated, dark), measured.
+    background: '#1C1C1E',
+    // Glass circles: `chevron.left` and `ellipsis.circle` in the toolbar,
+    // 44 pt, 16 pt from the edges, 17 pt below the sheet's top (measured).
+    circleSize: 44,
+    chevronSize: 22,
+    ellipsisSize: 26,
+    // Title `.headline`, subtitle `.caption` in `.secondary`.
+    titleSize: 17,
+    subtitleSize: 12,
+    subtitleGap: 2,
+    subtitleItemGap: 8,
+    // Text in `.padding()` plus the code block's own `.padding(8)`
+    // (NodeSheetView.swift:22-23, CodeBlockView.swift:36).
+    textInset: 24,
+    // The toolbar's bottom to the first line, measured on shot 23.
+    textTopGap: 32,
+    // Aspen Grove's details under the text (metadata, generation, provenance).
+    detailsGap: 22,
+    detailsRowGap: 8,
+    detailsTextSize: 12,
+    detailsLabelSpacing: 0.7,
   },
   // ---------------------------------------------------------------------
   // Settings (Latent Spaces' inset-grouped Forms). Swift sources are in

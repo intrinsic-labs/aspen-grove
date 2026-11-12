@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type {
+  IAgentRepository,
   IEdgeRepository,
   INodeRepository,
   IRawApiResponseRepository,
 } from '@application/repositories';
+import { resolveNodeModelLabels } from '@application/services/resolve-node-model-labels';
 import {
   verifyModelNodeProvenance,
   type ModelNodeProvenanceVerificationResult,
@@ -11,10 +13,12 @@ import {
 import type { NodeAuthorType, TokenUsage } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
-export type NodeDetailData = {
+export type NodeSheetData = {
   readonly nodeId: ULID;
   readonly localId: string;
   readonly authorType: NodeAuthorType;
+  /** The model it came from, "User" or "System" (Latent Spaces' `modelId`). */
+  readonly modelLabel: string;
   readonly text: string;
   readonly createdAt: Date;
   readonly editedFrom?: ULID;
@@ -35,23 +39,27 @@ export type NodeDetailData = {
   readonly provenance?: ModelNodeProvenanceVerificationResult;
 };
 
-type UseNodeDetailDataInput = {
+type UseNodeSheetDataInput = {
   readonly nodeId: ULID | null;
   readonly nodeRepo: Pick<INodeRepository, 'findById'>;
   readonly edgeRepo: Pick<IEdgeRepository, 'findContinuationsByTargetNodeId'>;
-  readonly rawApiResponseRepo: Pick<IRawApiResponseRepository, 'findByNodeId'>;
+  readonly rawApiResponseRepo: Pick<
+    IRawApiResponseRepository,
+    'findByNodeId' | 'findModelIdentifiersByNodeIds'
+  >;
+  readonly agentRepo: Pick<IAgentRepository, 'findById'>;
 };
 
 /**
- * Loads everything the node detail sheet shows: node metadata, the stored
- * raw-API-response evidence record, and a live hash-chain provenance
- * verification (model nodes only).
+ * Loads everything a node sheet shows: the node's text and metadata, the
+ * model it came from, the stored raw-API-response evidence record, and a
+ * live hash-chain provenance verification (model nodes only).
  */
-export const useNodeDetailData = (input: UseNodeDetailDataInput) => {
-  const { nodeId, nodeRepo, edgeRepo, rawApiResponseRepo } = input;
+export const useNodeSheetData = (input: UseNodeSheetDataInput) => {
+  const { nodeId, nodeRepo, edgeRepo, rawApiResponseRepo, agentRepo } = input;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<NodeDetailData | null>(null);
+  const [data, setData] = useState<NodeSheetData | null>(null);
 
   const reload = useCallback(async () => {
     if (!nodeId) {
@@ -67,6 +75,10 @@ export const useNodeDetailData = (input: UseNodeDetailDataInput) => {
       }
 
       const isModelNode = node.authorType === 'model';
+      const modelLabels = await resolveNodeModelLabels([node], {
+        rawApiResponseRepository: rawApiResponseRepo,
+        agentRepository: agentRepo,
+      });
       const [rawApiResponse, provenance] = isModelNode
         ? await Promise.all([
             rawApiResponseRepo.findByNodeId(node.id),
@@ -83,6 +95,7 @@ export const useNodeDetailData = (input: UseNodeDetailDataInput) => {
         nodeId: node.id,
         localId: String(node.localId),
         authorType: node.authorType,
+        modelLabel: modelLabels.get(node.id) ?? '',
         text:
           node.content.type === 'text'
             ? node.content.text
@@ -113,7 +126,7 @@ export const useNodeDetailData = (input: UseNodeDetailDataInput) => {
     } finally {
       setLoading(false);
     }
-  }, [edgeRepo, nodeId, nodeRepo, rawApiResponseRepo]);
+  }, [agentRepo, edgeRepo, nodeId, nodeRepo, rawApiResponseRepo]);
 
   useEffect(() => {
     void reload();
