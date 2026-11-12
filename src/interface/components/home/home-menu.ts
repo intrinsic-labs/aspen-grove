@@ -1,4 +1,9 @@
-import type { ContextMenuAction } from 'react-native-context-menu-view';
+import {
+  menuItem,
+  menuSection,
+  submenu as menuSubmenu,
+  type MenuTreeNode,
+} from '@/interface/ui/components/native-menu-tree';
 import type { ULID } from '@domain/value-objects';
 
 export type HomeMenuCommand =
@@ -9,28 +14,13 @@ export type HomeMenuCommand =
   | { readonly type: 'search' }
   | { readonly type: 'filterTag'; readonly tagId: ULID | null };
 
-type HomeMenuNode = {
-  readonly action: ContextMenuAction;
-  readonly command?: HomeMenuCommand;
-  readonly children?: readonly HomeMenuNode[];
-};
+type HomeMenuNode = MenuTreeNode<HomeMenuCommand>;
+
+const leaf = menuItem<HomeMenuCommand>;
+const inlineSection = menuSection<HomeMenuCommand>;
+const submenu = menuSubmenu<HomeMenuCommand>;
 
 type MenuTag = { readonly id: ULID; readonly name: string };
-
-const leaf = (
-  title: string,
-  systemIcon: string,
-  command: HomeMenuCommand,
-  selected?: boolean
-): HomeMenuNode => ({
-  action: { title, systemIcon, ...(selected ? { selected } : {}) },
-  command,
-});
-
-const inlineSection = (children: readonly HomeMenuNode[]): HomeMenuNode => ({
-  action: { title: '', inlineChildren: true },
-  children,
-});
 
 /**
  * Home's `···` menu: Latent Spaces' items first, in its order
@@ -51,9 +41,9 @@ export const buildHomeMenu = (
     leaf('Search', 'magnifyingglass', { type: 'search' }),
     ...(tags.length > 0
       ? [
-          {
-            action: { title: 'Filter by Tag', systemIcon: 'tag' },
-            children: [
+          submenu(
+            'Filter by Tag',
+            [
               leaf(
                 'All Trees',
                 'tray.full',
@@ -69,34 +59,9 @@ export const buildHomeMenu = (
                 )
               ),
             ],
-          },
+            'tag'
+          ),
         ]
       : []),
   ]),
 ];
-
-/** The native menu's actions for `react-native-context-menu-view`. */
-export const toContextMenuActions = (
-  nodes: readonly HomeMenuNode[]
-): ContextMenuAction[] =>
-  nodes.map((node) =>
-    node.children
-      ? { ...node.action, actions: toContextMenuActions(node.children) }
-      : node.action
-  );
-
-/** The command at a pressed item's index path, if any. */
-export const commandAt = (
-  nodes: readonly HomeMenuNode[],
-  indexPath: readonly number[]
-): HomeMenuCommand | undefined => {
-  const [head, ...rest] = indexPath;
-  const node = head === undefined ? undefined : nodes[head];
-  if (!node) {
-    return undefined;
-  }
-  if (rest.length === 0) {
-    return node.command;
-  }
-  return node.children ? commandAt(node.children, rest) : undefined;
-};

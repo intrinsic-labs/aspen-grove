@@ -5,11 +5,10 @@ import type { ULID } from '@domain/value-objects';
 import { HeaderIconButton } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import {
-  buildHomeMenu,
   commandAt,
   toContextMenuActions,
-  type HomeMenuCommand,
-} from './home-menu';
+} from '@/interface/ui/components/native-menu-tree';
+import { buildHomeMenu, type HomeMenuCommand } from './home-menu';
 
 type HomeMenuProps = {
   readonly tags: readonly Tag[];
