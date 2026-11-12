@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
+  type TextInput,
   View,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -27,6 +28,7 @@ export const EditTreeTitleSheet = ({
   const [title, setTitle] = useState(initialTitle);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
@@ -61,6 +63,10 @@ export const EditTreeTitleSheet = ({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onCancel}
+      // Focus once the sheet is up. `autoFocus` fired while the page sheet
+      // was still being presented: the field took focus without raising the
+      // keyboard, so the first tap on it only showed the edit callout.
+      onShow={() => inputRef.current?.focus()}
     >
       <View
         testID="chat-title-sheet"
@@ -113,7 +119,7 @@ export const EditTreeTitleSheet = ({
             </AppText>
             <AppInput
               testID="chat-title-sheet-input"
-              autoFocus
+              ref={inputRef}
               value={title}
               onChangeText={setTitle}
               autoCapitalize="sentences"
