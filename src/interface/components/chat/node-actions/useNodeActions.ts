@@ -14,7 +14,7 @@ type UseNodeActionsInput = {
 
 /**
  * Single-node actions that don't generate: look up a loaded row, copy its
- * text, and toggle its bookmark or prune flag.
+ * text, toggle its bookmark or prune flag, and relabel its bookmark.
  */
 export const useNodeActions = ({
   rows,
@@ -59,6 +59,21 @@ export const useNodeActions = ({
     [nodeRepo, refreshRowsAndContinuations, session]
   );
 
+  // An empty label clears it, so the sheet falls back to "Bookmarked Node".
+  const renameBookmark = useCallback(
+    async (nodeId: ULID, label: string) => {
+      if (!session) {
+        return;
+      }
+      const trimmed = label.trim();
+      await nodeRepo.updateMetadata(nodeId, {
+        bookmarkLabel: trimmed.length > 0 ? trimmed : null,
+      });
+      await refreshRowsAndContinuations(session);
+    },
+    [nodeRepo, refreshRowsAndContinuations, session]
+  );
+
   // Pruned nodes stay on the tree (and any path) but are excluded from
   // generation context by the context assembler.
   const togglePrune = useCallback(
@@ -79,6 +94,7 @@ export const useNodeActions = ({
     getRowById,
     copyNodeText,
     toggleBookmark,
+    renameBookmark,
     togglePrune,
   };
 };

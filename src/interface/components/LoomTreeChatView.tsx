@@ -1,21 +1,21 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { TextEditorSheet } from '../ui/components/text-editor/TextEditorSheet';
+import { TextPromptDialog } from '../ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '../ui/value-objects';
 import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
-import { BookmarksSheet } from './chat/bookmarks/BookmarksSheet';
-import { ChatHeaderMenu } from './chat/ChatHeaderMenu';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
 import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
-import { EditTreeTitleSheet } from './chat/EditTreeTitleSheet';
+import { OpenLoomExportSheet } from './chat/export-sheet/OpenLoomExportSheet';
 import { toMessageTextStyle } from './chat/message-list/message-text-style';
 import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
+import { useTreeHeaderMenu } from './chat/tree-menu/useTreeHeaderMenu';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
 import { useVoiceMode } from './voice';
 
@@ -23,7 +23,6 @@ const LoomTreeChatView = () => {
   const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const navigation = useNavigation();
   const controller = useLoomTreeChatController();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
@@ -39,42 +38,18 @@ const LoomTreeChatView = () => {
     [messageFontFamily, messageFontSize, messageLineHeight]
   );
 
-  const openDialogueSettings = controller.dialogueSettings.open;
-  const openBookmarks = controller.bookmarks.open;
-  const openTitleEditor = controller.titleEditor.open;
-  const exportTree = controller.exports.exportTree;
-  const exportPath = controller.exports.exportPathMarkdown;
-  const openTags = controller.tags.open;
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRightContainerStyle: {
-        paddingRight: 14,
-      },
-      headerRight: () => (
-        <ChatHeaderMenu
-          onOpenBookmarks={openBookmarks}
-          onOpenDialogueSettings={openDialogueSettings}
-          voiceModeEnabled={voiceModeEnabled}
-          onToggleVoiceMode={() => setVoiceModeEnabled(!voiceModeEnabled)}
-          onEditTitle={openTitleEditor}
-          onOpenTags={openTags}
-          onExportTree={() => void exportTree()}
-          onExportPath={() => void exportPath()}
-        />
-      ),
-    });
-  }, [
-    colors.primary,
-    navigation,
-    openBookmarks,
-    openDialogueSettings,
-    openTitleEditor,
-    openTags,
-    exportTree,
-    exportPath,
+  useTreeHeaderMenu({
+    bookmarks: controller.bookmarks,
     voiceModeEnabled,
     setVoiceModeEnabled,
-  ]);
+    openModel: controller.dialogueSettings.open,
+    editTitle: controller.editTitle,
+    editDescription: controller.description.open,
+    openBookmark: controller.openBookmark,
+    openExport: controller.exportSheet.open,
+    openTags: controller.tags.open,
+    exportPath: controller.exportPath,
+  });
 
   return (
     <AppScreen testID="chat-screen" style={styles.container}>
@@ -138,15 +113,6 @@ const LoomTreeChatView = () => {
         onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
       />
 
-      <BookmarksSheet
-        visible={controller.bookmarks.visible}
-        treeId={controller.bookmarks.treeId}
-        onClose={controller.bookmarks.close}
-        onSelectNode={controller.bookmarks.onSelectNode}
-        onShowDetail={controller.bookmarks.onShowDetail}
-        onDismissed={controller.bookmarks.onDismissed}
-      />
-
       <NodeSheet
         target={controller.nodeSheet.target}
         activePathNodeIds={controller.nodeSheet.activePathNodeIds}
@@ -155,14 +121,30 @@ const LoomTreeChatView = () => {
         onDismissed={controller.nodeSheet.onDismissed}
         onInfoAction={controller.nodeSheet.onInfoAction}
         onContinuationAction={controller.nodeSheet.onContinuationAction}
+        onBookmarkAction={controller.nodeSheet.onBookmarkAction}
       />
 
-      <EditTreeTitleSheet
-        visible={controller.titleEditor.visible}
-        initialTitle={controller.titleEditor.title}
-        onCancel={controller.titleEditor.close}
-        onSubmit={controller.titleEditor.save}
+      <TextEditorSheet
+        testID="tree-description-sheet"
+        title="Loom Tree Description"
+        visible={controller.description.visible}
+        text={controller.description.draft}
+        onChangeText={controller.description.setDraft}
+        onSave={controller.description.save}
+        onClose={controller.description.close}
+        textStyle={sheetTextStyle}
       />
+
+      <OpenLoomExportSheet
+        visible={controller.exportSheet.visible}
+        draft={controller.exportSheet.draft}
+        onChange={controller.exportSheet.update}
+        onBack={controller.exportSheet.close}
+        onShare={controller.exportSheet.share}
+        onDismissed={controller.exportSheet.onDismissed}
+      />
+
+      <TextPromptDialog pending={controller.textPrompt} />
 
       <TreeTagsSheet
         visible={controller.tags.visible}

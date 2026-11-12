@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -21,9 +22,19 @@ type SheetButton = {
 
 type FormSheetHeaderProps = {
   readonly title: string;
-  readonly leading?: SheetButton;
-  readonly trailing?: SheetButton;
+  /** A text button, or your own control (a glass icon button with a menu). */
+  readonly leading?: SheetButton | ReactNode;
+  readonly trailing?: SheetButton | ReactNode;
 };
+
+const isSheetButton = (value: unknown): value is SheetButton =>
+  typeof value === 'object' &&
+  value !== null &&
+  'label' in value &&
+  'onPress' in value;
+
+const Side = ({ item }: { readonly item: SheetButton | ReactNode }) =>
+  isSheetButton(item) ? <GlassButton button={item} /> : <>{item}</>;
 
 const GlassButton = ({ button }: { readonly button: SheetButton }) => (
   <Pressable
@@ -65,14 +76,12 @@ export const FormSheetHeader = ({
   trailing,
 }: FormSheetHeaderProps) => (
   <View style={styles.bar}>
-    <View style={styles.side}>
-      {leading ? <GlassButton button={leading} /> : null}
-    </View>
+    <View style={styles.side}>{leading ? <Side item={leading} /> : null}</View>
     <Text numberOfLines={1} style={styles.title}>
       {title}
     </Text>
     <View style={[styles.side, styles.trailing]}>
-      {trailing ? <GlassButton button={trailing} /> : null}
+      {trailing ? <Side item={trailing} /> : null}
     </View>
   </View>
 );

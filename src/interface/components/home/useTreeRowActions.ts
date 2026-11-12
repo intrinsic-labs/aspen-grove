@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { useCallback } from 'react';
 import type { LoomTree } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
+import { useTextPrompt } from '@/interface/ui/components/text-prompt/useTextPrompt';
+import { treeNamePrompt } from '../chat/header-actions/tree-name-prompt';
 
 type UseTreeRowActionsInput = {
   /** Reloads the list after a rename or delete. */
@@ -9,21 +10,18 @@ type UseTreeRowActionsInput = {
   readonly setError: (message: string | null) => void;
 };
 
-const RENAME_TITLE = 'Loom Tree Name';
-
 /**
  * Home's swipe actions on a tree row (HomeScreenView.swift:77-98):
  * "Edit Name" asks for a new title in an alert with a text field and saves
  * it; Delete removes the tree with its nodes, as `.onDelete` does.
- * Android has no alert with a text field, so it renames in the title sheet
- * (`renameTarget`).
+ * Android asks in `TextPromptDialog` (`renamePrompt`).
  */
 export const useTreeRowActions = ({
   reload,
   setError,
 }: UseTreeRowActionsInput) => {
   const { repositories } = useAppServices();
-  const [renameTarget, setRenameTarget] = useState<LoomTree | null>(null);
+  const { prompt, pending } = useTextPrompt();
 
   const saveTitle = useCallback(
     async (tree: LoomTree, title: string) => {
@@ -35,34 +33,19 @@ export const useTreeRowActions = ({
         id: tree.id,
         changes: { title: trimmed },
       });
-      setRenameTarget(null);
       await reload();
     },
     [reload, repositories.treeRepo]
   );
 
   const rename = useCallback(
-    (tree: LoomTree) => {
-      if (Platform.OS !== 'ios') {
-        setRenameTarget(tree);
-        return;
+    async (tree: LoomTree) => {
+      const title = await prompt(treeNamePrompt(tree.title));
+      if (title !== null) {
+        await saveTitle(tree, title).catch(showError(setError));
       }
-      Alert.prompt(
-        RENAME_TITLE,
-        undefined,
-        [
-          {
-            text: 'Save',
-            onPress: (title?: string) =>
-              void saveTitle(tree, title ?? '').catch(showError(setError)),
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-        'plain-text',
-        tree.title
-      );
     },
-    [saveTitle, setError]
+    [prompt, saveTitle, setError]
   );
 
   const remove = useCallback(
@@ -78,12 +61,9 @@ export const useTreeRowActions = ({
   );
 
   return {
-    rename,
+    rename: (tree: LoomTree) => void rename(tree),
     remove,
-    renameTarget,
-    closeRename: () => setRenameTarget(null),
-    saveRename: (title: string) =>
-      renameTarget ? saveTitle(renameTarget, title) : Promise.resolve(),
+    renamePrompt: pending,
   };
 };
 
