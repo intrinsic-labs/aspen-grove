@@ -4,7 +4,9 @@ import {
   type OpenRouterCatalogModel,
 } from './openrouter/catalog';
 
-const CACHE_KEY = 'openrouter_model_catalog_v1';
+// v2 adds descriptions and output limits; a v1 cache lacks them.
+const CACHE_KEY = 'openrouter_model_catalog_v2';
+const STALE_CACHE_KEY = 'openrouter_model_catalog_v1';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CachedCatalog = {
@@ -88,6 +90,7 @@ export class OpenRouterModelCatalog {
   private async writeCache(catalog: CachedCatalog): Promise<void> {
     try {
       await this.database.localStorage.set(CACHE_KEY, JSON.stringify(catalog));
+      await this.database.localStorage.remove(STALE_CACHE_KEY);
     } catch {
       // Cache write failure is non-fatal; the fetch result is still returned.
     }
