@@ -7,6 +7,18 @@ const ENV_KEY_MAP: Record<SelectableProvider, string> = {
   lmstudio: 'EXPO_PUBLIC_LMSTUDIO_API_TOKEN',
 };
 
+/** The build's env fallback key for a provider, or `null` without one. */
+export const buildProviderApiKey = (
+  provider: SelectableProvider
+): string | null => {
+  const fromEnv = (
+    globalThis as {
+      process?: { env?: Record<string, string | undefined> };
+    }
+  ).process?.env?.[ENV_KEY_MAP[provider]]?.trim();
+  return fromEnv ? fromEnv : null;
+};
+
 /**
  * The stored key for a provider (secure storage first, then the build's env
  * fallback), or `null` when there is none.
@@ -19,13 +31,7 @@ export const findProviderApiKey = async (
   if (fromSecureStore && fromSecureStore.trim().length > 0) {
     return fromSecureStore.trim();
   }
-
-  const fromEnv = (
-    globalThis as {
-      process?: { env?: Record<string, string | undefined> };
-    }
-  ).process?.env?.[ENV_KEY_MAP[provider]]?.trim();
-  return fromEnv ? fromEnv : null;
+  return buildProviderApiKey(provider);
 };
 
 /**

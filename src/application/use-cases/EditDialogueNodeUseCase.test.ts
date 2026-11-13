@@ -16,7 +16,7 @@ const createNode = (input: {
   readonly id: ULID;
   readonly loomTreeId: ULID;
   readonly authorAgentId: ULID;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: Node['authorType'];
   readonly text: string;
   readonly localId: string;
   readonly contentHash: string;

@@ -1,12 +1,65 @@
-# Cold start (cleared data) wired to the mock server: open the app, connect
-# LM Studio to the mock and create an agent on it. Ends on Settings.
+# Cold start (cleared data) wired to the mock server, the way a new user
+# starts: onboarding's pages, then its last page with LM Studio pointed at
+# the mock, the model `mock-model` chosen, and Begin Weaving. That creates
+# the agent (named `mock-model`, the default) and opens a first tree; the
+# tree's Getting Started sheet is closed with Begin. Ends on that new, empty
+# tree (leaving it without sending discards it).
 #   maestro test .maestro/mock/setup.yaml --test-output-dir "$SHOTS"
+# A mock on another port: add `-e MOCK_URL=http://localhost:<port>`.
 appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+  MOCK_MODEL: mock-model
 ---
 - runFlow: ../open-app.yaml
-- runFlow: ../skip-onboarding.yaml
-- runFlow:
-    file: connect-mock.yaml
-    env:
-      MOCK_URL: http://localhost:1235
-      MOCK_MODEL: mock-model
+- runFlow: ../walk-onboarding.yaml
+- takeScreenshot: onboarding-7-setup-openrouter
+- tapOn:
+    id: onboarding-provider-lmstudio
+- waitForAnimationToEnd
+# A tap leaves the caret mid-text, so select all and type over it.
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- longPressOn:
+    id: connections-lmstudio-endpoint-input
+- tapOn:
+    text: 'Select All'
+    optional: true
+- eraseText: 80
+- inputText: ${MOCK_URL}
+- assertVisible: ${MOCK_URL}
+# Return closes the keyboard (hideKeyboard swipes, which the pager takes).
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn:
+    id: connections-lmstudio-test
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Connected'
+    timeout: 10000
+# The Model section appears once the test reads Connected; the page may
+# need a scroll to reach its rows (not centered: it can't scroll that far).
+- scrollUntilVisible:
+    element:
+      id: onboarding-lmstudio-model-${MOCK_MODEL}
+    timeout: 10000
+- tapOn:
+    id: onboarding-lmstudio-model-${MOCK_MODEL}
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-8-setup-lmstudio
+- tapOn:
+    id: onboarding-begin
+# The new tree replaces onboarding, then shows Getting Started over it.
+- extendedWaitUntil:
+    visible:
+      id: tree-onboarding-begin
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-9-first-tree
+- runFlow: ../dismiss-tree-onboarding.yaml
+- assertVisible:
+    id: chat-screen
+- assertVisible:
+    id: chat-composer-input
+- takeScreenshot: onboarding-10-first-tree-ready

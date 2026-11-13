@@ -44,12 +44,18 @@ const setup = () => {
     updateMetadata: jest.fn(async () => textNode(nodeA, '')),
   };
   const pathRepo = { getNodeSequence: jest.fn(async () => []) };
+  const rawApiResponseRepo = {
+    findModelIdentifiersByNodeIds: async () => new Map<ULID, string>(),
+  };
+  const agentRepo = { findById: async () => null };
   const hook = renderHook(
     () =>
       useNodeContinuations({
         edgeRepo,
         nodeRepo,
         pathRepo,
+        rawApiResponseRepo,
+        agentRepo,
         pathId: 'path' as ULID,
       }),
     {}

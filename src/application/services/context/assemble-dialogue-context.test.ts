@@ -9,7 +9,7 @@ const now = new Date('2026-03-01T12:00:00.000Z');
 let nodeCounter = 0;
 
 const createNode = (input: {
-  authorType: 'human' | 'model';
+  authorType: Node['authorType'];
   text: string;
   pruned?: boolean;
   excluded?: boolean;
@@ -34,6 +34,58 @@ const createNode = (input: {
 };
 
 describe('assembleDialogueContext', () => {
+  it('sends a system node in place, as a system message', () => {
+    const nodes = [
+      createNode({ authorType: 'human', text: 'Hi' }),
+      createNode({ authorType: 'model', text: 'Hello' }),
+      createNode({ authorType: 'system', text: 'Be terse.' }),
+      createNode({ authorType: 'human', text: 'Why?' }),
+    ];
+
+    const result = assembleDialogueContext({
+      nodes,
+      treeSystemContext: 'Tree prompt',
+    });
+
+    expect(result.systemContext).toBe('Tree prompt');
+    expect(result.messages).toEqual([
+      { role: 'user', content: 'Hi' },
+      { role: 'assistant', content: 'Hello' },
+      { role: 'system', content: 'Be terse.' },
+      { role: 'user', content: 'Why?' },
+    ]);
+  });
+
+  it('does not send a system node twice when it repeats the system prompt', () => {
+    const nodes = [
+      createNode({ authorType: 'system', text: '  Agent prompt ' }),
+      createNode({ authorType: 'system', text: 'Tree prompt' }),
+      createNode({ authorType: 'human', text: 'Hi' }),
+    ];
+
+    const result = assembleDialogueContext({
+      nodes,
+      agentSystemPrompt: 'Agent prompt',
+      treeSystemContext: 'Tree prompt',
+    });
+
+    expect(result.systemContext).toBe('Agent prompt\n\nTree prompt');
+    expect(result.messages).toEqual([{ role: 'user', content: 'Hi' }]);
+  });
+
+  it('merges consecutive system nodes but never into a user turn', () => {
+    const nodes = [
+      createNode({ authorType: 'system', text: 'One' }),
+      createNode({ authorType: 'system', text: 'Two' }),
+      createNode({ authorType: 'human', text: 'Hi' }),
+    ];
+
+    expect(assembleDialogueContext({ nodes }).messages).toEqual([
+      { role: 'system', content: 'One\n\nTwo' },
+      { role: 'user', content: 'Hi' },
+    ]);
+  });
+
   it('filters out pruned and excluded nodes', () => {
     const nodes = [
       createNode({ authorType: 'human', text: 'Keep first' }),

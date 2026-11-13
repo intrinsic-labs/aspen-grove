@@ -3,6 +3,8 @@ import { parseConfig, SLOW_PACE } from './config.ts';
 import { planRequest } from './failure-plan.ts';
 import { modelsPayload, sseChunk, SSE_DONE } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
+import { requestSummary } from './request-summary.ts';
+import { isTitleRequest, titleText } from './title-request.ts';
 
 describe('parseConfig', () => {
   it('has defaults that need no arguments', () => {
@@ -117,6 +119,45 @@ describe('lastMessageText', () => {
   });
 });
 
+describe('isTitleRequest', () => {
+  const titleMessages = [
+    {
+      role: 'system',
+      content:
+        'You title conversations. Reply with only a title: at most six words, no quotes, no trailing punctuation.',
+    },
+    { role: 'user', content: 'Title this conversation.\n\nUser: hi\n\nAssistant: hello' },
+  ];
+
+  it("recognises Auto-Title's request by its system prompt or its user message", () => {
+    expect(isTitleRequest({ stream: false, messages: titleMessages })).toBe(true);
+    expect(isTitleRequest({ messages: [titleMessages[0]] })).toBe(true);
+    expect(isTitleRequest({ messages: [titleMessages[1]] })).toBe(true);
+    expect(
+      isTitleRequest({
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'Title this conversation.' }] }],
+      })
+    ).toBe(true);
+  });
+
+  it('leaves replies alone, including streamed ones and a user asking for a title mid-text', () => {
+    expect(isTitleRequest({ stream: true, messages: titleMessages })).toBe(false);
+    expect(
+      isTitleRequest({ stream: false, messages: [{ role: 'user', content: 'Say hello.' }] })
+    ).toBe(false);
+    expect(
+      isTitleRequest({
+        messages: [{ role: 'user', content: 'Please title this conversation for me.' }],
+      })
+    ).toBe(false);
+    expect(isTitleRequest({ messages: undefined })).toBe(false);
+  });
+
+  it('titles with a short numbered phrase', () => {
+    expect(titleText(3)).toBe('Mock title #3');
+  });
+});
+
 describe('payloads', () => {
   it('frames SSE events the way the adapter parses them', () => {
     const frame = sseChunk({ id: 'mock-1', model: 'm', content: ' hi' });
@@ -142,5 +183,21 @@ describe('payloads', () => {
     const { models } = modelsPayload(['a', 'b']);
     expect(models.map((m) => m.key)).toEqual(['a', 'b']);
     expect(models.every((m) => m.type === 'llm' && m.loaded_instances.length === 1)).toBe(true);
+  });
+});
+
+describe('requestSummary', () => {
+  it('shows the generation settings and the system messages', () => {
+    expect(
+      requestSummary({
+        max_tokens: 8192,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: 'Agent prompt.\n\nSpeak as a pirate.' },
+          { role: 'user', content: 'Hi' },
+        ],
+      })
+    ).toBe('max_tokens=8192 temperature=0.3 system="Agent prompt. Speak as a pirate."');
+    expect(requestSummary({})).toBe('max_tokens=- temperature=- system=""');
   });
 });

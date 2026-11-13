@@ -3,6 +3,7 @@ import type {
   ExportLoomTreeUseCase,
   ExportPathMarkdownUseCase,
 } from '@application/use-cases';
+import type { ExportOpenLoomOptions } from '@application/services/open-loom';
 import type { ULID } from '@domain/value-objects';
 import { shareTextAsFile } from '@interface/services/loom-file-sharing';
 import { toErrorMessage } from '../error-message';
@@ -19,7 +20,10 @@ type UseTreeExportsInput = {
   readonly setError: (error: string | null) => void;
 };
 
-/** Header-menu exports: the whole tree as Open Loom JSON, the path as Markdown. */
+/**
+ * Header-menu exports: the whole tree as Open Loom JSON (with the export
+ * sheet's choices), the path as Markdown.
+ */
 export const useTreeExports = ({
   session,
   activeTreeIdRef,
@@ -27,25 +31,29 @@ export const useTreeExports = ({
   exportPathMarkdownUseCase,
   setError,
 }: UseTreeExportsInput) => {
-  const exportTree = useCallback(async () => {
-    const treeId = session?.treeId ?? activeTreeIdRef.current;
-    if (!treeId) {
-      return;
-    }
-    try {
-      const result = await exportLoomTreeUseCase.execute({
-        treeId,
-        currentNodeId: session?.activeNodeId,
-      });
-      await shareTextAsFile({
-        content: result.json,
-        fileName: result.suggestedFileName,
-        mimeType: 'application/json',
-      });
-    } catch (caught) {
-      setError(toErrorMessage(caught));
-    }
-  }, [activeTreeIdRef, exportLoomTreeUseCase, session, setError]);
+  const exportTree = useCallback(
+    async (options?: ExportOpenLoomOptions) => {
+      const treeId = session?.treeId ?? activeTreeIdRef.current;
+      if (!treeId) {
+        return;
+      }
+      try {
+        const result = await exportLoomTreeUseCase.execute({
+          treeId,
+          currentNodeId: session?.activeNodeId,
+          options,
+        });
+        await shareTextAsFile({
+          content: result.json,
+          fileName: result.suggestedFileName,
+          mimeType: 'application/json',
+        });
+      } catch (caught) {
+        setError(toErrorMessage(caught));
+      }
+    },
+    [activeTreeIdRef, exportLoomTreeUseCase, session, setError]
+  );
 
   const exportPathMarkdown = useCallback(async () => {
     if (!session) {

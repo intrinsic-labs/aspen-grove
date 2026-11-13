@@ -48,4 +48,6 @@ export type UserPreferencesChanges = {
   readonly defaultModelAgentId?: ULID | null;
   /** Record that first-run setup was finished or skipped. */
   readonly onboardingCompletedAt?: Date | null;
+  /** Record that the first-tree tips were read. */
+  readonly treeOnboardingCompletedAt?: Date | null;
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, type MutableRefObject } from 'react';
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import type { ULID } from '@domain/value-objects';
 import { toErrorMessage } from '../error-message';
+import { takeTreeModelChange } from '../tree-model/tree-model-change-store';
 import {
   initializeDialogueChatSession,
   loadDialogueRowsForPath,
@@ -136,8 +137,9 @@ export const useChatSessionLoader = ({
       if (!session) {
         return;
       }
-      // Back from creating an agent elsewhere: the tree can adopt it now.
-      if (!session.model) {
+      // Back from creating an agent elsewhere, the tree can adopt it now;
+      // back from its Model Settings, its agent or system message changed.
+      if (!session.model || takeTreeModelChange(session.treeId)) {
         void initializeSession({ preserveEphemeralState: true });
         return;
       }
@@ -147,12 +149,5 @@ export const useChatSessionLoader = ({
     return unsubscribe;
   }, [initializeSession, navigation, refreshRowsAndContinuations, session]);
 
-  // Re-resolve the session after the ⚙️ sheet mutates the tree's agent or
-  // system context. Preserves the ephemeral flag so an in-progress
-  // conversation is never mistaken for an empty quick-add tree.
-  const reinitializeSession = useCallback(async () => {
-    await initializeSession({ preserveEphemeralState: true });
-  }, [initializeSession]);
-
-  return { refreshRows, refreshRowsAndContinuations, reinitializeSession };
+  return { refreshRows, refreshRowsAndContinuations };
 };

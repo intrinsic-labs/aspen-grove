@@ -17,11 +17,11 @@ import {
 } from '@application/services/open-loom';
 import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import type {
-  AgentType,
   Content,
   ContentBlock,
   EdgeSource,
   LoomTreeMode,
+  NodeAuthorType,
 } from '@domain/entities';
 import {
   createLocalId,
@@ -108,6 +108,9 @@ const blocksToContent = (
   }
   return { type: 'mixed', blocks: converted };
 };
+
+const toNodeAuthorType = (role: OpenLoomNode['author']['role']): NodeAuthorType =>
+  role === 'model' || role === 'system' ? role : 'human';
 
 const parseDate = (value: string | undefined): Date | undefined => {
   if (!value) {
@@ -251,7 +254,8 @@ export class ImportLoomTreeUseCase {
 
       // --- Author mapping -----------------------------------------------
       // Model-authored nodes attribute to one tree-owned placeholder agent;
-      // human/system/mixed map to the importing user.
+      // human/system/mixed map to the importing user. System nodes keep
+      // their role; mixed (human-edited model output) reads as human.
       let importAgentId: ULID | null = null;
       const ensureImportAgent = async (): Promise<ULID> => {
         if (importAgentId) {
@@ -287,8 +291,7 @@ export class ImportLoomTreeUseCase {
       for (const node of ordered) {
         const newId = idMap.get(node.id) as ULID;
         const content = blocksToContent(node.content);
-        const role = node.author.role;
-        const authorType: AgentType = role === 'model' ? 'model' : 'human';
+        const authorType = toNodeAuthorType(node.author.role);
         const authorAgentId =
           authorType === 'model'
             ? await ensureImportAgent()

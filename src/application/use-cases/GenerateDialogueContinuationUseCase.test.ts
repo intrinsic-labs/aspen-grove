@@ -20,7 +20,7 @@ const now = new Date('2026-02-24T12:00:00.000Z');
 const createNode = (input: {
   id: ULID;
   loomTreeId: ULID;
-  authorType: 'human' | 'model';
+  authorType: Node['authorType'];
   authorAgentId: ULID;
   contentHash: string;
   text: string;
