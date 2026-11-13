@@ -181,29 +181,34 @@ const styles = StyleSheet.create({
   row: {
     width: '100%',
   },
+  // A clear spacer keeps user text off the leading side (NodeView.swift:58).
   userRow: {
     alignItems: 'flex-end',
+    paddingLeft: loomUiTokens.messageList.userRowLeadingInset,
   },
   assistantRow: {
     alignItems: 'flex-start',
+    paddingRight: loomUiTokens.messageList.modelRowTrailingInset,
   },
   prunedRow: {
     opacity: 0.45,
   },
   userMenuHost: {
     alignSelf: 'flex-end',
-    maxWidth: loomUiTokens.messageList.userBubbleMaxWidthPercent,
+    maxWidth: '100%',
   },
   assistantMenuHost: {
     alignSelf: 'stretch',
   },
+  // Model text is inset by its row padding (CodeBlockView.swift:36).
   assistantMessageTarget: {
     width: '100%',
+    padding: loomUiTokens.messageList.messagePadding,
   },
   inlineRail: {
     // The rail manages its own horizontal insets; cancel the list's padding
     // so it spans the full width like the prototype's inline band.
-    marginHorizontal: -loomUiTokens.layout.horizontalInset,
+    marginHorizontal: -loomUiTokens.messageList.rowInset,
     marginTop: loomUiTokens.messageList.rowGap / 2,
   },
 });

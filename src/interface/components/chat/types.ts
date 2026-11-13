@@ -9,6 +9,8 @@ import type { ULID } from '@domain/value-objects';
  */
 export type ChatSessionModel = {
   readonly modelAgentId: ULID;
+  /** The agent's name, as the composer addresses it ("Reply to …"). */
+  readonly agentName: string;
   readonly modelIdentifier: string;
   readonly provider: SelectableProvider;
 };
