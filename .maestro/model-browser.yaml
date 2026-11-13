@@ -1,0 +1,90 @@
+# The agent editor's model browser (no key: OpenRouter's catalog is public):
+# Settings → Agents → New Agent, Model pushes the browser inside the sheet,
+# a search narrows it to Anthropic's Claude models, a row opens the model's
+# page, and "Use This Model" puts it in the draft and comes back to the
+# editor, which creates the agent on it.
+# Needs Metro and a network connection for the catalog:
+#   maestro test .maestro/model-browser.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
+- runFlow: open-settings.yaml
+- tapOn:
+    id: settings-link-agents
+- tapOn:
+    id: settings-agents-new
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: agent-editor-provider
+- assertVisible:
+    id: agent-editor-model
+- takeScreenshot: 50-agent-editor
+
+# Model pushes the browser inside the sheet.
+- tapOn:
+    id: agent-editor-model
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-model-option-.*
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 51-model-browser
+# The search field is the native one in the bar.
+- tapOn: 'Search models'
+- inputText: 'anthropic/claude'
+- extendedWaitUntil:
+    visible:
+      id: 'agent-editor-model-option-anthropic/claude-.*'
+    timeout: 10000
+# No hideKeyboard: it swipes, which taps a row. The first rows sit above
+# the keyboard.
+- takeScreenshot: 52-model-browser-search
+
+# A row opens the model's page.
+- tapOn:
+    id: 'agent-editor-model-option-anthropic/claude-.*'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: model-detail-title
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'by Anthropic'
+- assertVisible:
+    id: model-detail-context
+- assertVisible:
+    id: model-detail-use
+- takeScreenshot: 53-model-detail
+- scrollUntilVisible:
+    element:
+      id: model-detail-link
+    direction: DOWN
+- takeScreenshot: 54-model-detail-lower
+
+# Use This Model: back on the editor's Form with the model chosen.
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-footer-id
+      text: 'anthropic/claude-.*'
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 55-agent-editor-chosen
+- tapOn:
+    id: agent-editor-name-input
+- inputText: 'Claude from the browser'
+- tapOn:
+    id: agent-editor-submit
+- extendedWaitUntil:
+    visible:
+      id: settings-agents-list
+    timeout: 10000
+# The row reads as one element (name, Default, model), so match within it.
+- assertVisible: '.*Claude from the browser.*'
+- takeScreenshot: 56-agents-library

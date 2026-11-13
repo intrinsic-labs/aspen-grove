@@ -90,12 +90,19 @@ xcrun simctl launch "$UDID" com.intrinsiclabs.aspengrove   # or let .maestro/ope
 The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
 first: tap the `http://localhost:8081` server. On a cleared install the dev menu then shows a
 one-time intro (**Continue**) and stays open (close it with ✕). The Maestro flows handle all
-of this in [open-app.yaml](.maestro/open-app.yaml).
+of this in [open-app.yaml](.maestro/open-app.yaml). The launcher only lists the servers it
+finds on its own, which can be another session's Metro and not yours: with Metro on any port
+other than 8081, pass `-e METRO_PORT=<port>` to every flow and it types the URL in by hand.
 
 A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
-(`onboarding-screen`): connect a provider, choose an agent, land in a first tree. Skip it
-with `onboarding-skip`; Home then shows a setup hint (`home-setup-action`) instead of
-**New Loom Tree** until a model agent exists. There is no account and no sign-in: the app
+(`onboarding-screen`): Latent Spaces' six intro pages (`onboarding-next`), then a page that
+connects a model, and Begin Weaving (`onboarding-begin`) lands in a first tree, which shows
+its Getting Started sheet until its Begin (`tree-onboarding-begin`) is tapped. Skip onboarding by
+swiping the sheet down ([skip-onboarding.yaml](.maestro/skip-onboarding.yaml)); Home then shows a setup hint (`home-setup-action`) above its tree
+list until a model agent exists. Home is the one top-level screen, as in Latent Spaces: the
+`···` menu (`home-menu-button`: import, Search, tag filter) at the top left, Settings
+(`home-settings-button`) at the top right, and a composer at the bottom whose first message
+starts a new tree. Every other screen is pushed from it and returns with the back button. There is no account and no sign-in: the app
 is local-first, and every install is its own synthetic user.
 
 ## 4. Give it a model (your own keys, never committed)
@@ -106,8 +113,9 @@ The app has no server. A model agent needs either provider:
   `EXPO_PUBLIC_OPENROUTER_API_KEY=<key>` in its environment (the `expo run:ios` line above),
   and the app falls back to it whenever no key is saved
   ([provider-key.ts](src/interface/components/chat/provider-key.ts)). Or type it into
-  Settings → Connections (`connections-openrouter-key-input`), which stores it in the
-  Keychain. `EXPO_PUBLIC_*` values are inlined into the JS bundle: use the variable only for
+  Settings → Connections: tap `connections-openrouter-edit`, type it into
+  `connections-openrouter-key-input` in the sheet and tap `connections-openrouter-key-save`.
+  It is stored in the Keychain. `EXPO_PUBLIC_*` values are inlined into the JS bundle: use the variable only for
   local dev builds, never for an export or release build, and never write it into a
   committed file (`.env*.local` is gitignored if you want a file).
 - **LM Studio, local.** Load a model in LM Studio and start its server (default
@@ -135,14 +143,27 @@ streaming states: at `--pace 20` a parallel-continuation card finishes in about 
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
 a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
 [.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
-state, connects to the mock on 1235 and creates an agent named "Mock" on `mock-model`.
+state and goes through onboarding the way a new user does: the six pages, then LM Studio
+on the mock at 1235, the model `mock-model` and Begin Weaving, which creates the agent
+(named `mock-model`) and opens a first tree.
 [.maestro/mock/first-turn.yaml](.maestro/mock/first-turn.yaml) is the no-key path to a working
-conversation: that setup, then a new tree, one message, the reply streamed to the end, and a
-screenshot (run it with the mock server and Metro up).
+conversation: that setup, then a tree started from Home's composer with one message, the
+reply streamed to the end, and a screenshot (run it with the mock server and Metro up).
+[.maestro/mock/home-trees.yaml](.maestro/mock/home-trees.yaml) goes on from there: two
+trees on Home, the menu, a rename and a delete by swipe. Auto-Title stays on: the mock
+recognises the titling call and answers "Mock title #n" (n is the request number), so each
+tree's row ends up with that title in place of its first message's words.
+[.maestro/mock/tree-model.yaml](.maestro/mock/tree-model.yaml) opens a tree's Model Settings,
+turns on "Always use maximum allowed", writes a system message and sends; the mock's log
+line for that send shows `max_tokens=8192` and the system message.
+[.maestro/mock/tree-model-browser.yaml](.maestro/mock/tree-model-browser.yaml) switches that
+tree to OpenRouter and chooses a model through the model browser and a model's page (the
+catalog is public, so no key, but it needs the network). If 1235 is taken, run the mock on
+another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
-Save. A fresh install has no model agent, so until you do, New Loom Tree shows
-"No agents yet…" (`home-error`).
+Save. A fresh install has no model agent, so until you do, sending from Home's composer
+opens onboarding instead.
 
 ## 5. Drive it and take screenshots
 
@@ -161,13 +182,19 @@ maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS
 
 `--device` is required whenever more than one simulator or emulator is running, and harmless
 otherwise. Both flows start with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
-the dev launcher to Home) and open the drawer through
-[open-drawer.yaml](.maestro/open-drawer.yaml), which retries a tap that lands mid-transition.
+the dev launcher to Home). From Home, [open-settings.yaml](.maestro/open-settings.yaml) and
+[open-home-menu.yaml](.maestro/open-home-menu.yaml) open Settings and the `···` menu, and
+[go-home.yaml](.maestro/go-home.yaml) comes back from any pushed screen; each retries a tap
+that lands mid-transition. [start-tree.yaml](.maestro/start-tree.yaml) starts a tree from
+Home's composer.
 
-- [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, the drawer, the empty
-  tree list, Search, Settings, Connections, the empty Agents library and the agent editor.
-- [first-turn.yaml](.maestro/first-turn.yaml) creates an agent from a template, opens a new
-  tree, sends one message, waits for the reply and opens its Node Info with the provenance
+- [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, its menu, Search,
+  Settings, Connections, the empty Agents library and the agent editor.
+- [model-browser.yaml](.maestro/model-browser.yaml) opens the agent editor, pushes the
+  OpenRouter model browser from Model, opens a Claude model's page, uses it and creates the
+  agent. No key; it fetches OpenRouter's public catalog.
+- [first-turn.yaml](.maestro/first-turn.yaml) creates an agent from a template, starts a tree
+  from Home's composer, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.
 
 A third, [perf/](.maestro/perf/), times a big tree: opening it, opening a continuation
@@ -180,17 +207,19 @@ and simulator, three runs or more, by median. No key needed.
 
 [needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
 `perf-tiny.openloom` before any agent exists: the tree opens with its messages and the
-"needs an agent" notice, whose button opens Dialogue Settings; once an agent is created,
+"needs an agent" notice, whose button opens the tree's Model Settings; once an agent is created,
 reopening the tree adopts it. No key needed. The shared steps it and the perf flows use
 live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboarding; flows
-that set up through Settings or an import skip it), `create-agent.yaml` and
+that set up through Settings or an import swipe it away), `walk-onboarding.yaml` (Next
+through the six intro pages), `dismiss-tree-onboarding.yaml` (the first tree's Getting
+Started sheet), `create-agent.yaml` and
 `import-tree.yaml`.
 
 For a one-off screenshot or deep link without Maestro:
 
 ```sh
 xcrun simctl io booted screenshot "$SHOTS/<name>.png"
-xcrun simctl openurl booted "aspengrove://settings/connections"   # expo-router paths; (drawer) groups are dropped
+xcrun simctl openurl booted "aspengrove://settings/connections"   # expo-router paths
 ```
 
 In a development build, `openurl` raises a system "Open in Aspen Grove?" alert that stays up
@@ -259,5 +288,8 @@ didn't record.
   `ensureDialogueSmokeTreeIfEmpty: false`, so "no trees" stays until you create one. Use
   `clearState: true` (Maestro) or delete the app for a true cold start.
 - **A new tree you leave without sending is deleted** (ephemeral until the first message).
-- **There's no Home row in the drawer.** Once you leave Home, relaunch to get back to it.
+- **Home's composer focuses itself** once per launch, as Latent Spaces' does, so the keyboard
+  is up on Home after a cold start. Tap the greeting to dismiss it if it covers a row.
+- **Swipe actions:** Maestro's `swipe` on a `home-trees-row-<treeId>` (`direction: RIGHT` for
+  Edit Name, `LEFT` for Delete) opens them; tap the action by its testID.
 - **Watchman** may be unavailable in a sandbox; `jest --no-watchman` avoids its crash.

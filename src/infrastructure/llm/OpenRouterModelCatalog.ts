@@ -4,7 +4,13 @@ import {
   type OpenRouterCatalogModel,
 } from './openrouter/catalog';
 
-const CACHE_KEY = 'openrouter_model_catalog_v1';
+// v3 adds what a model's detail page shows (pricing beyond prompt and
+// completion, modalities, parameters, dates); older caches lack it.
+const CACHE_KEY = 'openrouter_model_catalog_v3';
+const STALE_CACHE_KEYS = [
+  'openrouter_model_catalog_v1',
+  'openrouter_model_catalog_v2',
+] as const;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CachedCatalog = {
@@ -88,6 +94,9 @@ export class OpenRouterModelCatalog {
   private async writeCache(catalog: CachedCatalog): Promise<void> {
     try {
       await this.database.localStorage.set(CACHE_KEY, JSON.stringify(catalog));
+      for (const key of STALE_CACHE_KEYS) {
+        await this.database.localStorage.remove(key);
+      }
     } catch {
       // Cache write failure is non-fatal; the fetch result is still returned.
     }

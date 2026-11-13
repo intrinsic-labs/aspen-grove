@@ -1,0 +1,78 @@
+# A tree's Model Settings choosing an OpenRouter model through the model
+# browser: Provider → OpenRouter, Model pushes the browser, a row opens the
+# model's page, "Use This Model" saves it for this tree and returns to
+# Model Settings, which shows it. Nothing is sent to OpenRouter (no key):
+# the catalog is public. Needs the mock server, Metro and a network
+# connection (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/tree-model-browser.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about the oldest rivers
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- waitForAnimationToEnd
+
+# OpenRouter: the tree switches to its default model, then Model pushes.
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- tapOn: 'OpenRouter'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-footer-id
+      text: '.*/.*'
+    timeout: 30000
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 60-tree-model-browser
+- tapOn: 'Search models'
+- inputText: 'openai/gpt'
+- extendedWaitUntil:
+    visible:
+      id: 'tree-model-option-openai/gpt-.*'
+    timeout: 10000
+# No hideKeyboard: it swipes, which taps a row. The first rows sit above
+# the keyboard.
+- tapOn:
+    id: 'tree-model-option-openai/gpt-.*'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: model-detail-title
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'by OpenAI'
+- takeScreenshot: 61-tree-model-detail
+
+# Use This Model: saved for the tree, back on Model Settings.
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-footer-id
+      text: 'openai/gpt-.*'
+    timeout: 10000
+- assertVisible:
+    id: tree-model-screen
+- waitForAnimationToEnd
+- takeScreenshot: 62-tree-model-settings-chosen

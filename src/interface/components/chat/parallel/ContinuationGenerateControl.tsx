@@ -5,8 +5,12 @@ import {
   MIN_PARALLEL_CONTINUATIONS,
 } from '@application/services/dialogue-continuation';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { SymbolIcon } from '@/interface/ui/components/SymbolIcon';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
+
+/** The `meta` text beside it is 13 pt; the symbol's frame matches it. */
+const GENERATE_ICON_SIZE = 14;
 
 export type ContinuationGenerateControlProps = {
   readonly count: number;
@@ -35,7 +39,7 @@ export const ContinuationGenerateControl = ({
   const { colors } = useAspenGroveTheme();
   const canDecrease = !running && count > MIN_PARALLEL_CONTINUATIONS;
   const canIncrease = !running && count < MAX_PARALLEL_CONTINUATIONS;
-  const hitSlop = loomUiTokens.continuationRail.closeHitSlop;
+  const hitSlop = loomUiTokens.continuationRail.stopHitSlop;
 
   return (
     <View testID="chat-continuation-generate" style={styles.row}>
@@ -95,7 +99,13 @@ export const ContinuationGenerateControl = ({
           onPress={onGenerate}
           style={[styles.action, { opacity: canGenerate ? 1 : 0.4 }]}
         >
-          <Ionicons name="sparkles-outline" size={14} color={colors.green} />
+          {/* The tree menu's Model glyph, at the label's size. */}
+          <SymbolIcon
+            name="cpu"
+            fallback="hardware-chip-outline"
+            size={GENERATE_ICON_SIZE}
+            color={colors.green}
+          />
           <AppText variant="meta" style={{ color: colors.green }}>
             Generate {count}
           </AppText>
@@ -112,7 +122,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
-    marginBottom: loomUiTokens.continuationRail.headerBottomMargin,
+    paddingTop: loomUiTokens.continuationRail.hintPadding / 2,
   },
   count: {
     minWidth: 12,

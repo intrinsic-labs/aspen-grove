@@ -1,0 +1,167 @@
+# A tree's toolbar menu against the mock server (no key): the menu, a
+# bookmark from a message's menu, the Bookmarks submenu and a bookmark's
+# sheet with its menu and rename, the export sheet, Edit Title's alert,
+# Edit Description's sheet and Show Onboarding's tree tips. Needs the mock
+# server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/tree-menu.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about the oldest trees on Earth
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+# The auto-title lands just after the reply.
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 15000
+
+# The menu: Model and Voice Mode side by side, no Bookmarks yet.
+- runFlow: ../open-tree-menu.yaml
+- assertVisible: 'Model'
+- assertVisible: 'Voice Mode'
+- assertVisible: 'Edit Title'
+- assertVisible: 'Export to OpenLoom Format'
+- assertVisible: 'Show Onboarding'
+- assertVisible: 'Tags'
+- assertVisible: 'Export Path \(Markdown\)'
+- assertNotVisible: 'Bookmarks'
+- takeScreenshot: tree-30a-menu-no-bookmarks
+- tapOn:
+    point: '50%,75%'
+- waitForAnimationToEnd
+
+# Bookmark the reply from its message menu; the menu now lists it.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- tapOn: 'Bookmark'
+- waitForAnimationToEnd
+- runFlow: ../open-tree-menu.yaml
+- assertVisible: 'Bookmarks'
+- takeScreenshot: tree-30-menu
+- tapOn: 'Bookmarks'
+- waitForAnimationToEnd
+- assertVisible: 'Mock reply #\d+\..*'
+- takeScreenshot: tree-31-bookmarks
+- tapOn: 'Mock reply #\d+\..*'
+
+# The bookmark's sheet, its menu, and a rename.
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'Bookmarked Node'
+- assertVisible:
+    id: node-sheet-bookmark
+- takeScreenshot: tree-32-bookmark-sheet
+- tapOn:
+    id: node-sheet-menu-button
+- waitForAnimationToEnd
+- assertVisible: 'Rename Bookmark'
+- assertVisible: 'Make Current Node'
+- assertVisible: 'Bookmarked'
+- takeScreenshot: tree-33-bookmark-sheet-menu
+- tapOn: 'Rename Bookmark'
+- assertVisible: 'Enter a new title for this bookmark'
+- inputText: Oldest trees
+- tapOn: 'Save'
+- extendedWaitUntil:
+    visible: 'Oldest trees'
+    timeout: 5000
+- takeScreenshot: tree-32b-bookmark-sheet-renamed
+- tapOn:
+    id: node-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 5000
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Bookmarks'
+- waitForAnimationToEnd
+- assertVisible: 'Oldest trees'
+- tapOn:
+    point: '50%,75%'
+- waitForAnimationToEnd
+
+# The export sheet, then back without exporting.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Export to OpenLoom Format'
+- extendedWaitUntil:
+    visible:
+      id: export-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'Generate OpenLoom Tree'
+- assertVisible: 'Include Bookmarks'
+- takeScreenshot: tree-34-export-sheet
+- tapOn:
+    id: export-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: export-sheet
+    timeout: 5000
+
+# Edit Title: the "Loom Tree Name" alert renames the tree.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Edit Title'
+- assertVisible: 'Loom Tree Name'
+- waitForAnimationToEnd
+- takeScreenshot: tree-35-edit-title-alert
+- eraseText: 60
+- inputText: Ancient Trees
+- tapOn: 'Save'
+- extendedWaitUntil:
+    visible: 'Ancient Trees'
+    timeout: 5000
+
+# Edit Description: the editor sheet saves the description.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Edit Description'
+- extendedWaitUntil:
+    visible:
+      id: tree-description-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- inputText: Explorations of the oldest living things
+- takeScreenshot: tree-36-edit-description
+- tapOn:
+    id: tree-description-sheet-save
+- extendedWaitUntil:
+    notVisible:
+      id: tree-description-sheet
+    timeout: 5000
+# The export sheet opens on the saved title and description.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Export to OpenLoom Format'
+- extendedWaitUntil:
+    visible:
+      id: export-sheet
+    timeout: 10000
+- assertVisible: 'Ancient Trees'
+- assertVisible: 'Explorations of the oldest living things'
+- tapOn:
+    id: export-sheet-back
+
+# Show Onboarding replays the tree's Getting Started sheet.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Show Onboarding'
+- extendedWaitUntil:
+    visible:
+      id: tree-onboarding-begin
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: tree-37-show-onboarding
+- tapOn:
+    id: tree-onboarding-begin
+- extendedWaitUntil:
+    notVisible:
+      id: tree-onboarding-sheet
+    timeout: 5000

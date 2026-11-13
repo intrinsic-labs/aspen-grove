@@ -9,8 +9,8 @@ import {
 import Animated, {
   Easing,
   LinearTransition,
-  StretchInY,
-  StretchOutY,
+  ZoomIn,
+  ZoomOut,
 } from 'react-native-reanimated';
 import type { ULID } from '@domain/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
@@ -22,16 +22,23 @@ import type { ContinuationRailState } from './continuation-rail-state';
 import type { ChatMessageMenuAction } from './message-menu';
 import { MessageContextMenu } from './MessageContextMenu';
 import { NodeCaption } from './NodeCaption';
+import { SystemMessage } from './SystemMessage';
 import { UserBubble } from './UserBubble';
 
-const railLayoutTransition = LinearTransition.duration(180).easing(
-  Easing.out(Easing.cubic)
-);
-const railEntering = StretchInY.duration(180).easing(Easing.out(Easing.cubic));
-const railExiting = StretchOutY.duration(150).easing(Easing.in(Easing.cubic));
+// The rail scales in and out (`.transition(.scale)`) over Latent Spaces'
+// easeInOut 0.3 toggle (ChildNodesView.swift:32, LoomTreeContentView.swift:40),
+// and the rows below move with it.
+const railMs = loomUiTokens.continuationRail.transitionMs;
+const railEasing = Easing.inOut(Easing.ease);
+const railLayoutTransition =
+  LinearTransition.duration(railMs).easing(railEasing);
+const railEntering = ZoomIn.duration(railMs).easing(railEasing);
+const railExiting = ZoomOut.duration(railMs).easing(railEasing);
 
 export type ChatMessageRowProps = {
   readonly row: ChatRow;
+  /** The path's current (last) node. */
+  readonly isCurrent: boolean;
   /** The open rail, passed only to the row it hangs under. */
   readonly rail: ContinuationRailState | null;
   readonly messageTextStyle: TextStyle;
@@ -58,6 +65,7 @@ export type ChatMessageRowProps = {
  */
 const ChatMessageRowView = ({
   row,
+  isCurrent,
   rail,
   messageTextStyle,
   displayPreferences,
@@ -71,6 +79,12 @@ const ChatMessageRowView = ({
   onRailLayout,
 }: ChatMessageRowProps) => {
   const isHuman = row.authorType === 'human';
+  const isSystem = row.authorType === 'system';
+  const layout = isSystem
+    ? systemLayout
+    : isHuman
+      ? userLayout
+      : assistantLayout;
   const markdownStyle = useMemo<TextStyle>(
     () =>
       speakingColor
@@ -88,27 +102,30 @@ const ChatMessageRowView = ({
       onLayout={(event) => onRowLayout(row.id, event)}
     >
       <View
-        style={[
-          styles.row,
-          isHuman ? styles.userRow : styles.assistantRow,
-          row.pruned ? styles.prunedRow : null,
-        ]}
+        style={[styles.row, layout.row, row.pruned ? styles.prunedRow : null]}
       >
         <MessageContextMenu
           row={row}
+          isCurrent={isCurrent}
           onMessageAction={onMessageAction}
           previewBorderRadius={
             isHuman ? displayPreferences.userNodeCornerRadius : 0
           }
-          style={isHuman ? styles.userMenuHost : styles.assistantMenuHost}
+          style={layout.menuHost}
         >
           <Pressable
             testID={`chat-message-row-${row.id}`}
             onPress={() => onPress(row.id)}
             onLongPress={() => onLongPress(row.id)}
-            style={isHuman ? null : styles.assistantMessageTarget}
+            style={layout.target}
           >
-            {isHuman ? (
+            {isSystem ? (
+              <SystemMessage
+                text={row.text}
+                messageTextStyle={messageTextStyle}
+                speakingColor={speakingColor}
+              />
+            ) : isHuman ? (
               <UserBubble
                 text={row.text}
                 cornerRadius={displayPreferences.userNodeCornerRadius}
@@ -140,10 +157,10 @@ const ChatMessageRowView = ({
           <ContinuationRail
             visible={rail.visible}
             loading={rail.loading}
-            sourceLocalId={rail.sourceLocalId}
             cards={rail.cards}
             generation={rail.generation}
-            previewFontFamily={displayPreferences.messageFontFamily}
+            streamingModelLabel={rail.streamingModelLabel}
+            cardTextStyle={messageTextStyle}
             error={rail.error}
             onSelect={rail.onSelect}
             onMenuAction={rail.onMenuAction}
@@ -160,6 +177,7 @@ const sameRowProps = (
   next: ChatMessageRowProps
 ): boolean =>
   sameChatRow(previous.row, next.row) &&
+  previous.isCurrent === next.isCurrent &&
   previous.rail === next.rail &&
   previous.messageTextStyle === next.messageTextStyle &&
   previous.displayPreferences === next.displayPreferences &&
@@ -205,10 +223,39 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: loomUiTokens.messageList.messagePadding,
   },
+  // A system node: centered, no spacer on either side (NodeView.swift:42-43,
+  // 62-67,111-113), text inset `.padding(8)` (NodeView.swift:197).
+  systemRow: {
+    alignItems: 'center',
+  },
+  systemMenuHost: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+  },
+  systemMessageTarget: {
+    padding: loomUiTokens.messageList.messagePadding,
+  },
   inlineRail: {
     // The rail manages its own horizontal insets; cancel the list's padding
     // so it spans the full width like the prototype's inline band.
     marginHorizontal: -loomUiTokens.messageList.rowInset,
-    marginTop: loomUiTokens.messageList.rowGap / 2,
+    // Its own item in Latent Spaces' stack, one row gap below the node.
+    marginTop: loomUiTokens.messageList.rowGap,
   },
 });
+
+const userLayout = {
+  row: styles.userRow,
+  menuHost: styles.userMenuHost,
+  target: null,
+};
+const assistantLayout = {
+  row: styles.assistantRow,
+  menuHost: styles.assistantMenuHost,
+  target: styles.assistantMessageTarget,
+};
+const systemLayout = {
+  row: styles.systemRow,
+  menuHost: styles.systemMenuHost,
+  target: styles.systemMessageTarget,
+};

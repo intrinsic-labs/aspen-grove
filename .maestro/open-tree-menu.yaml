@@ -1,0 +1,14 @@
+# Open a tree's toolbar menu (a native pull-down; its items have no testIDs,
+# so pick them by title next). Retries a tap that lands mid-transition.
+appId: com.intrinsiclabs.aspengrove
+---
+- waitForAnimationToEnd
+- repeat:
+    times: 3
+    while:
+      notVisible: 'Edit Description'
+    commands:
+      - tapOn:
+          id: chat-menu-button
+      - waitForAnimationToEnd
+- assertVisible: 'Edit Description'

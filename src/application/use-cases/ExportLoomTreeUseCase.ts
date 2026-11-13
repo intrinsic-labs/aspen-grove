@@ -106,7 +106,7 @@ export class ExportLoomTreeUseCase {
 
     return {
       json: JSON.stringify(document, null, 2),
-      suggestedFileName: toFileName(tree.title),
+      suggestedFileName: toFileName(input.options?.title ?? tree.title),
       nodeCount: nodes.length,
     };
   }

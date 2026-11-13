@@ -1,5 +1,9 @@
 import type { DialogueTurnSession } from '@application/use-cases';
-import type { NodeViewStyle, SelectableProvider } from '@domain/entities';
+import type {
+  NodeAuthorType,
+  NodeViewStyle,
+  SelectableProvider,
+} from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
 /**
@@ -32,7 +36,7 @@ export type ChatRow = {
   readonly id: ULID;
   readonly localId: string;
   readonly editedFrom?: ULID;
-  readonly authorType: 'human' | 'model';
+  readonly authorType: NodeAuthorType;
   readonly text: string;
   readonly bookmarked: boolean;
   readonly pruned: boolean;
@@ -43,6 +47,8 @@ export type ChatRow = {
 export type ContinuationPreview = {
   readonly nodeId: ULID;
   readonly localId: string;
+  /** The model it came from ("User" or "System" otherwise), as Latent Spaces captions it. */
+  readonly modelLabel: string;
   readonly previewText: string;
   readonly isOnActivePath: boolean;
   readonly onBranchCount: number;

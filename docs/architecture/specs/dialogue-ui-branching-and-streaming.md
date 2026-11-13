@@ -111,6 +111,8 @@ Scope: Dialogue mode only
 - Edited node must set `editedFrom` to the original node id.
 - Edited node author must be human (`authorType: "human"`), even when editing model-authored text.
   - Reason: prevents conflating manual edits with provider-authenticated model output/provenance.
+  - Exception: editing a system node keeps `authorType: "system"`. It is still the human's
+    node (`authorAgentId` is the owner, hashed as human), and it stays a system message.
 - Root-node edit is out of scope for first pass (no parent continuation source).
 - Empty edit content is rejected (no empty nodes).
 
@@ -157,14 +159,18 @@ Scope: Dialogue mode only
   - display error state inline (existing pattern).
 - Timeout:
   - same behavior as provider/network failure.
-- Manual cancel (future):
-  - same behavior as timeout.
+- Manual cancel (the stop button):
+  - partial text is saved as is, with no marker (see 6.5).
 
 ### 6.5 Interrupted Output Representation
 
 - First pass representation uses a textual interruption marker appended to persisted assistant content:
   - `\n\n[stream interrupted: <reason>]`
-  - reasons: `timeout`, `network`, `provider_error`, `cancelled`
+  - reasons: `timeout`, `network`, `provider_error`
+- A stop the user asked for (`cancelled`) gets no marker: the partial text is saved clean,
+  as Latent Spaces does (`LLMManager.swift:45`), because the node is sent back to the model on
+  later turns. `completion.interruptionReason` is still `cancelled`, and the stored raw
+  response ends where the stream was cut off (no finish reason).
 - `completion.finishReason` should remain `error` for interrupted outputs.
 - Raw response capture should store whatever response bytes were actually received up to interruption.
 

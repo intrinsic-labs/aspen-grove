@@ -7,10 +7,44 @@ appId: com.intrinsiclabs.aspengrove
     clearState: true
 # The development build opens on Expo's launcher: pick the running Metro
 # server. (tapOn waits for it to render; optional, so a build that skips the
-# launcher still passes.)
-- tapOn:
-    text: 'http://localhost:.*'
+# launcher still passes.) The launcher only lists Metro servers it finds
+# itself (and may list another session's): with Metro on a non-default port,
+# pass `-e METRO_PORT=<port>`: that server is picked when listed, else its
+# URL is entered by hand.
+- extendedWaitUntil:
+    visible: 'Enter URL manually'
+    timeout: 30000
     optional: true
+- runFlow:
+    when:
+      true: ${!METRO_PORT}
+    commands:
+      - tapOn:
+          text: 'http://localhost:.*'
+          optional: true
+# With METRO_PORT set, pick that server when the launcher lists it, and type
+# the URL only when it doesn't.
+- runFlow:
+    when:
+      true: ${!!METRO_PORT}
+      visible: 'http://localhost:${METRO_PORT}'
+    commands:
+      - tapOn: 'http://localhost:${METRO_PORT}'
+# Not listed: type it. (A server tapped above may leave the launcher on
+# screen a moment; while its row shows, this is skipped.)
+- runFlow:
+    when:
+      true: ${!!METRO_PORT}
+      visible: 'Enter URL manually'
+      notVisible: 'http://localhost:${METRO_PORT}'
+    commands:
+      - tapOn: 'Enter URL manually'
+      # The URL field opens under the row; it has no label to tap by.
+      # (Other sessions' listed servers push it lower than this point.)
+      - tapOn:
+          point: '50%,33%'
+      - inputText: http://localhost:${METRO_PORT}
+      - tapOn: 'Connect'
 # Each cleared install shows the dev menu's one-time intro sheet once the
 # bundle loads (the first Metro bundle can take a minute to build).
 - extendedWaitUntil:

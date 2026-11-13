@@ -15,12 +15,15 @@ import {
   usageFor,
 } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
+import { requestSummary } from './request-summary.ts';
+import { isTitleRequest, titleText } from './title-request.ts';
 
 type ChatBody = {
   readonly model?: unknown;
   readonly messages?: unknown;
   readonly stream?: unknown;
   readonly max_tokens?: unknown;
+  readonly temperature?: unknown;
 };
 
 type Log = (line: string) => void;
@@ -109,7 +112,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     const plan = planRequest(config, number, model);
     const started = Date.now();
     active += 1;
-    log(`#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active}`);
+    log(`#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active} ${requestSummary(body)}`);
 
     let closed = false;
     res.on('close', () => {
@@ -128,6 +131,23 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
           errorPayload(`Injected failure on request #${number}.`)
         );
         result = `${plan.status} (injected)`;
+      } else if (isTitleRequest(body)) {
+        const prompt = lastMessageText(body.messages);
+        const text = titleText(number);
+        await sleep(tokenMs);
+        sendJson(
+          res,
+          200,
+          completionPayload({
+            id,
+            model: config.modelId,
+            text,
+            finishReason: 'stop',
+            usage: usageFor(prompt, text.split(' ').length),
+          }),
+          { 'x-request-id': id }
+        );
+        result = `title "${text}"`;
       } else {
         const prompt = lastMessageText(body.messages);
         const maxTokens =
