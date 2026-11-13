@@ -1,4 +1,5 @@
 import type { ContextMenuAction } from 'react-native-context-menu-view';
+import { nativeMenuNests } from './native-menu-platform';
 
 /**
  * One element of a native pull-down menu as SwiftUI builds one: an item that
@@ -50,6 +51,36 @@ export const submenu = <Command>(
   action: { title, ...(systemIcon ? { systemIcon } : {}) },
   children,
 });
+
+/**
+ * The tree reshaped for a menu that can't nest (Android): every inline
+ * section and ControlGroup gives its items to the level it sits in, and a
+ * submenu inside a submenu does the same, so only top-level submenus remain.
+ */
+const flattenMenuTree = <Command>(
+  nodes: readonly MenuTreeNode<Command>[],
+  insideSubmenu: boolean
+): MenuTreeNode<Command>[] =>
+  nodes.flatMap((node) => {
+    if (!node.children) {
+      return [node];
+    }
+    if (node.action.inlineChildren || insideSubmenu) {
+      return flattenMenuTree(node.children, insideSubmenu);
+    }
+    return [{ ...node, children: flattenMenuTree(node.children, true) }];
+  });
+
+/**
+ * The menu as this platform's native module can draw it: as built on iOS,
+ * flattened to one level of submenus on Android. Build the actions and look
+ * up presses on the same result.
+ */
+export const menuTreeForPlatform = <Command>(
+  nodes: readonly MenuTreeNode<Command>[],
+  os?: string
+): readonly MenuTreeNode<Command>[] =>
+  nativeMenuNests(os) ? nodes : flattenMenuTree(nodes, false);
 
 /** The native menu's actions for `react-native-context-menu-view`. */
 export const toContextMenuActions = <Command>(

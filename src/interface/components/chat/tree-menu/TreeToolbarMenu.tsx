@@ -1,9 +1,5 @@
 import { useMemo } from 'react';
-import ContextMenu from 'react-native-context-menu-view';
-import {
-  commandAt,
-  toContextMenuActions,
-} from '@/interface/ui/components/native-menu-tree';
+import { NativeTreeMenu } from '@/interface/ui/components/NativeTreeMenu';
 import { HeaderIconButton } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 import {
@@ -34,16 +30,7 @@ export const TreeToolbarMenu = ({
   );
 
   return (
-    <ContextMenu
-      dropdownMenuMode
-      actions={toContextMenuActions(menu)}
-      onPress={(event) => {
-        const command = commandAt(menu, event.nativeEvent.indexPath);
-        if (command) {
-          onCommand(command);
-        }
-      }}
-    >
+    <NativeTreeMenu menu={menu} onCommand={onCommand}>
       {/* Latent Spaces' `slider.horizontal.3`. */}
       <HeaderIconButton
         icon="options-outline"
@@ -51,6 +38,6 @@ export const TreeToolbarMenu = ({
         accessibilityLabel="Tree menu"
         testID="chat-menu-button"
       />
-    </ContextMenu>
+    </NativeTreeMenu>
   );
 };

@@ -67,7 +67,7 @@ export const TextEditorSheet = ({
               onPress={(event) => {
                 const item = findNativeMenuItem(
                   TEXT_EDITOR_MENU,
-                  event.nativeEvent.indexPath
+                  event.nativeEvent
                 );
                 if (item?.action === 'copy') {
                   void Clipboard.setStringAsync(text);

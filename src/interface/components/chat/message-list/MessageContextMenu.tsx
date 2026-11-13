@@ -47,10 +47,7 @@ export const MessageContextMenu = ({
       previewBackgroundColor="transparent"
       style={style}
       onPress={(event) => {
-        const menuItem = findNativeMenuItem(
-          sections,
-          event.nativeEvent.indexPath
-        );
+        const menuItem = findNativeMenuItem(sections, event.nativeEvent);
         if (menuItem) {
           onMessageAction(row.id, menuItem.action);
         }
