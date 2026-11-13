@@ -21,7 +21,7 @@ const PUSHED_TEXT_TOP_GAP = editor.textTopGap - 9;
 /**
  * Latent Spaces' `FullScreenTextEditor` titled "System Message", pushed from
  * Model Settings (TreeModelSettingsView.swift:193-200): the text in the loom
- * font, focused as it opens, a `ellipsis.circle` menu (Copy text, Clear
+ * font, focused as it opens, a `···` menu (Copy text, Clear
  * text) trailing, and a keyboard "Done".
  */
 const SystemMessageScreen = () => {

@@ -2,7 +2,10 @@ import type { NativeMenuSections } from '../native-menu';
 
 export type TextEditorMenuAction = 'copy' | 'clear';
 
-/** The editor's `ellipsis.circle` menu (FullScreenTextEditor.swift:31-41). */
+/**
+ * The editor's `···` menu (FullScreenTextEditor.swift:31-41), the plain
+ * `ellipsis`: the glass button is already the circle.
+ */
 export const TEXT_EDITOR_MENU: NativeMenuSections<TextEditorMenuAction> = [
   [
     { action: 'copy', title: 'Copy text', systemIcon: 'doc.on.doc' },

@@ -18,8 +18,9 @@ type HomeMenuProps = {
 };
 
 /**
- * Home's leading toolbar menu, `ellipsis.circle` (HomeScreenView.swift:
- * 124-155): a native pull-down menu on a tap.
+ * Home's leading toolbar menu (HomeScreenView.swift:124-155): a native
+ * pull-down menu on a tap. Its `···` is the plain `ellipsis`, since the
+ * toolbar's glass circle already draws the circle.
  */
 export const HomeMenu = ({
   tags,
@@ -44,8 +45,8 @@ export const HomeMenu = ({
       }}
     >
       <HeaderIconButton
-        icon={busy ? 'hourglass-outline' : 'ellipsis-horizontal-circle-outline'}
-        iconSize={loomUiTokens.home.header.menuIconSize}
+        icon={busy ? 'hourglass-outline' : 'ellipsis-horizontal'}
+        iconSize={loomUiTokens.header.ellipsisSize}
         accessibilityLabel="Home menu"
         testID="home-menu-button"
       />

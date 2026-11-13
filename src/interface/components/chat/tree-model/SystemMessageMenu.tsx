@@ -13,7 +13,10 @@ type SystemMessageMenuProps = {
   readonly onClear: () => void;
 };
 
-/** The editor's trailing `ellipsis.circle` menu (FullScreenTextEditor.swift:31-44). */
+/**
+ * The editor's trailing `···` menu (FullScreenTextEditor.swift:31-44), the
+ * plain `ellipsis`: the glass button is already the circle.
+ */
 export const SystemMessageMenu = ({
   text,
   onClear,
@@ -35,8 +38,8 @@ export const SystemMessageMenu = ({
   >
     <HeaderIconButton
       testID="tree-system-message-menu-button"
-      icon="ellipsis-horizontal-circle-outline"
-      iconSize={loomUiTokens.header.menuIconSize}
+      icon="ellipsis-horizontal"
+      iconSize={loomUiTokens.header.ellipsisSize}
       accessibilityLabel="Editor menu"
     />
   </ContextMenu>
