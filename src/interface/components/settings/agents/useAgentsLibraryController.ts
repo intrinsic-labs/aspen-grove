@@ -1,67 +1,25 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  DEFAULT_AGENT_SYSTEM_PROMPT,
-  DEFAULT_AGENT_TEMPERATURE,
-} from '@application/services/agent-defaults';
-import type { Agent, SelectableProvider } from '@domain/entities';
-import { isSelectableProvider } from '@domain/entities';
+import { useRouter } from 'expo-router';
+import type { Agent } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
-import { agentDraftToConfig } from './agent-draft-to-config';
-import type { AgentDraft } from './agent-editor-types';
-import { useCreateAgentFromDraft } from './useCreateAgentFromDraft';
-
-export type AgentEditorState =
-  | { readonly mode: 'create' }
-  | { readonly mode: 'edit'; readonly agent: Agent };
+import { agentEditorRoutes } from './editor/agent-editor-routes';
 
 /**
- * Split an agent's modelRef into picker-friendly parts. Unknown providers
- * (e.g. a future `anthropic:` ref) fall back to showing the full ref as an
- * OpenRouter custom identifier rather than crashing the editor.
- */
-export const draftFromAgent = (agent: Agent): AgentDraft => {
-  const modelRef = agent.modelRef ?? '';
-  const colonIndex = modelRef.indexOf(':');
-  const prefix = colonIndex === -1 ? '' : modelRef.slice(0, colonIndex);
-  const provider: SelectableProvider = isSelectableProvider(prefix)
-    ? prefix
-    : 'openrouter';
-  const modelIdentifier = isSelectableProvider(prefix)
-    ? modelRef.slice(colonIndex + 1)
-    : modelRef;
-
-  return {
-    name: agent.name,
-    provider,
-    modelIdentifier,
-    temperatureInput:
-      typeof agent.configuration.temperature === 'number'
-        ? String(agent.configuration.temperature)
-        : String(DEFAULT_AGENT_TEMPERATURE),
-    maxTokensInput:
-      typeof agent.configuration.maxTokens === 'number'
-        ? String(agent.configuration.maxTokens)
-        : '',
-    systemPrompt:
-      agent.configuration.systemPrompt ?? DEFAULT_AGENT_SYSTEM_PROMPT,
-  };
-};
-
-/**
- * The Settings → Agents library: list, create, edit, delete shared agents
- * and pin the default agent for new trees.
+ * The Settings → Agents library: list and delete shared agents, pin the
+ * default agent for new trees, and open the agent editor to create or edit
+ * one. The list re-reads whenever the screen regains focus, so the editor's
+ * save shows as it closes.
  */
 export const useAgentsLibraryController = () => {
   const { repositories, useCases } = useAppServices();
-  const createAgentFromDraft = useCreateAgentFromDraft();
+  const router = useRouter();
 
   const [agents, setAgents] = useState<readonly Agent[]>([]);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyAgentId, setBusyAgentId] = useState<string | null>(null);
-  const [editor, setEditor] = useState<AgentEditorState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -87,42 +45,13 @@ export const useAgentsLibraryController = () => {
     }, [refresh])
   );
 
-  const openCreate = useCallback(() => setEditor({ mode: 'create' }), []);
-  const openEdit = useCallback(
-    (agent: Agent) => setEditor({ mode: 'edit', agent }),
-    []
+  const openCreate = useCallback(
+    () => router.push(agentEditorRoutes.create()),
+    [router]
   );
-  const closeEditor = useCallback(() => setEditor(null), []);
-
-  const submitEditor = useCallback(
-    async (draft: AgentDraft): Promise<void> => {
-      if (!editor) {
-        return;
-      }
-
-      if (editor.mode === 'create') {
-        await createAgentFromDraft(draft);
-      } else {
-        const { modelRef, configuration } = agentDraftToConfig(draft);
-        await useCases.updateAgentConfigurationUseCase.execute({
-          agentId: editor.agent.id,
-          changes: {
-            name: draft.name.trim(),
-            modelRef,
-            configuration,
-          },
-        });
-      }
-
-      setEditor(null);
-      await refresh();
-    },
-    [
-      createAgentFromDraft,
-      editor,
-      refresh,
-      useCases.updateAgentConfigurationUseCase,
-    ]
+  const openEdit = useCallback(
+    (agent: Agent) => router.push(agentEditorRoutes.edit(agent.id)),
+    [router]
   );
 
   const makeDefault = useCallback(
@@ -193,11 +122,8 @@ export const useAgentsLibraryController = () => {
     loading,
     busyAgentId,
     error,
-    editor,
     openCreate,
     openEdit,
-    closeEditor,
-    submitEditor,
     makeDefault,
     deleteAgent,
   };

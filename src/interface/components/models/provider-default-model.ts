@@ -1,6 +1,6 @@
 import type { SelectableProvider } from '@domain/entities';
-import type { ModelOption } from '../../settings/agents/model-options';
-import { AGENT_TEMPLATES } from '../../settings/agents/agent-templates';
+import type { ModelOption } from './model-options';
+import { AGENT_TEMPLATES } from '../settings/agents/agent-templates';
 
 /** The Provider picker's items. Latent Spaces' Anthropic is cut. */
 export const PROVIDER_OPTIONS: readonly {

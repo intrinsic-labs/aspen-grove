@@ -1,12 +1,6 @@
-import {
-  FormLinkRow,
-  FormPickerRow,
-  FormSection,
-  type FormPickerOption,
-} from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
-import { ModelFooter } from './ModelFooter';
-import { PROVIDER_OPTIONS } from './provider-default-model';
+import { ModelFooter } from '../../models/ModelFooter';
+import { ProviderModelSection } from '../../models/ProviderModelSection';
 import type { TreeModelSettings } from './useTreeModelSettings';
 
 type ProviderOptionsSectionProps = {
@@ -24,20 +18,6 @@ const firstSectionStyle = {
   marginTop: loomUiTokens.settingsForm.headerTopGap - 18,
 } as const;
 
-/** LM Studio's models as menu items, the tree's own kept when unlisted. */
-const lmStudioItems = (
-  settings: TreeModelSettings
-): readonly FormPickerOption<string>[] => {
-  const items = settings.picker.options.map((option) => ({
-    value: option.id,
-    label: option.label,
-  }));
-  const { modelId } = settings;
-  return modelId && !items.some((item) => item.value === modelId)
-    ? [{ value: modelId, label: modelId }, ...items]
-    : items;
-};
-
 const footerDescription = (settings: TreeModelSettings): string | undefined => {
   if (
     settings.picker.settledFor === settings.provider &&
@@ -54,47 +34,30 @@ const footerDescription = (settings: TreeModelSettings): string | undefined => {
 };
 
 /**
- * "Provider Options" (TreeModelSettingsView.swift:73-143): the Provider menu
- * picker, then Model. OpenRouter's Model pushes the model list
- * (`.pickerStyle(.navigationLink)`); LM Studio's is a menu, as Latent
- * Spaces' short Anthropic list is.
+ * "Provider Options" (TreeModelSettingsView.swift:73-143): Provider and
+ * Model, the model's id and description in the footer.
  */
 export const ProviderOptionsSection = ({
   settings,
   onOpenModelList,
 }: ProviderOptionsSectionProps) => (
-  <FormSection
+  <ProviderModelSection
     header="Provider Options"
     style={firstSectionStyle}
     footer={
       <ModelFooter
+        testIDPrefix="tree-model"
         modelId={settings.modelId}
         description={footerDescription(settings)}
       />
     }
-  >
-    <FormPickerRow
-      testID="tree-model-provider"
-      title="Provider"
-      value={settings.provider}
-      options={PROVIDER_OPTIONS}
-      onChange={settings.chooseProvider}
-    />
-    {settings.provider === 'openrouter' ? (
-      <FormLinkRow
-        testID="tree-model-model"
-        title="Model"
-        value={settings.selected?.label ?? settings.modelId ?? undefined}
-        onPress={onOpenModelList}
-      />
-    ) : (
-      <FormPickerRow
-        testID="tree-model-model"
-        title="Model"
-        value={settings.modelId ?? ''}
-        options={lmStudioItems(settings)}
-        onChange={settings.chooseModel}
-      />
-    )}
-  </FormSection>
+    provider={settings.provider}
+    onChangeProvider={settings.chooseProvider}
+    modelId={settings.modelId}
+    selected={settings.selected}
+    options={settings.picker.options}
+    onChooseLmStudioModel={settings.chooseModel}
+    onOpenModelBrowser={onOpenModelList}
+    testIDPrefix="tree-model"
+  />
 );

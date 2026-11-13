@@ -1,7 +1,7 @@
 import type { TreeModelSettingsChanges } from '@application/use-cases';
 import type { SelectableProvider } from '@domain/entities';
 import { parseModelRef } from '@domain/value-objects';
-import type { ModelOption } from '../../settings/agents/model-options';
+import type { ModelOption } from '../../models/model-options';
 import { maxTokensAllowed } from './tree-model-values';
 
 /**

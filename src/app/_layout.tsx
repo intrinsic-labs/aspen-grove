@@ -115,6 +115,10 @@ const RootLayout = () => {
                     options={settingsScreenOptions(colors.primary, 'Model')}
                   />
                   <Stack.Screen
+                    name="tree/[treeId]/model/detail"
+                    options={settingsScreenOptions(colors.primary, '')}
+                  />
+                  <Stack.Screen
                     name="tree/[treeId]/model/system-message"
                     options={settingsScreenOptions(
                       colors.primary,
@@ -124,6 +128,15 @@ const RootLayout = () => {
                   {/* Latent Spaces' onboarding `.sheet` (HomeScreenView.swift:203-205). */}
                   <Stack.Screen
                     name="onboarding"
+                    options={{
+                      headerShown: false,
+                      presentation: 'modal',
+                    }}
+                  />
+                  {/* The agent editor: a sheet with its own stack, so the
+                      model browser pushes inside it. */}
+                  <Stack.Screen
+                    name="agent-editor"
                     options={{
                       headerShown: false,
                       presentation: 'modal',

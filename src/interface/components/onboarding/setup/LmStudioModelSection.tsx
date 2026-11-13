@@ -7,7 +7,7 @@ import {
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { FormCheckRow } from '../../settings/agents/editor/FormCheckRow';
-import { useModelPickerData } from '../../settings/agents/useModelPickerData';
+import { useModelPickerData } from '../../models/useModelPickerData';
 
 type LmStudioModelSectionProps = {
   readonly modelId: string;

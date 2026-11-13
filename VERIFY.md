@@ -155,7 +155,10 @@ recognises the titling call and answers "Mock title #n" (n is the request number
 tree's row ends up with that title in place of its first message's words.
 [.maestro/mock/tree-model.yaml](.maestro/mock/tree-model.yaml) opens a tree's Model Settings,
 turns on "Always use maximum allowed", writes a system message and sends; the mock's log
-line for that send shows `max_tokens=8192` and the system message. If 1235 is taken, run the mock on
+line for that send shows `max_tokens=8192` and the system message.
+[.maestro/mock/tree-model-browser.yaml](.maestro/mock/tree-model-browser.yaml) switches that
+tree to OpenRouter and chooses a model through the model browser and a model's page (the
+catalog is public, so no key, but it needs the network). If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
@@ -187,6 +190,9 @@ Home's composer.
 
 - [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, its menu, Search,
   Settings, Connections, the empty Agents library and the agent editor.
+- [model-browser.yaml](.maestro/model-browser.yaml) opens the agent editor, pushes the
+  OpenRouter model browser from Model, opens a Claude model's page, uses it and creates the
+  agent. No key; it fetches OpenRouter's public catalog.
 - [first-turn.yaml](.maestro/first-turn.yaml) creates an agent from a template, starts a tree
   from Home's composer, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.

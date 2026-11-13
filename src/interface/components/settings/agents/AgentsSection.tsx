@@ -1,30 +1,12 @@
 import { Text } from 'react-native';
 import {
-  DEFAULT_AGENT_SYSTEM_PROMPT,
-  DEFAULT_AGENT_TEMPERATURE,
-} from '@application/services/agent-defaults';
-import {
   FormButtonRow,
   FormRow,
   FormSection,
   formText,
 } from '@/interface/ui/components/form';
-import { AgentEditorSheet } from './AgentEditorSheet';
 import { AgentRow } from './AgentRow';
-import {
-  draftFromAgent,
-  useAgentsLibraryController,
-} from './useAgentsLibraryController';
-import type { AgentDraft } from './agent-editor-types';
-
-const EMPTY_DRAFT: AgentDraft = {
-  name: '',
-  provider: 'openrouter',
-  modelIdentifier: '',
-  temperatureInput: String(DEFAULT_AGENT_TEMPERATURE),
-  maxTokensInput: '',
-  systemPrompt: DEFAULT_AGENT_SYSTEM_PROMPT,
-};
+import { useAgentsLibraryController } from './useAgentsLibraryController';
 
 /**
  * Settings → Agents library, in Form rows. Shared agents are the reusable
@@ -95,20 +77,6 @@ export const AgentsSection = () => {
           />
         </FormSection>
       )}
-
-      <AgentEditorSheet
-        visible={controller.editor !== null}
-        title={controller.editor?.mode === 'edit' ? 'Edit Agent' : 'New Agent'}
-        initialDraft={
-          controller.editor?.mode === 'edit'
-            ? draftFromAgent(controller.editor.agent)
-            : EMPTY_DRAFT
-        }
-        showTemplates={controller.editor?.mode === 'create'}
-        submitLabel={controller.editor?.mode === 'edit' ? 'Save' : 'Create'}
-        onCancel={controller.closeEditor}
-        onSubmit={controller.submitEditor}
-      />
     </>
   );
 };

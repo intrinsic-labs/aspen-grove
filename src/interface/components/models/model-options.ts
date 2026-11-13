@@ -1,5 +1,7 @@
+import type { OpenRouterCatalogModel } from '@application/services/llm';
 import type { SelectableProvider } from '@domain/entities';
 import type { AppServices } from '@interface/composition';
+import { formatRowMeta, formatTokensCompact } from './model-info-format';
 
 /**
  * A pickable model, normalized across providers.
@@ -18,20 +20,12 @@ export type ModelOption = {
   readonly maxOutputTokens?: number;
   /** LM Studio only: whether the model is currently loaded on the server. */
   readonly loaded?: boolean;
+  /** OpenRouter only: the catalog entry, for the model browser. */
+  readonly openRouter?: OpenRouterCatalogModel;
 };
 
 const formatContext = (contextLength?: number): string | null =>
-  contextLength ? `${Math.round(contextLength / 1000)}K ctx` : null;
-
-const formatPrice = (perMTokens?: number): string | null => {
-  if (perMTokens === undefined) {
-    return null;
-  }
-  if (perMTokens === 0) {
-    return 'free';
-  }
-  return `$${perMTokens < 1 ? perMTokens.toFixed(2) : perMTokens.toFixed(0)}/M`;
-};
+  contextLength ? `${formatTokensCompact(contextLength)} ctx` : null;
 
 const joinDetail = (parts: readonly (string | null)[]): string | undefined =>
   parts.filter(Boolean).join(' · ') || undefined;
@@ -55,10 +49,8 @@ export const fetchModelOptions = async (
       label: model.displayName,
       description: model.description,
       maxOutputTokens: model.maxCompletionTokens,
-      detail: joinDetail([
-        formatContext(model.contextLength),
-        formatPrice(model.promptPricePerMTokens),
-      ]),
+      detail: formatRowMeta(model) || undefined,
+      openRouter: model,
     }));
   }
   const models = await adapters.providerRegistry

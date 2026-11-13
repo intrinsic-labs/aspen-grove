@@ -1,6 +1,6 @@
 import { DEFAULT_AGENT_TEMPERATURE } from '@application/services/agent-defaults';
 import type { AgentConfiguration } from '@domain/entities';
-import type { ModelOption } from '../../settings/agents/model-options';
+import type { ModelOption } from '../../models/model-options';
 
 /** Latent Spaces' limit for a model it doesn't know (LLM.swift:43). */
 export const UNKNOWN_MODEL_MAX_TOKENS = 4096;

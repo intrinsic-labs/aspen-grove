@@ -4,9 +4,9 @@ import {
   type SelectableProvider,
 } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
-import { useModelPickerData } from '../../settings/agents/useModelPickerData';
+import { useModelPickerData } from '../../models/useModelPickerData';
 import { modelChoiceChanges } from './model-choice';
-import { providerDefaultModel } from './provider-default-model';
+import { providerDefaultModel } from '../../models/provider-default-model';
 import {
   maxTokensAllowed,
   TEMPERATURE_RANGE,

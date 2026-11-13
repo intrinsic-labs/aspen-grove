@@ -7,6 +7,11 @@ export const treeModelRoutes = {
     ({ pathname: '/tree/[treeId]/model', params: { treeId } }) as const,
   openRouterModels: (treeId: string) =>
     ({ pathname: '/tree/[treeId]/model/models', params: { treeId } }) as const,
+  modelDetail: (treeId: string, modelId: string) =>
+    ({
+      pathname: '/tree/[treeId]/model/detail',
+      params: { treeId, modelId },
+    }) as const,
   systemMessage: (treeId: string) =>
     ({
       pathname: '/tree/[treeId]/model/system-message',

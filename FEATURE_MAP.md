@@ -62,10 +62,9 @@ else, and the Reach lines below refer to them:
   `onboarding-template-claude-sonnet-balanced` → `onboarding-begin`; or LM Studio, see
   `onboarding.connect`), which also lands in a tree (P2). From Settings instead: `home-settings-button` →
   `settings-link-agents` → `settings-agents-new` → pick a template
-  (`agent-editor-template-*`) or a provider tab (`agent-editor-model-provider-openrouter` /
-  `-lmstudio`) and a model row (`agent-editor-model-option-<model id>`, or type an id into
-  `agent-editor-model-search-input` and tap `agent-editor-model-custom`) →
-  `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
+  (`agent-editor-template-*`), or a name and a model (`agent-editor-model` pushes the model
+  browser: `agent-editor-model-option-<model id>` → `model-detail-use`; see
+  `settings.agents.model-picker`) → `agent-editor-submit`. The first agent becomes the default. Generating replies also needs a
   key: the OpenRouter key in Connections, or a reachable LM Studio server. A build with
   `EXPO_PUBLIC_OPENROUTER_API_KEY` set falls back to that key (`provider-key.ts`).
 - **P2, open a tree:** onboarding's `onboarding-begin` opens one.
@@ -164,7 +163,7 @@ stays until the user makes one.
 - **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
   Grove's Search and tag filter: Import OpenLoom Tree (its own group), OpenLoom Docs, Info &
   Tutorials, Show Onboarding, then Search and Filter by Tag.
-- **Where:** Home, top left (`ellipsis.circle`), a native pull-down menu.
+- **Where:** Home, top left (`···`, the plain `ellipsis` in the toolbar's glass circle), a native pull-down menu.
 - **Reach:** Cold start → `home-menu-button`, then the item by its title.
 - **Requires:** none. "Filter by Tag" shows once the grove has a tag.
 - **Selector:** working — `home-menu-button`; items none — native context menu item; reach via a tap on `home-menu-button` ("Import OpenLoom Tree", "OpenLoom Docs", "Info & Tutorials", "Show Onboarding", "Search", "Filter by Tag")
@@ -403,7 +402,8 @@ stays until the user makes one.
   opacity (as Latent Spaces draws them), and a caption under each node for bookmarks,
   continuation count and pruned state.
 - **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
-  title, `···` at the right).
+  title, `···` at the right). The first row starts 16 pt under the header
+  (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
@@ -609,7 +609,7 @@ stays until the user makes one.
   siblings. A card can be stopped on its own; one failing or being stopped doesn't stop the
   others. Each finished (or stopped-with-text) card is saved as a sibling model node with its
   own raw response and hash chain, and a double-tap on it makes it current like any sibling.
-- **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green). While that node's cards stream it becomes "Stop all". Cards stream in
+- **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green, with the `cpu` symbol the tree menu's Model uses). While that node's cards stream it becomes "Stop all". Cards stream in
   the rail's card row.
 - **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
@@ -646,7 +646,8 @@ stays until the user makes one.
   requests; a server that runs one prediction at a time queues them, so cards sit in
   `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
   late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
-  point the tree's agent at a model id that doesn't exist (`agent-editor-model-custom`).
+  point the tree's agent at a model id that doesn't exist (type it into the model browser's
+  search and tap `agent-editor-model-custom` or `tree-model-custom`).
   Parallel continuations are not read aloud.
 
 ### Tree menu
@@ -798,7 +799,7 @@ stays until the user makes one.
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
 - **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/chat/tree-model/ModelFooter.tsx`, `src/interface/components/chat/tree-model/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/chat/tree-model/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/interface/components/settings/agents/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -818,28 +819,56 @@ stays until the user makes one.
   the catalog), or LM Studio's context length. Coming back to the tree re-reads its agent
   and system message. Flow: `.maestro/mock/tree-model.yaml`.
 
-### OpenRouter model list
+### OpenRouter model browser (tree)
 - **ID:** `chat.model-settings.openrouter-models`
-- **Purpose:** OpenRouter's Model picker page (`.pickerStyle(.navigationLink)`): every
-  catalog model by name in one inset card, a gold check on the tree's, and a tap chooses it
-  and goes back. Aspen Grove adds a search field in the bar (by name or id), since the catalog
-  runs to hundreds of models.
+- **Purpose:** OpenRouter's Model page (`.pickerStyle(.navigationLink)`) as Aspen Grove's
+  model browser: every catalog model in one inset card, each row with the model's name, who
+  made it, and its context and input/output price per million tokens in mono; a gold check
+  on the tree's. The native search field in the bar narrows it by name, maker or id. A tap
+  opens the model's page (`models.detail`), whose "Use This Model" chooses it. A search that
+  matches no listed id offers "Use “<id>” as a model id" (`tree-model-custom`), for a model
+  newer than the cached catalog. The same browser serves the agent editor
+  (`settings.agents.model-picker`).
 - **Where:** Pushed from Model Settings' Model row while the provider is OpenRouter; titled
   "Model".
 - **Reach:** P2 → `chat-menu-button` → "Model" → (Provider: OpenRouter) → `tree-model-model`
   → `tree-model-option-<model id>`.
 - **Requires:** The catalog: a network connection, or a cached copy.
-- **Selector:** working — `tree-model-list-screen`, `tree-model-list`, rows `tree-model-option-<model id>`; the search field is the native header search bar (no testID; tap its "Search" placeholder)
-- **Code:** `src/interface/components/chat/tree-model/OpenRouterModelListScreen.tsx`, `src/interface/components/chat/tree-model/ModelListRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/app/tree/*/model/models.tsx`
+- **Selector:** working — `tree-model-list-screen`, `tree-model-list`, rows `tree-model-option-<model id>`, `tree-model-custom`; the search field is the native header search bar (no testID; tap its "Search models" placeholder)
+- **Code:** `src/interface/components/chat/tree-model/OpenRouterModelListScreen.tsx`, `src/interface/components/chat/tree-model/useTreeOpenRouterChoice.ts`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/browser-rows.ts`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/app/tree/*/model/models.tsx`
 - **Backend:** The OpenRouter catalog (as above); the choice through
   `UpdateTreeModelSettingsUseCase`
+- **Status:** live
+- **Notes:** Flow: `.maestro/mock/tree-model-browser.yaml`.
+
+### Model page
+- **ID:** `models.detail`
+- **Purpose:** One OpenRouter model, with what openrouter.ai's page shows that helps choose
+  it: its name (Cardo), who made it and its id; About (OpenRouter's description, which its
+  list endpoint shortens); Limits (context, max output); Pricing (input and output per
+  million tokens, image input and output and a per-request price when the model has them,
+  "Varies" for a router); Modalities (input, output); Supported Parameters (mono chips);
+  Details (the model an alias points to, the date OpenRouter added it, knowledge cutoff when
+  known) and "View on OpenRouter" (opens `https://openrouter.ai/<id>` in Safari). "Use This
+  Model", pinned at the bottom, chooses it and returns past the list ("Current Model" on the
+  chosen one, which just returns).
+- **Where:** Pushed from a row of the model browser: in a tree's Model Settings (route
+  `tree/[treeId]/model/detail`, saves the tree's model) or inside the agent editor's sheet
+  (route `agent-editor/detail`, sets the draft's model).
+- **Reach:** `tree-model-option-<model id>` or `agent-editor-model-option-<model id>`.
+- **Requires:** The catalog, cached or fetched.
+- **Selector:** working — `model-detail-screen`, `model-detail-scroll`, `model-detail-title`, `model-detail-author`, `model-detail-description`, `model-detail-context`, `model-detail-max-output`, `model-detail-pricing`, `model-detail-parameters`, `model-detail-created`, `model-detail-link`, `model-detail-use`
+- **Code:** `src/interface/components/models/ModelDetailView.tsx`, `src/interface/components/models/ScrollBottomFade.tsx`, `src/interface/components/models/ModelDetailHero.tsx`, `src/interface/components/models/ModelDetailSections.tsx`, `src/interface/components/models/ModelInfoRow.tsx`, `src/interface/components/models/ModelParameterChips.tsx`, `src/interface/components/models/useOpenRouterModel.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/interface/components/chat/tree-model/TreeModelDetailScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/application/services/llm/openrouter-catalog-model.ts`, `src/infrastructure/llm/openrouter/catalog-normalize.ts`, `src/app/tree/*/model/detail.tsx`, `src/app/agent-editor/detail.tsx`
+- **Backend:** The cached OpenRouter catalog (`GET https://openrouter.ai/api/v1/models`, no
+  key; WatermelonDB local key `openrouter_model_catalog_v3`, 24 h); the choice through
+  `UpdateTreeModelSettingsUseCase` (tree) or the agent editor's save
 - **Status:** live
 
 ### System message
 - **ID:** `chat.model-settings.system-message`
 - **Purpose:** Latent Spaces' full-screen editor titled "System Message"
   (FullScreenTextEditor.swift): the tree's system message in the loom font, focused as it
-  opens, an `ellipsis.circle` menu (Copy text, Clear text) trailing and a keyboard "Done". It
+  opens, a `···` menu (Copy text, Clear text) trailing and a keyboard "Done". It
   saves as you type (after a short pause, and on leaving).
 - **Where:** Pushed from Model Settings' "System Message".
 - **Reach:** P2 → `chat-menu-button` → "Model" → `tree-model-system-message` → type into
@@ -1021,43 +1050,52 @@ stays until the user makes one.
 
 ### Agent editor
 - **ID:** `settings.agents.editor`
-- **Purpose:** Creates or edits a shared agent: quick-start templates (create only), model,
-  name, temperature, max tokens and system prompt.
-- **Where:** A page sheet over Settings → Agents, titled "New Agent" or "Edit Agent". A Form in a sheet: glass Cancel and Create/Save capsules
-  either side of the title, the error pinned under the bar.
+- **Purpose:** Creates or edits a shared agent: quick-start templates (create only), name,
+  Provider and Model, temperature, max tokens and system prompt.
+- **Where:** A page sheet over Settings → Agents (route `agent-editor`, a modal with its own
+  stack), titled "New Agent" or "Edit Agent". A Form in a sheet: glass Cancel and
+  Create/Save capsules either side of the title, the error pinned under the bar. The model
+  browser and a model's page push inside the sheet.
 - **Reach:** `settings-link-agents` → `settings-agents-new`, or tap a
   `settings-agents-row-<agentId>`.
 - **Requires:** none
-- **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/AgentEditorSheet.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`
+- **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-provider`, `agent-editor-model`, `agent-editor-footer-id`, `agent-editor-footer-description`, `agent-editor-model-error`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
+- **Code:** `src/interface/components/settings/agents/editor/AgentEditorStack.tsx`, `src/interface/components/settings/agents/editor/AgentEditorScreen.tsx`, `src/interface/components/settings/agents/editor/useAgentEditorState.ts`, `src/interface/components/settings/agents/editor/agent-editor-context.ts`, `src/interface/components/settings/agents/editor/agent-editor-routes.ts`, `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-draft-from-agent.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`, `src/app/agent-editor/_layout.tsx`, `src/app/agent-editor/index.tsx`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
 - **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
   then model id and temperature) with the gold checkmark in its own trailing column. Their
   model ids are OpenRouter `~…-latest` aliases. Validation errors show in
-  `agent-editor-error`, pinned under the sheet's bar so they are always in view.
+  `agent-editor-error`, pinned under the sheet's bar so they are always in view. A swipe
+  down discards the draft, as Cancel does. Settings → Agents re-reads its list when the
+  sheet closes.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
-- **Purpose:** Picks the provider (OpenRouter or LM Studio) and a model: from the cached,
-  searchable OpenRouter catalog, from live LM Studio discovery, or by typing a custom
-  OpenRouter id.
-- **Where:** The Provider and Model sections of the agent editor (Form rows). Onboarding's
-  LM Studio model (`LmStudioModelSection`) and a tree's Model Settings
-  (`chat.model-settings`) read the same lists through `useModelPickerData`.
-- **Reach:** `settings-agents-new` → `agent-editor-model-provider-openrouter` →
-  `agent-editor-model-search-input` → `agent-editor-model-option-<model id>`.
-- **Requires:** OpenRouter: network for the catalog. LM Studio: a reachable endpoint (set in
-  `settings.connections.lmstudio`).
-- **Selector:** working — with prefix `agent-editor`: `<prefix>-model`, `<prefix>-model-provider-openrouter`, `<prefix>-model-provider-lmstudio`, `<prefix>-model-search-input`, `<prefix>-model-refresh`, `<prefix>-model-option-<model id>`, `<prefix>-model-custom`, `<prefix>-model-selected`, `<prefix>-model-clear`, `<prefix>-model-error`
-- **Code:** `src/interface/components/settings/agents/editor/ModelSections.tsx`, `src/interface/components/settings/agents/editor/ModelSearchRow.tsx`, `src/interface/components/settings/agents/model-option-filter.ts`, `src/interface/components/settings/agents/useModelPickerData.ts`, `src/interface/components/settings/agents/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`
-- **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models` (cached for 24 h); LM
-  Studio `GET <endpoint>/api/v1/models`
+- **Purpose:** Picks the agent's provider and model the way a tree's Model Settings does:
+  Provider is a menu row (OpenRouter, LM Studio); on OpenRouter, Model shows the chosen
+  model's name and pushes the model browser (the one `chat.model-settings.openrouter-models`
+  describes), where a row opens the model's page (`models.detail`) and "Use This Model" puts
+  it in the draft; on LM Studio, Model is a menu of the server's models. The footer shows the
+  model id in bold and its description. A new provider starts on its default model
+  (onboarding's first template on OpenRouter, a loaded model on LM Studio).
+- **Where:** The agent editor's Model section; the browser and a model's page push inside
+  the editor's sheet (routes `agent-editor/models`, `agent-editor/detail`). Onboarding's
+  LM Studio model (`LmStudioModelSection`) reads the same lists through
+  `useModelPickerData`.
+- **Reach:** `settings-agents-new` → `agent-editor-model` →
+  `agent-editor-model-option-<model id>` → `model-detail-use`.
+- **Requires:** OpenRouter: network for the catalog, or a cached copy. LM Studio: a
+  reachable endpoint (set in `settings.connections.lmstudio`).
+- **Selector:** working — `agent-editor-provider` and `agent-editor-model` (menu rows; LM Studio's model is a menu row too), `agent-editor-model-list-screen`, `agent-editor-model-list`, rows `agent-editor-model-option-<model id>`, `agent-editor-model-custom`, `agent-editor-model-error`; the search field is the native header search bar (tap its "Search models" placeholder); Provider and LM Studio model menu items none — native context menu item; reach via a tap on `agent-editor-provider` or `agent-editor-model`
+- **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
+- **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` (cached for
+  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`
 - **Status:** live
-- **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. At most
-  25 options render at once, so search to narrow. The OpenRouter search placeholder is
-  "Search or paste a model id". A failed LM Studio discovery reads "LM Studio isn't
-  answering…" in `<prefix>-model-error`, not the raw fetch error.
+- **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. The
+  browser lists every model (no cap); search to narrow. A failed LM Studio discovery reads
+  "LM Studio isn't answering…" in `agent-editor-model-error`, not the raw fetch error.
+  Flow: `.maestro/model-browser.yaml`.
 
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
