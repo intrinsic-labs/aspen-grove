@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import {
   DEFAULT_AGENT_SYSTEM_PROMPT,
   DEFAULT_AGENT_TEMPERATURE,

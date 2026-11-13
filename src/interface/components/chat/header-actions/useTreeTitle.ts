@@ -1,5 +1,8 @@
 import { useCallback, useState, type MutableRefObject } from 'react';
-import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import type {
+  NavigationProp,
+  ParamListBase,
+} from 'expo-router/react-navigation';
 import type { ILoomTreeRepository } from '@application/repositories';
 import { isDefaultTreeTitle } from '@application/services/tree-title';
 import type { ULID } from '@domain/value-objects';

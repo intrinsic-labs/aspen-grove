@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useDrawerStatus } from '@react-navigation/drawer';
-import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { useDrawerStatus } from 'expo-router/drawer';
+import type { DrawerContentComponentProps } from 'expo-router/drawer';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LoomTree } from '@domain/entities';

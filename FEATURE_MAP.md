@@ -791,8 +791,9 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** Its header is the drawer's JS header (`DrawerScreenHeader`), not the native
   stack header, so its hamburger matches Home, Loom Trees and Search. A native `headerLeft`
-  gets a round Liquid Glass background on iOS 26, and react-native-screens 4.16 can't turn
-  it off. The pushed sub-screens keep native headers with a system back button.
+  gets a round Liquid Glass background on iOS 26, which react-native-screens 4.16 (SDK 54)
+  couldn't turn off; 4.26 (SDK 57) can (`hidesSharedBackground`), so a native header is now an
+  option. The pushed sub-screens keep native headers with a system back button.
 
 ### Agents library
 - **ID:** `settings.agents`

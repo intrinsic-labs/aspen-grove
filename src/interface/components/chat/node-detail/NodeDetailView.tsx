@@ -10,8 +10,7 @@ import ContextMenu, {
   type ContextMenuAction,
 } from 'react-native-context-menu-view';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useHeaderHeight } from '@react-navigation/elements';
-import { useNavigation } from '@react-navigation/native';
+import { useHeaderHeight, useNavigation } from 'expo-router/react-navigation';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';

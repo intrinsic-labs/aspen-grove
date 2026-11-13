@@ -1,13 +1,25 @@
 # Shared start for every flow: a cold launch with cleared data, through the
 # expo-dev-client launcher to the JS bundle served by Metro, to Home.
 # Run from another flow with `- runFlow: open-app.yaml`.
+# The launcher only discovers Metro on its default ports (8081 and nearby).
+# Metro on another port? Pass -e METRO_URL=http://localhost:<port> and the
+# flow types it into "Enter URL manually" instead.
 appId: com.intrinsiclabs.aspengrove
 ---
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      true: '${!!METRO_URL}'
+    commands:
+      - tapOn: 'Enter URL manually'
+      - tapOn:
+          text: 'http://'
+      - inputText: ${METRO_URL}
+      - tapOn: 'Connect'
 # The development build opens on Expo's launcher: pick the running Metro
 # server. (tapOn waits for it to render; optional, so a build that skips the
-# launcher still passes.)
+# launcher, or connected above, still passes.)
 - tapOn:
     text: 'http://localhost:.*'
     optional: true
@@ -20,7 +32,7 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     text: 'Continue'
     optional: true
-# ...which then leaves the dev menu itself open: close it.
+# ...which then may leave the dev menu itself open: close it.
 - tapOn:
     id: 'xmark'
     optional: true
@@ -31,3 +43,26 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 120000
 # Let the dev menu finish sliding away before the first tap.
 - waitForAnimationToEnd
+# Since SDK 57 the dev menu floats a "Tools" button (gear) at the top right,
+# over onboarding's Skip and Home's header. clearState brings it back on every
+# launch, so open the menu from it and switch it off. The switch is its own
+# element: tapping the "Tools button" label doesn't toggle it.
+- runFlow:
+    when:
+      visible:
+        id: 'gearshape.fill'
+    commands:
+      - tapOn:
+          id: 'gearshape.fill'
+      - scrollUntilVisible:
+          element:
+            text: 'Tools button'
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          below: 'Fast refresh'
+          rightOf: 'Tools button'
+          checked: true
+      - tapOn:
+          id: 'xmark'
+      - waitForAnimationToEnd

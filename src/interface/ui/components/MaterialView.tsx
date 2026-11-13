@@ -28,7 +28,7 @@ export function MaterialView({
       <BlurView
         intensity={config.intensity}
         tint={tint}
-        experimentalBlurMethod="dimezisBlurView"
+        blurMethod="dimezisBlurView"
         style={StyleSheet.absoluteFill}
       />
       {Platform.OS === 'android' && (
