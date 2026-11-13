@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { Platform } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import { act, renderHook } from '@interface/test-support/render-hook';
 import { useNodeSheet } from './useNodeSheet';
@@ -62,6 +63,24 @@ describe('useNodeSheet', () => {
 
     await act(() => hook.result.current.onDismissed());
     expect(actions.startEditForNode).toHaveBeenCalledWith(nodeId);
+  });
+
+  it('starts an edit right after closing on Android, which has no onDismiss', async () => {
+    const platform = jest.replaceProperty(Platform, 'OS', 'android');
+    try {
+      const { hook, actions } = setup();
+      await act(() => hook.result.current.open(nodeId, 'info'));
+
+      await act(() => hook.result.current.onInfoAction(nodeId, 'edit'));
+
+      expect(hook.result.current.target).toBeNull();
+      expect(actions.startEditForNode).toHaveBeenCalledWith(nodeId);
+      // A dismissal reported later doesn't start it twice.
+      await act(() => hook.result.current.onDismissed());
+      expect(actions.startEditForNode).toHaveBeenCalledTimes(1);
+    } finally {
+      platform.restore();
+    }
   });
 
   it('renames a bookmark and keeps its sheet open', async () => {
