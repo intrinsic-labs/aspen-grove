@@ -21,8 +21,9 @@ export const initialExportDraft = (tree: {
 /**
  * The export's options from the sheet. An empty description leaves it out,
  * as Latent Spaces does. Latent Spaces' system message is Aspen Grove's
- * tree system context together with the agents' system prompts, so the one
- * toggle drops both.
+ * tree system context together with the agents' system prompts and the
+ * text of any system-authored node (an imported tree's system message can
+ * sit in the tree as one), so the one toggle drops all three.
  */
 export const toExportOptions = (
   draft: ExportSheetDraft
@@ -31,5 +32,6 @@ export const toExportOptions = (
   description: draft.description.length > 0 ? draft.description : null,
   includeSystemContext: draft.includeSystemMessage,
   includeAgentSystemPrompts: draft.includeSystemMessage,
+  includeSystemNodeContent: draft.includeSystemMessage,
   includeBookmarks: draft.includeBookmarks,
 });
