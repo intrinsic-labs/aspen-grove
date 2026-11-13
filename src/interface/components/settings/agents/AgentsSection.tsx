@@ -1,26 +1,21 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import type { Agent } from '@domain/entities';
+import { Text } from 'react-native';
 import {
   DEFAULT_AGENT_SYSTEM_PROMPT,
   DEFAULT_AGENT_TEMPERATURE,
 } from '@application/services/agent-defaults';
-import { AppText, SettingsSection } from '@/interface/ui/value-objects';
+import {
+  FormButtonRow,
+  FormRow,
+  FormSection,
+  formText,
+} from '@/interface/ui/components/form';
 import { AgentEditorSheet } from './AgentEditorSheet';
+import { AgentRow } from './AgentRow';
 import {
   draftFromAgent,
   useAgentsLibraryController,
 } from './useAgentsLibraryController';
 import type { AgentDraft } from './agent-editor-types';
-
-type AgentsSectionProps = {
-  readonly colors: {
-    readonly line: string;
-    readonly primary: string;
-    readonly secondary: string;
-    readonly red: string;
-  };
-};
 
 const EMPTY_DRAFT: AgentDraft = {
   name: '',
@@ -32,138 +27,74 @@ const EMPTY_DRAFT: AgentDraft = {
 };
 
 /**
- * Settings → Agents library. Shared agents are the reusable "profiles"
- * trees reference; each tree can also fork a private copy from the chat ⚙️
- * sheet. Editing a shared agent here affects every tree that uses it.
+ * Settings → Agents library, in Form rows. Shared agents are the reusable
+ * "profiles" trees reference; each tree can also fork a private copy from
+ * the chat ⚙️ sheet. Editing a shared agent here affects every tree that
+ * uses it.
  */
-export const AgentsSection = ({ colors }: AgentsSectionProps) => {
+export const AgentsSection = () => {
   const controller = useAgentsLibraryController();
-
-  const renderAgent = (agent: Agent) => {
-    const isDefault = controller.defaultAgentId === agent.id;
-    const isBusy = controller.busyAgentId === agent.id;
-
-    return (
-      <Pressable
-        key={agent.id}
-        testID={`settings-agents-row-${agent.id}`}
-        onPress={() => controller.openEdit(agent)}
-        disabled={isBusy}
-        style={({ pressed }) => [
-          styles.agentRow,
-          { opacity: isBusy ? 0.5 : pressed ? 0.75 : 1 },
-        ]}
-      >
-        <View style={styles.agentHeader}>
-          <AppText variant="body" style={styles.agentName}>
-            {agent.name}
-          </AppText>
-          {isDefault && (
-            <View style={styles.defaultBadge}>
-              <Ionicons name="star" size={12} color={colors.primary} />
-              <AppText variant="meta" style={{ color: colors.primary }}>
-                Default
-              </AppText>
-            </View>
-          )}
-        </View>
-        <AppText
-          variant="meta"
-          style={{ color: colors.secondary, marginTop: 2 }}
-        >
-          {agent.modelRef ?? '(no modelRef)'}
-          {typeof agent.configuration.temperature === 'number'
-            ? `  ·  temp ${agent.configuration.temperature}`
-            : ''}
-          {typeof agent.configuration.maxTokens === 'number'
-            ? `  ·  max ${agent.configuration.maxTokens}`
-            : ''}
-        </AppText>
-
-        <View style={styles.actionRow}>
-          {!isDefault && (
-            <Pressable
-              testID={`settings-agents-row-make-default-${agent.id}`}
-              onPress={() => controller.makeDefault(agent.id)}
-              disabled={isBusy}
-              hitSlop={6}
-              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-            >
-              <AppText variant="meta" style={{ color: colors.primary }}>
-                Make default
-              </AppText>
-            </Pressable>
-          )}
-          <Pressable
-            testID={`settings-agents-row-delete-${agent.id}`}
-            onPress={() => controller.deleteAgent(agent)}
-            disabled={isBusy}
-            hitSlop={6}
-            style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-          >
-            <AppText variant="meta" style={{ color: colors.red }}>
-              Delete
-            </AppText>
-          </Pressable>
-        </View>
-      </Pressable>
-    );
-  };
 
   return (
     <>
-      <SettingsSection
+      <FormSection
         testID="settings-agents-list"
-        title="Agents"
-        footer="Agents pair a model with a system prompt and generation settings. New trees use the default agent; each tree can switch or customize its own from the chat's settings."
+        header="Agents"
+        footer={
+          <>
+            {controller.error ? (
+              <Text
+                testID="settings-agents-error"
+                style={[formText.footer, { color: '#FF453A' }]}
+              >
+                {controller.error}
+              </Text>
+            ) : null}
+            <Text style={formText.footer}>
+              Agents pair a model with a system prompt and generation settings.
+              New trees use the default agent; each tree can switch or customize
+              its own from the chat's settings.
+            </Text>
+          </>
+        }
       >
         {controller.loading ? (
-          <AppText
-            variant="meta"
-            style={[styles.statusText, { color: colors.secondary }]}
-          >
-            Loading…
-          </AppText>
+          <FormRow>
+            <Text style={formText.value}>Loading…</Text>
+          </FormRow>
         ) : null}
-
-        {!controller.loading ? controller.agents.map(renderAgent) : null}
-
         {!controller.loading && controller.agents.length === 0 ? (
-          <AppText
-            variant="meta"
-            style={[styles.statusText, { color: colors.secondary }]}
-          >
-            No agents yet. Create one to start weaving.
-          </AppText>
+          <FormRow>
+            <Text style={formText.value}>
+              No agents yet. Create one to start weaving.
+            </Text>
+          </FormRow>
         ) : null}
+        {controller.loading
+          ? null
+          : controller.agents.map((agent) => (
+              <AgentRow
+                key={agent.id}
+                agent={agent}
+                isDefault={controller.defaultAgentId === agent.id}
+                busy={controller.busyAgentId === agent.id}
+                onEdit={() => controller.openEdit(agent)}
+                onMakeDefault={() => controller.makeDefault(agent.id)}
+                onDelete={() => controller.deleteAgent(agent)}
+              />
+            ))}
+      </FormSection>
 
-        {!controller.loading ? (
-          <Pressable
+      {controller.loading ? null : (
+        <FormSection>
+          <FormButtonRow
             testID="settings-agents-new"
+            title="New Agent"
+            icon="add-circle-outline"
             onPress={controller.openCreate}
-            style={({ pressed }) => [
-              styles.newAgentRow,
-              { opacity: pressed ? 0.65 : 1 },
-            ]}
-          >
-            <Ionicons name="add" size={16} color={colors.primary} />
-            <AppText variant="meta" style={{ color: colors.primary }}>
-              New Agent
-            </AppText>
-          </Pressable>
-        ) : null}
-
-        {controller.error ? (
-          <AppText
-            testID="settings-agents-error"
-            variant="meta"
-            tone="accent"
-            style={styles.statusText}
-          >
-            {controller.error}
-          </AppText>
-        ) : null}
-      </SettingsSection>
+          />
+        </FormSection>
+      )}
 
       <AgentEditorSheet
         visible={controller.editor !== null}
@@ -181,36 +112,3 @@ export const AgentsSection = ({ colors }: AgentsSectionProps) => {
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  agentRow: {
-    paddingVertical: 12,
-  },
-  agentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  agentName: {
-    fontWeight: '500',
-  },
-  defaultBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-    gap: 20,
-  },
-  statusText: {
-    paddingVertical: 10,
-  },
-  newAgentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-  },
-});

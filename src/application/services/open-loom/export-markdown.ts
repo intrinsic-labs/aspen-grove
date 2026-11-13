@@ -57,9 +57,11 @@ export const renderPathMarkdown = (input: ExportPathMarkdownInput): string => {
   for (const node of meaningfulNodes) {
     const agentName = input.agentNamesById.get(node.authorAgentId);
     const speaker =
-      node.authorType === 'human'
-        ? (agentName ?? 'Human')
-        : (agentName ?? 'Model');
+      node.authorType === 'system'
+        ? 'System'
+        : node.authorType === 'human'
+          ? (agentName ?? 'Human')
+          : (agentName ?? 'Model');
     lines.push(`**${speaker}:**`);
     lines.push('');
     lines.push(contentToText(node.content).trim());
