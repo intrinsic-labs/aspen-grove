@@ -54,10 +54,7 @@ export const ContinuationCardShell = ({
           borderRadius={loomUiTokens.continuationRail.cardRadius}
           previewBackgroundColor={loomUiTokens.continuationRail.cardFill}
           onPress={(event) => {
-            const menuItem = findNativeMenuItem(
-              sections,
-              event.nativeEvent.indexPath
-            );
+            const menuItem = findNativeMenuItem(sections, event.nativeEvent);
             if (menuItem) {
               onMenuAction(nodeId, menuItem.action);
             }

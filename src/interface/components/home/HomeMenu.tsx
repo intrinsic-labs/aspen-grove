@@ -1,13 +1,9 @@
 import { useMemo } from 'react';
-import ContextMenu from 'react-native-context-menu-view';
 import type { Tag } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { HeaderIconButton } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
-import {
-  commandAt,
-  toContextMenuActions,
-} from '@/interface/ui/components/native-menu-tree';
+import { NativeTreeMenu } from '@/interface/ui/components/NativeTreeMenu';
 import { buildHomeMenu, type HomeMenuCommand } from './home-menu';
 
 type HomeMenuProps = {
@@ -33,12 +29,10 @@ export const HomeMenu = ({
   );
 
   return (
-    <ContextMenu
-      dropdownMenuMode
-      actions={toContextMenuActions(menu)}
-      onPress={(event) => {
-        const command = commandAt(menu, event.nativeEvent.indexPath);
-        if (command && !busy) {
+    <NativeTreeMenu
+      menu={menu}
+      onCommand={(command) => {
+        if (!busy) {
           onCommand(command);
         }
       }}
@@ -49,6 +43,6 @@ export const HomeMenu = ({
         accessibilityLabel="Home menu"
         testID="home-menu-button"
       />
-    </ContextMenu>
+    </NativeTreeMenu>
   );
 };

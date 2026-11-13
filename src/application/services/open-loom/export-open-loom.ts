@@ -31,6 +31,12 @@ export type ExportOpenLoomOptions = {
    * `includeAgentConfiguration`. Default true.
    */
   readonly includeAgentSystemPrompts?: boolean;
+  /**
+   * Include the text of system-authored nodes. When false they stay in the
+   * tree, so its shape and the hash chain's parents survive, but carry
+   * empty text. Default true.
+   */
+  readonly includeSystemNodeContent?: boolean;
   /** Include bookmark flags and labels. Default true. */
   readonly includeBookmarks?: boolean;
   /** The file's tree title in place of the saved one. */
@@ -166,6 +172,7 @@ export const buildOpenLoomDocument = async (
   const includeRawResponses = options.includeRawResponses ?? true;
   const includeAgentSystemPrompts = options.includeAgentSystemPrompts ?? true;
   const includeBookmarks = options.includeBookmarks ?? true;
+  const includeSystemNodeContent = options.includeSystemNodeContent ?? true;
 
   // Parent hashes come from each node's incoming continuation edge sources.
   const parentHashesByNodeId = new Map<string, string[]>();
@@ -185,7 +192,10 @@ export const buildOpenLoomDocument = async (
     const raw = input.rawResponsesByNodeId.get(node.id);
     nodes[node.id] = {
       id: node.id,
-      content: toContentBlocks(node.content),
+      content:
+        node.authorType === 'system' && !includeSystemNodeContent
+          ? [{ type: 'text', text: '' }]
+          : toContentBlocks(node.content),
       author: {
         role: node.authorType,
         agentId: node.authorAgentId,
