@@ -8,6 +8,7 @@ import { useComposerDraft } from './composer/useComposerDraft';
 import { useComposerFocus } from './composer/useComposerFocus';
 import { useEditNode } from './composer/useEditNode';
 import { useAutoTreeTitle } from './header-actions/useAutoTreeTitle';
+import { useFirstMessageTreeTitle } from './header-actions/useFirstMessageTreeTitle';
 import { useChatSheets } from './header-actions/useChatSheets';
 import { useTreeExports } from './header-actions/useTreeExports';
 import { useTreeTitle } from './header-actions/useTreeTitle';
@@ -133,6 +134,11 @@ export const useLoomTreeChatController = () => {
     generateTreeTitleUseCase: useCases.generateTreeTitleUseCase,
     applyTreeTitle: title.applyTreeTitle,
   });
+  const titleFromFirstMessage = useFirstMessageTreeTitle({
+    treeId: session?.treeId,
+    titleTreeFromFirstMessageUseCase: useCases.titleTreeFromFirstMessageUseCase,
+    applyTreeTitle: title.applyTreeTitle,
+  });
   const exports = useTreeExports({
     session,
     activeTreeIdRef,
@@ -241,6 +247,7 @@ export const useLoomTreeChatController = () => {
     markAsNonEphemeral,
     refreshRowsAndContinuations,
     maybeGenerateTreeTitle,
+    titleFromFirstMessage,
     credentialStore: adapters.credentialStore,
     onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
     editDialogueNodeUseCase: useCases.editDialogueNodeUseCase,
@@ -275,7 +282,7 @@ export const useLoomTreeChatController = () => {
     openNodeDetail: nodeActions.openNodeDetail,
     onSessionInvalidated: reinitializeSession,
   });
-  const composerMode = toComposerMode(editTarget);
+  const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.
   const needsAgent = !loading && session !== null && session.model === null;
 

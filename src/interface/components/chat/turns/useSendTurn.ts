@@ -41,6 +41,8 @@ type UseSendTurnInput = {
     userText: string,
     assistantNodeId: ULID
   ) => void;
+  /** Names an untitled tree from the message just sent. */
+  readonly titleFromFirstMessage: (text: string) => void;
   readonly credentialStore: ICredentialStore;
   /** A model response finished generating uninterrupted (Voice Mode reads it). */
   readonly onModelNodeCompleted: (nodeId: ULID) => void;
@@ -67,6 +69,7 @@ export const useSendTurn = ({
   markAsNonEphemeral,
   refreshRowsAndContinuations,
   maybeGenerateTreeTitle,
+  titleFromFirstMessage,
   credentialStore,
   onModelNodeCompleted,
   editDialogueNodeUseCase,
@@ -135,6 +138,7 @@ export const useSendTurn = ({
         stream: true,
         onUserNodeCommitted: async ({ userNodeId }) => {
           markAsNonEphemeral();
+          titleFromFirstMessage(prompt);
           await refreshRowsAndContinuations({
             ...session,
             activeNodeId: userNodeId,
@@ -179,6 +183,7 @@ export const useSendTurn = ({
     input,
     markAsNonEphemeral,
     maybeGenerateTreeTitle,
+    titleFromFirstMessage,
     onModelNodeCompleted,
     refreshRowsAndContinuations,
     reset,

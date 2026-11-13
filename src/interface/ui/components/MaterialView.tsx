@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView, type BlurTint } from 'expo-blur';
 import { useAspenGroveTheme } from '@interface/hooks/useAspenGroveTheme';
 import type { BlurVariant } from '../value-objects/blur';
 
 interface MaterialViewProps extends React.ComponentProps<typeof View> {
   variant?: BlurVariant;
-  tintOverride?: 'light' | 'dark' | 'default' | 'prominent';
+  tintOverride?: BlurTint;
   children?: React.ReactNode;
 }
 
@@ -35,7 +35,7 @@ export function MaterialView({
         <View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: `rgba(242,242,242,${config.overlayOpacity})` },
+            { backgroundColor: config.overlayColor },
           ]}
         />
       )}
