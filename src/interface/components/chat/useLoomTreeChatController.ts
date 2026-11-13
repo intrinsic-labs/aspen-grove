@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import type { ULID } from '@domain/value-objects';
@@ -87,6 +87,17 @@ export const useLoomTreeChatController = () => {
 
   const streaming = useStreamingAssistantRow();
   const stopGeneration = useStopGeneration();
+  // Bumped by a bookmark change that doesn't reload the rows (a card's), so
+  // the tree menu's Bookmarks list reloads all the same; the rows reload
+  // after every other bookmark change.
+  const [bookmarksRevision, bookmarksChanged] = useReducer(
+    (revision: number) => revision + 1,
+    0
+  );
+  const bookmarksRefreshKey = useMemo(
+    () => [rows, bookmarksRevision],
+    [rows, bookmarksRevision]
+  );
   const continuations = useNodeContinuations({
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
@@ -94,6 +105,7 @@ export const useLoomTreeChatController = () => {
     rawApiResponseRepo: repositories.rawApiResponseRepo,
     agentRepo: repositories.agentRepo,
     pathId: session?.pathId,
+    onBookmarkChanged: bookmarksChanged,
   });
   const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
     useDialogueDisplayPreferences({
@@ -329,7 +341,7 @@ export const useLoomTreeChatController = () => {
     nodeRepo: repositories.nodeRepo,
     exportTree: exports.exportTree,
     setError,
-    refreshKey: rows,
+    refreshKey: bookmarksRefreshKey,
   });
   const composerMode = toComposerMode(editTarget, session?.model?.agentName);
   // Loaded, but the tree has no agent to generate with.

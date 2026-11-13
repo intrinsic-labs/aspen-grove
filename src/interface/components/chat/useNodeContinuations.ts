@@ -21,6 +21,11 @@ type UseNodeContinuationsInput = {
   >;
   readonly agentRepo: Pick<IAgentRepository, 'findById'>;
   readonly pathId?: ULID;
+  /**
+   * A card's bookmark changed. The rail updates the card itself; anything
+   * else listing bookmarks (the tree menu) reloads on this.
+   */
+  readonly onBookmarkChanged?: () => void;
 };
 
 const toContinuationPreview = (input: {
@@ -56,6 +61,7 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
     rawApiResponseRepo,
     agentRepo,
     pathId,
+    onBookmarkChanged,
   } = input;
 
   const [sourceNodeId, setSourceNodeIdState] = useState<ULID | null>(null);
@@ -195,8 +201,9 @@ export const useNodeContinuations = (input: UseNodeContinuationsInput) => {
             : item
         )
       );
+      onBookmarkChanged?.();
     },
-    [nodeRepo]
+    [nodeRepo, onBookmarkChanged]
   );
 
   return {
