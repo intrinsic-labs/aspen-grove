@@ -12,6 +12,13 @@ export type AgentDraft = {
   readonly temperatureInput: string;
   readonly maxTokensInput: string;
   readonly systemPrompt: string;
+  /**
+   * The agent's "Always use maximum allowed" (set from a tree's Model
+   * Settings). The editor has no toggle: choosing a model with it on fills
+   * Max Tokens with the model's limit, and typing a value turns it off.
+   * Left unset, saving keeps the stored flag.
+   */
+  readonly useMaxTokens?: boolean;
 };
 
 export type AgentDraftValidationError = string;

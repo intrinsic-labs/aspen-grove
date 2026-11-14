@@ -2,7 +2,8 @@ import type { TreeModelSettingsChanges } from '@application/use-cases';
 import type { AgentConfiguration, SelectableProvider } from '@domain/entities';
 import { parseModelRef } from '@domain/value-objects';
 import type { ModelOption } from '../../models/model-options';
-import { maxTokensAllowed, toTreeModelValues } from './tree-model-values';
+import { maxTokensAllowed } from '../../models/model-max-tokens';
+import { toTreeModelValues } from './tree-model-values';
 
 /**
  * Choosing a model: the new model, and the Maximum Output Tokens the form

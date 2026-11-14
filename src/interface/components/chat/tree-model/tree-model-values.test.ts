@@ -1,22 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  formatTemperature,
-  maxTokensAllowed,
-  toTreeModelValues,
-} from './tree-model-values';
-
-describe('maxTokensAllowed', () => {
-  it("uses the model's own limit, as Latent Spaces does", () => {
-    expect(
-      maxTokensAllowed({ id: 'a', label: 'A', maxOutputTokens: 16384 })
-    ).toBe(16384);
-  });
-
-  it('falls back to 8192 for a listed model without one, 4096 for an unknown one', () => {
-    expect(maxTokensAllowed({ id: 'a', label: 'A' })).toBe(8192);
-    expect(maxTokensAllowed(undefined)).toBe(4096);
-  });
-});
+import { formatTemperature, toTreeModelValues } from './tree-model-values';
 
 describe('toTreeModelValues', () => {
   it('fills defaults and keeps values in range', () => {

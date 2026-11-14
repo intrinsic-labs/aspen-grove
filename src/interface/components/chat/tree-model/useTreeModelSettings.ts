@@ -9,10 +9,9 @@ import { modelChoiceChanges } from './model-choice';
 import { providerDefaultModel } from '../../models/provider-default-model';
 import {
   maxTokensAllowed,
-  TEMPERATURE_RANGE,
-  toTreeModelValues,
   UNKNOWN_MODEL_MAX_TOKENS,
-} from './tree-model-values';
+} from '../../models/model-max-tokens';
+import { TEMPERATURE_RANGE, toTreeModelValues } from './tree-model-values';
 import { useTreeModelAgent } from './useTreeModelAgent';
 
 const roundToStep = (value: number, step: number): number =>

@@ -49,5 +49,6 @@ export const draftFromAgent = (agent: Agent): AgentDraft => {
         : '',
     systemPrompt:
       agent.configuration.systemPrompt ?? DEFAULT_AGENT_SYSTEM_PROMPT,
+    useMaxTokens: agent.configuration.useMaxTokens,
   };
 };
