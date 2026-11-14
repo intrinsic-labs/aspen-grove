@@ -1,50 +1,58 @@
 # Shared start for every flow: a cold launch with cleared data, through the
 # expo-dev-client launcher to the JS bundle served by Metro, to Home.
 # Run from another flow with `- runFlow: open-app.yaml`.
+# The launcher only lists Metro servers it finds itself (and may list another
+# session's). Metro on another port? Pass either
+#   -e METRO_URL=http://localhost:<port>  (always typed into "Enter URL manually"), or
+#   -e METRO_PORT=<port>                  (its row is tapped when listed, else typed).
 appId: com.intrinsiclabs.aspengrove
 ---
 - launchApp:
     clearState: true
-# The development build opens on Expo's launcher: pick the running Metro
-# server. (tapOn waits for it to render; optional, so a build that skips the
-# launcher still passes.) The launcher only lists Metro servers it finds
-# itself (and may list another session's): with Metro on a non-default port,
-# pass `-e METRO_PORT=<port>`: that server is picked when listed, else its
-# URL is entered by hand.
+# The development build opens on Expo's launcher. (Optional waits and taps, so
+# a build that skips the launcher still passes.)
 - extendedWaitUntil:
     visible: 'Enter URL manually'
     timeout: 30000
     optional: true
+# METRO_URL: type it in.
 - runFlow:
     when:
-      true: ${!METRO_PORT}
+      true: '${!!METRO_URL}'
     commands:
+      - tapOn: 'Enter URL manually'
       - tapOn:
-          text: 'http://localhost:.*'
-          optional: true
-# With METRO_PORT set, pick that server when the launcher lists it, and type
-# the URL only when it doesn't.
+          text: 'http://'
+      - inputText: ${METRO_URL}
+      - tapOn: 'Connect'
+# METRO_PORT: pick that server when the launcher lists it...
 - runFlow:
     when:
-      true: ${!!METRO_PORT}
+      true: '${!!METRO_PORT && !METRO_URL}'
       visible: 'http://localhost:${METRO_PORT}'
     commands:
       - tapOn: 'http://localhost:${METRO_PORT}'
-# Not listed: type it. (A server tapped above may leave the launcher on
-# screen a moment; while its row shows, this is skipped.)
+# ...and type its URL only when it isn't listed. (A server tapped above may
+# leave the launcher on screen a moment; while its row shows, this is skipped.)
 - runFlow:
     when:
-      true: ${!!METRO_PORT}
+      true: '${!!METRO_PORT && !METRO_URL}'
       visible: 'Enter URL manually'
       notVisible: 'http://localhost:${METRO_PORT}'
     commands:
       - tapOn: 'Enter URL manually'
-      # The URL field opens under the row; it has no label to tap by.
-      # (Other sessions' listed servers push it lower than this point.)
       - tapOn:
-          point: '50%,33%'
+          text: 'http://'
       - inputText: http://localhost:${METRO_PORT}
       - tapOn: 'Connect'
+# Neither: pick the running Metro server the launcher lists.
+- runFlow:
+    when:
+      true: '${!METRO_URL && !METRO_PORT}'
+    commands:
+      - tapOn:
+          text: 'http://localhost:.*'
+          optional: true
 # Each cleared install shows the dev menu's one-time intro sheet once the
 # bundle loads (the first Metro bundle can take a minute to build).
 - extendedWaitUntil:
@@ -54,7 +62,7 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     text: 'Continue'
     optional: true
-# ...which then leaves the dev menu itself open: close it.
+# ...which then may leave the dev menu itself open: close it.
 - tapOn:
     id: 'xmark'
     optional: true
@@ -65,3 +73,26 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 120000
 # Let the dev menu finish sliding away before the first tap.
 - waitForAnimationToEnd
+# Since SDK 57 the dev menu floats a "Tools" button (gear) at the top right,
+# over onboarding's Skip and Home's header. clearState brings it back on every
+# launch, so open the menu from it and switch it off. The switch is its own
+# element: tapping the "Tools button" label doesn't toggle it.
+- runFlow:
+    when:
+      visible:
+        id: 'gearshape.fill'
+    commands:
+      - tapOn:
+          id: 'gearshape.fill'
+      - scrollUntilVisible:
+          element:
+            text: 'Tools button'
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          below: 'Fast refresh'
+          rightOf: 'Tools button'
+          checked: true
+      - tapOn:
+          id: 'xmark'
+      - waitForAnimationToEnd

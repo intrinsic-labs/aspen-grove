@@ -5,7 +5,8 @@
 # tree's Getting Started sheet is closed with Begin. Ends on that new, empty
 # tree (leaving it without sending discards it).
 #   maestro test .maestro/mock/setup.yaml --test-output-dir "$SHOTS"
-# A mock on another port: add `-e MOCK_URL=http://localhost:<port>`.
+# The mock defaults to http://localhost:1235; if another server holds that
+# port, run the mock elsewhere and pass -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 env:
   MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
