@@ -55,10 +55,10 @@ export const useTreeModelSettings = (treeId: ULID | undefined) => {
           forProvider,
           id,
           picker.options.find((option) => option.id === id),
-          values.useMaxTokens
+          agent?.configuration ?? {}
         )
       ),
-    [apply, picker.options, values.useMaxTokens]
+    [agent?.configuration, apply, picker.options]
   );
 
   // A new provider: once its list settles, switch to its default model.

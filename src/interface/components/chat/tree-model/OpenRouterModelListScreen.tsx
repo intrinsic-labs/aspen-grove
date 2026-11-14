@@ -51,15 +51,15 @@ const OpenRouterModelListScreen = () => {
     treeModel.model?.provider === 'openrouter' ? treeModel.model.id : null;
 
   const { apply } = treeModel;
-  const useMaxTokens = treeModel.agent?.configuration.useMaxTokens ?? false;
+  const configuration = treeModel.agent?.configuration;
   const onSelect = useCallback(
     (id: string) => {
       const option = picker.options.find((candidate) => candidate.id === id);
       void apply(
-        modelChoiceChanges('openrouter', id, option, useMaxTokens)
+        modelChoiceChanges('openrouter', id, option, configuration ?? {})
       ).then((saved) => saved && router.back());
     },
-    [apply, picker.options, router, useMaxTokens]
+    [apply, configuration, picker.options, router]
   );
 
   return (
