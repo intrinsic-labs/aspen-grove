@@ -1,9 +1,10 @@
 import { forwardRef } from 'react';
-import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
+import { StyleSheet, type TextInput, type TextInputProps } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
 import { FormLabel } from './FormLabel';
 import { FormRow } from './FormRow';
 import { formText } from './form-text';
+import { AppTextInput } from '../AppTextInput';
 
 const form = loomUiTokens.settingsForm;
 
@@ -23,11 +24,9 @@ export const FormTextFieldRow = forwardRef<TextInput, FormTextFieldRowProps>(
   ({ title, minHeight, multiline, ...inputProps }, ref) => (
     <FormRow style={multiline ? styles.multilineRow : null}>
       {title ? <FormLabel title={title} /> : null}
-      <TextInput
+      <AppTextInput
         ref={ref}
         placeholderTextColor={form.colors.tertiaryLabel}
-        selectionColor={loomUiTokens.colors.accentColor}
-        keyboardAppearance="dark"
         multiline={multiline}
         {...inputProps}
         style={[

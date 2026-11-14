@@ -51,6 +51,7 @@
         }
       ],
       "expo-router",
+      ["./plugins/withIosAccentColor", { "displayP3": [0.781, 0.713, 0.524] }],
       [
         "expo-font",
         {

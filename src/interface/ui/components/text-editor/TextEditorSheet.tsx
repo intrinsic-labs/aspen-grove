@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import {
   Modal,
   StyleSheet,
-  TextInput,
+  type TextInput,
   View,
   type TextStyle,
 } from 'react-native';
@@ -14,6 +14,7 @@ import { GlassIconButton } from '../GlassIconButton';
 import { KeyboardDoneBar } from '../KeyboardDoneBar';
 import { findNativeMenuItem, toNativeMenuActions } from '../native-menu';
 import { TEXT_EDITOR_MENU } from './text-editor-menu';
+import { AppTextInput } from '../AppTextInput';
 
 const editor = loomUiTokens.textEditorSheet;
 
@@ -91,15 +92,13 @@ export const TextEditorSheet = ({
             testID: `${testID}-save`,
           }}
         />
-        <TextInput
+        <AppTextInput
           ref={inputRef}
           testID={`${testID}-input`}
           value={text}
           onChangeText={onChangeText}
           multiline
           scrollEnabled
-          keyboardAppearance="dark"
-          selectionColor={loomUiTokens.colors.accentColor}
           inputAccessoryViewID={accessoryId}
           style={[styles.defaultFont, textStyle, styles.input]}
         />

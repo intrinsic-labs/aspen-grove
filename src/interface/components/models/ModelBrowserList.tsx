@@ -15,6 +15,7 @@ import {
 } from '@/interface/ui/components/form';
 import { AppScreen } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { textInputTint } from '@/interface/ui/value-objects/text-input-tint';
 import { browserRows } from './browser-rows';
 import { customModelIdentifier } from './model-option-filter';
 import type { ModelOption } from './model-options';
@@ -59,6 +60,7 @@ export const ModelBrowserList = ({
     navigation.setOptions({
       headerSearchBarOptions: {
         placeholder: 'Search models',
+        tintColor: textInputTint.caret,
         hideWhenScrolling: false,
         autoCapitalize: 'none',
         onChangeText: (event: { nativeEvent: { text: string } }) =>

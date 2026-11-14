@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   FormButtonRow,
   FormLabel,
@@ -15,6 +15,7 @@ import type {
   ConnectionsController,
   LmStudioConnectionStatus,
 } from './useConnectionsController';
+import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
 const form = loomUiTokens.settingsForm;
 
@@ -91,14 +92,12 @@ export const LmStudioFormSection = ({
       {showAdvanced ? (
         <FormRow>
           <FormLabel title="API Token" />
-          <TextInput
+          <AppTextInput
             testID="connections-lmstudio-token-input"
             value={controller.lmstudioApiTokenInput}
             onChangeText={controller.setLmstudioApiTokenInput}
             placeholder="Optional"
             placeholderTextColor={form.colors.tertiaryLabel}
-            selectionColor={loomUiTokens.colors.accentColor}
-            keyboardAppearance="dark"
             secureTextEntry={!controller.showLmstudioToken}
             autoCapitalize="none"
             autoCorrect={false}

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
@@ -11,6 +11,7 @@ import { toMessageTextStyle } from '../message-list/message-text-style';
 import { useDialogueDisplayPreferences } from '../useDialogueDisplayPreferences';
 import { SystemMessageMenu } from './SystemMessageMenu';
 import { useTreeSystemMessage } from './useTreeSystemMessage';
+import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
 const editor = loomUiTokens.textEditorSheet;
 const ACCESSORY_ID = 'tree-system-message-keyboard';
@@ -50,15 +51,13 @@ const SystemMessageScreen = () => {
   return (
     <AppScreen testID="tree-system-message-screen" style={styles.screen}>
       {message.text === null ? null : (
-        <TextInput
+        <AppTextInput
           testID="tree-system-message-input"
           value={text}
           onChangeText={onChangeText}
           autoFocus
           multiline
           scrollEnabled
-          keyboardAppearance="dark"
-          selectionColor={loomUiTokens.colors.accentColor}
           inputAccessoryViewID={ACCESSORY_ID}
           style={[styles.defaultFont, textStyle, styles.input]}
         />

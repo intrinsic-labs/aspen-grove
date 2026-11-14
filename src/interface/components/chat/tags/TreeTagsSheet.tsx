@@ -5,7 +5,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,6 +13,7 @@ import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
+import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
 type TreeTagsSheetProps = {
   readonly visible: boolean;
@@ -149,7 +149,7 @@ export const TreeTagsSheet = ({
         </View>
 
         <View style={[styles.newTagRow, { borderBottomColor: colors.line }]}>
-          <TextInput
+          <AppTextInput
             testID="tags-sheet-new-input"
             value={newTagName}
             onChangeText={setNewTagName}
