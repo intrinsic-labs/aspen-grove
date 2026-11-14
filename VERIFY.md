@@ -96,7 +96,8 @@ under the dev menu's Tools → **Tools button** (tap the switch, not the label).
 install turns it back on. The launcher only lists Metro on its default ports; on another
 port, use **Enter URL manually** with `http://localhost:<port>`. The Maestro flows handle all
 of this in [open-app.yaml](.maestro/open-app.yaml): pass `-e METRO_URL=http://localhost:<port>`
-when Metro isn't on 8081.
+when Metro isn't on 8081, or when the launcher lists it by the Mac's network address
+(`http://192.168.…:8081`) rather than `localhost`, which the default pick doesn't match.
 
 A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
 (`onboarding-screen`): Latent Spaces' six intro pages (`onboarding-next`), then a page that
