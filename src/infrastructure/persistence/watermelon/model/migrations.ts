@@ -193,5 +193,23 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      // v10: the first tree's tips (Latent Spaces' LoomTreeOnboarding).
+      // `user_preferences.tree_onboarding_completed_at` records when they
+      // were closed with Begin.
+      toVersion: 10,
+      steps: [
+        addColumns({
+          table: 'user_preferences',
+          columns: [
+            {
+              name: 'tree_onboarding_completed_at',
+              type: 'number',
+              isOptional: true,
+            },
+          ],
+        }),
+      ],
+    },
   ],
 });

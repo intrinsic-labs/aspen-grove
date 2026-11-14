@@ -3,6 +3,7 @@ import { parseConfig, SLOW_PACE } from './config.ts';
 import { planRequest } from './failure-plan.ts';
 import { modelsPayload, sseChunk, SSE_DONE } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
+import { requestSummary } from './request-summary.ts';
 import { isTitleRequest, titleText } from './title-request.ts';
 
 describe('parseConfig', () => {
@@ -182,5 +183,21 @@ describe('payloads', () => {
     const { models } = modelsPayload(['a', 'b']);
     expect(models.map((m) => m.key)).toEqual(['a', 'b']);
     expect(models.every((m) => m.type === 'llm' && m.loaded_instances.length === 1)).toBe(true);
+  });
+});
+
+describe('requestSummary', () => {
+  it('shows the generation settings and the system messages', () => {
+    expect(
+      requestSummary({
+        max_tokens: 8192,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: 'Agent prompt.\n\nSpeak as a pirate.' },
+          { role: 'user', content: 'Hi' },
+        ],
+      })
+    ).toBe('max_tokens=8192 temperature=0.3 system="Agent prompt. Speak as a pirate."');
+    expect(requestSummary({})).toBe('max_tokens=- temperature=- system=""');
   });
 });

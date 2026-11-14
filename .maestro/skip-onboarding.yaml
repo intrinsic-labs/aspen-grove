@@ -1,6 +1,9 @@
 # Skip first-run onboarding when it shows (a cleared install), and wait for
 # Home. Run right after open-app.yaml by flows that set things up their own
 # way (Settings, an import) rather than through onboarding.
+# Onboarding is a page sheet with no skip button, as in Latent Spaces: swipe
+# it down. That leaves it unfinished (no agent, nothing recorded), so Home
+# shows its setup hint; it doesn't open again in this launch.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow:
@@ -8,11 +11,20 @@ appId: com.intrinsiclabs.aspengrove
       visible:
         id: onboarding-screen
     commands:
-      - tapOn:
-          id: onboarding-skip
+      - repeat:
+          times: 3
+          while:
+            visible:
+              id: onboarding-wordmark
+          commands:
+            - swipe:
+                start: 50%, 12%
+                end: 50%, 95%
+                duration: 400
+            - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
       id: home-welcome
     timeout: 10000
 - assertNotVisible:
-    id: onboarding-screen
+    id: onboarding-wordmark

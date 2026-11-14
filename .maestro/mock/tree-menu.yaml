@@ -1,8 +1,8 @@
 # A tree's toolbar menu against the mock server (no key): the menu, a
 # bookmark from a message's menu, the Bookmarks submenu and a bookmark's
-# sheet with its menu and rename, the export sheet, Edit Title's alert and
-# Edit Description's sheet. Needs the mock server and Metro up (see
-# VERIFY.md, "No key?"):
+# sheet with its menu and rename, the export sheet, Edit Title's alert,
+# Edit Description's sheet and Show Onboarding's tree tips. Needs the mock
+# server and Metro up (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/tree-menu.yaml --test-output-dir "$SHOTS"
 appId: com.intrinsiclabs.aspengrove
 ---
@@ -149,3 +149,19 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible: 'Explorations of the oldest living things'
 - tapOn:
     id: export-sheet-back
+
+# Show Onboarding replays the tree's Getting Started sheet.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Show Onboarding'
+- extendedWaitUntil:
+    visible:
+      id: tree-onboarding-begin
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: tree-37-show-onboarding
+- tapOn:
+    id: tree-onboarding-begin
+- extendedWaitUntil:
+    notVisible:
+      id: tree-onboarding-sheet
+    timeout: 5000

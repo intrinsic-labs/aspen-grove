@@ -4,6 +4,7 @@ import { resolveDefaultModelAgent } from '@application/services/resolve-default-
 import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { setFirstMessage } from '@interface/components/chat/turns/first-message-store';
+import { ONBOARDING_SETUP_HREF } from '@interface/components/onboarding/onboarding-routes';
 
 export type CreateLoomTreeOptions = {
   /** Use this agent instead of the pinned/default one. */
@@ -21,7 +22,7 @@ export type CreateLoomTreeOptions = {
 /**
  * Creates a new dialogue loom tree with the pinned/default model agent and
  * navigates into it. Shared by Home's composer and onboarding. With no model
- * agent yet, it opens first-run setup instead of failing. Resolves to
+ * agent yet, it opens onboarding on its setup page instead of failing. Resolves to
  * whether the tree opened.
  */
 export const useCreateLoomTree = (onError?: (message: string) => void) => {
@@ -55,7 +56,7 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
             })
           )?.id;
         if (!agentId) {
-          router.push('/onboarding');
+          router.push(ONBOARDING_SETUP_HREF);
           return false;
         }
 

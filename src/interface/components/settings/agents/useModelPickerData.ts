@@ -1,95 +1,51 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { describeProviderError } from '@application/services/llm';
 import type { SelectableProvider } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
+import { fetchModelOptions, type ModelOption } from './model-options';
+
+export type { ModelOption } from './model-options';
 
 /**
- * A pickable model, normalized across providers.
- * `id` is the bare identifier (no `{provider}:` prefix).
- */
-export type ModelOption = {
-  readonly id: string;
-  readonly label: string;
-  readonly detail?: string;
-  /** LM Studio only: whether the model is currently loaded on the server. */
-  readonly loaded?: boolean;
-};
-
-const formatContext = (contextLength?: number): string | null =>
-  contextLength ? `${Math.round(contextLength / 1000)}K ctx` : null;
-
-const formatPrice = (perMTokens?: number): string | null => {
-  if (perMTokens === undefined) {
-    return null;
-  }
-  if (perMTokens === 0) {
-    return 'free';
-  }
-  return `$${perMTokens < 1 ? perMTokens.toFixed(2) : perMTokens.toFixed(0)}/M`;
-};
-
-/**
- * Unified model-list data source for the agent editor: the OpenRouter
- * catalog (24h-cached) or live LM Studio discovery, depending on provider.
+ * Unified model-list data source for the agent editor and a tree's Model
+ * Settings: the OpenRouter catalog (24h-cached) or live LM Studio discovery,
+ * depending on provider. `settledFor` names the provider whose list last
+ * finished loading, or failing; a late answer for a provider no longer
+ * asked for is dropped.
  */
 export const useModelPickerData = (provider: SelectableProvider) => {
   const { adapters } = useAppServices();
   const [options, setOptions] = useState<readonly ModelOption[]>([]);
+  const [settledFor, setSettledFor] = useState<SelectableProvider | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestRequest = useRef(0);
 
   const load = useCallback(
     async (forceRefresh = false) => {
+      const request = ++latestRequest.current;
       setLoading(true);
       setError(null);
       try {
-        if (provider === 'openrouter') {
-          const models = await adapters.openRouterCatalog.getModels({
-            forceRefresh,
-          });
-          setOptions(
-            models.map((model) => ({
-              id: model.id,
-              label: model.displayName,
-              detail:
-                [
-                  formatContext(model.contextLength),
-                  formatPrice(model.promptPricePerMTokens),
-                ]
-                  .filter(Boolean)
-                  .join(' · ') || undefined,
-            }))
-          );
-        } else {
-          const lmstudioAdapter =
-            adapters.providerRegistry.getLMStudioAdapter();
-          const models = await lmstudioAdapter.fetchModels();
-          setOptions(
-            models
-              .filter((model) => model.type === 'llm')
-              .map((model) => ({
-                id: model.id,
-                label: model.displayName,
-                detail:
-                  [
-                    formatContext(model.maxContextLength),
-                    model.paramsString ?? null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || undefined,
-                loaded: model.state === 'loaded',
-              }))
-          );
+        const next = await fetchModelOptions(adapters, provider, forceRefresh);
+        if (request === latestRequest.current) {
+          setOptions(next);
+          setSettledFor(provider);
         }
       } catch (caught) {
-        setOptions([]);
-        // Plain words for an LM Studio server that isn't running.
-        setError(describeProviderError(caught, { provider }).message);
+        if (request === latestRequest.current) {
+          setOptions([]);
+          setSettledFor(provider);
+          // Plain words for an LM Studio server that isn't running.
+          setError(describeProviderError(caught, { provider }).message);
+        }
       } finally {
-        setLoading(false);
+        if (request === latestRequest.current) {
+          setLoading(false);
+        }
       }
     },
-    [adapters.openRouterCatalog, adapters.providerRegistry, provider]
+    [adapters, provider]
   );
 
   useEffect(() => {
@@ -98,6 +54,7 @@ export const useModelPickerData = (provider: SelectableProvider) => {
 
   return {
     options,
+    settledFor,
     loading,
     error,
     refresh: useCallback(() => load(true), [load]),

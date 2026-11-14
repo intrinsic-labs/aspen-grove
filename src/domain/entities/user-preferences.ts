@@ -59,6 +59,12 @@ export interface UserPreferences {
    */
   readonly onboardingCompletedAt?: Date;
 
+  /**
+   * When the user closed the first tree's "Loom Trees / Getting Started"
+   * sheet with Begin. Unset until then, which shows it on the next tree.
+   */
+  readonly treeOnboardingCompletedAt?: Date;
+
   // Node display
   readonly nodeViewStyle: NodeViewStyle;
   readonly nodeViewCornerRadius: number;

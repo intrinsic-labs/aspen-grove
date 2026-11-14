@@ -3,7 +3,10 @@
 > Chat-side per-tree agent settings (the ⚙️ sheet). Implements Phase 4 of
 > `.dev/agent-centric-dialogue-settings.md`.
 
-**Status**: Implemented
+**Status**: Superseded. The sheet was replaced by Latent Spaces' tree Model
+Settings, a pushed page (`src/interface/components/chat/tree-model/`,
+`UpdateTreeModelSettingsUseCase`; FEATURE_MAP `chat.model-settings`). Kept as
+design history.
 
 ## Overview
 

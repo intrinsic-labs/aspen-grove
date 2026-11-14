@@ -119,6 +119,10 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
           record.onboardingCompletedAt = changes.onboardingCompletedAt;
         }
 
+        if (changes.treeOnboardingCompletedAt !== undefined) {
+          record.treeOnboardingCompletedAt = changes.treeOnboardingCompletedAt;
+        }
+
         record.updatedAt = this.now();
       });
 
@@ -166,6 +170,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
       record.lmstudioSettings = JSON.stringify(DEFAULT_LMSTUDIO_SETTINGS);
       record.defaultModelAgentId = null;
       record.onboardingCompletedAt = null;
+      record.treeOnboardingCompletedAt = null;
       record.createdAt = createdAt;
       record.updatedAt = createdAt;
     });
@@ -192,6 +197,7 @@ export class WatermelonUserPreferencesRepository implements IUserPreferencesRepo
         ? (model.defaultModelAgentId as ULID)
         : undefined,
       onboardingCompletedAt: model.onboardingCompletedAt ?? undefined,
+      treeOnboardingCompletedAt: model.treeOnboardingCompletedAt ?? undefined,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     };

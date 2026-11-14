@@ -10,13 +10,14 @@ import { AppScreen } from '../ui/value-objects';
 import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
 import { ChatComposer } from './chat/ChatComposer';
 import { ChatMessageList } from './chat/ChatMessageList';
-import { DialogueSettingsSheet } from './chat/dialogue-settings/DialogueSettingsSheet';
 import { OpenLoomExportSheet } from './chat/export-sheet/OpenLoomExportSheet';
 import { toMessageTextStyle } from './chat/message-list/message-text-style';
 import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useTreeHeaderMenu } from './chat/tree-menu/useTreeHeaderMenu';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
+import { TreeOnboardingSheet } from './onboarding/tree/TreeOnboardingSheet';
+import { useTreeOnboarding } from './onboarding/tree/useTreeOnboarding';
 import { useVoiceMode } from './voice';
 
 const LoomTreeChatView = () => {
@@ -24,6 +25,7 @@ const LoomTreeChatView = () => {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const controller = useLoomTreeChatController();
+  const treeOnboarding = useTreeOnboarding();
   const { voiceModeEnabled, setVoiceModeEnabled } = useVoiceMode();
   const [composerHeight, setComposerHeight] = useState(72);
   const { messageFontFamily, messageFontSize, messageLineHeight } =
@@ -42,13 +44,14 @@ const LoomTreeChatView = () => {
     bookmarks: controller.bookmarks,
     voiceModeEnabled,
     setVoiceModeEnabled,
-    openModel: controller.dialogueSettings.open,
+    openModel: controller.openModelSettings,
     editTitle: controller.editTitle,
     editDescription: controller.description.open,
     openBookmark: controller.openBookmark,
     openExport: controller.exportSheet.open,
     openTags: controller.tags.open,
     exportPath: controller.exportPath,
+    showOnboarding: treeOnboarding.open,
   });
 
   return (
@@ -106,13 +109,6 @@ const LoomTreeChatView = () => {
         onChooseAgent={controller.onChooseAgent}
       />
 
-      <DialogueSettingsSheet
-        visible={controller.dialogueSettings.visible}
-        treeId={controller.dialogueSettings.treeId}
-        onClose={controller.dialogueSettings.close}
-        onSessionInvalidated={controller.dialogueSettings.onSessionInvalidated}
-      />
-
       <NodeSheet
         target={controller.nodeSheet.target}
         activePathNodeIds={controller.nodeSheet.activePathNodeIds}
@@ -150,6 +146,11 @@ const LoomTreeChatView = () => {
         visible={controller.tags.visible}
         treeId={controller.tags.treeId}
         onClose={controller.tags.close}
+      />
+
+      <TreeOnboardingSheet
+        visible={treeOnboarding.visible}
+        onClose={treeOnboarding.close}
       />
     </AppScreen>
   );

@@ -33,8 +33,7 @@ type AgentEditorSheetProps = {
  * The agent editor, a Form in a sheet the way Latent Spaces presents one
  * (APIKeySettingsView.swift:106-131): Cancel and the submit button in the
  * bar, the error pinned under it so it is in view however far the form is
- * scrolled. Used for "New Agent", editing a library agent and onboarding's
- * "Customize".
+ * scrolled. Used for "New Agent" and editing a library agent.
  */
 export const AgentEditorSheet = ({
   visible,

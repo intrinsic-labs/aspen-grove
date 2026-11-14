@@ -62,7 +62,10 @@ Two things about failures, both from the app's retry policy
   which the app retries like a network error.
 
 Each request logs a start and an end line with the number of requests open at
-that moment (`active=N`), which shows whether parallel streams overlap.
+that moment (`active=N`), which shows whether parallel streams overlap. A
+completion's start line also shows the `max_tokens`, `temperature` and system
+message it was sent with, so a tree's Model Settings can be checked end to
+end.
 
 ## Test
 

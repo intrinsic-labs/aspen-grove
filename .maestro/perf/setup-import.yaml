@@ -1,6 +1,8 @@
 # Clean start for a perf run: clear state, create an agent, import ${TREE_FILE}
 # from Files ("On My iPhone"), timed from picking the file to the
-# "Import complete" alert. Ends on Home.
+# "Import complete" alert, then one untimed open of the tree to close the
+# first tree's Getting Started sheet, which would cover the timed opens.
+# Ends on Home.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: ../open-app.yaml
@@ -12,3 +14,7 @@ appId: com.intrinsiclabs.aspengrove
     file: ../import-tree.yaml
     env:
       TREE_FILE: ${TREE_FILE}
+- tapOn:
+    id: home-trees-row-.*
+- runFlow: ../dismiss-tree-onboarding.yaml
+- runFlow: ../go-home.yaml

@@ -10,7 +10,11 @@ export type OpenRouterCatalogModel = {
   /** OpenRouter model identifier, e.g. `anthropic/claude-sonnet-4.5`. */
   readonly id: string;
   readonly displayName: string;
+  /** OpenRouter's description, in Markdown. */
+  readonly description?: string;
   readonly contextLength?: number;
+  /** The top provider's output limit (`top_provider.max_completion_tokens`). */
+  readonly maxCompletionTokens?: number;
   /** USD per million prompt tokens. */
   readonly promptPricePerMTokens?: number;
   /** USD per million completion tokens. */
@@ -20,7 +24,11 @@ export type OpenRouterCatalogModel = {
 type OpenRouterApiModel = {
   readonly id: string;
   readonly name?: string;
+  readonly description?: string | null;
   readonly context_length?: number | null;
+  readonly top_provider?: {
+    readonly max_completion_tokens?: number | null;
+  } | null;
   readonly pricing?: {
     readonly prompt?: string;
     readonly completion?: string;
@@ -38,10 +46,15 @@ const toPricePerMTokens = (perToken?: string): number | undefined => {
   return parsed * 1_000_000;
 };
 
-const normalizeModel = (apiModel: OpenRouterApiModel): OpenRouterCatalogModel => ({
+const normalizeModel = (
+  apiModel: OpenRouterApiModel
+): OpenRouterCatalogModel => ({
   id: apiModel.id,
   displayName: apiModel.name ?? apiModel.id,
+  description: apiModel.description || undefined,
   contextLength: apiModel.context_length ?? undefined,
+  maxCompletionTokens:
+    apiModel.top_provider?.max_completion_tokens ?? undefined,
   promptPricePerMTokens: toPricePerMTokens(apiModel.pricing?.prompt),
   completionPricePerMTokens: toPricePerMTokens(apiModel.pricing?.completion),
 });
@@ -65,9 +78,7 @@ export const fetchOpenRouterCatalog = async (input?: {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `OpenRouter catalog request failed (${response.status})`
-      );
+      throw new Error(`OpenRouter catalog request failed (${response.status})`);
     }
 
     const payload = (await response.json()) as {

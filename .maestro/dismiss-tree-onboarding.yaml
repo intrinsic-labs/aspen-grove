@@ -1,0 +1,21 @@
+# Close the first tree's "Loom Trees / Getting Started" sheet with Begin, if it
+# shows. It opens on any tree until Begin is tapped once, so run this right
+# after a flow first opens a tree.
+appId: com.intrinsiclabs.aspengrove
+---
+# It shows once the tree has slid in (under a second).
+- extendedWaitUntil:
+    visible:
+      id: tree-onboarding-begin
+    timeout: 4000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: tree-onboarding-begin
+    commands:
+      - tapOn:
+          id: tree-onboarding-begin
+      - waitForAnimationToEnd
+- assertNotVisible:
+    id: tree-onboarding-sheet
