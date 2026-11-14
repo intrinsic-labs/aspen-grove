@@ -340,7 +340,7 @@ stays until the user makes one.
   `onboarding-lmstudio-model-<model id>` → `onboarding-begin`.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
   `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
-- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
+- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`, `connections-lmstudio-hint`
 - **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
   (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
@@ -1140,8 +1140,8 @@ stays until the user makes one.
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1152,8 +1152,10 @@ stays until the user makes one.
   reachable. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold
-  when on.
+  again.", plus a phone hint when the address is localhost. The footer's setup hint
+  (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
+  server in LM Studio…" on onboarding) shows until a test connects and again after a failed
+  one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
 
 ### Message typography
 - **ID:** `settings.typography`

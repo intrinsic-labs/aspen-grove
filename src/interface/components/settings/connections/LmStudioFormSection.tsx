@@ -10,6 +10,7 @@ import {
   formText,
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { showsLmStudioHint } from './lmstudio-hint';
 import type {
   ConnectionsController,
   LmStudioConnectionStatus,
@@ -51,23 +52,30 @@ export const LmStudioFormSection = ({
   const status = controller.lmstudioConnectionStatus;
   const showError =
     status === 'disconnected' && controller.lmstudioConnectionError;
+  const showHint = showsLmStudioHint(status);
 
   return (
     <FormSection
       testID="connections-lmstudio"
       header="LM Studio"
       footer={
-        <>
-          {showError ? (
-            <Text
-              testID="connections-lmstudio-error"
-              style={[formText.footer, styles.error]}
-            >
-              {controller.lmstudioConnectionError}
-            </Text>
-          ) : null}
-          <Text style={formText.footer}>{footer}</Text>
-        </>
+        showError || showHint ? (
+          <>
+            {showError ? (
+              <Text
+                testID="connections-lmstudio-error"
+                style={[formText.footer, styles.error]}
+              >
+                {controller.lmstudioConnectionError}
+              </Text>
+            ) : null}
+            {showHint ? (
+              <Text testID="connections-lmstudio-hint" style={formText.footer}>
+                {footer}
+              </Text>
+            ) : null}
+          </>
+        ) : undefined
       }
     >
       <FormTextFieldRow
