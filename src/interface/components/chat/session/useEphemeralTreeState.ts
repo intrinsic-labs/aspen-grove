@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react';
 import type { ILoomTreeRepository } from '@application/repositories';
-import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import type {
+  NavigationProp,
+  ParamListBase,
+} from 'expo-router/react-navigation';
 import type { ULID } from '@domain/value-objects';
 import { useDeleteEphemeralTreeOnBack } from '../useDeleteEphemeralTreeOnBack';
 

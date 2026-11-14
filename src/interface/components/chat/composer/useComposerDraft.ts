@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type MutableRefObject } from 'react';
-import type { Router } from 'expo-router';
+import type { ImperativeRouter } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
 import {
   getDialogueDraft,
@@ -11,7 +11,7 @@ type UseComposerDraftInput = {
   readonly sessionTreeId: ULID | undefined;
   readonly activeTreeIdRef: MutableRefObject<ULID | null>;
   readonly treeIdParam: string | undefined;
-  readonly router: Pick<Router, 'push'>;
+  readonly router: Pick<ImperativeRouter, 'push'>;
 };
 
 /**

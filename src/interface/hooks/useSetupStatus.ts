@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import type { SetupStatus } from '@application/services/onboarding';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
 

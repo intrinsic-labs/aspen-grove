@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useReducer, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { useTextPrompt } from '@/interface/ui/components/text-prompt/useTextPrompt';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import type { FontSize, NodeViewStyle } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 import type { ChatFontFace } from '../types';
