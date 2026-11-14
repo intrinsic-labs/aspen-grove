@@ -33,8 +33,10 @@ import { MarkdownText } from './MarkdownText';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ChatMessageRows } from './message-list/ChatMessageRows';
 import {
+  isAtListBottom,
   keyboardExtraSpace,
   messageListBottomPadding,
+  offsetForComposerGrowth,
 } from './message-list/list-insets';
 import { centeredRailOffset } from './message-list/rail-centering';
 import { toMessageTextStyle } from './message-list/message-text-style';
@@ -211,6 +213,11 @@ export const ChatMessageList = memo(
       scheduleRailReveal(activeRailNodeId);
     }, [activeRailNodeId, continuationRail.loading, scheduleRailReveal]);
 
+    // Whether the reader was at the end of the tree when they last scrolled.
+    // Read when the composer grows, before the new padding is measured.
+    const atBottomRef = useRef(false);
+    const previousComposerHeightRef = useRef(composerHeight);
+
     const handleScroll = useCallback(
       (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const { contentOffset, layoutMeasurement } = event.nativeEvent;
@@ -219,10 +226,26 @@ export const ChatMessageList = memo(
           viewportHeight: layoutMeasurement.height,
           contentHeight: event.nativeEvent.contentSize.height,
         };
+        atBottomRef.current = isAtListBottom(scrollMetricsRef.current);
         onScroll(event);
       },
       [onScroll]
     );
+
+    // The bottom padding follows the composer, but the offset doesn't: keep a
+    // reader at the bottom there as a draft grows to several lines.
+    useEffect(() => {
+      const y = offsetForComposerGrowth({
+        offsetY: scrollMetricsRef.current.offsetY,
+        previousComposerHeight: previousComposerHeightRef.current,
+        composerHeight,
+        wasAtBottom: atBottomRef.current,
+      });
+      previousComposerHeightRef.current = composerHeight;
+      if (y !== null) {
+        scrollRef.current?.scrollTo({ y, animated: false });
+      }
+    }, [composerHeight, scrollRef]);
 
     const handleContentSizeChange = useCallback(
       (_width: number, height: number) => {

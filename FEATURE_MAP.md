@@ -416,6 +416,10 @@ stays until the user makes one.
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
   A long path mounts its last rows first and fills in the earlier ones once the screen has
   slid in, so a row far up the path can take a moment to exist in the hierarchy.
+  The list's bottom padding follows the composer's measured height (and the keyboard's,
+  while it is up), so the last line rests just above the composer; when a draft grows to
+  several lines while the list is at its end, the list scrolls with it
+  (`message-list/list-insets.ts`) so the last message stays visible.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
