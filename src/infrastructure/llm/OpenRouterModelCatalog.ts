@@ -28,6 +28,8 @@ type CachedCatalog = {
 export class OpenRouterModelCatalog {
   private readonly database: Database;
   private inFlight: Promise<readonly OpenRouterCatalogModel[]> | null = null;
+  /** The last catalog read or written, so repeat reads skip the parse. */
+  private memo: CachedCatalog | null = null;
 
   constructor(database: Database) {
     this.database = database;
@@ -54,6 +56,14 @@ export class OpenRouterModelCatalog {
     }
   }
 
+  /**
+   * The catalog as last saved, however old, without going to the network;
+   * empty when none has been saved. For lookups made while sending.
+   */
+  async getCachedModels(): Promise<readonly OpenRouterCatalogModel[]> {
+    return (await this.readCache())?.models ?? [];
+  }
+
   private async refresh(
     stale: CachedCatalog | null
   ): Promise<readonly OpenRouterCatalogModel[]> {
@@ -72,6 +82,9 @@ export class OpenRouterModelCatalog {
   }
 
   private async readCache(): Promise<CachedCatalog | null> {
+    if (this.memo) {
+      return this.memo;
+    }
     try {
       const raw = await this.database.localStorage.get<string>(CACHE_KEY);
       if (typeof raw !== 'string' || raw.length === 0) {
@@ -84,6 +97,7 @@ export class OpenRouterModelCatalog {
       ) {
         return null;
       }
+      this.memo = parsed;
       return parsed;
     } catch {
       // Unreadable cache is equivalent to no cache.
@@ -92,6 +106,7 @@ export class OpenRouterModelCatalog {
   }
 
   private async writeCache(catalog: CachedCatalog): Promise<void> {
+    this.memo = catalog;
     try {
       await this.database.localStorage.set(CACHE_KEY, JSON.stringify(catalog));
       for (const key of STALE_CACHE_KEYS) {
