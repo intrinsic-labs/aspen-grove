@@ -11,9 +11,7 @@ appId: com.intrinsiclabs.aspengrove
 - runFlow: skip-onboarding.yaml
 
 # P1: create an agent from the first template.
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-settings
+- runFlow: open-settings.yaml
 - tapOn:
     id: settings-link-agents
 - tapOn:
@@ -28,35 +26,14 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 10000
 - takeScreenshot: 11-agent-created
 
-# P2: open a new tree from the tree list. Back to Settings first (`back` is
-# Android-only in Maestro), retrying a tap that lands mid-transition.
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: settings-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-trees
-- tapOn:
-    id: trees-menu-button
-- tapOn: New Tree
-- extendedWaitUntil:
-    visible:
-      id: chat-screen
-    timeout: 10000
-- takeScreenshot: 12-empty-tree
-
-# Send one message and wait for the reply to finish streaming.
-- tapOn:
-    id: chat-composer-input
-- inputText: Say hello in five words.
-- tapOn:
-    id: chat-composer-send
+# P2: back to Home and start a tree from its composer; the tree opens and
+# sends the message.
+- runFlow: go-home.yaml
+- takeScreenshot: 12-home
+- runFlow:
+    file: start-tree.yaml
+    env:
+      MESSAGE: Say hello in five words.
 # The streaming row has its own id; the reply's persisted row (the second
 # chat-message-row-*) appears only once streaming completes.
 - extendedWaitUntil:
@@ -66,13 +43,20 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 60000
 - takeScreenshot: 13-first-reply
 
-# Node info for the reply: generation details and the provenance check.
+# Node Info sheet for the reply: generation details and the provenance check,
+# under the text.
 - longPressOn:
     id: chat-message-row-.*
     index: 1
 - tapOn: Node Info
 - extendedWaitUntil:
     visible:
-      id: node-detail-provenance-status
+      id: node-sheet-text
     timeout: 10000
-- takeScreenshot: 14-node-detail
+- scrollUntilVisible:
+    element:
+      id: node-sheet-provenance-status
+    timeout: 10000
+- takeScreenshot: 14-node-sheet
+- tapOn:
+    id: node-sheet-back

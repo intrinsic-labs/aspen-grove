@@ -1,6 +1,5 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { useCallback } from 'react';
 import * as Clipboard from 'expo-clipboard';
-import type { Router } from 'expo-router';
 import type { INodeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
 import { contentToDisplayText } from '../node-text';
@@ -9,21 +8,17 @@ import type { ChatRow, ChatSession } from '../types';
 type UseNodeActionsInput = {
   readonly rows: readonly ChatRow[];
   readonly session: ChatSession | null;
-  readonly activeTreeIdRef: MutableRefObject<ULID | null>;
-  readonly router: Pick<Router, 'push'>;
   readonly nodeRepo: Pick<INodeRepository, 'findById' | 'updateMetadata'>;
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
 };
 
 /**
  * Single-node actions that don't generate: look up a loaded row, copy its
- * text, open its detail route, and toggle its bookmark or prune flag.
+ * text, toggle its bookmark or prune flag, and relabel its bookmark.
  */
 export const useNodeActions = ({
   rows,
   session,
-  activeTreeIdRef,
-  router,
   nodeRepo,
   refreshRowsAndContinuations,
 }: UseNodeActionsInput) => {
@@ -50,20 +45,6 @@ export const useNodeActions = ({
     [getRowById, nodeRepo]
   );
 
-  const openNodeDetail = useCallback(
-    (nodeId: ULID) => {
-      const treeId = session?.treeId ?? activeTreeIdRef.current;
-      if (!treeId) {
-        return;
-      }
-      router.push({
-        pathname: '/tree/[treeId]/node/[nodeId]',
-        params: { treeId, nodeId },
-      });
-    },
-    [activeTreeIdRef, router, session?.treeId]
-  );
-
   const toggleBookmark = useCallback(
     async (nodeId: ULID) => {
       const node = await nodeRepo.findById(nodeId, true);
@@ -72,6 +53,21 @@ export const useNodeActions = ({
       }
       await nodeRepo.updateMetadata(nodeId, {
         bookmarked: !node.metadata.bookmarked,
+      });
+      await refreshRowsAndContinuations(session);
+    },
+    [nodeRepo, refreshRowsAndContinuations, session]
+  );
+
+  // An empty label clears it, so the sheet falls back to "Bookmarked Node".
+  const renameBookmark = useCallback(
+    async (nodeId: ULID, label: string) => {
+      if (!session) {
+        return;
+      }
+      const trimmed = label.trim();
+      await nodeRepo.updateMetadata(nodeId, {
+        bookmarkLabel: trimmed.length > 0 ? trimmed : null,
       });
       await refreshRowsAndContinuations(session);
     },
@@ -97,8 +93,8 @@ export const useNodeActions = ({
   return {
     getRowById,
     copyNodeText,
-    openNodeDetail,
     toggleBookmark,
+    renameBookmark,
     togglePrune,
   };
 };

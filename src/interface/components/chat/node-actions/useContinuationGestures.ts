@@ -10,21 +10,25 @@ type UseContinuationGesturesInput = {
     'toggleBookmark'
   >;
   readonly rewindToNode: (nodeId: ULID) => Promise<void>;
+  readonly retraceBranch: (nodeId: ULID) => Promise<void>;
   readonly copyNodeText: (nodeId: ULID) => Promise<void>;
-  readonly openNodeDetail: (nodeId: ULID) => void;
+  /** Opens the card's "Continuation Node" sheet. */
+  readonly openContinuationSheet: (nodeId: ULID) => void;
 };
 
 /**
- * Continuation-card gestures: single-tap opens node details; double-tap
- * retraces that branch (makes it current). The single-tap action is deferred
- * just past the double-tap window so a double never opens details first.
- * The card's menu makes it current, copies it or bookmarks it.
+ * Continuation-card gestures, as in Latent Spaces' ChildNodeView: a tap
+ * expands the card into its sheet; a double tap makes it current. The
+ * single tap waits out the double-tap window so a double never opens the
+ * sheet first. The card's menu makes it current, retraces its branch,
+ * copies it or bookmarks it.
  */
 export const useContinuationGestures = ({
   continuations,
   rewindToNode,
+  retraceBranch,
   copyNodeText,
-  openNodeDetail,
+  openContinuationSheet,
 }: UseContinuationGesturesInput) => {
   const lastTapRef = useRef<NodeTap | null>(null);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,10 +54,10 @@ export const useContinuationGestures = ({
       }
       singleTapTimerRef.current = setTimeout(() => {
         singleTapTimerRef.current = null;
-        openNodeDetail(nodeId);
+        openContinuationSheet(nodeId);
       }, SINGLE_TAP_DELAY_MS);
     },
-    [openNodeDetail, rewindToNode]
+    [openContinuationSheet, rewindToNode]
   );
 
   useEffect(
@@ -71,6 +75,10 @@ export const useContinuationGestures = ({
         await rewindToNode(targetNodeId);
         return;
       }
+      if (action === 'retrace') {
+        await retraceBranch(targetNodeId);
+        return;
+      }
       if (action === 'copy') {
         await copyNodeText(targetNodeId);
         return;
@@ -79,7 +87,7 @@ export const useContinuationGestures = ({
         await continuations.toggleBookmark(targetNodeId);
       }
     },
-    [continuations, copyNodeText, rewindToNode]
+    [continuations, copyNodeText, retraceBranch, rewindToNode]
   );
 
   return { onContinuationSelect, onContinuationMenuAction };

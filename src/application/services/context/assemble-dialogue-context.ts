@@ -1,4 +1,4 @@
-import type { AgentType, Node } from '@domain/entities';
+import type { Node, NodeAuthorType } from '@domain/entities';
 import type { DialogueMessage, DialogueRole } from './dialogue-message';
 import {
   truncateDialogueMessages,
@@ -20,8 +20,10 @@ type AssembleDialogueContextInput = {
   readonly truncation?: TruncationOptions;
 };
 
-const toRole = (authorType: AgentType): DialogueRole => {
-  return authorType === 'human' ? 'user' : 'assistant';
+const ROLE_BY_AUTHOR_TYPE: Record<NodeAuthorType, DialogueRole> = {
+  human: 'user',
+  model: 'assistant',
+  system: 'system',
 };
 
 const toText = (node: Node): string => {
@@ -36,6 +38,12 @@ const toText = (node: Node): string => {
  * docs/architecture/specs/context-assembly.md:
  * exclusion filtering, system context combination (agent first, then tree),
  * consecutive same-author merging, and truncation.
+ *
+ * System nodes stay where they are on the path and go out as `system`
+ * messages, as Latent Spaces sends them (OpenRouterRequest.swift:100-117).
+ * The agent prompt and tree context still go out once, as the request's
+ * system prompt; a system node whose text repeats one of them (an import
+ * that carried the prompt both ways) is dropped so it isn't sent twice.
  */
 export const assembleDialogueContext = ({
   nodes,
@@ -47,13 +55,22 @@ export const assembleDialogueContext = ({
     (node) => !node.metadata.pruned && !node.metadata.excluded
   );
 
+  const systemParts = [agentSystemPrompt, treeSystemContext]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  const systemContext =
+    systemParts.length > 0 ? systemParts.join('\n\n') : undefined;
+
   const messages: DialogueMessage[] = [];
 
   for (const node of visibleNodes) {
-    const role = toRole(node.authorType);
+    const role = ROLE_BY_AUTHOR_TYPE[node.authorType];
     const content = toText(node).trim();
 
     if (!content) {
+      continue;
+    }
+    if (role === 'system' && systemParts.includes(content)) {
       continue;
     }
 
@@ -68,12 +85,6 @@ export const assembleDialogueContext = ({
 
     messages.push({ role, content });
   }
-
-  const systemParts = [agentSystemPrompt, treeSystemContext]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-  const systemContext =
-    systemParts.length > 0 ? systemParts.join('\n\n') : undefined;
 
   const truncated = truncateDialogueMessages({
     messages,

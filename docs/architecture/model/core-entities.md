@@ -64,7 +64,7 @@ A single unit of content within a Loom Tree.
 - **content** — Content object (see Content Types below)
 - **summary** — optional string, auto-generated 1-2 sentence summary (see [Summary Generation](#summary-generation))
 - **authorAgentId** — ULID, reference to the Agent that created this node
-- **authorType** — enum: `human` | `model`, denormalized from Agent.type for efficient hash verification
+- **authorType** — enum: `human` | `model` | `system`, denormalized from Agent.type for efficient hash verification. `system` is a system message (Open Loom `author.role: "system"`): written by a human agent, hashed as a human node, sent to the model with the `system` role in place on the path. Stored in the existing `nodes.author_type` string column, so it needed no schema migration.
 - **contentHash** — string, computed hash for tamper evidence
 - **createdAt** — timestamp
 - **metadata** — NodeMetadata object

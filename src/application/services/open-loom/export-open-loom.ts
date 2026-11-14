@@ -26,6 +26,23 @@ export type ExportOpenLoomOptions = {
   readonly includeAgentConfiguration?: boolean;
   /** Include Tier 3 raw API response bodies (hash-only when false). Default true. */
   readonly includeRawResponses?: boolean;
+  /**
+   * Include agents' system prompts; the rest of their configuration follows
+   * `includeAgentConfiguration`. Default true.
+   */
+  readonly includeAgentSystemPrompts?: boolean;
+  /**
+   * Include the text of system-authored nodes. When false they stay in the
+   * tree, so its shape and the hash chain's parents survive, but carry
+   * empty text. Default true.
+   */
+  readonly includeSystemNodeContent?: boolean;
+  /** Include bookmark flags and labels. Default true. */
+  readonly includeBookmarks?: boolean;
+  /** The file's tree title in place of the saved one. */
+  readonly title?: string;
+  /** The file's description in place of the saved one; null leaves it out. */
+  readonly description?: string | null;
 };
 
 export type ExportOpenLoomInput = {
@@ -117,7 +134,8 @@ const buildGeneration = async (
 
 const toOpenLoomAgent = (
   agent: Agent,
-  includeConfiguration: boolean
+  includeConfiguration: boolean,
+  includeSystemPrompt: boolean
 ): OpenLoomAgent => ({
   name: agent.name,
   type: agent.type,
@@ -125,7 +143,9 @@ const toOpenLoomAgent = (
   ...(includeConfiguration && agent.type === 'model'
     ? {
         configuration: {
-          systemPrompt: agent.configuration.systemPrompt,
+          systemPrompt: includeSystemPrompt
+            ? agent.configuration.systemPrompt
+            : undefined,
           temperature: agent.configuration.temperature,
           maxTokens: agent.configuration.maxTokens,
           stopSequences: agent.configuration.stopSequences,
@@ -150,6 +170,9 @@ export const buildOpenLoomDocument = async (
   const includeSystemContext = options.includeSystemContext ?? true;
   const includeAgentConfiguration = options.includeAgentConfiguration ?? true;
   const includeRawResponses = options.includeRawResponses ?? true;
+  const includeAgentSystemPrompts = options.includeAgentSystemPrompts ?? true;
+  const includeBookmarks = options.includeBookmarks ?? true;
+  const includeSystemNodeContent = options.includeSystemNodeContent ?? true;
 
   // Parent hashes come from each node's incoming continuation edge sources.
   const parentHashesByNodeId = new Map<string, string[]>();
@@ -169,7 +192,10 @@ export const buildOpenLoomDocument = async (
     const raw = input.rawResponsesByNodeId.get(node.id);
     nodes[node.id] = {
       id: node.id,
-      content: toContentBlocks(node.content),
+      content:
+        node.authorType === 'system' && !includeSystemNodeContent
+          ? [{ type: 'text', text: '' }]
+          : toContentBlocks(node.content),
       author: {
         role: node.authorType,
         agentId: node.authorAgentId,
@@ -178,8 +204,10 @@ export const buildOpenLoomDocument = async (
       createdAt: node.createdAt.toISOString(),
       editedFrom: node.editedFrom,
       meta: {
-        bookmarked: node.metadata.bookmarked || undefined,
-        bookmarkLabel: node.metadata.bookmarkLabel,
+        bookmarked: (includeBookmarks && node.metadata.bookmarked) || undefined,
+        bookmarkLabel: includeBookmarks
+          ? node.metadata.bookmarkLabel
+          : undefined,
         pruned: node.metadata.pruned || undefined,
         excluded: node.metadata.excluded || undefined,
       },
@@ -206,13 +234,20 @@ export const buildOpenLoomDocument = async (
 
   const agents: Record<string, OpenLoomAgent> = {};
   for (const [id, agent] of input.agentsById) {
-    agents[id] = toOpenLoomAgent(agent, includeAgentConfiguration);
+    agents[id] = toOpenLoomAgent(
+      agent,
+      includeAgentConfiguration,
+      includeAgentSystemPrompts
+    );
   }
 
   const tree: OpenLoomTree = {
     id: input.tree.id,
-    title: input.tree.title,
-    description: input.tree.description,
+    title: options.title ?? input.tree.title,
+    description:
+      options.description === null
+        ? undefined
+        : (options.description ?? input.tree.description),
     mode: input.tree.mode,
     systemContext: includeSystemContext ? input.tree.systemContext : undefined,
     rootNodeIds: [input.tree.rootNodeId],

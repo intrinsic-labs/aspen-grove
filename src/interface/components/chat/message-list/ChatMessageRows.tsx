@@ -51,6 +51,7 @@ export const ChatMessageRows = ({
   ...rowProps
 }: ChatMessageRowsProps) => {
   const { rows: visibleRows, complete } = useProgressiveRows(rows, settled);
+  const currentNodeId = rows[rows.length - 1]?.id;
 
   useEffect(() => {
     onFillingChange(!complete);
@@ -69,6 +70,7 @@ export const ChatMessageRows = ({
         <ChatMessageRow
           key={row.id}
           row={row}
+          isCurrent={row.id === currentNodeId}
           rail={railSourceNodeId === row.id ? continuationRail : null}
           speakingColor={
             speakingRow?.nodeId === row.id ? speakingRow.color : undefined

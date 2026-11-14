@@ -15,6 +15,8 @@ import {
   createStreamDiagnostics,
   logStreamDiagnostics,
 } from './stream-diagnostics';
+import { interruptionNotice, isStoppedBeforeText } from './stopped-generation';
+import type { StopGeneration } from './useStopGeneration';
 
 type UseSendTurnInput = {
   readonly session: ChatSession | null;
@@ -35,6 +37,8 @@ type UseSendTurnInput = {
     ReturnType<typeof useStreamingAssistantRow>,
     'appendDelta' | 'reset'
   >;
+  /** The composer's stop button for the reply. */
+  readonly stopGeneration: StopGeneration;
   readonly markAsNonEphemeral: () => void;
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
   readonly maybeGenerateTreeTitle: (
@@ -53,6 +57,8 @@ type UseSendTurnInput = {
 /**
  * The composer's Send: saves an edit as a new sibling node when editing,
  * otherwise commits the user's turn and streams the model's reply.
+ * `sendPrompt` sends a given text through the same path (Home's composer
+ * hands a new tree its first message this way).
  */
 export const useSendTurn = ({
   session,
@@ -66,6 +72,7 @@ export const useSendTurn = ({
   setEditTarget,
   shouldAutoScrollRef,
   streaming,
+  stopGeneration,
   markAsNonEphemeral,
   refreshRowsAndContinuations,
   maybeGenerateTreeTitle,
@@ -77,124 +84,146 @@ export const useSendTurn = ({
 }: UseSendTurnInput) => {
   const { appendDelta, reset } = streaming;
 
-  return useCallback(async () => {
-    if (sending || !session) {
-      return;
-    }
-
-    const prompt = input.trim();
-    if (!prompt) {
-      return;
-    }
-    // Saving an edit generates nothing; a new turn needs the tree's agent.
-    const model = session.model;
-    if (!editTarget && !model) {
-      setError(NEEDS_AGENT_MESSAGE);
-      return;
-    }
-
-    try {
-      setSending(true);
-      setError(null);
-      shouldAutoScrollRef.current = true;
-      setInput('');
-      reset();
-
-      if (editTarget) {
-        const result = await editDialogueNodeUseCase.execute({
-          session: {
-            ownerAgentId: session.ownerAgentId,
-            treeId: session.treeId,
-            pathId: session.pathId,
-          },
-          targetNodeId: editTarget.nodeId,
-          editedText: prompt,
-        });
-
-        markAsNonEphemeral();
-        setEditTarget(null);
-        await refreshRowsAndContinuations({
-          ...session,
-          activeNodeId: result.editedNodeId,
-        });
+  const sendPrompt = useCallback(
+    async (text: string) => {
+      if (sending || !session) {
         return;
       }
 
-      if (!model) {
+      const prompt = text.trim();
+      if (!prompt) {
         return;
       }
-      // Provider is bound to this session's agent (via tree.defaultModelAgentId).
-      // Fetch the matching API key from secure storage.
-      const providerApiKey = await getProviderApiKey(
-        credentialStore,
-        model.provider
-      );
-      const diagnostics = createStreamDiagnostics();
-      const turnResult = await sendDialogueTurnUseCase.execute({
-        session: toTurnSession(session, model),
-        prompt,
-        providerApiKey,
-        providerAppName: 'Aspen Grove RN',
-        stream: true,
-        onUserNodeCommitted: async ({ userNodeId }) => {
+      // Saving an edit generates nothing; a new turn needs the tree's agent.
+      const model = session.model;
+      if (!editTarget && !model) {
+        setError(NEEDS_AGENT_MESSAGE);
+        return;
+      }
+
+      let signal: AbortSignal | undefined;
+      let userNodeCommitted = false;
+      try {
+        setSending(true);
+        setError(null);
+        shouldAutoScrollRef.current = true;
+        setInput('');
+        reset();
+
+        if (editTarget) {
+          const result = await editDialogueNodeUseCase.execute({
+            session: {
+              ownerAgentId: session.ownerAgentId,
+              treeId: session.treeId,
+              pathId: session.pathId,
+            },
+            targetNodeId: editTarget.nodeId,
+            editedText: prompt,
+          });
+
           markAsNonEphemeral();
-          titleFromFirstMessage(prompt);
+          setEditTarget(null);
           await refreshRowsAndContinuations({
             ...session,
-            activeNodeId: userNodeId,
+            activeNodeId: result.editedNodeId,
           });
-        },
-        onAssistantTextDelta: async ({ delta }) => {
-          diagnostics.recordDelta();
-          appendDelta(delta);
-        },
-      });
+          return;
+        }
 
-      logStreamDiagnostics('send', diagnostics);
-
-      await refreshRowsAndContinuations({
-        ...session,
-        activeNodeId: turnResult.assistantNodeId,
-      });
-      // Clear the transient streaming row now that the committed node is in
-      // `rows` — leaving it set rendered the response twice until remount.
-      reset();
-
-      maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
-
-      if (turnResult.completion.interruptionReason) {
-        setError(
-          `Stream interrupted (${turnResult.completion.interruptionReason}). Saved partial response.`
+        if (!model) {
+          return;
+        }
+        signal = stopGeneration.begin();
+        // Provider is bound to this session's agent (via tree.defaultModelAgentId).
+        // Fetch the matching API key from secure storage.
+        const providerApiKey = await getProviderApiKey(
+          credentialStore,
+          model.provider
         );
-      } else {
-        onModelNodeCompleted(turnResult.assistantNodeId);
+        const diagnostics = createStreamDiagnostics();
+        const turnResult = await sendDialogueTurnUseCase.execute({
+          session: toTurnSession(session, model),
+          prompt,
+          providerApiKey,
+          providerAppName: 'Aspen Grove RN',
+          stream: true,
+          signal,
+          onUserNodeCommitted: async ({ userNodeId }) => {
+            userNodeCommitted = true;
+            markAsNonEphemeral();
+            titleFromFirstMessage(prompt);
+            await refreshRowsAndContinuations({
+              ...session,
+              activeNodeId: userNodeId,
+            });
+          },
+          onAssistantTextDelta: async ({ delta }) => {
+            diagnostics.recordDelta();
+            appendDelta(delta);
+          },
+        });
+
+        logStreamDiagnostics('send', diagnostics);
+
+        await refreshRowsAndContinuations({
+          ...session,
+          activeNodeId: turnResult.assistantNodeId,
+        });
+        // Clear the transient streaming row now that the committed node is in
+        // `rows` — leaving it set rendered the response twice until remount.
+        reset();
+
+        maybeGenerateTreeTitle(prompt, turnResult.assistantNodeId);
+
+        // A stopped reply keeps its partial text, unmarked, and isn't read aloud.
+        const reason = turnResult.completion.interruptionReason;
+        const notice = interruptionNotice(reason);
+        if (notice) {
+          setError(notice);
+        } else if (!reason) {
+          onModelNodeCompleted(turnResult.assistantNodeId);
+        }
+      } catch (caught) {
+        // Stopped before any text: the user's turn stays, with no reply.
+        if (!isStoppedBeforeText(signal, caught)) {
+          showProviderError(caught, session.model?.provider);
+        }
+        // Failed before the message was saved (no key, say): give it back to
+        // the composer rather than lose it.
+        if (!editTarget && !userNodeCommitted) {
+          setInput(prompt);
+        }
+      } finally {
+        stopGeneration.end(signal);
+        reset();
+        setSending(false);
       }
-    } catch (caught) {
-      showProviderError(caught, session.model?.provider);
-    } finally {
-      reset();
-      setSending(false);
-    }
-  }, [
-    appendDelta,
-    credentialStore,
-    editDialogueNodeUseCase,
-    editTarget,
-    input,
-    markAsNonEphemeral,
-    maybeGenerateTreeTitle,
-    titleFromFirstMessage,
-    onModelNodeCompleted,
-    refreshRowsAndContinuations,
-    reset,
-    sendDialogueTurnUseCase,
-    sending,
-    session,
-    setEditTarget,
-    setError,
-    setInput,
-    showProviderError,
-    setSending,
-    shouldAutoScrollRef,
-  ]);
+    },
+    [
+      appendDelta,
+      credentialStore,
+      editDialogueNodeUseCase,
+      editTarget,
+      markAsNonEphemeral,
+      maybeGenerateTreeTitle,
+      titleFromFirstMessage,
+      onModelNodeCompleted,
+      refreshRowsAndContinuations,
+      reset,
+      sendDialogueTurnUseCase,
+      sending,
+      session,
+      setEditTarget,
+      setError,
+      setInput,
+      showProviderError,
+      setSending,
+      shouldAutoScrollRef,
+      stopGeneration,
+    ]
+  );
+
+  const onSend = useCallback(() => sendPrompt(input), [input, sendPrompt]);
+
+  return { onSend, sendPrompt };
 };

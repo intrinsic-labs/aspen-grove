@@ -135,7 +135,8 @@ export class EditDialogueNodeUseCase {
       localId,
       content,
       authorAgentId: input.session.ownerAgentId,
-      authorType: 'human',
+      // The person edits; an edited system message stays a system message.
+      authorType: targetNode.authorType === 'system' ? 'system' : 'human',
       contentHash,
       editedFrom: targetNode.id,
     });

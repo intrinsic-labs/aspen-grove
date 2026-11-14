@@ -23,6 +23,24 @@ const toInterruptedMarker = (reason: StreamInterruptionReason): string =>
   `[stream interrupted: ${reason}]`;
 
 /**
+ * A stream cut off by the network or provider keeps a visible
+ * `[stream interrupted: <reason>]` line, so the truncation is obvious.
+ * A stop the user asked for (`cancelled`) keeps the partial text clean,
+ * as Latent Spaces does (LLMManager.swift:45): the node is part of the
+ * conversation sent on later turns, so a marker would reach the model.
+ * `interruptionReason` on the response still says it was stopped.
+ */
+const shouldMarkInterruption = (
+  finishReason: CompletionResponse['finishReason'],
+  reason: StreamInterruptionReason | undefined,
+  content: string
+): reason is Exclude<StreamInterruptionReason, 'cancelled'> =>
+  finishReason === 'error' &&
+  reason !== undefined &&
+  reason !== 'cancelled' &&
+  content.trim().length > 0;
+
+/**
  * Resolves a completion response using streaming or non-streaming execution.
  *
  * When streaming is enabled, the final `CompletionResponse` is assembled from stream chunks.
@@ -91,10 +109,13 @@ export const collectCompletion = async (
       throw new Error('Provider streaming completion ended without final raw response.');
     }
 
-    const persistedContent =
-      finishReason === 'error' && interruptionReason && content.trim().length > 0
-        ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
-        : content;
+    const persistedContent = shouldMarkInterruption(
+      finishReason,
+      interruptionReason,
+      content
+    )
+      ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
+      : content;
 
     return {
       content: persistedContent,

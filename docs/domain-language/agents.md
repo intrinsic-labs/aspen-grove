@@ -70,7 +70,7 @@ For the architectural specification of how this is modeled, see [Architecture: A
 
 ### Authorship & Provenance
 
-Every Node records its `authorAgentId`. The `authorType` field (human or model) is denormalized from the Agent for efficient hash verification in the provenance system.
+Every Node records its `authorAgentId`. The `authorType` field (human, model, or system for a system message) is denormalized from the Agent for efficient hash verification in the provenance system.
 
 ---
 

@@ -7,10 +7,11 @@ export type ContinuationRailState = {
   readonly visible: boolean;
   readonly loading: boolean;
   readonly sourceNodeId: ULID | null;
-  readonly sourceLocalId?: string;
   /** Existing siblings, then the cards of a run started from this node. */
   readonly cards: readonly RailCard[];
   readonly generation: ContinuationGenerateControlProps;
+  /** The model a run streams from, captioning its cards until they save. */
+  readonly streamingModelLabel: string;
   readonly error?: string | null;
   readonly onSelect: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;

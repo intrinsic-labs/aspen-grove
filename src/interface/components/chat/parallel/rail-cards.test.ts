@@ -10,6 +10,7 @@ const other = '01KOTHER000000000000000000' as ULID;
 const preview = (nodeId: string): ContinuationPreview => ({
   nodeId: nodeId as ULID,
   localId: nodeId.slice(-4),
+  modelLabel: 'mock-model',
   previewText: `text ${nodeId}`,
   isOnActivePath: false,
   onBranchCount: 1,

@@ -61,8 +61,8 @@ Nodes are excluded from context if any of the following are true:
 1. Traverse the active path from root to current position
 2. Filter out excluded nodes
 3. Combine system context (Agent + Tree + any Instruction sources)
-4. Convert each node to a message based on `authorType`: human → `user`, model → `assistant`
-5. Merge consecutive same-author nodes into single messages
+4. Convert each node to a message based on `authorType`: human → `user`, model → `assistant`, system → `system`. A system node stays in place on the path and goes out as a `system` message (OpenAI-compatible chat completions, which OpenRouter and LM Studio both take), as Latent Spaces sends it. The combined system context still goes out once, first, as the request's system prompt; a system node whose text equals the agent prompt or the tree context is dropped so it isn't sent twice.
+5. Merge consecutive same-author nodes into single messages (two system nodes merge; a system node never merges into a user or assistant turn)
 6. Estimate tokens and apply truncation if needed
 
 ---

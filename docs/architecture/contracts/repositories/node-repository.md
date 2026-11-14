@@ -14,7 +14,7 @@ Creates a new Node with optional parent connections.
 - `loomTreeId` — ULID, reference to parent LoomTree
 - `content` — Content object (text, image, audio, or mixed)
 - `authorAgentId` — ULID, reference to the authoring Agent
-- `authorType` — enum: `human` | `model`
+- `authorType` — enum: `human` | `model` | `system`
 - `contentHash` — string, pre-computed hash (see [Provenance](../../model/provenance.md#hash-chain-computation))
 - `editedFrom` — optional ULID, set when this node was created by editing another node (used in both Dialogue and Buffer modes for lineage tracking)
 
@@ -63,7 +63,7 @@ Lists Nodes in a LoomTree with optional filtering and pagination.
 - `loomTreeId` — ULID
 - `filters` — optional object:
   - `authorAgentId` — ULID, filter by author
-  - `authorType` — `human` | `model`, filter by author type
+  - `authorType` — `human` | `model` | `system`, filter by author type
   - `bookmarked` — boolean, filter bookmarked nodes
   - `pruned` — boolean, filter pruned nodes
   - `contentType` — `text` | `image` | `audio` | `mixed`

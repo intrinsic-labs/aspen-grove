@@ -57,6 +57,24 @@ export class WatermelonRawApiResponseRepository
     return this.toDomain(models[0]);
   }
 
+  async findModelIdentifiersByNodeIds(
+    nodeIds: readonly ULID[]
+  ): Promise<ReadonlyMap<ULID, string>> {
+    if (nodeIds.length === 0) {
+      return new Map();
+    }
+    const models = await this.rawApiResponses
+      .query(
+        Q.where('node_id', Q.oneOf([...nodeIds])),
+        Q.sortBy('created_at', Q.asc)
+      )
+      .fetch();
+    // Ascending, so the newest record for a node (as `findByNodeId` reads) wins.
+    return new Map(
+      models.map((model) => [model.nodeId as ULID, model.modelIdentifier])
+    );
+  }
+
   async create(input: CreateRawApiResponseInput): Promise<RawApiResponse> {
     return this.db.write(async () => {
       const existing = await this.rawApiResponses

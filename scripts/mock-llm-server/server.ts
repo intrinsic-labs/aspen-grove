@@ -15,6 +15,7 @@ import {
   usageFor,
 } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
+import { isTitleRequest, titleText } from './title-request.ts';
 
 type ChatBody = {
   readonly model?: unknown;
@@ -128,6 +129,23 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
           errorPayload(`Injected failure on request #${number}.`)
         );
         result = `${plan.status} (injected)`;
+      } else if (isTitleRequest(body)) {
+        const prompt = lastMessageText(body.messages);
+        const text = titleText(number);
+        await sleep(tokenMs);
+        sendJson(
+          res,
+          200,
+          completionPayload({
+            id,
+            model: config.modelId,
+            text,
+            finishReason: 'stop',
+            usage: usageFor(prompt, text.split(' ').length),
+          }),
+          { 'x-request-id': id }
+        );
+        result = `title "${text}"`;
       } else {
         const prompt = lastMessageText(body.messages);
         const maxTokens =

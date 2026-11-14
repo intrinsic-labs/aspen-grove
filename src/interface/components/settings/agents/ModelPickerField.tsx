@@ -4,14 +4,16 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { SelectableProvider } from '@domain/entities';
 import { SELECTABLE_PROVIDERS } from '@domain/entities';
 import { AppInput, AppText } from '@/interface/ui/value-objects';
+import {
+  customModelIdentifier,
+  filterModelOptions,
+} from './model-option-filter';
 import { useModelPickerData } from './useModelPickerData';
 
 const PROVIDER_LABELS: Record<SelectableProvider, string> = {
   openrouter: 'OpenRouter',
   lmstudio: 'LM Studio',
 };
-
-const MAX_VISIBLE_OPTIONS = 25;
 
 type ModelPickerFieldProps = {
   readonly provider: SelectableProvider;
@@ -50,23 +52,18 @@ export const ModelPickerField = ({
   const picker = useModelPickerData(provider);
   const [search, setSearch] = useState('');
 
-  const filteredOptions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const matches = query
-      ? picker.options.filter(
-          (option) =>
-            option.id.toLowerCase().includes(query) ||
-            option.label.toLowerCase().includes(query)
-        )
-      : picker.options;
-    return matches.slice(0, MAX_VISIBLE_OPTIONS);
-  }, [picker.options, search]);
+  const filteredOptions = useMemo(
+    () => filterModelOptions(picker.options, search),
+    [picker.options, search]
+  );
 
-  const trimmedSearch = search.trim();
-  const showCustomRow =
-    provider === 'openrouter' &&
-    trimmedSearch.length > 0 &&
-    !picker.options.some((option) => option.id === trimmedSearch);
+  const customIdentifier = customModelIdentifier(
+    provider,
+    search,
+    picker.options
+  );
+  const showCustomRow = customIdentifier !== null;
+  const trimmedSearch = customIdentifier ?? '';
 
   return (
     <View testID={`${testIDPrefix}-model`} style={styles.container}>

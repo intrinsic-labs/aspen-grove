@@ -35,7 +35,7 @@ export const ContinuationGenerateControl = ({
   const { colors } = useAspenGroveTheme();
   const canDecrease = !running && count > MIN_PARALLEL_CONTINUATIONS;
   const canIncrease = !running && count < MAX_PARALLEL_CONTINUATIONS;
-  const hitSlop = loomUiTokens.continuationRail.closeHitSlop;
+  const hitSlop = loomUiTokens.continuationRail.stopHitSlop;
 
   return (
     <View testID="chat-continuation-generate" style={styles.row}>
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
-    marginBottom: loomUiTokens.continuationRail.headerBottomMargin,
+    paddingTop: loomUiTokens.continuationRail.hintPadding / 2,
   },
   count: {
     minWidth: 12,

@@ -14,7 +14,7 @@ appId: com.intrinsiclabs.aspengrove
 
 # Opens with its messages and, in place of the input, the notice.
 - tapOn:
-    id: trees-list-row-.*
+    id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
       id: chat-message-row-.*
@@ -47,21 +47,11 @@ appId: com.intrinsiclabs.aspengrove
       - waitForAnimationToEnd
 
 # Create an agent elsewhere; back on the tree, it has adopted it.
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: trees-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+- runFlow: go-home.yaml
 - runFlow: create-agent.yaml
-- runFlow: open-drawer.yaml
+- runFlow: go-home.yaml
 - tapOn:
-    id: drawer-nav-trees
-- tapOn:
-    id: trees-list-row-.*
+    id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
       id: chat-composer-input

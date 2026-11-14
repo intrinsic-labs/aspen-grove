@@ -1,0 +1,62 @@
+diff --git a/node_modules/react-native-context-menu-view/index.d.ts b/node_modules/react-native-context-menu-view/index.d.ts
+index 25c92fd..7681ad8 100644
+--- a/node_modules/react-native-context-menu-view/index.d.ts
++++ b/node_modules/react-native-context-menu-view/index.d.ts
+@@ -47,6 +47,11 @@ export interface ContextMenuAction {
+    * Whether its children (if any) should be rendered inline instead of in their own child menu (default: false, iOS only)
+    */
+   inlineChildren?: boolean;
++  /**
++   * How a menu with children draws them (UIMenu `preferredElementSize`, iOS 16+).
++   * "medium" lays them side by side, icon over title, as a SwiftUI ControlGroup.
++   */
++  preferredElementSize?: "small" | "medium" | "large";
+   /**
+    * Child actions. When child actions are supplied, the child's callback will contain its name but the same index as the topmost parent menu/action index
+    */
+diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h b/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h
+index 13fdaba..7e73799 100644
+--- a/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h
++++ b/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h
+@@ -20,6 +20,7 @@
+ @property (nonatomic, assign) BOOL selected;
+ @property (nonatomic, assign) BOOL disabled;
+ @property (nonatomic, assign) BOOL inlineChildren;
++@property (nullable, nonatomic, copy) NSString* preferredElementSize;
+ @property (nullable, nonatomic, copy) NSArray<ContextMenuAction*>* actions;
+ 
+ @end
+diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
+index e10a830..a183991 100644
+--- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
++++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
+@@ -245,6 +245,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+         actionMenu.subtitle = action.subtitle;
+       }
+ 
++      // A SwiftUI ControlGroup in a Menu: its children side by side.
++      if (@available(iOS 16.0, *)) {
++        if ([action.preferredElementSize isEqualToString:@"small"]) {
++          actionMenu.preferredElementSize = UIMenuElementSizeSmall;
++        } else if ([action.preferredElementSize isEqualToString:@"medium"]) {
++          actionMenu.preferredElementSize = UIMenuElementSizeMedium;
++        } else if ([action.preferredElementSize isEqualToString:@"large"]) {
++          actionMenu.preferredElementSize = UIMenuElementSizeLarge;
++        }
++      }
++
+       menuElement = actionMenu;
+     } else {
+       UIAction* actionMenuItem =
+diff --git a/node_modules/react-native-context-menu-view/ios/RCTConvert+ContextMenuAction.m b/node_modules/react-native-context-menu-view/ios/RCTConvert+ContextMenuAction.m
+index 34b32ce..a917eb8 100644
+--- a/node_modules/react-native-context-menu-view/ios/RCTConvert+ContextMenuAction.m
++++ b/node_modules/react-native-context-menu-view/ios/RCTConvert+ContextMenuAction.m
+@@ -23,6 +23,7 @@ + (ContextMenuAction*) ContextMenuAction:(id)json {
+     action.selected = [self BOOL:json[@"selected"]];
+     action.disabled = [self BOOL:json[@"disabled"]];
+     action.inlineChildren = [self BOOL:json[@"inlineChildren"]];
++    action.preferredElementSize = [self NSString:json[@"preferredElementSize"]];
+     
+     NSArray *rawChildActions = [self NSArray:json[@"actions"]];
+     NSMutableArray<ContextMenuAction*> *childActions = [[NSMutableArray alloc] init];

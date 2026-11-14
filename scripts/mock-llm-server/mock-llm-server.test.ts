@@ -3,6 +3,7 @@ import { parseConfig, SLOW_PACE } from './config.ts';
 import { planRequest } from './failure-plan.ts';
 import { modelsPayload, sseChunk, SSE_DONE } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
+import { isTitleRequest, titleText } from './title-request.ts';
 
 describe('parseConfig', () => {
   it('has defaults that need no arguments', () => {
@@ -114,6 +115,45 @@ describe('lastMessageText', () => {
       lastMessageText([{ content: [{ type: 'text', text: 'x' }, { type: 'image_url' }] }])
     ).toBe('x');
     expect(lastMessageText(undefined)).toBe('');
+  });
+});
+
+describe('isTitleRequest', () => {
+  const titleMessages = [
+    {
+      role: 'system',
+      content:
+        'You title conversations. Reply with only a title: at most six words, no quotes, no trailing punctuation.',
+    },
+    { role: 'user', content: 'Title this conversation.\n\nUser: hi\n\nAssistant: hello' },
+  ];
+
+  it("recognises Auto-Title's request by its system prompt or its user message", () => {
+    expect(isTitleRequest({ stream: false, messages: titleMessages })).toBe(true);
+    expect(isTitleRequest({ messages: [titleMessages[0]] })).toBe(true);
+    expect(isTitleRequest({ messages: [titleMessages[1]] })).toBe(true);
+    expect(
+      isTitleRequest({
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'Title this conversation.' }] }],
+      })
+    ).toBe(true);
+  });
+
+  it('leaves replies alone, including streamed ones and a user asking for a title mid-text', () => {
+    expect(isTitleRequest({ stream: true, messages: titleMessages })).toBe(false);
+    expect(
+      isTitleRequest({ stream: false, messages: [{ role: 'user', content: 'Say hello.' }] })
+    ).toBe(false);
+    expect(
+      isTitleRequest({
+        messages: [{ role: 'user', content: 'Please title this conversation for me.' }],
+      })
+    ).toBe(false);
+    expect(isTitleRequest({ messages: undefined })).toBe(false);
+  });
+
+  it('titles with a short numbered phrase', () => {
+    expect(titleText(3)).toBe('Mock title #3');
   });
 });
 

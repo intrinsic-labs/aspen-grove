@@ -177,7 +177,7 @@ describe('useParallelRail', () => {
     const stopped = hook.result.current.cards[1];
     if (stopped.kind !== 'slot') throw new Error('expected a slot card');
     expect(savedText(store, stopped.view.nodeId)).toBe(
-      'Partial\n\n[stream interrupted: cancelled]'
+      'Partial'
     );
     expect(store.childrenOfSource()).toHaveLength(3);
   });
