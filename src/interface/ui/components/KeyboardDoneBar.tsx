@@ -22,6 +22,12 @@ type KeyboardDoneBarProps = {
  * (FullScreenTextEditor.swift, OpenLoomExportSheet.swift): a glass capsule
  * over the keyboard that dismisses it. iOS only; Android has no keyboard
  * toolbar.
+ *
+ * React Native's InputAccessoryView (iOS, New Architecture) attaches itself
+ * once, when it enters the window, to a field already there with its ID. So
+ * mount it in the same render as its fields, after them, and take the ID from
+ * `useKeyboardAccessoryId`: a bar mounted before a field that loads later,
+ * or a field remounted with an ID it had before, gets no bar.
  */
 export const KeyboardDoneBar = ({ nativeID }: KeyboardDoneBarProps) =>
   Platform.OS === 'ios' ? (

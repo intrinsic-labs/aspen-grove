@@ -12,6 +12,7 @@ import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
 import { FormSheetHeader } from '../form/FormSheetHeader';
 import { GlassIconButton } from '../GlassIconButton';
 import { KeyboardDoneBar } from '../KeyboardDoneBar';
+import { useKeyboardAccessoryId } from '../useKeyboardAccessoryId';
 import { findNativeMenuItem, toNativeMenuActions } from '../native-menu';
 import { TEXT_EDITOR_MENU } from './text-editor-menu';
 import { AppTextInput } from '../AppTextInput';
@@ -48,7 +49,7 @@ export const TextEditorSheet = ({
   testID,
 }: TextEditorSheetProps) => {
   const inputRef = useRef<TextInput>(null);
-  const accessoryId = `${testID}-keyboard`;
+  const accessoryId = useKeyboardAccessoryId(`${testID}-keyboard`, visible);
 
   return (
     <Modal

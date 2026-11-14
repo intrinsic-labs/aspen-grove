@@ -4,6 +4,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { KeyboardDoneBar } from '@/interface/ui/components/KeyboardDoneBar';
+import { useKeyboardAccessoryId } from '@/interface/ui/components/useKeyboardAccessoryId';
 import { formText } from '@/interface/ui/components/form';
 import { AppScreen } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
@@ -14,7 +15,6 @@ import { useTreeSystemMessage } from './useTreeSystemMessage';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
 const editor = loomUiTokens.textEditorSheet;
-const ACCESSORY_ID = 'tree-system-message-keyboard';
 // Pushed under the navigation bar, the first line's glyphs start 128 pt from
 // the screen top (measured, shot 44): 9 pt closer than in the sheet.
 const PUSHED_TEXT_TOP_GAP = editor.textTopGap - 9;
@@ -28,6 +28,7 @@ const PUSHED_TEXT_TOP_GAP = editor.textTopGap - 9;
 const SystemMessageScreen = () => {
   const { treeId } = useLocalSearchParams<{ treeId: string }>();
   const navigation = useNavigation();
+  const accessoryId = useKeyboardAccessoryId('tree-system-message-keyboard');
   const { repositories } = useAppServices();
   const message = useTreeSystemMessage(treeId as ULID | undefined);
   const { preferences } = useDialogueDisplayPreferences({
@@ -51,21 +52,23 @@ const SystemMessageScreen = () => {
   return (
     <AppScreen testID="tree-system-message-screen" style={styles.screen}>
       {message.text === null ? null : (
-        <AppTextInput
-          testID="tree-system-message-input"
-          value={text}
-          onChangeText={onChangeText}
-          autoFocus
-          multiline
-          scrollEnabled
-          inputAccessoryViewID={ACCESSORY_ID}
-          style={[styles.defaultFont, textStyle, styles.input]}
-        />
+        <>
+          <AppTextInput
+            testID="tree-system-message-input"
+            value={text}
+            onChangeText={onChangeText}
+            autoFocus
+            multiline
+            scrollEnabled
+            inputAccessoryViewID={accessoryId}
+            style={[styles.defaultFont, textStyle, styles.input]}
+          />
+          <KeyboardDoneBar nativeID={accessoryId} />
+        </>
       )}
       {message.error ? (
         <Text style={[formText.footer, styles.error]}>{message.error}</Text>
       ) : null}
-      <KeyboardDoneBar nativeID={ACCESSORY_ID} />
     </AppScreen>
   );
 };
