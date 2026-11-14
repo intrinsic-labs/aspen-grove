@@ -178,6 +178,59 @@ describe('UpdateTreeModelSettingsUseCase', () => {
     expect(trees.get(otherTreeId)?.defaultModelAgentId).toBe(ownedId);
   });
 
+  it('keeps both of two overlapping edits to a shared agent, forking once', async () => {
+    const { useCase, agents, trees, created } = build({
+      agents: [makeAgent(sharedId)],
+      trees: [makeTree(treeId, sharedId)],
+    });
+
+    await Promise.all([
+      useCase.execute({ treeId, changes: { temperature: 0.2 } }),
+      useCase.execute({ treeId, changes: { maxTokens: 1024 } }),
+    ]);
+
+    expect(created).toHaveLength(1);
+    const forkId = trees.get(treeId)?.defaultModelAgentId as ULID;
+    expect(agents.get(forkId)?.configuration).toMatchObject({
+      temperature: 0.2,
+      maxTokens: 1024,
+    });
+    expect(agents.get(sharedId)?.configuration.temperature).toBe(1);
+  });
+
+  it("keeps both of two overlapping edits to the tree's own agent", async () => {
+    const { useCase, agents } = build({
+      agents: [makeAgent(ownedId, treeId)],
+      trees: [makeTree(treeId, ownedId)],
+    });
+
+    await Promise.all([
+      useCase.execute({ treeId, changes: { temperature: 0.2 } }),
+      useCase.execute({ treeId, changes: { maxTokens: 1024 } }),
+    ]);
+
+    expect(agents.get(ownedId)?.configuration).toMatchObject({
+      temperature: 0.2,
+      maxTokens: 1024,
+    });
+  });
+
+  it('goes on with the next edit for a tree after one fails', async () => {
+    const { useCase, created } = build({
+      agents: [],
+      trees: [makeTree(treeId)],
+    });
+
+    const [failed, saved] = await Promise.allSettled([
+      useCase.execute({ treeId, changes: { temperature: 0 } }),
+      useCase.execute({ treeId, changes: { modelRef: mockRef } }),
+    ]);
+
+    expect(failed.status).toBe('rejected');
+    expect(saved.status).toBe('fulfilled');
+    expect(created).toHaveLength(1);
+  });
+
   it('makes an agent for a tree that has none, once a model is chosen', async () => {
     const { useCase, trees } = build({
       agents: [],

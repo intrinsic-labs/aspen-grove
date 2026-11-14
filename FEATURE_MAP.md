@@ -363,10 +363,10 @@ stays until the user makes one.
 - **Selector:** working — `tree-onboarding-sheet`, `tree-onboarding-begin`; menu item none — native context menu item; reach via a tap on `chat-menu-button` ("Show Onboarding")
 - **Code:** `src/interface/components/onboarding/tree/`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/LoomTreeChatView.tsx`
 - **Backend:** WatermelonDB `user_preferences.tree_onboarding_completed_at` (schema v10),
-  set by Begin
+  set by Begin or a swipe down
 - **Status:** live
-- **Notes:** Swiping it down records nothing, as in Latent Spaces, so it shows again on the
-  next tree. It appears once the tree has slid in (the first tree replaces onboarding, and
+- **Notes:** Swiping it down closes it for good, as Begin does (Latent Spaces records only
+  Begin and shows a swiped sheet again on the next tree). It appears once the tree has slid in (the first tree replaces onboarding, and
   iOS won't present one sheet while another is going away), and it hides the tree from
   Maestro while open: wait for `chat-screen|tree-onboarding-begin`, then close it with
   `.maestro/dismiss-tree-onboarding.yaml`. The perf setup opens the imported tree once,
@@ -448,7 +448,7 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -509,7 +509,7 @@ stays until the user makes one.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Regenerate Response".
 - **Requires:** A message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
@@ -624,7 +624,7 @@ stays until the user makes one.
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
 - **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>`; once saved, the card's pressable is `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
+- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
   or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
   `edge_sources` and `raw_api_responses` per saved card and touches
@@ -793,7 +793,8 @@ stays until the user makes one.
 - **ID:** `chat.model-settings`
 - **Purpose:** Latent Spaces' tree Model Settings (TreeModelSettingsView.swift): "Provider
   Options" with the Provider menu picker (OpenRouter, LM Studio) and Model, a footer with the
-  model id in bold and its description; Stream Messages (on, disabled: the app always
+  model id in bold, its description and, for OpenRouter, its context length ("Context:
+  128,000 tokens"); Stream Messages (on, disabled: the app always
   streams); Maximum Output Tokens with its slider (1 to the model's output limit) and "Always
   use maximum allowed"; Temperature, 0 to 1 in steps of 0.1; and System Message
   (`chat.model-settings.system-message`). Every change saves at once and reaches only this
@@ -802,8 +803,8 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Model".
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
-- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -1064,7 +1065,7 @@ stays until the user makes one.
   `settings-agents-row-<agentId>`.
 - **Requires:** none
 - **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-provider`, `agent-editor-model`, `agent-editor-footer-id`, `agent-editor-footer-description`, `agent-editor-model-error`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/editor/AgentEditorStack.tsx`, `src/interface/components/settings/agents/editor/AgentEditorScreen.tsx`, `src/interface/components/settings/agents/editor/useAgentEditorState.ts`, `src/interface/components/settings/agents/editor/agent-editor-context.ts`, `src/interface/components/settings/agents/editor/agent-editor-routes.ts`, `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-draft-from-agent.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`, `src/app/agent-editor/_layout.tsx`, `src/app/agent-editor/index.tsx`
+- **Code:** `src/interface/components/settings/agents/editor/AgentEditorStack.tsx`, `src/interface/components/settings/agents/editor/AgentEditorScreen.tsx`, `src/interface/components/settings/agents/editor/useAgentEditorState.ts`, `src/interface/components/settings/agents/editor/agent-editor-context.ts`, `src/interface/components/settings/agents/editor/agent-editor-routes.ts`, `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/settings/agents/editor/useHoldMaxTokensToModel.ts`, `src/interface/components/settings/agents/agent-draft-max-tokens.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-draft-from-agent.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`, `src/app/agent-editor/_layout.tsx`, `src/app/agent-editor/index.tsx`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
 - **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
@@ -1072,7 +1073,11 @@ stays until the user makes one.
   model ids are OpenRouter `~…-latest` aliases. Validation errors show in
   `agent-editor-error`, pinned under the sheet's bar so they are always in view. A swipe
   down discards the draft, as Cancel does. Settings → Agents re-reads its list when the
-  sheet closes.
+  sheet closes. Max Tokens follows the model as a tree's Model Settings does: once the
+  model's limit is known, the field is held to it (the limit itself when the agent has
+  "Always use maximum allowed" on; an empty field stays empty), a typed value is capped at
+  it, typing turns "Always use maximum allowed" off, and the Generation footer names the
+  limit.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`

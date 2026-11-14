@@ -158,7 +158,10 @@ turns on "Always use maximum allowed", writes a system message and sends; the mo
 line for that send shows `max_tokens=8192` and the system message.
 [.maestro/mock/tree-model-browser.yaml](.maestro/mock/tree-model-browser.yaml) switches that
 tree to OpenRouter and chooses a model through the model browser and a model's page (the
-catalog is public, so no key, but it needs the network). If 1235 is taken, run the mock on
+catalog is public, so no key, but it needs the network), and checks the footer's context
+line. [.maestro/mock/agent-max-tokens.yaml](.maestro/mock/agent-max-tokens.yaml) edits the
+`mock-model` agent: OpenRouter's default model with Max Tokens 32768, then back to LM
+Studio's `mock-model`, and Max Tokens drops to its 8192 limit. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →

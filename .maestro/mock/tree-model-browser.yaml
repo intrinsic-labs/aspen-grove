@@ -1,7 +1,8 @@
 # A tree's Model Settings choosing an OpenRouter model through the model
 # browser: Provider → OpenRouter, Model pushes the browser, a row opens the
 # model's page, "Use This Model" saves it for this tree and returns to
-# Model Settings, which shows it. Nothing is sent to OpenRouter (no key):
+# Model Settings, which shows it, its context length in the footer.
+# Nothing is sent to OpenRouter (no key):
 # the catalog is public. Needs the mock server, Metro and a network
 # connection (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/tree-model-browser.yaml --test-output-dir "$SHOTS"
@@ -76,3 +77,40 @@ appId: com.intrinsiclabs.aspengrove
     id: tree-model-screen
 - waitForAnimationToEnd
 - takeScreenshot: 62-tree-model-settings-chosen
+- assertVisible:
+    id: tree-model-footer-context
+    text: 'Context: [0-9,]+ tokens'
+
+# The chosen model's page again: "Current Model" only goes back, saving
+# nothing, and Model Settings still shows the same model.
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 30000
+- tapOn: 'Search models'
+- inputText: 'openai/gpt'
+- extendedWaitUntil:
+    visible:
+      id: 'tree-model-option-openai/gpt-.*'
+    timeout: 10000
+- tapOn:
+    id: 'tree-model-option-openai/gpt-.*'
+    index: 0
+- extendedWaitUntil:
+    visible: 'Current Model'
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 63-tree-model-detail-current
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- assertVisible:
+    id: tree-model-footer-id
+    text: 'openai/gpt-.*'
+- waitForAnimationToEnd
+- takeScreenshot: 64-tree-model-settings-unchanged

@@ -16,6 +16,8 @@ import { useAgentEditor } from './agent-editor-context';
 import { AgentModelSection } from './AgentModelSection';
 import { GenerationSections } from './GenerationSections';
 import { TemplateSection } from './TemplateSection';
+import { useAgentModelSelection } from './useAgentModelSelection';
+import { useHoldMaxTokensToModel } from './useHoldMaxTokensToModel';
 
 /**
  * The agent editor's Form, the sheet's first page, as Latent Spaces
@@ -31,6 +33,8 @@ export const AgentEditorScreen = () => {
   const colors = useFormColors();
   const editor = useAgentEditor();
   const { draft, patchDraft, load } = editor;
+  const selection = useAgentModelSelection(draft);
+  useHoldMaxTokensToModel(draft, selection.selected, patchDraft);
 
   // The agent the sheet opened on (none: a new one).
   useEffect(() => {
@@ -102,11 +106,16 @@ export const AgentEditorScreen = () => {
 
           <AgentModelSection
             draft={draft}
+            selection={selection}
             onChange={patchDraft}
             onOpenModelBrowser={() => router.push(agentEditorRoutes.models())}
           />
 
-          <GenerationSections draft={draft} onChange={patchDraft} />
+          <GenerationSections
+            draft={draft}
+            model={selection.selected}
+            onChange={patchDraft}
+          />
         </KeyboardAwareScrollView>
       ) : (
         <ActivityIndicator style={styles.loading} />

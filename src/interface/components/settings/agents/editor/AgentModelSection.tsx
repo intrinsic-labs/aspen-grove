@@ -5,11 +5,12 @@ import { formText } from '@/interface/ui/components/form';
 import { ModelFooter } from '../../../models/ModelFooter';
 import { providerDefaultModel } from '../../../models/provider-default-model';
 import { ProviderModelSection } from '../../../models/ProviderModelSection';
-import { useModelPickerData } from '../../../models/useModelPickerData';
 import type { AgentDraft } from '../agent-editor-types';
+import type { AgentModelSelection } from './useAgentModelSelection';
 
 type AgentModelSectionProps = {
   readonly draft: AgentDraft;
+  readonly selection: AgentModelSelection;
   readonly onChange: (changes: Partial<AgentDraft>) => void;
   readonly onOpenModelBrowser: () => void;
 };
@@ -22,15 +23,11 @@ type AgentModelSectionProps = {
  */
 export const AgentModelSection = ({
   draft,
+  selection,
   onChange,
   onOpenModelBrowser,
 }: AgentModelSectionProps) => {
-  const picker = useModelPickerData(draft.provider);
-  const listReady = picker.settledFor === draft.provider && !picker.error;
-  const modelId = draft.modelIdentifier || null;
-  const selected = listReady
-    ? picker.options.find((option) => option.id === modelId)
-    : undefined;
+  const { picker, listReady, modelId, selected } = selection;
 
   // LM Studio's list arrives after the switch: then pick from it.
   useEffect(() => {

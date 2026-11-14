@@ -3,6 +3,7 @@ import {
   formatModalities,
   formatRowMeta,
   formatTokensCompact,
+  formatContextLength,
   formatTokensFull,
   formatUnixDate,
   openRouterModelUrl,
@@ -27,6 +28,12 @@ describe('formatTokensFull', () => {
     expect(formatTokensFull(1_048_576)).toBe('1,048,576');
     expect(formatTokensFull(8192)).toBe('8,192');
     expect(formatTokensFull(512)).toBe('512');
+  });
+});
+
+describe('formatContextLength', () => {
+  it('reads as the footer line', () => {
+    expect(formatContextLength(128000)).toBe('Context: 128,000 tokens');
   });
 });
 

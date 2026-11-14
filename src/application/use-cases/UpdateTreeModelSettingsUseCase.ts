@@ -56,17 +56,42 @@ const identifierOf = (modelRef: ModelRef): string =>
  *   at it, and the copy is edited. The shared agent is untouched.
  * - The tree has no model agent: one owned by the tree is made, which needs
  *   a model in the changes.
+ *
+ * Each edit reads the agent, may fork it, then writes it, so edits to one
+ * tree run one after another: an overlapping edit would read the agent
+ * before the first wrote it and put its old values back, or fork a second
+ * copy. Keep one instance per app (the composition root does).
  */
 export class UpdateTreeModelSettingsUseCase {
   private readonly agents: UpdateTreeModelSettingsDependencies['agentRepository'];
   private readonly trees: UpdateTreeModelSettingsDependencies['loomTreeRepository'];
+  /** Per tree, the last edit queued; settled edits are dropped. */
+  private readonly queues = new Map<ULID, Promise<unknown>>();
 
   constructor(dependencies: UpdateTreeModelSettingsDependencies) {
     this.agents = dependencies.agentRepository;
     this.trees = dependencies.loomTreeRepository;
   }
 
-  async execute(
+  execute(
+    input: UpdateTreeModelSettingsInput
+  ): Promise<UpdateTreeModelSettingsResult> {
+    const previous = this.queues.get(input.treeId) ?? Promise.resolve();
+    const run = previous.then(
+      () => this.apply(input),
+      () => this.apply(input)
+    );
+    this.queues.set(input.treeId, run);
+    const forget = () => {
+      if (this.queues.get(input.treeId) === run) {
+        this.queues.delete(input.treeId);
+      }
+    };
+    run.then(forget, forget);
+    return run;
+  }
+
+  private async apply(
     input: UpdateTreeModelSettingsInput
   ): Promise<UpdateTreeModelSettingsResult> {
     const tree = await this.trees.findById(input.treeId);

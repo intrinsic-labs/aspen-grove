@@ -4,9 +4,9 @@ import { useScreenSettled } from '@interface/hooks/useScreenSettled';
 
 /**
  * Latent Spaces' first-tree tips (LoomTreeView.swift:89-99): shown when a
- * tree opens until they are closed with Begin, and again from the tree's
- * Show Onboarding. Swiping the sheet away leaves them for the next tree, as
- * there.
+ * tree opens until they are closed, and again from the tree's Show
+ * Onboarding. Begin and a swipe down both close them for good (Latent Spaces
+ * records only Begin and shows a swiped sheet again on the next tree).
  *
  * The sheet waits for the tree's own transition: a first tree replaces the
  * onboarding sheet, and iOS won't present a sheet while another is still
@@ -29,7 +29,7 @@ export const useTreeOnboarding = () => {
     };
   }, [repositories.userPreferencesRepo]);
 
-  const begin = useCallback(() => {
+  const close = useCallback(() => {
     setWanted(false);
     void repositories.userPreferencesRepo.update({
       treeOnboardingCompletedAt: new Date(),
@@ -39,8 +39,7 @@ export const useTreeOnboarding = () => {
   return {
     visible: wanted && settled,
     open: useCallback(() => setWanted(true), []),
-    dismiss: useCallback(() => setWanted(false), []),
-    begin,
+    close,
   };
 };
 

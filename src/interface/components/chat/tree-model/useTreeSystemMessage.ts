@@ -11,7 +11,8 @@ const SAVE_DELAY_MS = 450;
  * sheet's "Include System Message" writes out and that goes to the model
  * after the agent's own system prompt. Latent Spaces binds the editor to the
  * tree, so it saves as you type; here a pause in typing saves it, and so
- * does leaving the page.
+ * does leaving the page. Text counts as saved only once its write succeeds,
+ * so leaving after a failed write tries it again. Writes go one at a time.
  */
 export const useTreeSystemMessage = (treeId: ULID | undefined) => {
   const { repositories } = useAppServices();
@@ -21,6 +22,7 @@ export const useTreeSystemMessage = (treeId: ULID | undefined) => {
   const saved = useRef<string | null>(null);
   const latest = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const writing = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!treeId) {
@@ -46,11 +48,20 @@ export const useTreeSystemMessage = (treeId: ULID | undefined) => {
     if (!treeId || next === null || next === saved.current) {
       return;
     }
-    saved.current = next;
     markTreeModelChanged(treeId);
-    treeRepo
-      .update({ id: treeId, changes: { systemContext: next } })
-      .catch((caught: unknown) => setError(toErrorMessage(caught)));
+    writing.current = writing.current.then(async () => {
+      // An earlier write may have saved this text already.
+      if (next === saved.current) {
+        return;
+      }
+      try {
+        await treeRepo.update({ id: treeId, changes: { systemContext: next } });
+        saved.current = next;
+        setError(null);
+      } catch (caught) {
+        setError(toErrorMessage(caught));
+      }
+    });
   }, [treeId, treeRepo]);
 
   // Leaving the page saves what is left.

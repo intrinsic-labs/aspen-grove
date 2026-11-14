@@ -315,6 +315,8 @@ describe('GenerateDialogueContinuationUseCase', () => {
           },
         }),
       } as unknown as IProviderRegistry,
+      // A limit above the agent's: the stored value goes out as is.
+      modelOutputLimits: { maxOutputTokens: async () => 8192 },
     });
 
     const result = await useCase.execute({

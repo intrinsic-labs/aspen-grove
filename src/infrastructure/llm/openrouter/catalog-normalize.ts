@@ -70,6 +70,9 @@ export const normalizeOpenRouterModel = (
     maxCompletionTokens: api.top_provider?.max_completion_tokens ?? undefined,
     promptPricePerMTokens: perMillion(pricing.prompt),
     completionPricePerMTokens: perMillion(pricing.completion),
+    // OpenRouter's docs call `image` "cost per image input", but the live
+    // catalog sends a per-token rate (equal to `prompt`, as `audio` is), so
+    // it's kept per million tokens.
     imagePricePerMTokens: perMillion(pricing.image),
     imageOutputPricePerMTokens: perMillion(pricing.image_output),
     requestPrice: nonZero(toUsd(pricing.request)),

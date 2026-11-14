@@ -31,6 +31,10 @@ export const formatTokensCompact = (tokens: number): string => {
 export const formatTokensFull = (tokens: number): string =>
   String(Math.round(tokens)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
+/** The Provider Options footer's context line: "Context: 128,000 tokens". */
+export const formatContextLength = (tokens: number): string =>
+  `Context: ${formatTokensFull(tokens)} tokens`;
+
 /** Unix seconds as a UTC date: "Nov 9, 2026". */
 export const formatUnixDate = (unixSeconds: number): string => {
   const date = new Date(unixSeconds * 1000);
