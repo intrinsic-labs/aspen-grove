@@ -6,13 +6,20 @@ import { toDescriptionSegments } from './description-segments';
 type ModelFooterProps = {
   readonly modelId: string | null;
   readonly description?: string;
+  /** "Context: 128,000 tokens", for an OpenRouter model. */
+  readonly context?: string;
 };
 
 /**
  * The Provider Options footer (TreeModelSettingsView.swift:131-142): the
- * model id in bold, then its description, 12 pt apart.
+ * model id in bold, then its description, 12 pt apart. Aspen Grove adds the
+ * model's context window last.
  */
-export const ModelFooter = ({ modelId, description }: ModelFooterProps) => (
+export const ModelFooter = ({
+  modelId,
+  description,
+  context,
+}: ModelFooterProps) => (
   <>
     {modelId ? (
       <Text testID="tree-model-footer-id" style={[formText.footer, styles.id]}>
@@ -31,6 +38,11 @@ export const ModelFooter = ({ modelId, description }: ModelFooterProps) => (
             {segment.text}
           </Text>
         ))}
+      </Text>
+    ) : null}
+    {context ? (
+      <Text testID="tree-model-footer-context" style={formText.footer}>
+        {context}
       </Text>
     ) : null}
   </>

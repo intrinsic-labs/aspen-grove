@@ -16,6 +16,8 @@ export type ModelOption = {
    * limit, or LM Studio's context length.
    */
   readonly maxOutputTokens?: number;
+  /** The model's context window, in tokens, when the provider lists it. */
+  readonly contextLength?: number;
   /** LM Studio only: whether the model is currently loaded on the server. */
   readonly loaded?: boolean;
 };
@@ -55,6 +57,7 @@ export const fetchModelOptions = async (
       label: model.displayName,
       description: model.description,
       maxOutputTokens: model.maxCompletionTokens,
+      contextLength: model.contextLength,
       detail: joinDetail([
         formatContext(model.contextLength),
         formatPrice(model.promptPricePerMTokens),
@@ -70,6 +73,7 @@ export const fetchModelOptions = async (
       id: model.id,
       label: model.displayName,
       maxOutputTokens: model.maxContextLength,
+      contextLength: model.maxContextLength,
       detail: joinDetail([
         formatContext(model.maxContextLength),
         model.paramsString ?? null,

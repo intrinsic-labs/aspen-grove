@@ -6,6 +6,7 @@ import {
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { ModelFooter } from './ModelFooter';
+import { modelFooterContent } from './model-footer-content';
 import { PROVIDER_OPTIONS } from './provider-default-model';
 import type { TreeModelSettings } from './useTreeModelSettings';
 
@@ -13,8 +14,6 @@ type ProviderOptionsSectionProps = {
   readonly settings: TreeModelSettings;
   readonly onOpenModelList: () => void;
 };
-
-const NO_MODEL_NOTE = 'Choose a model for this tree.';
 
 /**
  * The Form's first header sits 18 pt higher than a header after a card does:
@@ -38,21 +37,6 @@ const lmStudioItems = (
     : items;
 };
 
-const footerDescription = (settings: TreeModelSettings): string | undefined => {
-  if (
-    settings.picker.settledFor === settings.provider &&
-    settings.picker.error
-  ) {
-    return settings.picker.error;
-  }
-  if (!settings.modelId) {
-    return settings.hasAgent ? undefined : NO_MODEL_NOTE;
-  }
-  return settings.provider === 'openrouter'
-    ? settings.selected?.description
-    : settings.selected?.detail;
-};
-
 /**
  * "Provider Options" (TreeModelSettingsView.swift:73-143): the Provider menu
  * picker, then Model. OpenRouter's Model pushes the model list
@@ -69,7 +53,7 @@ export const ProviderOptionsSection = ({
     footer={
       <ModelFooter
         modelId={settings.modelId}
-        description={footerDescription(settings)}
+        {...modelFooterContent(settings)}
       />
     }
   >

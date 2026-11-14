@@ -53,3 +53,7 @@ export const formatTemperature = (value: number): string =>
 /** `Int.formatted()` in en-US: 4,096. */
 export const formatTokenCount = (value: number): string =>
   String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+/** The Provider Options footer's context line: "Context: 128,000 tokens". */
+export const formatContextLength = (tokens: number): string =>
+  `Context: ${formatTokenCount(tokens)} tokens`;
