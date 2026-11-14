@@ -6,12 +6,15 @@ import { fetchModelOptions, type ModelOption } from './model-options';
 
 export type { ModelOption } from './model-options';
 
+const NO_OPTIONS: readonly ModelOption[] = [];
+
 /**
  * Unified model-list data source for the agent editor and a tree's Model
  * Settings: the OpenRouter catalog (24h-cached) or live LM Studio discovery,
  * depending on provider. `settledFor` names the provider whose list last
  * finished loading, or failing; a late answer for a provider no longer
- * asked for is dropped.
+ * asked for is dropped. `options` are only ever the asked-for provider's:
+ * empty while a new provider's list loads, never the previous one's.
  */
 export const useModelPickerData = (provider: SelectableProvider) => {
   const { adapters } = useAppServices();
@@ -53,7 +56,7 @@ export const useModelPickerData = (provider: SelectableProvider) => {
   }, [load]);
 
   return {
-    options,
+    options: settledFor === provider ? options : NO_OPTIONS,
     settledFor,
     loading,
     error,
