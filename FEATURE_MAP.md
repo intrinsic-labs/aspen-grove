@@ -364,10 +364,10 @@ stays until the user makes one.
 - **Selector:** working — `tree-onboarding-sheet`, `tree-onboarding-begin`; menu item none — native context menu item; reach via a tap on `chat-menu-button` ("Show Onboarding")
 - **Code:** `src/interface/components/onboarding/tree/`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/LoomTreeChatView.tsx`
 - **Backend:** WatermelonDB `user_preferences.tree_onboarding_completed_at` (schema v10),
-  set by Begin
+  set by Begin or a swipe down
 - **Status:** live
-- **Notes:** Swiping it down records nothing, as in Latent Spaces, so it shows again on the
-  next tree. It appears once the tree has slid in (the first tree replaces onboarding, and
+- **Notes:** Swiping it down closes it for good, as Begin does (Latent Spaces records only
+  Begin and shows a swiped sheet again on the next tree). It appears once the tree has slid in (the first tree replaces onboarding, and
   iOS won't present one sheet while another is going away), and it hides the tree from
   Maestro while open: wait for `chat-screen|tree-onboarding-begin`, then close it with
   `.maestro/dismiss-tree-onboarding.yaml`. The perf setup opens the imported tree once,

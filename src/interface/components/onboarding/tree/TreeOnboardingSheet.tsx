@@ -10,20 +10,18 @@ const tree = onboarding.tree;
 
 type TreeOnboardingSheetProps = {
   readonly visible: boolean;
-  /** Begin: the tips are read. */
-  readonly onBegin: () => void;
-  /** Swiped away. */
-  readonly onDismiss: () => void;
+  /** Begin, or the sheet swiped down: either way the tips are read. */
+  readonly onClose: () => void;
 };
 
 /**
  * "Loom Trees / Getting Started" (LoomTreeOnboarding.swift): a sheet on the
- * first tree with three tips and a Begin capsule.
+ * first tree with three tips and a Begin capsule. Like SwiftUI's `.sheet`, it
+ * can be swiped down; React Native's page sheet blocks that unless asked.
  */
 export const TreeOnboardingSheet = ({
   visible,
-  onBegin,
-  onDismiss,
+  onClose,
 }: TreeOnboardingSheetProps) => {
   const insets = useSafeAreaInsets();
   return (
@@ -31,7 +29,8 @@ export const TreeOnboardingSheet = ({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onDismiss}
+      allowSwipeDismissal
+      onRequestClose={onClose}
     >
       <View testID="tree-onboarding-sheet" style={styles.sheet}>
         <View style={styles.spacer} />
@@ -57,7 +56,7 @@ export const TreeOnboardingSheet = ({
             testID="tree-onboarding-begin"
             label="Begin"
             prominent
-            onPress={onBegin}
+            onPress={onClose}
           />
         </View>
       </View>

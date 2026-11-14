@@ -150,8 +150,7 @@ const LoomTreeChatView = () => {
 
       <TreeOnboardingSheet
         visible={treeOnboarding.visible}
-        onBegin={treeOnboarding.begin}
-        onDismiss={treeOnboarding.dismiss}
+        onClose={treeOnboarding.close}
       />
     </AppScreen>
   );
