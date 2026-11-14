@@ -93,7 +93,7 @@ export const NodeSheetHeader = <Action extends string>({
         dropdownMenuMode
         actions={toNativeMenuActions(menu)}
         onPress={(event) => {
-          const item = findNativeMenuItem(menu, event.nativeEvent.indexPath);
+          const item = findNativeMenuItem(menu, event.nativeEvent);
           if (item) {
             onMenuAction(item.action);
           }

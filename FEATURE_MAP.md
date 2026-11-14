@@ -363,10 +363,10 @@ stays until the user makes one.
 - **Selector:** working — `tree-onboarding-sheet`, `tree-onboarding-begin`; menu item none — native context menu item; reach via a tap on `chat-menu-button` ("Show Onboarding")
 - **Code:** `src/interface/components/onboarding/tree/`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/LoomTreeChatView.tsx`
 - **Backend:** WatermelonDB `user_preferences.tree_onboarding_completed_at` (schema v10),
-  set by Begin
+  set by Begin or a swipe down
 - **Status:** live
-- **Notes:** Swiping it down records nothing, as in Latent Spaces, so it shows again on the
-  next tree. It appears once the tree has slid in (the first tree replaces onboarding, and
+- **Notes:** Swiping it down closes it for good, as Begin does (Latent Spaces records only
+  Begin and shows a swiped sheet again on the next tree). It appears once the tree has slid in (the first tree replaces onboarding, and
   iOS won't present one sheet while another is going away), and it hides the tree from
   Maestro while open: wait for `chat-screen|tree-onboarding-begin`, then close it with
   `.maestro/dismiss-tree-onboarding.yaml`. The perf setup opens the imported tree once,
@@ -789,7 +789,8 @@ stays until the user makes one.
 - **ID:** `chat.model-settings`
 - **Purpose:** Latent Spaces' tree Model Settings (TreeModelSettingsView.swift): "Provider
   Options" with the Provider menu picker (OpenRouter, LM Studio) and Model, a footer with the
-  model id in bold and its description; Stream Messages (on, disabled: the app always
+  model id in bold, its description and, for OpenRouter, its context length ("Context:
+  128,000 tokens"); Stream Messages (on, disabled: the app always
   streams); Maximum Output Tokens with its slider (1 to the model's output limit) and "Always
   use maximum allowed"; Temperature, 0 to 1 in steps of 0.1; and System Message
   (`chat.model-settings.system-message`). Every change saves at once and reaches only this
@@ -798,8 +799,8 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Model".
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
-- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter

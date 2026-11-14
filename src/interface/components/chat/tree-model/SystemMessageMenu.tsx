@@ -25,10 +25,7 @@ export const SystemMessageMenu = ({
     dropdownMenuMode
     actions={toNativeMenuActions(TEXT_EDITOR_MENU)}
     onPress={(event) => {
-      const item = findNativeMenuItem(
-        TEXT_EDITOR_MENU,
-        event.nativeEvent.indexPath
-      );
+      const item = findNativeMenuItem(TEXT_EDITOR_MENU, event.nativeEvent);
       if (item?.action === 'copy') {
         void Clipboard.setStringAsync(text);
       } else if (item?.action === 'clear') {

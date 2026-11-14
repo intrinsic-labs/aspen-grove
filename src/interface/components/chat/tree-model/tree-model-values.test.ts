@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   formatTemperature,
-  formatTokenCount,
   maxTokensAllowed,
   toTreeModelValues,
 } from './tree-model-values';
@@ -38,13 +37,10 @@ describe('toTreeModelValues', () => {
   });
 });
 
-describe('formatting', () => {
+describe('formatTemperature', () => {
   it('formats as SwiftUI does in en-US', () => {
     expect(formatTemperature(0)).toBe('0');
     expect(formatTemperature(0.7000000001)).toBe('0.7');
     expect(formatTemperature(1)).toBe('1');
-    expect(formatTokenCount(4096)).toBe('4,096');
-    expect(formatTokenCount(921600)).toBe('921,600');
-    expect(formatTokenCount(512)).toBe('512');
   });
 });

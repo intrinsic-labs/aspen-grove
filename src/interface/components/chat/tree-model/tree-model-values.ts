@@ -49,7 +49,3 @@ export const toTreeModelValues = (
 /** `Double.formatted()`: 0, 0.7, 1. */
 export const formatTemperature = (value: number): string =>
   String(Math.round(value * 10) / 10);
-
-/** `Int.formatted()` in en-US: 4,096. */
-export const formatTokenCount = (value: number): string =>
-  String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
