@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import type { ContinuationMenuAction } from '../continuation-menu';
 import type { BookmarkMenuAction } from './bookmark-menu';
@@ -27,7 +28,8 @@ type UseNodeSheetInput = {
  * and so does Node Info's Bookmark (NodeSheetView.swift:85-106) and a
  * bookmark sheet's "Bookmarked", which removes the bookmark
  * (BookmarkSheet.swift:131-142). Edit waits until the sheet has gone, so the
- * composer can take focus.
+ * composer can take focus: on iOS until the sheet reports it, on Android
+ * (no Modal `onDismiss`) straight after it closes.
  */
 export const useNodeSheet = ({
   rewindToNode,
@@ -66,8 +68,14 @@ export const useNodeSheet = ({
           await toggleBookmark(nodeId);
           break;
         case 'edit':
-          afterDismissRef.current = () => void startEditForNode(nodeId);
           close();
+          // iOS reports the sheet gone (Modal onDismiss); Android's Modal
+          // has no such callback and closes without waiting, so start now.
+          if (Platform.OS === 'ios') {
+            afterDismissRef.current = () => void startEditForNode(nodeId);
+          } else {
+            await startEditForNode(nodeId);
+          }
           break;
         case 'prune':
           await togglePrune(nodeId);

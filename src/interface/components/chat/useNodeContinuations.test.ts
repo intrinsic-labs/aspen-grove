@@ -48,6 +48,7 @@ const setup = () => {
     findModelIdentifiersByNodeIds: async () => new Map<ULID, string>(),
   };
   const agentRepo = { findById: async () => null };
+  const onBookmarkChanged = jest.fn(() => {});
   const hook = renderHook(
     () =>
       useNodeContinuations({
@@ -57,12 +58,15 @@ const setup = () => {
         rawApiResponseRepo,
         agentRepo,
         pathId: 'path' as ULID,
+        onBookmarkChanged,
       }),
     {}
   );
   return {
     hook,
     edgeRepo,
+    nodeRepo,
+    onBookmarkChanged,
     holdEdges: (held: Promise<void>) => {
       edgesGate = held;
     },
@@ -123,5 +127,17 @@ describe('useNodeContinuations', () => {
     await act(() => hook.result.current.refreshIfShowing(nodeA));
     expect(hook.result.current.sourceNodeId).toBe(nodeB);
     expect(edgeRepo.findBySourceNodeId).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces a card’s bookmark change, so the tree menu’s list reloads', async () => {
+    const { hook, nodeRepo, onBookmarkChanged } = setup();
+    await act(() => hook.result.current.showForNode(nodeA));
+
+    await act(() => hook.result.current.toggleBookmark(childOfA));
+
+    expect(nodeRepo.updateMetadata).toHaveBeenCalledWith(childOfA, {
+      bookmarked: true,
+    });
+    expect(onBookmarkChanged).toHaveBeenCalledTimes(1);
   });
 });
