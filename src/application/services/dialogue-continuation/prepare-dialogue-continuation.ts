@@ -9,10 +9,12 @@ import {
   assembleDialogueContext,
   resolveAgentMaxContextTokens,
 } from '@application/services/context';
-import type {
-  CompletionRequest,
-  ILlmProvider,
-  IProviderRegistry,
+import {
+  requestMaxTokens,
+  type CompletionRequest,
+  type ILlmProvider,
+  type IModelOutputLimits,
+  type IProviderRegistry,
 } from '@application/services/llm';
 import { resolveContinuationPathToNode } from '@application/services/resolve-continuation-path';
 import type { Node, Path } from '@domain/entities';
@@ -38,6 +40,8 @@ export type PrepareDialogueContinuationDependencies = {
   >;
   readonly pathRepository: Pick<IPathRepository, 'findById'>;
   readonly providerRegistry: IProviderRegistry;
+  /** Caps a request's `maxTokens` at the model's output limit, when known. */
+  readonly modelOutputLimits: IModelOutputLimits;
 };
 
 export type PreparedDialogueContinuation = {
@@ -54,7 +58,8 @@ export type PreparedDialogueContinuation = {
 /**
  * Everything a dialogue continuation needs before any request is sent:
  * validates the path and source node, assembles context from root to the
- * source, and initializes the provider bound to the model agent.
+ * source, initializes the provider bound to the model agent, and caps
+ * `maxTokens` at the model's output limit.
  */
 export const prepareDialogueContinuation = async (
   target: DialogueContinuationTarget,
@@ -123,7 +128,11 @@ export const prepareDialogueContinuation = async (
       messages: assembled.messages,
       systemPrompt: assembled.systemContext,
       temperature: modelAgent.configuration.temperature,
-      maxTokens: modelAgent.configuration.maxTokens,
+      maxTokens: await requestMaxTokens(
+        modelAgent.configuration.maxTokens,
+        { provider: llmProvider.provider, model: target.modelIdentifier },
+        deps.modelOutputLimits
+      ),
       stopSequences: modelAgent.configuration.stopSequences,
     },
     contextMessageCount: assembled.messages.length,

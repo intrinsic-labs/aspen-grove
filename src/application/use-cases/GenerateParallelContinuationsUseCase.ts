@@ -24,6 +24,7 @@ import {
 } from '@application/services/dialogue-continuation';
 import type {
   CompletionResponse,
+  IModelOutputLimits,
   IProviderRegistry,
   RetryOptions,
 } from '@application/services/llm';
@@ -70,6 +71,8 @@ export type GenerateParallelContinuationsDependencies = {
     'create' | 'findByNodeId' | 'deleteByNodeId'
   >;
   readonly providerRegistry: IProviderRegistry;
+  /** Caps a request's `maxTokens` at the model's output limit, when known. */
+  readonly modelOutputLimits: IModelOutputLimits;
   /** Retry policy per slot; tests inject a no-op sleep. */
   readonly retry?: RetryOptions;
 };
