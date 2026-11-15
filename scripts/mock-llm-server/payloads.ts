@@ -9,21 +9,33 @@ export type Usage = {
   readonly total_tokens: number;
 };
 
-/** `GET /api/v1/models`: LM Studio's native model list, all loaded. */
-export const modelsPayload = (modelIds: readonly string[]) => ({
-  models: modelIds.map((key) => ({
-    type: 'llm',
-    publisher: 'mock',
-    key,
-    display_name: key,
-    architecture: 'mock',
-    quantization: null,
-    size_bytes: 0,
-    params_string: null,
-    loaded_instances: [{ id: key }],
-    max_context_length: 8192,
-    format: null,
-  })),
+const modelEntry = (key: string, loaded: boolean) => ({
+  type: 'llm',
+  publisher: 'mock',
+  key,
+  display_name: key,
+  architecture: 'mock',
+  quantization: null,
+  size_bytes: 0,
+  params_string: null,
+  loaded_instances: loaded ? [{ id: key }] : [],
+  max_context_length: 8192,
+  format: null,
+});
+
+/**
+ * `GET /api/v1/models`: LM Studio's native model list. The loaded models
+ * answer; the others are downloaded but not loaded, which a server with
+ * JIT loading off answers with a 404.
+ */
+export const modelsPayload = (
+  loadedIds: readonly string[],
+  notLoadedIds: readonly string[] = []
+) => ({
+  models: [
+    ...loadedIds.map((key) => modelEntry(key, true)),
+    ...notLoadedIds.map((key) => modelEntry(key, false)),
+  ],
 });
 
 export const errorPayload = (message: string) => ({

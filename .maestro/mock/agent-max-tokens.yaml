@@ -1,7 +1,8 @@
 # The agent editor holds Max Tokens to the chosen model's limit. Onboarding's
 # agent "mock-model" (setup.yaml) is opened from Settings → Agents, moved to
 # OpenRouter's default model (a large limit) with Max Tokens 32768, then back
-# to LM Studio, whose mock-model allows 8192: the field drops to 8192 and the
+# to LM Studio, which starts on its loaded model mock-model (never the
+# unloaded mock-missing); it allows 8192, so the field drops to 8192 and the
 # Generation footer names the limit. Saved, the agent keeps 8192. Needs the
 # mock server, Metro and a network connection for OpenRouter's catalog:
 #   maestro test .maestro/mock/agent-max-tokens.yaml --test-output-dir "$SHOTS"
@@ -59,21 +60,16 @@ appId: com.intrinsiclabs.aspengrove
     id: agent-editor-provider
 - waitForAnimationToEnd
 - tapOn: 'LM Studio'
-# LM Studio starts on a model from its list; choose mock-model in its menu.
-- extendedWaitUntil:
-    visible:
-      id: agent-editor-footer-id
-      text: 'mock-.*'
-    timeout: 15000
-- tapOn:
-    id: agent-editor-model
-- waitForAnimationToEnd
-- tapOn: 'mock-model'
+# LM Studio starts on a loaded model from its list: mock-model, never
+# mock-missing, which the mock lists but hasn't loaded (and sorts first).
 - extendedWaitUntil:
     visible:
       id: agent-editor-footer-id
       text: 'mock-model'
-    timeout: 10000
+    timeout: 15000
+- assertNotVisible:
+    id: agent-editor-footer-id
+    text: 'mock-missing'
 - extendedWaitUntil:
     visible:
       id: agent-editor-max-tokens-input

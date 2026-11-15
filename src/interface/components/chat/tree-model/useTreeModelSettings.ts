@@ -112,7 +112,10 @@ export const useTreeModelSettings = (treeId: ULID | undefined) => {
     modelId,
     selected,
     picker,
-    chooseModel: (id: string) => void chooseModel(provider, id),
+    // A model chosen from the menu also settles a provider switch that had
+    // nothing loaded to pick.
+    chooseModel: (id: string) =>
+      void chooseModel(provider, id).then(() => setPendingProvider(null)),
     maxAllowed,
     useMaxTokens: values.useMaxTokens,
     setUseMaxTokens: (on: boolean) =>

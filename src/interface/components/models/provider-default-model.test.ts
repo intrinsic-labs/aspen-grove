@@ -12,9 +12,15 @@ describe('providerDefaultModel', () => {
     expect(
       providerDefaultModel('lmstudio', lmStudio, {
         provider: 'lmstudio',
-        id: 'idle',
+        id: 'warm',
       })
-    ).toBe('idle');
+    ).toBe('warm');
+    expect(
+      providerDefaultModel('openrouter', [], {
+        provider: 'openrouter',
+        id: 'x/y',
+      })
+    ).toBe('x/y');
   });
 
   it("takes onboarding's first template for OpenRouter", () => {
@@ -23,9 +29,27 @@ describe('providerDefaultModel', () => {
     ).toBe(AGENT_TEMPLATES[0]?.draft.modelIdentifier);
   });
 
-  it('takes a loaded LM Studio model, else the first, else none', () => {
+  it('takes a loaded LM Studio model, else none', () => {
     expect(providerDefaultModel('lmstudio', lmStudio, null)).toBe('warm');
-    expect(providerDefaultModel('lmstudio', [lmStudio[0]!], null)).toBe('idle');
+    expect(providerDefaultModel('lmstudio', [lmStudio[0]!], null)).toBeNull();
     expect(providerDefaultModel('lmstudio', [], null)).toBeNull();
+  });
+
+  it('skips a listed LM Studio model that is not loaded, wherever it sorts', () => {
+    // The mock server's list, sorted by name: `mock-missing` isn't loaded.
+    const mock = [
+      { id: 'mock-missing', label: 'mock-missing', loaded: false },
+      { id: 'mock-model', label: 'mock-model', loaded: true },
+    ];
+    expect(providerDefaultModel('lmstudio', mock, null)).toBe('mock-model');
+  });
+
+  it("passes over the default agent's LM Studio model when it isn't loaded", () => {
+    expect(
+      providerDefaultModel('lmstudio', lmStudio, {
+        provider: 'lmstudio',
+        id: 'gone',
+      })
+    ).toBe('warm');
   });
 });
