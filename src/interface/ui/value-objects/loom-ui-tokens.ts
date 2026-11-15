@@ -49,8 +49,13 @@ export const loomUiTokens = {
     messageLineHeightRatio: 1.352,
   },
   messageList: {
-    // The first row starts right under the navigation bar.
-    topPadding: 0,
+    // Space between the bar and the first row. Latent Spaces sets none in
+    // code (LoomTreeContentView.swift:23-73): its ScrollView starts under an
+    // iOS 26 bar whose soft scroll edge leaves the first row room to breathe.
+    // Aspen Grove's bar ends in a hard edge, so the first row gets SwiftUI's
+    // default `.padding()`, the 16 pt Latent Spaces also leaves under the
+    // current node (NodeView.swift:121).
+    topPadding: 16,
     // `VStack(spacing: 10)` (LoomTreeContentView.swift:24)
     rowGap: 10,
     // `.padding(.horizontal, 12)` on every row (NodeView.swift:115)
@@ -156,6 +161,10 @@ export const loomUiTokens = {
     // `slider.horizontal.3` stands in as Ionicons `options-outline` (no SF
     // Symbols module in the build yet), sized to match its width (measured).
     menuIconSize: 27,
+    // Every `···` menu sits in a round glass button, which already draws the
+    // circle, so it is the plain `ellipsis`, not `ellipsis.circle`: Ionicons
+    // `ellipsis-horizontal`, sized so its dots span about half the circle.
+    ellipsisSize: 22,
   },
   // The continuations row under a node (ChildNodesView.swift) and its cards
   // (ChildNodeView.swift).
@@ -208,11 +217,10 @@ export const loomUiTokens = {
   nodeSheet: {
     // The sheet background (systemBackground, elevated, dark), measured.
     background: '#1C1C1E',
-    // Glass circles: `chevron.left` and `ellipsis.circle` in the toolbar,
-    // 44 pt, 16 pt from the edges, 17 pt below the sheet's top (measured).
+    // Glass circles: `chevron.left` and `ellipsis` in the toolbar, 44 pt,
+    // 16 pt from the edges, 17 pt below the sheet's top (measured).
     circleSize: 44,
     chevronSize: 22,
-    ellipsisSize: 26,
     // Title `.headline`, subtitle `.caption` in `.secondary`.
     titleSize: 17,
     subtitleSize: 12,
@@ -309,9 +317,9 @@ export const loomUiTokens = {
       openRowRadius: 18,
     },
     header: {
-      // `ellipsis.circle` and `figure.wave.circle.fill` (.title, bold)
-      // (HomeScreenView.swift:124-163), in iOS 26's glass toolbar circles.
-      menuIconSize: 26,
+      // `figure.wave.circle.fill` (.title, bold) (HomeScreenView.swift:
+      // 124-163) in iOS 26's glass toolbar circles; the menu's `···` is
+      // `header.ellipsisSize`.
       settingsCircleSize: 28,
       settingsIconSize: 20,
     },
@@ -594,5 +602,41 @@ export const loomUiTokens = {
     textInset: 18,
     bottomGap: 6,
     textSize: 17,
+  },
+  // Aspen Grove's OpenRouter model browser (no Latent Spaces equivalent):
+  // the list's rows and a model's page, in the settings Form's language,
+  // with Cardo for the model's name on its page and mono for figures.
+  modelBrowser: {
+    metaFontFamily: 'IBMPlexMono-Regular',
+    // Row: name 17 (Form body), author 13 (footnote), figures mono 12.
+    authorSize: 13,
+    authorLineHeight: 17,
+    metaSize: 12,
+    metaLineHeight: 16,
+    rowVerticalPadding: 11,
+    rowLineGap: 2,
+    // Page: the name in Cardo 30, as the app's sheet heroes (Cardo 28-32).
+    titleFontFamily: 'Cardo-Regular',
+    titleSize: 30,
+    titleLineHeight: 36,
+    heroTopGap: 12,
+    heroLineGap: 4,
+    // Description in the card: 15 pt, the subheadline size.
+    descriptionSize: 15,
+    descriptionLineHeight: 21,
+    descriptionPadding: 14,
+    // Values in the rows: mono 15.
+    valueSize: 15,
+    // Supported parameters as mono chips.
+    chipSize: 12,
+    chipPaddingHorizontal: 8,
+    chipPaddingVertical: 4,
+    chipRadius: 8,
+    chipGap: 6,
+    chipBackground: 'rgba(120, 120, 128, 0.24)',
+    // The "Use This Model" capsule pinned above the home indicator.
+    useButtonBottomGap: 8,
+    // The page fades into the pinned button instead of being cut off.
+    useButtonFadeHeight: 32,
   },
 } as const;

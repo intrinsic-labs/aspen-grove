@@ -15,7 +15,11 @@ describe('modelFooterContent', () => {
           id: 'openai/gpt-4o',
           label: 'GPT-4o',
           description: 'A model.',
-          contextLength: 128000,
+          openRouter: {
+            id: 'openai/gpt-4o',
+            displayName: 'GPT-4o',
+            contextLength: 128000,
+          },
         },
       })
     ).toEqual({
@@ -47,7 +51,7 @@ describe('modelFooterContent', () => {
           id: 'mock-model',
           label: 'Mock',
           detail: '33K ctx · 7B',
-          contextLength: 32768,
+          maxOutputTokens: 32768,
         },
       })
     ).toEqual({ description: '33K ctx · 7B' });

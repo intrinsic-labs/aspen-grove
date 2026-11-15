@@ -1,5 +1,5 @@
-import type { ModelOption } from '../../settings/agents/model-options';
-import { formatContextLength } from './tree-model-values';
+import { formatContextLength } from '../../models/model-info-format';
+import type { ModelOption } from '../../models/model-options';
 
 const NO_MODEL_NOTE = 'Choose a model for this tree.';
 
@@ -38,7 +38,7 @@ export const modelFooterContent = (
   if (source.provider !== 'openrouter') {
     return { description: source.selected?.detail };
   }
-  const contextLength = source.selected?.contextLength;
+  const contextLength = source.selected?.openRouter?.contextLength;
   return {
     description: source.selected?.description,
     context: contextLength ? formatContextLength(contextLength) : undefined,

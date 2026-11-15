@@ -78,8 +78,8 @@ export const TextEditorSheet = ({
             >
               <GlassIconButton
                 testID={`${testID}-menu-button`}
-                icon="ellipsis-horizontal-circle-outline"
-                iconSize={loomUiTokens.nodeSheet.ellipsisSize}
+                icon="ellipsis-horizontal"
+                iconSize={loomUiTokens.header.ellipsisSize}
                 size={loomUiTokens.nodeSheet.circleSize}
                 accessibilityLabel="Editor menu"
               />

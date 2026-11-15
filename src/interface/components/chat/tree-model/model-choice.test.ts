@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { modelChoiceChanges } from './model-choice';
-import { maxTokensAllowed, toTreeModelValues } from './tree-model-values';
+import { maxTokensAllowed } from '../../models/model-max-tokens';
+import { toTreeModelValues } from './tree-model-values';
 
 const small = { id: 'small', label: 'Small', maxOutputTokens: 2048 };
 const large = { id: 'large', label: 'Large', maxOutputTokens: 32768 };

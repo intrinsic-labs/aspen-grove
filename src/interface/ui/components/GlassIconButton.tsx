@@ -16,7 +16,7 @@ type GlassIconButtonProps = {
 
 /**
  * A round glass toolbar button, as iOS 26 draws a sheet's toolbar icons
- * (`chevron.left`, `ellipsis.circle`).
+ * (`chevron.left`, `ellipsis`).
  */
 export const GlassIconButton = ({
   icon,

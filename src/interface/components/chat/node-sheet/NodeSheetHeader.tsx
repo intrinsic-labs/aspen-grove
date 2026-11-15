@@ -101,8 +101,8 @@ export const NodeSheetHeader = <Action extends string>({
       >
         <GlassIconButton
           testID="node-sheet-menu-button"
-          icon="ellipsis-horizontal-circle-outline"
-          iconSize={sheet.ellipsisSize}
+          icon="ellipsis-horizontal"
+          iconSize={loomUiTokens.header.ellipsisSize}
           size={sheet.circleSize}
           accessibilityLabel="Node menu"
         />

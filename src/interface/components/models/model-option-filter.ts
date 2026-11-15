@@ -1,5 +1,5 @@
 import type { SelectableProvider } from '@domain/entities';
-import type { ModelOption } from './useModelPickerData';
+import type { ModelOption } from './model-options';
 
 /** At most this many options render at once; search narrows the rest. */
 export const MAX_VISIBLE_MODEL_OPTIONS = 25;

@@ -1,23 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  formatTemperature,
-  formatTokenCount,
-  maxTokensAllowed,
-  toTreeModelValues,
-} from './tree-model-values';
-
-describe('maxTokensAllowed', () => {
-  it("uses the model's own limit, as Latent Spaces does", () => {
-    expect(
-      maxTokensAllowed({ id: 'a', label: 'A', maxOutputTokens: 16384 })
-    ).toBe(16384);
-  });
-
-  it('falls back to 8192 for a listed model without one, 4096 for an unknown one', () => {
-    expect(maxTokensAllowed({ id: 'a', label: 'A' })).toBe(8192);
-    expect(maxTokensAllowed(undefined)).toBe(4096);
-  });
-});
+import { formatTemperature, toTreeModelValues } from './tree-model-values';
 
 describe('toTreeModelValues', () => {
   it('fills defaults and keeps values in range', () => {
@@ -38,13 +20,10 @@ describe('toTreeModelValues', () => {
   });
 });
 
-describe('formatting', () => {
+describe('formatTemperature', () => {
   it('formats as SwiftUI does in en-US', () => {
     expect(formatTemperature(0)).toBe('0');
     expect(formatTemperature(0.7000000001)).toBe('0.7');
     expect(formatTemperature(1)).toBe('1');
-    expect(formatTokenCount(4096)).toBe('4,096');
-    expect(formatTokenCount(921600)).toBe('921,600');
-    expect(formatTokenCount(512)).toBe('512');
   });
 });
