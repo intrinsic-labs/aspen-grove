@@ -31,3 +31,45 @@ export const visibleContentBottom = (
   viewportHeight: number,
   composerHeight: number
 ): number => offsetY + viewportHeight - composerHeight - composerClearance;
+
+/**
+ * How close to the end of the content still counts as "at the bottom": a
+ * line's worth, so a reader resting a little above the end is kept there too.
+ */
+export const BOTTOM_PIN_TOLERANCE = 24;
+
+/** Whether the viewport shows the end of the content. */
+export const isAtListBottom = (metrics: {
+  readonly offsetY: number;
+  readonly viewportHeight: number;
+  readonly contentHeight: number;
+}): boolean =>
+  metrics.viewportHeight > 0 &&
+  metrics.offsetY + metrics.viewportHeight >=
+    metrics.contentHeight - BOTTOM_PIN_TOLERANCE;
+
+/**
+ * Where to scroll when the composer changes height. The bottom padding grows
+ * with the composer, but the scroll offset doesn't follow by itself, so a
+ * draft growing to several lines slid over the last message. A reader at the
+ * bottom stays there: the offset moves up by the growth. Away from the bottom,
+ * or when the composer shrinks (the scroll view clamps on its own), nothing
+ * moves: null.
+ */
+export const offsetForComposerGrowth = ({
+  offsetY,
+  previousComposerHeight,
+  composerHeight,
+  wasAtBottom,
+}: {
+  readonly offsetY: number;
+  readonly previousComposerHeight: number;
+  readonly composerHeight: number;
+  readonly wasAtBottom: boolean;
+}): number | null => {
+  const growth = composerHeight - previousComposerHeight;
+  if (!wasAtBottom || growth <= 0 || previousComposerHeight <= 0) {
+    return null;
+  }
+  return offsetY + growth;
+};

@@ -4,11 +4,12 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
+  type TextInput,
   View,
 } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
 import type { PendingTextPrompt } from './text-prompt';
+import { AppTextInput } from '../AppTextInput';
 
 const form = loomUiTokens.settingsForm;
 
@@ -44,14 +45,13 @@ export const TextPromptDialog = ({ pending }: TextPromptDialogProps) => {
           {request?.message ? (
             <Text style={styles.message}>{request.message}</Text>
           ) : null}
-          <TextInput
+          <AppTextInput
             ref={inputRef}
             testID="text-prompt-input"
             value={value}
             onChangeText={setValue}
             placeholder={request?.placeholder}
             placeholderTextColor={form.colors.tertiaryLabel}
-            selectionColor={loomUiTokens.colors.accentColor}
             selectTextOnFocus
             returnKeyType="done"
             onSubmitEditing={() => pending?.resolve(value)}

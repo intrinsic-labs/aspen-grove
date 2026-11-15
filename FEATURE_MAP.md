@@ -340,7 +340,7 @@ stays until the user makes one.
   `onboarding-lmstudio-model-<model id>` → `onboarding-begin`.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
   `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
-- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`
+- **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`, `connections-lmstudio-hint`
 - **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
   (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
@@ -416,6 +416,10 @@ stays until the user makes one.
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
   A long path mounts its last rows first and fills in the earlier ones once the screen has
   slid in, so a row far up the path can take a moment to exist in the hierarchy.
+  The list's bottom padding follows the composer's measured height (and the keyboard's,
+  while it is up), so the last line rests just above the composer; when a draft grows to
+  several lines while the list is at its end, the list scrolls with it
+  (`message-list/list-insets.ts`) so the last message stays visible.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
@@ -1145,8 +1149,8 @@ stays until the user makes one.
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1157,8 +1161,10 @@ stays until the user makes one.
   reachable. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. The Auto-load toggle is gold
-  when on.
+  again.", plus a phone hint when the address is localhost. The footer's setup hint
+  (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
+  server in LM Studio…" on onboarding) shows until a test connects and again after a failed
+  one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
 
 ### Message typography
 - **ID:** `settings.typography`
@@ -1254,4 +1260,4 @@ stays until the user makes one.
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, `KeyboardDoneBar`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppTextInput` (every text field renders through it, for the gold caret and selection of `text-input-tint.ts` and a dark keyboard; on iOS 26 the caret follows the app's global accent, which the `plugins/withIosAccentColor.js` config plugin sets to Latent Spaces' `AccentColor`), `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, `KeyboardDoneBar`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element

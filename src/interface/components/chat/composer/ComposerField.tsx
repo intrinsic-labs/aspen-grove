@@ -72,8 +72,6 @@ export const ComposerField = ({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={loomUiTokens.colors.composerPlaceholder}
-          selectionColor={colors.accentColor}
-          keyboardAppearance="dark"
           multiline
           editable={editable}
           numberOfLines={maxLines}

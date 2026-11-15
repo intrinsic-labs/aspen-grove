@@ -13,8 +13,6 @@ import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
  * reintroduce it via `useColorScheme` post-beta if wanted.
  */
 export const useAspenGroveTheme = () => {
-  const isDark = true as const;
-
   const colors = {
     // Universal accents
     green: '#6CBA78',
@@ -39,7 +37,6 @@ export const useAspenGroveTheme = () => {
   };
 
   return {
-    isDark,
     colors,
     tokens: loomUiTokens,
     blur: blurVariants,

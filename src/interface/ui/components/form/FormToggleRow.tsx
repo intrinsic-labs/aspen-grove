@@ -1,4 +1,4 @@
-import { StyleSheet, Switch, useColorScheme, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
 import { FormLabel, type FormIconName } from './FormLabel';
 import { FormRow } from './FormRow';
@@ -17,12 +17,9 @@ type FormToggleRowProps = {
 
 /**
  * A Form `Toggle` tinted with the accent (LoomSettingsView.swift:277-278).
- * Aspen Grove's native views follow the system appearance (Latent Spaces
- * forces dark). Under a dark system the switch's own off track is exactly
- * Latent Spaces'; under a light one it would be near-white on the dark
- * row, so the off track is filled instead (`ios_backgroundColor`, which
- * `trackColor.false` alone only outlines on iOS). A disabled toggle that is
- * on greys out, as SwiftUI's does.
+ * Native views are forced dark (`Appearance.setColorScheme('dark')` and
+ * `userInterfaceStyle`), where the switch's own off track is exactly Latent
+ * Spaces'. A disabled toggle that is on greys out, as SwiftUI's does.
  */
 export const FormToggleRow = ({
   title,
@@ -32,8 +29,6 @@ export const FormToggleRow = ({
   disabled,
   testID,
 }: FormToggleRowProps) => {
-  const offTrack =
-    useColorScheme() === 'dark' ? undefined : form.colors.toggleOffTrack;
   return (
     <FormRow>
       <FormLabel title={title} icon={icon} />
@@ -46,12 +41,10 @@ export const FormToggleRow = ({
           onValueChange={onValueChange}
           disabled={disabled}
           trackColor={{
-            false: offTrack,
             true: disabled
               ? form.colors.toggleDisabledOnTrack
               : loomUiTokens.colors.accentColor,
           }}
-          ios_backgroundColor={offTrack}
         />
       </View>
     </FormRow>

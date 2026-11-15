@@ -3,7 +3,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
+  type TextInput,
   type TextInputProps,
   type TextLayoutEventData,
   type TextStyle,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import type { ReactNode } from 'react';
+import { AppTextInput } from './AppTextInput';
 
 type TextTone = 'primary' | 'secondary' | 'muted' | 'accent' | 'inverse';
 type TextVariant = 'display' | 'title' | 'body' | 'ui' | 'mono' | 'meta';
@@ -223,7 +224,7 @@ export const AppInput = forwardRef<TextInput, AppInputProps>(
     const { colors } = useAspenGroveTheme();
 
     return (
-      <TextInput
+      <AppTextInput
         ref={ref}
         placeholderTextColor={placeholderTextColor ?? colors.secondaryVariant}
         style={[
