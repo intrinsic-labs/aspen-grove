@@ -1,10 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
 export type LmStudioConnectionStatus =
-  | 'connected'
-  | 'disconnected'
-  | 'checking'
-  | 'idle';
+  'connected' | 'disconnected' | 'checking' | 'idle';
 
 /** The server a test runs against. */
 export type LmStudioConnectionTarget = {
