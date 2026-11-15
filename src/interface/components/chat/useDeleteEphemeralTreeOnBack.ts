@@ -1,5 +1,8 @@
-import { usePreventRemove } from '@react-navigation/native';
-import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import {
+  usePreventRemove,
+  type NavigationProp,
+  type ParamListBase,
+} from 'expo-router/react-navigation';
 import { useRef } from 'react';
 import type { ILoomTreeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
@@ -44,13 +47,11 @@ export const useDeleteEphemeralTreeOnBack = (
       }
 
       isHandlingRef.current = true;
-      void input.treeRepo
-        .hardDelete(treeId)
-        .finally(() => {
-          input.onMarkAsNonEphemeral();
-          isHandlingRef.current = false;
-          input.navigation.dispatch(data.action);
-        });
+      void input.treeRepo.hardDelete(treeId).finally(() => {
+        input.onMarkAsNonEphemeral();
+        isHandlingRef.current = false;
+        input.navigation.dispatch(data.action);
+      });
     }
   );
 };

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import type { INodeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
 import { VOICE_APPEARANCE, useVoiceMode } from '../../voice';

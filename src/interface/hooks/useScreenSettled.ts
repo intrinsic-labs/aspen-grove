@@ -3,7 +3,7 @@ import {
   type NavigationState,
   type ParamListBase,
   useNavigation,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { useEffect, useState } from 'react';
 
 /** The stack's transition events (native stack emits these). */

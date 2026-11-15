@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import {

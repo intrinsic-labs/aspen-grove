@@ -53,7 +53,13 @@ One leftover stays on purpose: the extra values in the `Provider` type (`hyperbo
 
 ## Stack
 
-Expo SDK 54, React Native 0.81, expo-router, TypeScript, WatermelonDB (SQLite, JSI), Jest. Native modules mean a development build (`expo run:ios` / `expo run:android`), not Expo Go. The UI is dark-only for now. Credentials live in `expo-secure-store`.
+Expo SDK 57, React Native 0.86 (New Architecture only), expo-router, TypeScript 6, WatermelonDB (SQLite, JSI), Jest. Native modules mean a development build (`expo run:ios` / `expo run:android`), not Expo Go. The UI is dark-only for now. Credentials live in `expo-secure-store`.
+
+**iOS scene lifecycle.** Apps built with the iOS 27 SDK are killed at launch on iOS 27 unless they adopt the UIKit scene lifecycle. On SDK 57 that is opt-in: `ios.enableSceneSupport: true` in the `expo-build-properties` block of [app.json](./app.json) (needs `expo` 57.0.23+). Prebuild then adds `UIApplicationSceneManifest` to Info.plist, pointing at Expo's `ExpoAppSceneDelegate`, which creates the window and starts React Native; the app delegate only builds the React Native factory. Keep the flag on, and don't create the window in the app delegate or a config plugin.
+
+**Move to SDK 58 once WatermelonDB ships [#1978](https://github.com/Nozbe/WatermelonDB/pull/1978).** SDK 58 (React Native 0.88) adopts the scene lifecycle in its template, but React Native 0.88 removed `RCTCxxBridge`, and WatermelonDB 0.28's iOS JSI installer doesn't compile without it. PR #1978 fixes that; until a WatermelonDB release includes it, stay on 57 and don't patch WatermelonDB. When you move, start from the branch `owner/ag-expo-upgrade`, which has the SDK 58 JS migration done (strict RN types, expo-router 58, Jest 30), and drop `enableSceneSupport` (a no-op on 58).
+
+Navigation imports come from `expo-router` (`expo-router/react-navigation`, `expo-router/drawer`), never from `@react-navigation/*`: since SDK 56 the bundler rejects those in app code. WatermelonDB's decorators come from `babel-preset-expo` (legacy mode, its default); don't add a decorators or Reanimated/Worklets plugin to `babel.config.js`.
 
 ## Where code lives
 

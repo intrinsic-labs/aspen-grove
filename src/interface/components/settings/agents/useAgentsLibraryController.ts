@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { useRouter } from 'expo-router';
 import type { Agent } from '@domain/entities';
 import { useAppServices } from '@interface/composition';

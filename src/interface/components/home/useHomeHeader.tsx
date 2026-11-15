@@ -1,6 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { Linking } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
 import { useRouter } from 'expo-router';
 import type { Tag } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';

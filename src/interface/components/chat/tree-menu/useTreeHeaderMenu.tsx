@@ -1,5 +1,5 @@
 import { useLayoutEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
 import type { ULID } from '@domain/value-objects';
 import type { TreeMenuBookmark, TreeMenuCommand } from './tree-menu';
 import { TreeToolbarMenu } from './TreeToolbarMenu';

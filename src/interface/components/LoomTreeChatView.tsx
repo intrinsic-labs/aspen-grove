@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useHeaderHeight } from '@react-navigation/elements';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { TextEditorSheet } from '../ui/components/text-editor/TextEditorSheet';

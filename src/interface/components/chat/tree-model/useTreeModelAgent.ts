@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
 import { isUsableTreeModelAgent } from '@application/services/resolve-tree-model-agent';
 import type { TreeModelSettingsChanges } from '@application/use-cases';
