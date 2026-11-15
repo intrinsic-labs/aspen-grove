@@ -142,7 +142,7 @@ echo $! > .verify/mock.pid
 
 Use the mock server through Settings → Connections → LM Studio at `http://localhost:1235`:
 type that into `connections-lmstudio-endpoint-input`, tap `connections-lmstudio-test`, then
-create an agent on the LM Studio model `mock-model` (the model `mock-missing` always
+create an agent on the LM Studio model `mock-model` (the model `mock-missing`, listed but not loaded, always
 answers 404). `--slow` gives time to tap stop mid-stream, and you need it to screenshot
 streaming states: at `--pace 20` a parallel-continuation card finishes in about 3 s; `--fail-every 3 --fail-status 422`
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts

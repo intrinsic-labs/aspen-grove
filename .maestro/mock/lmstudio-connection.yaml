@@ -1,0 +1,107 @@
+# Settings → Connections → LM Studio: a connection test holds only for the
+# address it tested. After setup.yaml the mock reads Connected; editing the
+# Server address puts the status back to Untested, and it stays Untested when
+# the edit is taken back. Testing the edited
+# (wrong) address reads Not reachable. Restoring the address reads Untested
+# until it is tested again, then Connected. Needs the mock server and Metro:
+#   maestro test .maestro/mock/lmstudio-connection.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow: ../open-settings.yaml
+- tapOn:
+    id: settings-link-connections
+- extendedWaitUntil:
+    visible:
+      id: settings-connections-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-test
+    timeout: 10000
+- assertVisible:
+    id: connections-lmstudio-endpoint-input
+    text: ${MOCK_URL}
+- tapOn:
+    id: connections-lmstudio-test
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Connected'
+    timeout: 10000
+- takeScreenshot: 80-lmstudio-connected
+
+# One more character in the address: the old result no longer holds, and
+# taking the character back doesn't restore it (an edit ends the result).
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- inputText: '9'
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Untested'
+    timeout: 5000
+- eraseText: 1
+- assertVisible:
+    id: connections-lmstudio-endpoint-input
+    text: ${MOCK_URL}
+- assertVisible:
+    id: connections-lmstudio-status
+    text: 'Untested'
+- assertNotVisible:
+    id: connections-lmstudio-status
+    text: 'Connected'
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- assertVisible:
+    id: connections-lmstudio-status
+    text: 'Untested'
+- takeScreenshot: 80b-lmstudio-edit-undone-untested
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- inputText: '9'
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Untested'
+    timeout: 5000
+# Settings' keyboard toolbar: Done puts the keyboard away.
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- takeScreenshot: 81-lmstudio-edited-untested
+- tapOn:
+    id: connections-lmstudio-test
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Not reachable'
+    timeout: 15000
+- takeScreenshot: 82-lmstudio-edited-not-reachable
+
+# Back to the mock's address: untested until tested again.
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- eraseText: 1
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Untested'
+    timeout: 5000
+- assertNotVisible:
+    id: connections-lmstudio-error
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- tapOn:
+    id: connections-lmstudio-test
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Connected'
+    timeout: 10000
+- takeScreenshot: 83-lmstudio-retested-connected

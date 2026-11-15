@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { useAppBootstrapState, useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
+import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
 
 type TreeTagsSheetProps = {
   readonly visible: boolean;
@@ -43,6 +43,7 @@ export const TreeTagsSheet = ({
     new Set()
   );
   const [newTagName, setNewTagName] = useState('');
+  const clearNewTagName = useCallback(() => setNewTagName(''), []);
 
   const refresh = useCallback(async () => {
     if (!groveId || !treeId) {
@@ -118,11 +119,12 @@ export const TreeTagsSheet = ({
   }, [groveId, newTagName, refresh, repositories.tagRepo, treeId]);
 
   return (
-    <Modal
+    <PageSheet
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
+      // A tag name typed but not added is an unsaved edit.
+      hasUnsavedChanges={newTagName.trim().length > 0}
+      onDiscard={clearNewTagName}
     >
       <View
         testID="tags-sheet"
@@ -213,7 +215,9 @@ export const TreeTagsSheet = ({
                   <Ionicons
                     name={assigned ? 'checkmark-circle' : 'ellipse-outline'}
                     size={20}
-                    color={assigned ? colors.accentColor : colors.secondaryVariant}
+                    color={
+                      assigned ? colors.accentColor : colors.secondaryVariant
+                    }
                   />
                 </Pressable>
               );
@@ -232,7 +236,7 @@ export const TreeTagsSheet = ({
           </AppText>
         ) : null}
       </View>
-    </Modal>
+    </PageSheet>
   );
 };
 

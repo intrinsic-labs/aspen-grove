@@ -3,12 +3,12 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import { describeProviderError } from '@application/services/llm';
 import { DEFAULT_LMSTUDIO_SETTINGS } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
+import {
+  type LmStudioConnectionTarget,
+  useLmStudioConnectionTest,
+} from './useLmStudioConnectionTest';
 
-export type LmStudioConnectionStatus =
-  | 'connected'
-  | 'disconnected'
-  | 'checking'
-  | 'idle';
+export type { LmStudioConnectionStatus } from './useLmStudioConnectionTest';
 
 type ConnectionsDraft = {
   readonly apiKeyInput: string;
@@ -48,11 +48,6 @@ export const useConnectionsController = () => {
   const [lmstudioAutoLoadModels, setLmstudioAutoLoadModels] = useState(
     DEFAULT_LMSTUDIO_SETTINGS.autoLoadModels
   );
-  const [lmstudioConnectionStatus, setLmstudioConnectionStatus] =
-    useState<LmStudioConnectionStatus>('idle');
-  const [lmstudioConnectionError, setLmstudioConnectionError] = useState<
-    string | null
-  >(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -96,35 +91,28 @@ export const useConnectionsController = () => {
     }, [loadSettings])
   );
 
-  const testLmstudioConnection = useCallback(async () => {
-    setLmstudioConnectionStatus('checking');
-    setLmstudioConnectionError(null);
-    try {
+  const connectLmstudio = useCallback(
+    async ({ endpoint, token }: LmStudioConnectionTarget) => {
       const lmstudioAdapter = adapters.providerRegistry.getLMStudioAdapter();
-      await lmstudioAdapter.initialize(
-        { apiKey: lmstudioApiTokenInput.trim() },
-        { endpoint: lmstudioEndpointInput.trim() }
-      );
-      lmstudioAdapter.configure({
-        autoLoadModels: lmstudioAutoLoadModels,
-      });
+      await lmstudioAdapter.initialize({ apiKey: token }, { endpoint });
+      lmstudioAdapter.configure({ autoLoadModels: lmstudioAutoLoadModels });
       await lmstudioAdapter.fetchModels();
-      setLmstudioConnectionStatus('connected');
-    } catch (caught) {
-      setLmstudioConnectionStatus('disconnected');
-      setLmstudioConnectionError(
-        describeProviderError(caught, {
-          provider: 'lmstudio',
-          lmstudioEndpoint: lmstudioEndpointInput.trim(),
-        }).message
-      );
-    }
-  }, [
-    adapters.providerRegistry,
-    lmstudioApiTokenInput,
-    lmstudioAutoLoadModels,
-    lmstudioEndpointInput,
-  ]);
+    },
+    [adapters.providerRegistry, lmstudioAutoLoadModels]
+  );
+  const describeLmstudioError = useCallback(
+    (caught: unknown, { endpoint }: LmStudioConnectionTarget) =>
+      describeProviderError(caught, {
+        provider: 'lmstudio',
+        lmstudioEndpoint: endpoint,
+      }).message,
+    []
+  );
+  const lmstudioTest = useLmStudioConnectionTest(
+    { endpoint: lmstudioEndpointInput, token: lmstudioApiTokenInput },
+    connectLmstudio,
+    describeLmstudioError
+  );
 
   const persistDraft = useCallback(
     async (draft: ConnectionsDraft): Promise<void> => {
@@ -282,9 +270,9 @@ export const useConnectionsController = () => {
     setShowLmstudioToken,
     lmstudioAutoLoadModels,
     setLmstudioAutoLoadModels,
-    lmstudioConnectionStatus,
-    lmstudioConnectionError,
-    testLmstudioConnection,
+    lmstudioConnectionStatus: lmstudioTest.status,
+    lmstudioConnectionError: lmstudioTest.error,
+    testLmstudioConnection: lmstudioTest.test,
 
     saveNow,
   };

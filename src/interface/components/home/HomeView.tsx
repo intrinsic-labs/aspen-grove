@@ -9,6 +9,8 @@ import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useCreateLoomTree } from '@/interface/hooks/useCreateLoomTree';
 import { useSetupStatus } from '@/interface/hooks/useSetupStatus';
+import { BlurTarget } from '@/interface/ui/components/blur/BlurTarget';
+import { BlurTargetScope } from '@/interface/ui/components/blur/BlurTargetScope';
 import { TextPromptDialog } from '@/interface/ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
@@ -70,47 +72,52 @@ const HomeView = () => {
 
   return (
     <AppScreen testID="home-welcome" style={styles.screen}>
-      <Pressable
-        accessible={false}
-        onPress={Keyboard.dismiss}
-        style={{ paddingTop: headerHeight }}
-      >
-        <DateHeader displayName={displayName} />
-      </Pressable>
+      <BlurTargetScope>
+        {/* What the composer's material blurs. */}
+        <BlurTarget style={styles.screen}>
+          <Pressable
+            accessible={false}
+            onPress={Keyboard.dismiss}
+            style={{ paddingTop: headerHeight }}
+          >
+            <DateHeader displayName={displayName} />
+          </Pressable>
 
-      <TreeList
-        trees={home.trees}
-        header={
-          <HomeListHeader
-            setupStatus={status}
-            activeTag={home.activeTag}
-            onClearTag={() => home.setActiveTagId(null)}
-            error={home.error}
+          <TreeList
+            trees={home.trees}
+            header={
+              <HomeListHeader
+                setupStatus={status}
+                activeTag={home.activeTag}
+                onClearTag={() => home.setActiveTagId(null)}
+                error={home.error}
+              />
+            }
+            bottomInset={composerHeight}
+            onOpen={openTree}
+            onRename={rowActions.rename}
+            onDelete={(tree) => void rowActions.remove(tree)}
           />
-        }
-        bottomInset={composerHeight}
-        onOpen={openTree}
-        onRename={rowActions.rename}
-        onDelete={(tree) => void rowActions.remove(tree)}
-      />
 
-      {/* The screen fades to black over its last 10%
+          {/* The screen fades to black over its last 10%
           (HomeScreenView.swift:210-220). */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['transparent', 'transparent', colors.oppositePrimary]}
-        locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+          <LinearGradient
+            pointerEvents="none"
+            colors={['transparent', 'transparent', colors.oppositePrimary]}
+            locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </BlurTarget>
 
-      <HomeComposer
-        bottomInset={insets.bottom}
-        displayPreferences={preferences}
-        autoFocus={status !== null && status !== 'first-run'}
-        creating={creating}
-        onSubmit={(text) => createTree({ firstMessage: text })}
-        onLayoutHeight={setComposerHeight}
-      />
+        <HomeComposer
+          bottomInset={insets.bottom}
+          displayPreferences={preferences}
+          autoFocus={status !== null && status !== 'first-run'}
+          creating={creating}
+          onSubmit={(text) => createTree({ firstMessage: text })}
+          onLayoutHeight={setComposerHeight}
+        />
+      </BlurTargetScope>
 
       <TextPromptDialog pending={rowActions.renamePrompt} />
     </AppScreen>

@@ -1,4 +1,4 @@
-import type { LmStudioConnectionStatus } from './useConnectionsController';
+import type { LmStudioConnectionStatus } from './useLmStudioConnectionTest';
 
 /**
  * Whether the LM Studio section shows its setup hint ("Start the server…",

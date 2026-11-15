@@ -1,0 +1,229 @@
+# Page sheets follow a swipe down and dismiss, as Latent Spaces' do: Node
+# Info, the tree's Description, Tags, Export, the OpenRouter key sheet and
+# the voice chooser. A sheet holding unsaved edits asks first, and Discard
+# Changes drops them (Tags reopens without its typed name): the Description
+# with changed text answers a swipe with "Discard changes?", where Keep
+# Editing leaves it up with the text and Discard Changes closes it without
+# saving. Node Info is opened again after its swipe, so its dismissal
+# finished. Needs the mock server and Metro:
+#   maestro test .maestro/mock/sheet-swipe.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: first-turn.yaml
+
+# Node Info: swipe away, then open it again.
+- repeat:
+    times: 2
+    commands:
+      - longPressOn:
+          id: chat-message-row-.*
+          index: 1
+      - tapOn: 'Node Info'
+      - extendedWaitUntil:
+          visible:
+            id: node-sheet
+          timeout: 10000
+      - waitForAnimationToEnd
+      - swipe:
+          start: 50%, 12%
+          end: 50%, 95%
+          duration: 600
+      - extendedWaitUntil:
+          notVisible:
+            id: node-sheet
+          timeout: 5000
+- takeScreenshot: 90-node-sheet-swiped-away
+
+# Description, unchanged: a swipe closes it.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Edit Description'
+- extendedWaitUntil:
+    visible:
+      id: tree-description-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: tree-description-sheet
+    timeout: 5000
+
+# Description with unsaved text: a swipe asks first.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Edit Description'
+- extendedWaitUntil:
+    visible:
+      id: tree-description-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-description-sheet-input
+- inputText: 'A draft worth keeping'
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    visible: 'Discard changes?'
+    timeout: 5000
+- takeScreenshot: 91-description-discard-prompt
+- tapOn: 'Keep Editing'
+- waitForAnimationToEnd
+- assertVisible:
+    id: tree-description-sheet-input
+    text: 'A draft worth keeping'
+- takeScreenshot: 92-description-kept
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    visible: 'Discard changes?'
+    timeout: 5000
+- tapOn: 'Discard Changes'
+- extendedWaitUntil:
+    notVisible:
+      id: tree-description-sheet
+    timeout: 5000
+# Discarded, not saved: it opens empty again.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Edit Description'
+- extendedWaitUntil:
+    visible:
+      id: tree-description-sheet
+    timeout: 10000
+- assertNotVisible: 'A draft worth keeping'
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: tree-description-sheet
+    timeout: 5000
+
+# Tags: a swipe closes it. With a tag name typed but not added, a swipe
+# asks first, and Discard Changes drops the name: it reopens empty and a
+# swipe closes it again without asking.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Tags'
+- extendedWaitUntil:
+    visible:
+      id: tags-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: tags-sheet
+    timeout: 5000
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Tags'
+- extendedWaitUntil:
+    visible:
+      id: tags-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: tags-sheet-new-input
+- inputText: 'discard-me'
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    visible: 'Discard changes?'
+    timeout: 5000
+- takeScreenshot: 94-tags-discard-prompt
+- tapOn: 'Discard Changes'
+- extendedWaitUntil:
+    notVisible:
+      id: tags-sheet
+    timeout: 5000
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Tags'
+- extendedWaitUntil:
+    visible:
+      id: tags-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertNotVisible: 'discard-me'
+- takeScreenshot: 95-tags-reopened-empty
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: tags-sheet
+    timeout: 5000
+- assertNotVisible: 'Discard changes?'
+
+# Export.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Export to OpenLoom Format'
+- extendedWaitUntil:
+    visible:
+      id: export-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: export-sheet
+    timeout: 5000
+
+# Settings: the voice chooser and the OpenRouter key sheet (a FormSheet).
+- runFlow: ../go-home.yaml
+- runFlow: ../open-settings.yaml
+- scrollUntilVisible:
+    element:
+      id: settings-voice-choose
+    timeout: 10000
+- tapOn:
+    id: settings-voice-choose
+- extendedWaitUntil:
+    visible:
+      id: settings-voice-chooser
+    timeout: 10000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: settings-voice-chooser
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: settings-link-connections
+    direction: UP
+    timeout: 10000
+- tapOn:
+    id: settings-link-connections
+- tapOn:
+    id: connections-openrouter-edit
+- extendedWaitUntil:
+    visible:
+      id: connections-openrouter-key-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 12%
+    end: 50%, 95%
+    duration: 600
+- extendedWaitUntil:
+    notVisible:
+      id: connections-openrouter-key-sheet
+    timeout: 5000
+- takeScreenshot: 93-key-sheet-swiped-away

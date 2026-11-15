@@ -448,7 +448,7 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -465,7 +465,11 @@ stays until the user makes one.
   shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
   `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
-  Connections to generate." with `chat-error-action`.
+  Connections to generate." with `chat-error-action`. The field is a thin material
+  (`MaterialView`): on Android it blurs the screen's messages, which sit in a `BlurTarget`
+  (`BlurTargetScope` in `LoomTreeChatView` and `HomeView`), through expo-blur's
+  `blurTarget` on Android 12 and later; elsewhere, or with no target, it is a flat dark
+  overlay.
 
 ### Expanded composer
 - **ID:** `chat.composer-expanded`
@@ -746,18 +750,20 @@ stays until the user makes one.
 - **Purpose:** Edits the tree's description in Latent Spaces' full-screen editor
   (ToolbarMenu.swift:118-131, FullScreenTextEditor.swift): "Loom Tree Description" inline,
   a `···` menu (Copy text, Clear text) leading and Save trailing, the text in the message
-  font, focused as it opens, with a keyboard "Done". Save writes it and closes; a swipe down
-  drops the edit.
+  font, focused as it opens, with a keyboard "Done". Save writes it and closes. A swipe
+  down closes it when nothing changed; with an unsaved edit the sheet stays and asks
+  "Discard changes?" (Keep Editing, Discard Changes), where Latent Spaces drops the edit
+  silently.
 - **Where:** "Edit Description" in the tree menu; a page sheet.
 - **Reach:** P2 → `chat-menu-button` → "Edit Description" → type into
   `tree-description-sheet-input` → `tree-description-sheet-save`.
 - **Requires:** A tree.
 - **Selector:** working — `tree-description-sheet`, `tree-description-sheet-input`, `tree-description-sheet-save`, `tree-description-sheet-menu-button`, `keyboard-done`; menu items none — native context menu item; reach via a tap on `tree-description-sheet-menu-button`
-- **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`
+- **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`, `src/interface/ui/components/sheet/`
 - **Backend:** WatermelonDB `loom_trees.description` via `WatermelonLoomTreeRepository`
 - **Status:** live
 - **Notes:** The description shows nowhere else in the app yet; it goes out with an Open Loom
-  export and heads a Markdown export.
+  export and heads a Markdown export. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -818,10 +824,13 @@ stays until the user makes one.
   a tree with no agent gets a new tree-owned one once a model is chosen. Tree-owned agents
   don't show in Settings → Agents. A new provider switches to a model on it: the default
   agent's model when it is on that provider, else onboarding's first template for
-  OpenRouter, else a loaded LM Studio model; an LM Studio that can't be reached leaves the
+  OpenRouter, else a loaded LM Studio model (never one listed but not loaded); an LM
+  Studio that can't be reached leaves the
   tree as it was and says so in the footer. The output limit is Latent Spaces': OpenRouter's
   `top_provider.max_completion_tokens` (8192 when it names none, 4096 for a model not in
-  the catalog), or LM Studio's context length. Coming back to the tree re-reads its agent
+  the catalog; a custom id that names a catalog model in another case or as a routing
+  variant takes that model's limit, `catalog-model-for-id.ts`), or LM Studio's context
+  length. Coming back to the tree re-reads its agent
   and system message. Flow: `.maestro/mock/tree-model.yaml`.
 
 ### OpenRouter model browser (tree)
@@ -917,9 +926,12 @@ stays until the user makes one.
   `tags-sheet-new-add`. Toggle an existing tag with `tags-sheet-row-<tagId>`.
 - **Requires:** A tree.
 - **Selector:** working — `tags-sheet`, `tags-sheet-done`, `tags-sheet-new-input`, `tags-sheet-new-add`, `tags-sheet-list`, rows `tags-sheet-row-<tagId>`, `tags-sheet-empty`, `tags-sheet-error`; menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/tags/TreeTagsSheet.tsx`
+- **Code:** `src/interface/components/chat/tags/TreeTagsSheet.tsx`, `src/interface/ui/components/sheet/`
 - **Backend:** WatermelonDB `tags` and `tag_assignments` via `WatermelonTagRepository`
 - **Status:** live
+- **Notes:** A swipe down closes it; with a new tag name typed and not added, it asks
+  "Discard changes?" first, and Discard Changes clears the name, so the sheet reopens
+  empty. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
@@ -933,7 +945,7 @@ stays until the user makes one.
   `export-sheet-share` → share sheet.
 - **Requires:** A tree, and sharing available on the device.
 - **Selector:** working — `export-sheet`, `export-sheet-back`, `export-sheet-share`, `export-sheet-title-input`, `export-sheet-description-input`, `export-sheet-include-system-message`, `export-sheet-include-bookmarks`, `export-sheet-docs`, `keyboard-done`; the share sheet is native
-- **Code:** `src/interface/components/chat/export-sheet/OpenLoomExportSheet.tsx`, `src/interface/components/chat/export-sheet/ExportSheetHero.tsx`, `src/interface/components/chat/export-sheet/useOpenLoomExportSheet.ts`, `src/interface/components/chat/export-sheet/export-sheet-options.ts`, `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
+- **Code:** `src/interface/components/chat/export-sheet/OpenLoomExportSheet.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/chat/export-sheet/ExportSheetHero.tsx`, `src/interface/components/chat/export-sheet/useOpenLoomExportSheet.ts`, `src/interface/components/chat/export-sheet/export-sheet-options.ts`, `src/application/use-cases/ExportLoomTreeUseCase.ts`, `src/application/services/open-loom/export-open-loom.ts`, `src/interface/services/loom-file-sharing.ts#shareTextAsFile`, `src/interface/components/chat/header-actions/useTreeExports.ts`
 - **Backend:** Reads WatermelonDB `loom_trees`, `nodes`, `edges`, `edge_sources`, `paths`. Writes
   a cache file (`expo-file-system`), then calls `expo-sharing`. Nothing in the sheet is saved
   to the tree.
@@ -943,7 +955,8 @@ stays until the user makes one.
   counterpart of Latent Spaces' one system message); Include Bookmarks off drops bookmark
   flags and labels. The file goes to the share sheet, which offers Save to Files, where Latent
   Spaces opens the file exporter. The docs link opens the Open Loom spec in the repository,
-  as Home's does.
+  as Home's does. A swipe down closes it as the back button does, dropping its export-only
+  choices without asking. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Export path (Markdown)
 - **ID:** `chat.export-path`
@@ -976,11 +989,12 @@ stays until the user makes one.
   (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
 - **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-bookmark`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
-- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`
 - **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
 - **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the
-  continuation cards do. Swipe down or `node-sheet-back` closes it.
+  continuation cards do. Swipe down (the sheet follows the finger) or `node-sheet-back`
+  closes it. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Node sheet menu
 - **ID:** `node.menu`
@@ -1065,7 +1079,7 @@ stays until the user makes one.
   `settings-agents-row-<agentId>`.
 - **Requires:** none
 - **Selector:** working — `agent-editor-sheet`, `agent-editor-cancel`, `agent-editor-submit`, `agent-editor-templates`, `agent-editor-template-<key>` (keys `claude-sonnet-balanced`, `claude-sonnet-creative`, `claude-haiku-fast`, `gpt-sol-balanced`), `agent-editor-name-input`, `agent-editor-provider`, `agent-editor-model`, `agent-editor-footer-id`, `agent-editor-footer-description`, `agent-editor-model-error`, `agent-editor-temperature`, `agent-editor-max-tokens-input`, `agent-editor-system-prompt-input`, `agent-editor-error`
-- **Code:** `src/interface/components/settings/agents/editor/AgentEditorStack.tsx`, `src/interface/components/settings/agents/editor/AgentEditorScreen.tsx`, `src/interface/components/settings/agents/editor/useAgentEditorState.ts`, `src/interface/components/settings/agents/editor/agent-editor-context.ts`, `src/interface/components/settings/agents/editor/agent-editor-routes.ts`, `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/settings/agents/editor/useHoldMaxTokensToModel.ts`, `src/interface/components/settings/agents/agent-draft-max-tokens.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-draft-from-agent.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`, `src/app/agent-editor/_layout.tsx`, `src/app/agent-editor/index.tsx`
+- **Code:** `src/interface/components/settings/agents/editor/AgentEditorStack.tsx`, `src/interface/components/settings/agents/editor/AgentEditorScreen.tsx`, `src/interface/components/settings/agents/editor/useAgentEditorState.ts`, `src/interface/components/settings/agents/editor/agent-editor-context.ts`, `src/interface/components/settings/agents/editor/agent-editor-routes.ts`, `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/agents/editor/GenerationSections.tsx`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/settings/agents/editor/useHoldMaxTokensToModel.ts`, `src/interface/components/models/catalog-model-for-id.ts`, `src/interface/ui/components/keyboard/SheetScrollView.tsx`, `src/interface/ui/components/keyboard/useRevealFocusedField.ts`, `src/interface/ui/components/keyboard/reveal-offset.ts`, `src/interface/components/settings/agents/agent-draft-max-tokens.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/settings/agents/editor/FormCheckRow.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/agents/agent-draft-from-agent.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/components/settings/agents/agent-draft-to-config.ts`, `src/interface/components/settings/agents/agent-editor-types.ts`, `src/application/use-cases/CreateSharedAgentUseCase.ts`, `src/application/use-cases/UpdateAgentConfigurationUseCase.ts`, `src/app/agent-editor/_layout.tsx`, `src/app/agent-editor/index.tsx`
 - **Backend:** WatermelonDB `agents` via `WatermelonAgentRepository`
 - **Status:** live
 - **Notes:** Template keys come from `agent-templates.ts`. Templates are Form rows (name,
@@ -1077,7 +1091,12 @@ stays until the user makes one.
   model's limit is known, the field is held to it (the limit itself when the agent has
   "Always use maximum allowed" on; an empty field stays empty), a typed value is capped at
   it, typing turns "Always use maximum allowed" off, and the Generation footer names the
-  limit.
+  limit. A custom OpenRouter id is held to a catalog model's limit when it names one
+  (`catalog-model-for-id.ts`: the same id in any case, or a routing variant such as
+  `:nitro` of a catalog id); an id the catalog doesn't know is left as typed. A focused
+  field is kept 24 points above the keyboard (`SheetScrollView`; on iOS it measures in the
+  sheet's own terms, as KeyboardAwareScrollView misplaces fields in a page sheet), so the
+  number pad doesn't cover Max Tokens. Flow: `.maestro/mock/agent-max-tokens.yaml`.
 
 ### Model picker
 - **ID:** `settings.agents.model-picker`
@@ -1087,7 +1106,8 @@ stays until the user makes one.
   describes), where a row opens the model's page (`models.detail`) and "Use This Model" puts
   it in the draft; on LM Studio, Model is a menu of the server's models. The footer shows the
   model id in bold and its description. A new provider starts on its default model
-  (onboarding's first template on OpenRouter, a loaded model on LM Studio).
+  (onboarding's first template on OpenRouter; on LM Studio a loaded model only, the
+  default agent's when it is loaded, never one the server lists but hasn't loaded).
 - **Where:** The agent editor's Model section; the browser and a model's page push inside
   the editor's sheet (routes `agent-editor/models`, `agent-editor/detail`). Onboarding's
   LM Studio model (`LmStudioModelSection`) reads the same lists through
@@ -1122,7 +1142,9 @@ stays until the user makes one.
   registry is reconfigured on save
 - **Status:** live
 - **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
-  Cancel or a swipe down discards the edit. Saving an empty field removes the key. The
+  Cancel discards the edit. A swipe down closes the sheet when the field still holds the
+  stored key, and asks "Discard changes?" first when it doesn't (`FormSheet`'s
+  `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). Saving an empty field removes the key. The
   section footer says whether a key is stored. Neither Settings nor onboarding has a show/hide
   button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open Safari.
 ### Connections sheet
@@ -1150,7 +1172,7 @@ stays until the user makes one.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1158,13 +1180,17 @@ stays until the user makes one.
 - **Notes:** The fields are Form rows (`LmStudioFormSection`), in Settings and on
   onboarding's setup page (without the token and auto-load rows) with the same ids.
   `connections-lmstudio-status` reads one of Untested, Checking…, Connected or Not
-  reachable. When the
+  reachable. A result holds only for the address and token it tested: editing either puts
+  the status back to Untested (and clears the error) until the next test, even once the
+  edit is taken back, and the answer to a test of an address edited while it ran is
+  dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
   again.", plus a phone hint when the address is localhost. The footer's setup hint
   (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
   server in LM Studio…" on onboarding) shows until a test connects and again after a failed
   one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
+  Flow: `.maestro/mock/lmstudio-connection.yaml`.
 
 ### Message typography
 - **ID:** `settings.typography`
@@ -1240,7 +1266,7 @@ stays until the user makes one.
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
-- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
+- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
 - **Backend:** none for the demo (on-device `expo-speech`); Select writes the WatermelonDB local
   key `aspen_grove.voice_mode.voice_name`
 - **Status:** live
@@ -1260,4 +1286,4 @@ stays until the user makes one.
 - `src/interface/components/chat/provider-key.ts` — provider key lookup (SecureStore, then env)
 - `src/interface/composition/index.ts` — barrel export
 - `src/interface/hooks/useAspenGroveTheme.ts` — theme hook
-- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppTextInput` (every text field renders through it, for the gold caret and selection of `text-input-tint.ts` and a dark keyboard; on iOS 26 the caret follows the app's global accent, which the `plugins/withIosAccentColor.js` config plugin sets to Latent Spaces' `AccentColor`), `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView`, `KeyboardDoneBar`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element
+- `src/interface/ui/` — design primitives and tokens (`AppText`, `AppTextInput` (every text field renders through it, for the gold caret and selection of `text-input-tint.ts` and a dark keyboard; on iOS 26 the caret follows the app's global accent, which the `plugins/withIosAccentColor.js` config plugin sets to Latent Spaces' `AccentColor`), `AppInput`, `HeaderIconButton`, `GlassIconButton`, `MaterialView` (and its Android blur target in `src/interface/ui/components/blur/`), `KeyboardDoneBar`, the swipe-to-dismiss `PageSheet` and its unsaved-edits guard in `src/interface/ui/components/sheet/`, the sheet form's keyboard-aware `SheetScrollView` in `src/interface/ui/components/keyboard/`, the native-menu section helpers in `native-menu.ts` and the menu-tree builders in `native-menu-tree.ts` (items, sections, a ControlGroup, submenus), the alert-with-a-text-field prompt in `src/interface/ui/components/text-prompt/`, the full-screen text editor sheet in `src/interface/ui/components/text-editor/`, settings-list rows, and the Latent Spaces Form primitives in `src/interface/ui/components/form/`: `FormSection`, `FormRow`, `FormLabel`, `FormLinkRow`, `FormButtonRow`, `FormPickerRow`, `FormToggleRow`, `FormSliderRow`, `FormTextFieldRow`, `FormSheet`, `FormSheetHeader`); they forward `testID` to their host element

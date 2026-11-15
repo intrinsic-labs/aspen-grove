@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,7 @@ import { LOOM_VOICES } from '@domain/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { useVoiceChooser } from './useVoiceChooser';
 import { VoiceCard } from './VoiceCard';
+import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
 
 type VoiceChooserSheetProps = {
   readonly visible: boolean;
@@ -59,12 +59,7 @@ export const VoiceChooserSheet = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
+    <PageSheet visible={visible} onClose={onClose}>
       {/* No visible title: Latent Spaces sets `navigationTitle` without a
           NavigationStack, so its sheet shows none (LoomVoiceChooser.swift:62). */}
       <View
@@ -120,7 +115,7 @@ export const VoiceChooserSheet = ({
           <Text style={styles.selectText}>Select</Text>
         </Pressable>
       </View>
-    </Modal>
+    </PageSheet>
   );
 };
 

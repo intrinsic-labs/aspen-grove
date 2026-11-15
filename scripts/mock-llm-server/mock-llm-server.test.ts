@@ -179,10 +179,11 @@ describe('payloads', () => {
     expect(payload.usage).toEqual(usage);
   });
 
-  it('lists models as loaded LLMs keyed by id', () => {
-    const { models } = modelsPayload(['a', 'b']);
+  it('lists models as LLMs keyed by id, the missing one not loaded', () => {
+    const { models } = modelsPayload(['a'], ['b']);
     expect(models.map((m) => m.key)).toEqual(['a', 'b']);
-    expect(models.every((m) => m.type === 'llm' && m.loaded_instances.length === 1)).toBe(true);
+    expect(models.every((m) => m.type === 'llm')).toBe(true);
+    expect(models.map((m) => m.loaded_instances.length)).toEqual([1, 0]);
   });
 });
 

@@ -192,7 +192,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     const path = (req.url ?? '').split('?')[0];
     if (req.method === 'GET' && path === '/api/v1/models') {
       log('GET /api/v1/models');
-      sendJson(res, 200, modelsPayload([config.modelId, config.missingModelId]));
+      sendJson(res, 200, modelsPayload([config.modelId], [config.missingModelId]));
       return;
     }
     if (req.method === 'POST' && path === '/v1/chat/completions') {

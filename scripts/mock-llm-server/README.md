@@ -35,7 +35,7 @@ model `mock-model`. Port 1234 is LM Studio's own default; keep clear of it.
 | `--slow` | off | pace 3 tokens/s |
 | `--words` | `60` | tokens per reply (a request's `max_tokens` caps it; finish reason `length`) |
 | `--model` | `mock-model` | the model it lists and answers for; any other id gets 404 |
-| `--missing-model` | `mock-missing` | listed, but every completion on it answers 404 |
+| `--missing-model` | `mock-missing` | listed as downloaded but not loaded; every completion on it answers 404 (LM Studio with JIT loading off) |
 | `--fail-every N` | `0` (never) | completion requests N, 2N, 3N... fail |
 | `--fail-mode` | `status` | `status`: answer `--fail-status`; `drop`: cut the connection after `--drop-after` tokens |
 | `--fail-status` | `500` | HTTP status of an injected failure |

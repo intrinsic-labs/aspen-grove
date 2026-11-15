@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
+import { BlurTarget } from '../ui/components/blur/BlurTarget';
+import { BlurTargetScope } from '../ui/components/blur/BlurTargetScope';
 import { TextEditorSheet } from '../ui/components/text-editor/TextEditorSheet';
 import { TextPromptDialog } from '../ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '../ui/value-objects';
@@ -56,58 +58,63 @@ const LoomTreeChatView = () => {
 
   return (
     <AppScreen testID="chat-screen" style={styles.container}>
-      <ChatMessageList
-        loading={controller.loading}
-        sending={controller.sending}
-        rows={controller.rows}
-        streamingAssistantText={controller.streamingAssistantText}
-        composerHeight={composerHeight}
-        headerHeight={headerHeight}
-        bottomInset={insets.bottom}
-        error={controller.error}
-        errorAction={controller.errorAction}
-        onErrorAction={controller.onErrorAction}
-        scrollRef={controller.scrollRef}
-        onScroll={controller.onMessageListScroll}
-        onMessageAction={controller.onMessageAction}
-        onNodeTap={controller.onNodeTap}
-        speakingRow={controller.speakingRow}
-        continuationRail={controller.continuationRail}
-        displayPreferences={controller.displayPreferences}
-      />
+      <BlurTargetScope>
+        {/* What the composer's material blurs. */}
+        <BlurTarget style={styles.container}>
+          <ChatMessageList
+            loading={controller.loading}
+            sending={controller.sending}
+            rows={controller.rows}
+            streamingAssistantText={controller.streamingAssistantText}
+            composerHeight={composerHeight}
+            headerHeight={headerHeight}
+            bottomInset={insets.bottom}
+            error={controller.error}
+            errorAction={controller.errorAction}
+            onErrorAction={controller.onErrorAction}
+            scrollRef={controller.scrollRef}
+            onScroll={controller.onMessageListScroll}
+            onMessageAction={controller.onMessageAction}
+            onNodeTap={controller.onNodeTap}
+            speakingRow={controller.speakingRow}
+            continuationRail={controller.continuationRail}
+            displayPreferences={controller.displayPreferences}
+          />
 
-      {/* The whole screen fades to black over its last 10%
+          {/* The whole screen fades to black over its last 10%
           (MessageInputView.swift:24-34). */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['transparent', 'transparent', colors.oppositePrimary]}
-        locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+          <LinearGradient
+            pointerEvents="none"
+            colors={['transparent', 'transparent', colors.oppositePrimary]}
+            locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </BlurTarget>
 
-      <ChatComposer
-        input={controller.input}
-        onChangeInput={controller.setInput}
-        onSend={controller.onSend}
-        canSend={controller.canSend}
-        sendLabel={controller.sendLabel}
-        placeholder={controller.composerPlaceholder}
-        editLabel={controller.editLabel}
-        onCancelEdit={controller.onCancelEdit}
-        loading={controller.loading}
-        sending={controller.sending}
-        canStop={controller.canStop}
-        stopping={controller.stopping}
-        onStop={controller.onStop}
-        inputRef={controller.inputRef}
-        onInputFocus={controller.onComposerFocus}
-        onComposerLayout={setComposerHeight}
-        onExpandInput={controller.onExpandComposer}
-        bottomInset={insets.bottom}
-        displayPreferences={controller.displayPreferences}
-        needsAgent={controller.needsAgent}
-        onChooseAgent={controller.onChooseAgent}
-      />
+        <ChatComposer
+          input={controller.input}
+          onChangeInput={controller.setInput}
+          onSend={controller.onSend}
+          canSend={controller.canSend}
+          sendLabel={controller.sendLabel}
+          placeholder={controller.composerPlaceholder}
+          editLabel={controller.editLabel}
+          onCancelEdit={controller.onCancelEdit}
+          loading={controller.loading}
+          sending={controller.sending}
+          canStop={controller.canStop}
+          stopping={controller.stopping}
+          onStop={controller.onStop}
+          inputRef={controller.inputRef}
+          onInputFocus={controller.onComposerFocus}
+          onComposerLayout={setComposerHeight}
+          onExpandInput={controller.onExpandComposer}
+          bottomInset={insets.bottom}
+          displayPreferences={controller.displayPreferences}
+          needsAgent={controller.needsAgent}
+          onChooseAgent={controller.onChooseAgent}
+        />
+      </BlurTargetScope>
 
       <NodeSheet
         target={controller.nodeSheet.target}
@@ -128,6 +135,7 @@ const LoomTreeChatView = () => {
         onChangeText={controller.description.setDraft}
         onSave={controller.description.save}
         onClose={controller.description.close}
+        hasUnsavedChanges={controller.description.hasUnsavedChanges}
         textStyle={sheetTextStyle}
       />
 
