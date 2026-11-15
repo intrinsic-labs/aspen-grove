@@ -5,6 +5,7 @@ import {
 } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { useModelPickerData } from '../../models/useModelPickerData';
+import { catalogModelForId } from '../../models/catalog-model-for-id';
 import { modelChoiceChanges } from './model-choice';
 import { providerDefaultModel } from '../../models/provider-default-model';
 import {
@@ -40,10 +41,14 @@ export const useTreeModelSettings = (treeId: ULID | undefined) => {
   const selected = listReady
     ? picker.options.find((option) => option.id === modelId)
     : undefined;
+  // The listed model whose limits apply, a custom id's too when it names one.
+  const limitModel = listReady
+    ? catalogModelForId(modelId, picker.options)
+    : undefined;
   const configuration = agent?.configuration ?? {};
   // Until the list is in, don't clamp a saved value to the unknown limit.
   const maxAllowed = listReady
-    ? maxTokensAllowed(selected)
+    ? maxTokensAllowed(limitModel)
     : Math.max(UNKNOWN_MODEL_MAX_TOKENS, configuration.maxTokens ?? 0);
   const values = toTreeModelValues(configuration, maxAllowed);
 

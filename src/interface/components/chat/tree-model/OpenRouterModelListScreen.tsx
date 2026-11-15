@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
+import { catalogModelForId } from '../../models/catalog-model-for-id';
 import { ModelBrowserList } from '../../models/ModelBrowserList';
 import { useModelPickerData } from '../../models/useModelPickerData';
 import { treeModelRoutes } from './tree-model-routes';
@@ -24,10 +25,13 @@ const OpenRouterModelListScreen = () => {
       treeId && router.push(treeModelRoutes.modelDetail(treeId, id)),
     [router, treeId]
   );
+  // A custom id naming a listed model is held to that model's limit.
   const onUseCustom = useCallback(
     (id: string) =>
-      void choose(id, undefined).then((saved) => saved && router.back()),
-    [choose, router]
+      void choose(id, catalogModelForId(id, picker.options)).then(
+        (saved) => saved && router.back()
+      ),
+    [choose, picker.options, router]
   );
 
   return (

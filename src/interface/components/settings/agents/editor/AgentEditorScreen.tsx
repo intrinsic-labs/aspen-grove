@@ -34,7 +34,7 @@ export const AgentEditorScreen = () => {
   const editor = useAgentEditor();
   const { draft, patchDraft, load } = editor;
   const selection = useAgentModelSelection(draft);
-  useHoldMaxTokensToModel(draft, selection.selected, patchDraft);
+  useHoldMaxTokensToModel(draft, selection.limitModel, patchDraft);
 
   // The agent the sheet opened on (none: a new one).
   useEffect(() => {
@@ -113,7 +113,7 @@ export const AgentEditorScreen = () => {
 
           <GenerationSections
             draft={draft}
-            model={selection.selected}
+            model={selection.limitModel}
             onChange={patchDraft}
           />
         </KeyboardAwareScrollView>
