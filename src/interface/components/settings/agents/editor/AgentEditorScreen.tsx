@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -18,6 +17,7 @@ import { GenerationSections } from './GenerationSections';
 import { TemplateSection } from './TemplateSection';
 import { useAgentModelSelection } from './useAgentModelSelection';
 import { useHoldMaxTokensToModel } from './useHoldMaxTokensToModel';
+import { SheetScrollView } from '@/interface/ui/components/keyboard/SheetScrollView';
 
 /**
  * The agent editor's Form, the sheet's first page, as Latent Spaces
@@ -79,12 +79,11 @@ export const AgentEditorScreen = () => {
       ) : null}
 
       {editor.loaded ? (
-        <KeyboardAwareScrollView
+        <SheetScrollView
           contentContainerStyle={[
             styles.content,
             { paddingBottom: insets.bottom + 35 },
           ]}
-          keyboardShouldPersistTaps="handled"
         >
           {creating ? (
             <TemplateSection
@@ -116,7 +115,7 @@ export const AgentEditorScreen = () => {
             model={selection.limitModel}
             onChange={patchDraft}
           />
-        </KeyboardAwareScrollView>
+        </SheetScrollView>
       ) : (
         <ActivityIndicator style={styles.loading} />
       )}
