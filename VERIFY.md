@@ -168,7 +168,12 @@ tree to OpenRouter and chooses a model through the model browser and a model's p
 catalog is public, so no key, but it needs the network), and checks the footer's context
 line. [.maestro/mock/agent-max-tokens.yaml](.maestro/mock/agent-max-tokens.yaml) edits the
 `mock-model` agent: OpenRouter's default model with Max Tokens 32768, then back to LM
-Studio's `mock-model`, and Max Tokens drops to its 8192 limit. If 1235 is taken, run the mock on
+Studio's `mock-model`, and Max Tokens drops to its 8192 limit.
+[.maestro/mock/long-press-menus.yaml](.maestro/mock/long-press-menus.yaml) long-presses every
+context menu in a tree (the human bubble, the reply, a continuation card), screenshots each
+lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
+Text), then leaves, starts a second tree and reopens the first, so the menus are checked
+again on recycled native views. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →

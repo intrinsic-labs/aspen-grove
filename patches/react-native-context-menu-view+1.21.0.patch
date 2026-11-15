@@ -27,10 +27,179 @@ index 13fdaba..7e73799 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..a183991 100644
+index e10a830..d448124 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-@@ -245,6 +245,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -18,6 +18,10 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+ @implementation ContextMenuView {
+   BOOL _cancelled;
+   UIView *_customView;
++  // The menu interaction this view put on each hosted subview, so it can be
++  // taken off again. Under Fabric a removed subview is recycled and mounted
++  // elsewhere; an interaction left on it would still call this view.
++  NSMapTable<UIView *, UIContextMenuInteraction *> *_hostedInteractions;
+ }
+ 
+ - (id) init {
+@@ -42,18 +46,48 @@ - (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex
+   [super insertReactSubview:subview atIndex:atIndex];
+ 
+   if (@available(iOS 13.0, *)) {
+-    UIContextMenuInteraction* contextInteraction =
+-      [[UIContextMenuInteraction alloc] initWithDelegate:self];
++    if (_hostedInteractions == nil) {
++      _hostedInteractions = [NSMapTable weakToStrongObjectsMapTable];
++    }
++    if ([_hostedInteractions objectForKey:subview] == nil) {
++      UIContextMenuInteraction* contextInteraction =
++        [[UIContextMenuInteraction alloc] initWithDelegate:self];
+ 
+-    [subview addInteraction:contextInteraction];
++      [subview addInteraction:contextInteraction];
++      [_hostedInteractions setObject:contextInteraction forKey:subview];
++    }
+   }
+ }
+ 
+ - (void)removeReactSubview:(UIView *)subview
+ {
++    if (subview == _customView) {
++      _customView = nil;
++    }
++    if (@available(iOS 13.0, *)) {
++      [self removeHostedInteractionFromView:subview];
++    }
+     [super removeReactSubview:subview];
+ }
+ 
++- (void)removeHostedInteractionFromView:(UIView *)subview API_AVAILABLE(ios(13.0))
++{
++    UIContextMenuInteraction *interaction = [_hostedInteractions objectForKey:subview];
++    if (interaction != nil) {
++      [subview removeInteraction:interaction];
++      [_hostedInteractions removeObjectForKey:subview];
++    }
++}
++
++- (void)dealloc
++{
++    if (@available(iOS 13.0, *)) {
++      for (UIView *subview in [[_hostedInteractions keyEnumerator] allObjects]) {
++        [subview removeInteraction:[_hostedInteractions objectForKey:subview]];
++      }
++    }
++}
++
+ - (void)didUpdateReactSubviews
+ {
+   [super didUpdateReactSubviews];
+@@ -65,7 +99,7 @@ - (void)layoutSubviews
+ }
+ 
+ - (nullable UIContextMenuConfiguration *)contextMenuInteraction:(nonnull UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location API_AVAILABLE(ios(13.0)) {
+-  if (_disabled) {
++  if (_disabled || ![self ownsInteraction:interaction]) {
+     return nil;
+   }
+ 
+@@ -105,7 +139,7 @@ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willEndFo
+   }
+ }
+ 
+-- (UIPreviewParameters *)getPreviewParams {
++- (UIPreviewParameters *)getPreviewParamsForView:(UIView *)view {
+     UIPreviewParameters* previewParams = [[UIPreviewParameters alloc] init];
+     
+     if (_previewBackgroundColor != nil) {
+@@ -125,7 +159,7 @@ - (UIPreviewParameters *)getPreviewParams {
+         CGFloat bottomLeftRadius = self.borderBottomLeftRadius > -1 ? self.borderBottomLeftRadius : radius;
+         
+         UIBezierPath *path = [UIBezierPath bezierPath];
+-        CGRect bounds = self.bounds;
++        CGRect bounds = view.bounds;
+         
+         [path moveToPoint: CGPointMake(CGRectGetMinX(bounds) + topLeftRadius, CGRectGetMinY(bounds))];
+ 
+@@ -158,30 +192,64 @@ - (UIPreviewParameters *)getPreviewParams {
+     return previewParams;
+ }
+ 
+-- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
+-    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:self.reactSubviews.firstObject.center];
+-    
+-    
+-    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
++// Whether the interaction is this view's own (UIControl's, used by
++// dropdownMenuMode) or one it put on a subview it still hosts.
++- (BOOL)ownsInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
++    UIView *view = interaction.view;
++    if (view == self) {
++      return YES;
++    }
++    return view != nil && [_hostedInteractions objectForKey:view] == interaction;
+ }
+ 
+-- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
+-    UIView *hostView = self.reactSubviews.firstObject;
++// The view the menu lifts: the hosted subview that was pressed, else the
++// first one this view really contains. Under Fabric's interop layer
++// `reactSubviews` can be empty or out of step with the real subviews.
++- (UIView *)hostedViewForInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
++    UIView *pressed = interaction.view;
++    if (pressed != nil && pressed != self && pressed.superview == self) {
++      return pressed;
++    }
++    UIView *first = self.reactSubviews.firstObject;
++    if (first != nil && first.superview == self) {
++      return first;
++    }
++    for (UIView *subview in self.subviews) {
++      if (subview != _customView) {
++        return subview;
++      }
++    }
++    return nil;
++}
+ 
+-    if (!hostView.window) {
+-        // The view is no longer available; it was unmounted.
+-        return nil;
++// A preview that lifts the hosted view in place, or nil (UIKit's default
++// preview) when it or its container isn't in a window: UIPreviewTarget and
++// UITargetedPreview both assert that they are.
++- (UITargetedPreview *)targetedPreviewForInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
++    if (![self ownsInteraction:interaction]) {
++      return nil;
++    }
++    UIView *hostView = [self hostedViewForInteraction:interaction];
++    UIView *container = hostView.superview;
++    if (hostView == nil || container == nil || hostView.window == nil || container.window == nil) {
++      return nil;
+     }
+ 
+-    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
++    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
+ 
+     return [[UITargetedPreview alloc] initWithView:hostView
+-                                        parameters:[self getPreviewParams]
++                                        parameters:[self getPreviewParamsForView:hostView]
+                                             target:previewTarget];
+ }
+ 
++- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
++    return [self targetedPreviewForInteraction:interaction];
++}
++
++- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
++    return [self targetedPreviewForInteraction:interaction];
++}
++
+ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atIndexPath:(NSArray<NSNumber *> *)indexPath {
+     UIMenuElement* menuElement = nil;
+     UIImage *iconImage = nil;
+@@ -245,6 +313,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
          actionMenu.subtitle = action.subtitle;
        }
  
