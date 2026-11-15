@@ -26,6 +26,7 @@ import {
   UpdateTreeModelSettingsUseCase,
 } from '@application/use-cases';
 import {
+  CatalogModelOutputLimits,
   LMStudioAdapter,
   OpenRouterAdapter,
   OpenRouterModelCatalog,
@@ -146,14 +147,16 @@ const buildAppServices = (): AppServices => {
   const openRouterAdapter = new OpenRouterAdapter();
   const lmStudioAdapter = new LMStudioAdapter();
 
+  const openRouterCatalog = new OpenRouterModelCatalog(database);
   const adapters = {
     providerRegistry: new ProviderRegistry({
       openrouter: openRouterAdapter,
       lmstudio: lmStudioAdapter,
     }),
     credentialStore: new ExpoSecureCredentialStore(),
-    openRouterCatalog: new OpenRouterModelCatalog(database),
+    openRouterCatalog,
   } as const;
+  const modelOutputLimits = new CatalogModelOutputLimits(openRouterCatalog);
 
   const useCases = {
     createDialogueLoomTreeUseCase: new CreateDialogueLoomTreeUseCase({
@@ -179,6 +182,7 @@ const buildAppServices = (): AppServices => {
       pathStateRepository: repositories.pathStateRepo,
       rawApiResponseRepository: repositories.rawApiResponseRepo,
       providerRegistry: adapters.providerRegistry,
+      modelOutputLimits,
     }),
     generateDialogueContinuationUseCase:
       new GenerateDialogueContinuationUseCase({
@@ -190,6 +194,7 @@ const buildAppServices = (): AppServices => {
         pathStateRepository: repositories.pathStateRepo,
         rawApiResponseRepository: repositories.rawApiResponseRepo,
         providerRegistry: adapters.providerRegistry,
+        modelOutputLimits,
       }),
     generateParallelContinuationsUseCase:
       new GenerateParallelContinuationsUseCase({
@@ -200,6 +205,7 @@ const buildAppServices = (): AppServices => {
         pathRepository: repositories.pathRepo,
         rawApiResponseRepository: repositories.rawApiResponseRepo,
         providerRegistry: adapters.providerRegistry,
+        modelOutputLimits,
       }),
     switchDialoguePathUseCase: new SwitchDialoguePathUseCase({
       pathRepository: repositories.pathRepo,

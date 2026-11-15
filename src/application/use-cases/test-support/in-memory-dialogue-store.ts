@@ -34,7 +34,7 @@ const humanNode = (id: ULID, text: string, hashChar: string): Node => ({
   metadata: { bookmarked: false, pruned: false, excluded: false },
 });
 
-const modelAgent: Agent = {
+const baseModelAgent: Agent = {
   id: modelAgentId,
   name: 'Test model',
   type: 'model',
@@ -73,11 +73,27 @@ const path: Path = {
 
 export type InMemoryDialogueStore = ReturnType<typeof createInMemoryDialogueStore>;
 
+export type InMemoryDialogueStoreOptions = {
+  /** The model agent's configured Maximum Output Tokens. */
+  readonly maxTokens?: number;
+  /** What `modelOutputLimits` reports for the model (default: unknown). */
+  readonly outputLimit?: number;
+};
+
 /**
  * Repositories over plain maps, plus a log of every node write so tests can
  * see exactly what was persisted and when.
  */
-export const createInMemoryDialogueStore = () => {
+export const createInMemoryDialogueStore = (
+  options: InMemoryDialogueStoreOptions = {}
+) => {
+  const modelAgent: Agent = {
+    ...baseModelAgent,
+    configuration: {
+      ...baseModelAgent.configuration,
+      maxTokens: options.maxTokens,
+    },
+  };
   const nodes = new Map<ULID, Node>([
     [rootNodeId, humanNode(rootNodeId, 'Tell me a story.', 'a')],
     [sourceNodeId, humanNode(sourceNodeId, 'Make it short.', 'b')],
@@ -213,6 +229,9 @@ export const createInMemoryDialogueStore = () => {
       },
       findByNodeId: async (nodeId) => rawResponses.get(nodeId) ?? null,
       deleteByNodeId: async (nodeId) => rawResponses.delete(nodeId),
+    },
+    modelOutputLimits: {
+      maxOutputTokens: async () => options.outputLimit,
     },
   };
 
