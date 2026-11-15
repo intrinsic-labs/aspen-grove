@@ -1,0 +1,127 @@
+# Every long-press context menu in a tree, against the mock server (no key):
+# a message's menu (the human bubble, then the reply) with its lifted
+# preview, dismissed and then used; a continuation card's menu on an open
+# rail; and the same menus again after leaving the tree and reopening it
+# from Home, when React Native has unmounted and recycled the old rows.
+# Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/long-press-menus.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Which trees share one root system?
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 15000
+- waitForAnimationToEnd
+
+# The human bubble: the menu opens over the lifted bubble; a tap outside
+# closes it and leaves the row in place.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 0
+- assertVisible: 'Regenerate Response'
+- takeScreenshot: lp-01-user-bubble-menu
+- tapOn:
+    point: '50%,80%'
+- waitForAnimationToEnd
+- assertNotVisible: 'Regenerate Response'
+- assertVisible:
+    id: chat-message-row-.*
+    index: 0
+- takeScreenshot: lp-02-user-bubble-dismissed
+
+# The reply: its menu works (Bookmark), and the next one shows it.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- assertVisible: 'Bookmark'
+- takeScreenshot: lp-03-reply-menu
+- tapOn: 'Bookmark'
+- waitForAnimationToEnd
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- assertVisible: 'Remove Bookmark'
+- takeScreenshot: lp-04-reply-menu-bookmarked
+# Regenerate draws a sibling reply, so the human turn gets a rail.
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# A continuation card's menu on the human turn's rail.
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- longPressOn:
+    id: 'chat-continuation-card-.*'
+    index: 0
+- assertVisible: 'Make Current Node'
+- takeScreenshot: lp-05-card-menu
+- tapOn:
+    point: '50%,80%'
+- waitForAnimationToEnd
+- assertNotVisible: 'Make Current Node'
+- takeScreenshot: lp-06-card-menu-dismissed
+
+# Leave the tree, start a second one, come back to the first: the rows are
+# remounted from recycled views. Every menu still opens and works.
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: How old is Pando?
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- waitForAnimationToEnd
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- assertVisible: 'Regenerate Response'
+- takeScreenshot: lp-07-second-tree-reply-menu
+- tapOn: 'Copy Text'
+- waitForAnimationToEnd
+- runFlow: ../go-home.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 15000
+- waitForAnimationToEnd
+- longPressOn:
+    id: chat-message-row-.*
+    index: 0
+- assertVisible: 'Regenerate Response'
+- takeScreenshot: lp-08-reopened-user-bubble-menu
+- tapOn:
+    point: '50%,80%'
+- waitForAnimationToEnd
+- assertNotVisible: 'Regenerate Response'
+- takeScreenshot: lp-09-reopened-dismissed
