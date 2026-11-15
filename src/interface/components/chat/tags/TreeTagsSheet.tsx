@@ -43,6 +43,7 @@ export const TreeTagsSheet = ({
     new Set()
   );
   const [newTagName, setNewTagName] = useState('');
+  const clearNewTagName = useCallback(() => setNewTagName(''), []);
 
   const refresh = useCallback(async () => {
     if (!groveId || !treeId) {
@@ -123,6 +124,7 @@ export const TreeTagsSheet = ({
       onClose={onClose}
       // A tag name typed but not added is an unsaved edit.
       hasUnsavedChanges={newTagName.trim().length > 0}
+      onDiscard={clearNewTagName}
     >
       <View
         testID="tags-sheet"

@@ -11,6 +11,11 @@ type PageSheetProps = {
    * a swipe down asks Keep Editing or Discard Changes first.
    */
   readonly hasUnsavedChanges?: boolean;
+  /**
+   * Drops the unsaved edits when Discard Changes is chosen, before
+   * `onClose`. Not needed by a sheet that reloads its draft as it opens.
+   */
+  readonly onDiscard?: () => void;
   readonly onShow?: () => void;
   /** iOS: the sheet has finished sliding away. */
   readonly onDismiss?: () => void;
@@ -27,11 +32,12 @@ export const PageSheet = ({
   visible,
   onClose,
   hasUnsavedChanges = false,
+  onDiscard,
   onShow,
   onDismiss,
   children,
 }: PageSheetProps) => {
-  const requestClose = useDiscardGuard(hasUnsavedChanges, onClose);
+  const requestClose = useDiscardGuard(hasUnsavedChanges, onClose, onDiscard);
   return (
     <Modal
       visible={visible}
