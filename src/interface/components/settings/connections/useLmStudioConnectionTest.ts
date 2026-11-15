@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type LmStudioConnectionStatus =
   'connected' | 'disconnected' | 'checking' | 'idle';
@@ -22,8 +22,8 @@ const targetKey = (target: LmStudioConnectionTarget): string =>
 /**
  * Connections' "Test Connection" for LM Studio. A result holds only for the
  * server address and token it was tested with: edit either and the status
- * reads Untested again until the next test, and the answer to a test still
- * running for the old address is dropped.
+ * reads Untested again until the next test, even once the edit is undone,
+ * and the answer to a test still running for the old address is dropped.
  */
 export const useLmStudioConnectionTest = (
   target: LmStudioConnectionTarget,
@@ -36,6 +36,13 @@ export const useLmStudioConnectionTest = (
 
   const { endpoint, token } = target;
   const latestAttempt = useRef(0);
+
+  // An edit ends the result and any test still running: restoring the old
+  // address must not bring its answer back.
+  useEffect(() => {
+    latestAttempt.current += 1;
+    setResult((previous) => (previous?.key === key ? previous : null));
+  }, [key]);
   const test = useCallback(async () => {
     const attempt = ++latestAttempt.current;
     const tested = { endpoint: endpoint.trim(), token: token.trim() };

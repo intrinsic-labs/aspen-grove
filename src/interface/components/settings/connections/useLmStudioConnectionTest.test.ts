@@ -74,4 +74,32 @@ describe('useLmStudioConnectionTest', () => {
     await act(() => answer());
     expect(result.current.status).toBe('idle');
   });
+
+  it('reads untested after an edit is undone, until tested again', async () => {
+    const connect = jest.fn(() => Promise.resolve());
+    const { result, rerender } = setup(connect);
+    await act(() => result.current.test());
+    expect(result.current.status).toBe('connected');
+    await rerender({ ...MOCK, endpoint: 'http://localhost:1236' });
+    await rerender(MOCK);
+    expect(result.current.status).toBe('idle');
+    expect(connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a late answer for an address edited away and back', async () => {
+    let answer: () => void = () => undefined;
+    const { result, rerender } = setup(
+      () =>
+        new Promise<void>((resolve) => {
+          answer = resolve;
+        })
+    );
+    await act(() => {
+      void result.current.test();
+    });
+    await rerender({ ...MOCK, endpoint: 'http://localhost:1236' });
+    await rerender(MOCK);
+    await act(() => answer());
+    expect(result.current.status).toBe('idle');
+  });
 });
