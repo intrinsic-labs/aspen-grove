@@ -4,9 +4,8 @@
 # debounce: compare against the same search on the tiny tree (perf-floor.yaml).
 appId: com.intrinsiclabs.aspengrove
 ---
-- runFlow: ../open-drawer.yaml
-- tapOn:
-    id: drawer-nav-search
+- runFlow: ../open-home-menu.yaml
+- tapOn: Search
 - tapOn:
     id: search-input
 - waitForAnimationToEnd

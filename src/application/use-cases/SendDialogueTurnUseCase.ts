@@ -14,7 +14,9 @@ import {
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
   collectCompletion,
+  requestMaxTokens,
   type CompletionResponse,
+  type IModelOutputLimits,
   type IProviderRegistry,
 } from '@application/services/llm';
 import { computeHumanContentHash } from '@application/services/content-hash-service';
@@ -36,6 +38,15 @@ export type SendDialogueTurnInput = {
   readonly providerApiKey: string;
   readonly providerAppName?: string;
   readonly stream?: boolean;
+  /**
+   * Stops the reply (the composer's stop button). The user's turn is already
+   * saved by then. Text that already streamed is saved as the reply, as is
+   * (no marker; `completion.interruptionReason` is `cancelled`), as a
+   * stopped parallel card is; a stop
+   * before any text saves no reply and rejects with a `cancelled`
+   * `LlmProviderError`.
+   */
+  readonly signal?: AbortSignal;
   readonly onUserNodeCommitted?: (input: {
     readonly userNodeId: ULID;
   }) => void | Promise<void>;
@@ -87,6 +98,8 @@ export type SendDialogueTurnDependencies = {
     'create' | 'findByNodeId' | 'deleteByNodeId'
   >;
   readonly providerRegistry: IProviderRegistry;
+  /** Caps a request's `maxTokens` at the model's output limit, when known. */
+  readonly modelOutputLimits: IModelOutputLimits;
 };
 
 /**
@@ -105,6 +118,7 @@ export class SendDialogueTurnUseCase {
   private readonly pathStateRepository: SendDialogueTurnDependencies['pathStateRepository'];
   private readonly rawApiResponseRepository: SendDialogueTurnDependencies['rawApiResponseRepository'];
   private readonly providerRegistry: IProviderRegistry;
+  private readonly modelOutputLimits: IModelOutputLimits;
 
   constructor(dependencies: SendDialogueTurnDependencies) {
     this.agentRepository = dependencies.agentRepository;
@@ -115,6 +129,7 @@ export class SendDialogueTurnUseCase {
     this.pathStateRepository = dependencies.pathStateRepository;
     this.rawApiResponseRepository = dependencies.rawApiResponseRepository;
     this.providerRegistry = dependencies.providerRegistry;
+    this.modelOutputLimits = dependencies.modelOutputLimits;
   }
 
   async execute(input: SendDialogueTurnInput): Promise<SendDialogueTurnResult> {
@@ -217,8 +232,16 @@ export class SendDialogueTurnUseCase {
         messages: assembled.messages,
         systemPrompt: assembled.systemContext,
         temperature: modelAgent.configuration.temperature,
-        maxTokens: modelAgent.configuration.maxTokens,
+        maxTokens: await requestMaxTokens(
+          modelAgent.configuration.maxTokens,
+          {
+            provider: llmProvider.provider,
+            model: input.session.modelIdentifier,
+          },
+          this.modelOutputLimits
+        ),
         stopSequences: modelAgent.configuration.stopSequences,
+        signal: input.signal,
       },
       onTextDelta: input.onAssistantTextDelta,
     });

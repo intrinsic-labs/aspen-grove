@@ -1,0 +1,107 @@
+# The agent editor holds Max Tokens to the chosen model's limit. Onboarding's
+# agent "mock-model" (setup.yaml) is opened from Settings → Agents, moved to
+# OpenRouter's default model (a large limit) with Max Tokens 32768, then back
+# to LM Studio, whose mock-model allows 8192: the field drops to 8192 and the
+# Generation footer names the limit. Saved, the agent keeps 8192. Needs the
+# mock server, Metro and a network connection for OpenRouter's catalog:
+#   maestro test .maestro/mock/agent-max-tokens.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow: ../open-settings.yaml
+- tapOn:
+    id: settings-link-agents
+- extendedWaitUntil:
+    visible: 'Edit mock-model'
+    timeout: 10000
+- tapOn: 'Edit mock-model'
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+
+# OpenRouter: its default model, with a limit well above 32768.
+- tapOn:
+    id: agent-editor-provider
+- waitForAnimationToEnd
+- tapOn: 'OpenRouter'
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-footer-id
+      text: '.*/.*'
+    timeout: 30000
+- extendedWaitUntil:
+    visible: 'This model allows up to .* output tokens\.'
+    timeout: 30000
+- tapOn:
+    id: agent-editor-max-tokens-input
+- inputText: '32768'
+- assertVisible:
+    id: agent-editor-max-tokens-input
+    text: '32768'
+- tapOn:
+    id: agent-editor-name-input
+- tapOn:
+    id: keyboard-done
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 70-agent-editor-large-model
+
+# Back to LM Studio: mock-model allows 8192, so Max Tokens follows it down.
+- scrollUntilVisible:
+    element:
+      id: agent-editor-provider
+    direction: UP
+    timeout: 5000
+- tapOn:
+    id: agent-editor-provider
+- waitForAnimationToEnd
+- tapOn: 'LM Studio'
+# LM Studio starts on a model from its list; choose mock-model in its menu.
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-footer-id
+      text: 'mock-.*'
+    timeout: 15000
+- tapOn:
+    id: agent-editor-model
+- waitForAnimationToEnd
+- tapOn: 'mock-model'
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-footer-id
+      text: 'mock-model'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-max-tokens-input
+      text: '8192'
+    timeout: 10000
+- assertVisible: 'This model allows up to 8,192 output tokens.'
+- waitForAnimationToEnd
+- takeScreenshot: 71-agent-editor-clamped
+
+# A typed value above the limit is capped as it is typed: a 9 anywhere in
+# 8192 makes it larger, and the field goes back to 8192.
+- tapOn:
+    id: agent-editor-max-tokens-input
+- inputText: '9'
+- assertVisible:
+    id: agent-editor-max-tokens-input
+    text: '8192'
+
+# Saved and reopened, the agent keeps 8192.
+- tapOn:
+    id: agent-editor-submit
+- extendedWaitUntil:
+    visible: 'Edit mock-model'
+    timeout: 10000
+- tapOn: 'Edit mock-model'
+- extendedWaitUntil:
+    visible:
+      id: agent-editor-max-tokens-input
+      text: '8192'
+    timeout: 10000
+- takeScreenshot: 72-agent-editor-saved

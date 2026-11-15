@@ -1,4 +1,4 @@
-import { AgentType, Content, Node } from '@/domain';
+import { Content, Node, NodeAuthorType } from '@/domain';
 import { ContentHash, LocalId, ULID } from '@domain/value-objects';
 
 export interface INodeRepository {
@@ -18,14 +18,14 @@ export interface INodeRepository {
   findByLoomTreeId(
     loomTreeId: ULID,
     includePruned?: boolean,
-    agentType?: AgentType
+    agentType?: NodeAuthorType
   ): Promise<Node[]>;
 
   /** Find all bookmarked Nodes in a tree */
   findBookmarked(loomTreeId: ULID): Promise<Node[]>;
 
   /** Find all pruned Nodes in a tree */
-  findPruned(loomTreeId: ULID, agentType?: AgentType): Promise<Node[]>;
+  findPruned(loomTreeId: ULID, agentType?: NodeAuthorType): Promise<Node[]>;
 
   /** Find all nodes authored by a certain Agent */
   findByAuthorAgentId(
@@ -76,7 +76,7 @@ export type CreateNodeInput = {
   readonly localId: LocalId;
   readonly content: Content;
   readonly authorAgentId: ULID;
-  readonly authorType: AgentType;
+  readonly authorType: NodeAuthorType;
   readonly contentHash: ContentHash;
   readonly editedFrom?: ULID;
 };

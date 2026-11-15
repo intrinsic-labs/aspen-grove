@@ -7,6 +7,7 @@ import {
   collectCompletion,
   type IProviderRegistry,
 } from '@application/services/llm';
+import { isProvisionalTreeTitle } from '@application/services/tree-title';
 import type { ULID } from '@domain/value-objects';
 
 export type GenerateTreeTitleInput = {
@@ -33,9 +34,6 @@ export type GenerateTreeTitleDependencies = {
   readonly providerRegistry: IProviderRegistry;
 };
 
-/** Titles the repository assigns by default: `Loom Tree <ISO timestamp>`. */
-const DEFAULT_TITLE_PATTERN = /^Loom Tree \d{4}-\d{2}-\d{2}T/;
-
 const TITLE_MAX_LENGTH = 60;
 const CONTEXT_SNIPPET_LENGTH = 1500;
 
@@ -53,8 +51,9 @@ const sanitizeTitle = (raw: string): string | null => {
 /**
  * One extra model call after the first model response in a tree: asks the
  * tree's own agent model for a short conversation title and replaces the
- * default timestamp title. Gated by `UserPreferences.autoTitleEnabled` and
- * skipped when the user has already renamed the tree.
+ * provisional title (the timestamp placeholder, or the first message's
+ * words). Gated by `UserPreferences.autoTitleEnabled` and skipped when the
+ * user has already renamed the tree.
  */
 export class GenerateTreeTitleUseCase {
   private readonly deps: GenerateTreeTitleDependencies;
@@ -75,7 +74,7 @@ export class GenerateTreeTitleUseCase {
     if (!tree) {
       throw new Error(`Tree not found: ${input.treeId}`);
     }
-    if (!DEFAULT_TITLE_PATTERN.test(tree.title)) {
+    if (!isProvisionalTreeTitle(tree.title, input.userText)) {
       return { title: null, skippedReason: 'alreadyTitled' };
     }
 

@@ -1,23 +1,30 @@
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import ContextMenu, {
-  type ContextMenuAction,
-} from 'react-native-context-menu-view';
+import ContextMenu from 'react-native-context-menu-view';
+import {
+  findNativeMenuItem,
+  toNativeMenuActions,
+} from '@/interface/ui/components/native-menu';
 import type { ChatRow } from '../types';
 import {
-  buildMessageMenuItems,
+  buildMessageMenuSections,
   type ChatMessageMenuAction,
 } from './message-menu';
 
-/** The message row's native long-press menu around its content. */
+/**
+ * The message row's native long-press menu around its content. Untitled,
+ * as in Latent Spaces (NodeView.swift `.contextMenu`).
+ */
 export const MessageContextMenu = ({
   row,
+  isCurrent,
   onMessageAction,
   children,
   previewBorderRadius,
   style,
 }: {
   readonly row: ChatRow;
+  readonly isCurrent: boolean;
   readonly onMessageAction: (
     nodeId: string,
     action: ChatMessageMenuAction
@@ -26,26 +33,21 @@ export const MessageContextMenu = ({
   readonly previewBorderRadius: number;
   readonly style: StyleProp<ViewStyle>;
 }) => {
-  const menuItems = buildMessageMenuItems(
-    row.bookmarked,
-    row.pruned,
-    row.authorType
-  );
-  const actions: ContextMenuAction[] = menuItems.map((item) => ({
-    title: item.title,
-    systemIcon: item.systemIcon,
-    destructive: item.destructive,
-  }));
+  const sections = buildMessageMenuSections({
+    bookmarked: row.bookmarked,
+    pruned: row.pruned,
+    continuationCount: row.continuationCount,
+    isCurrent,
+  });
 
   return (
     <ContextMenu
-      title={row.localId}
-      actions={actions}
+      actions={toNativeMenuActions(sections)}
       borderRadius={previewBorderRadius}
       previewBackgroundColor="transparent"
       style={style}
       onPress={(event) => {
-        const menuItem = menuItems[event.nativeEvent.index];
+        const menuItem = findNativeMenuItem(sections, event.nativeEvent);
         if (menuItem) {
           onMessageAction(row.id, menuItem.action);
         }

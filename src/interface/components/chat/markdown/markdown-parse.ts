@@ -8,9 +8,10 @@ import { LruCache } from './lru-cache';
 /**
  * One markdown-it for every message. Left to its default,
  * react-native-markdown-display builds a new MarkdownIt on every render of
- * every message, which costs more than the parse itself.
+ * every message, which costs more than the parse itself. Quotes and dashes
+ * stay as typed (no typographer), as Latent Spaces shows them.
  */
-export const sharedMarkdownIt = MarkdownIt({ typographer: true });
+export const sharedMarkdownIt = MarkdownIt({ typographer: false });
 
 /** Enough for several big trees' active paths. */
 const PARSED_MESSAGE_CAPACITY = 500;

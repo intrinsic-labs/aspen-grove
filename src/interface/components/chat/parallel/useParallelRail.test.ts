@@ -30,6 +30,7 @@ const session: ChatSession = {
   activeNodeId: sourceNodeId,
   model: {
     modelAgentId,
+    agentName: 'Test',
     modelIdentifier: 'test/model',
     provider: 'openrouter',
   },
@@ -176,7 +177,7 @@ describe('useParallelRail', () => {
     const stopped = hook.result.current.cards[1];
     if (stopped.kind !== 'slot') throw new Error('expected a slot card');
     expect(savedText(store, stopped.view.nodeId)).toBe(
-      'Partial\n\n[stream interrupted: cancelled]'
+      'Partial'
     );
     expect(store.childrenOfSource()).toHaveLength(3);
   });
@@ -238,6 +239,7 @@ describe('useParallelRail', () => {
       ...session,
       model: {
         modelAgentId: 'switched-agent' as ULID,
+        agentName: 'Switched',
         modelIdentifier: 'other/model',
         provider: 'lmstudio',
       },

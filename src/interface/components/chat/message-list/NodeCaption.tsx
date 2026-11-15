@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import type { ChatRow } from '../types';
 
 /**
@@ -44,6 +45,7 @@ export const NodeCaption = ({
 const styles = StyleSheet.create({
   nodeCaption: {
     marginTop: 6,
+    paddingHorizontal: loomUiTokens.messageList.captionInset,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

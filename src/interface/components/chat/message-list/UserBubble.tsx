@@ -52,7 +52,7 @@ export const UserBubble = memo(
             : 0;
         const bubbleWidth = Math.ceil(
           maxLineWidth +
-            loomUiTokens.messageList.userBubblePaddingHorizontal * 2 +
+            loomUiTokens.messageList.messagePadding * 2 +
             borderAllowance
         );
 
@@ -94,7 +94,6 @@ export const UserBubble = memo(
             tone={viewStyle === 'filled' ? 'inverse' : 'primary'}
             onTextLayout={onTextLayout}
             style={[
-              styles.messageText,
               messageTextStyle,
               viewStyle === 'filled'
                 ? styles.userFilledText
@@ -117,8 +116,8 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    paddingHorizontal: loomUiTokens.messageList.userBubblePaddingHorizontal,
-    paddingVertical: loomUiTokens.messageList.userBubblePaddingVertical,
+    // `.padding(8)` inside the bubble (NodeView.swift:197)
+    padding: loomUiTokens.messageList.messagePadding,
   },
   standardText: {
     opacity: loomUiTokens.messageList.messageTextOpacity,
@@ -126,9 +125,5 @@ const styles = StyleSheet.create({
   userFilledText: {
     color: loomUiTokens.colors.userBubbleFillText,
     opacity: loomUiTokens.messageList.messageTextOpacity,
-  },
-  messageText: {
-    fontSize: loomUiTokens.messageList.textSize,
-    lineHeight: loomUiTokens.messageList.textLineHeight,
   },
 });

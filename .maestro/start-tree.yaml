@@ -1,0 +1,19 @@
+# Start a tree from Home's composer with ${MESSAGE} as its first message:
+# the tree opens and sends it. Ends on the new tree while the reply streams,
+# with the first tree's Getting Started sheet closed.
+appId: com.intrinsiclabs.aspengrove
+---
+- tapOn:
+    id: home-composer-input
+- inputText: ${MESSAGE}
+- tapOn:
+    id: home-composer-send
+# The first tree opens Getting Started over it, which can cover the tree
+# before the wait sees it.
+- extendedWaitUntil:
+    visible:
+      id: chat-screen|tree-onboarding-begin
+    timeout: 10000
+- runFlow: dismiss-tree-onboarding.yaml
+- assertVisible:
+    id: chat-screen

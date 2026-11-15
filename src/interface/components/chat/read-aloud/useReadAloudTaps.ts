@@ -16,9 +16,12 @@ type UseReadAloudTapsInput = {
 };
 
 /**
- * Message-row taps with Voice Mode, as in Latent Spaces' `NodeView`: a tap
- * stops any speech and does the row's single-tap action; with Voice Mode on,
- * a double-tap reads the row aloud instead. Only with Voice Mode on is the
+ * Message-row taps with Voice Mode, as in Latent Spaces' `NodeView`: while
+ * speech plays, a tap only stops it; otherwise a tap does the row's
+ * single-tap action. With Voice Mode on, a double-tap reads the row aloud
+ * instead. (Latent Spaces' tap can only close a row, so stopping there
+ * never opens one; here the tap toggles the continuation rail, so a
+ * stopping tap must not reach it.) Only with Voice Mode on is the
  * single tap held back for the double-tap window, so taps feel unchanged
  * with it off.
  */
@@ -43,6 +46,7 @@ export const useReadAloudTaps = ({
     (nodeId: ULID) => {
       if (speaking) {
         stopSpeaking();
+        return;
       }
       onSingleTap(nodeId);
     },

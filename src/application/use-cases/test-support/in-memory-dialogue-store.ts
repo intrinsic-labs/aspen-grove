@@ -1,4 +1,8 @@
 import type {
+  IPathRepository,
+  IPathStateRepository,
+} from '@application/repositories';
+import type {
   Agent,
   Edge,
   LoomTree,
@@ -30,7 +34,7 @@ const humanNode = (id: ULID, text: string, hashChar: string): Node => ({
   metadata: { bookmarked: false, pruned: false, excluded: false },
 });
 
-const modelAgent: Agent = {
+const baseModelAgent: Agent = {
   id: modelAgentId,
   name: 'Test model',
   type: 'model',
@@ -69,11 +73,27 @@ const path: Path = {
 
 export type InMemoryDialogueStore = ReturnType<typeof createInMemoryDialogueStore>;
 
+export type InMemoryDialogueStoreOptions = {
+  /** The model agent's configured Maximum Output Tokens. */
+  readonly maxTokens?: number;
+  /** What `modelOutputLimits` reports for the model (default: unknown). */
+  readonly outputLimit?: number;
+};
+
 /**
  * Repositories over plain maps, plus a log of every node write so tests can
  * see exactly what was persisted and when.
  */
-export const createInMemoryDialogueStore = () => {
+export const createInMemoryDialogueStore = (
+  options: InMemoryDialogueStoreOptions = {}
+) => {
+  const modelAgent: Agent = {
+    ...baseModelAgent,
+    configuration: {
+      ...baseModelAgent.configuration,
+      maxTokens: options.maxTokens,
+    },
+  };
   const nodes = new Map<ULID, Node>([
     [rootNodeId, humanNode(rootNodeId, 'Tell me a story.', 'a')],
     [sourceNodeId, humanNode(sourceNodeId, 'Make it short.', 'b')],
@@ -91,11 +111,27 @@ export const createInMemoryDialogueStore = () => {
   const rawResponses = new Map<ULID, RawApiResponse>();
   const createdNodeTexts: string[] = [];
   let touchCount = 0;
+  let pathNodeIds: ULID[] = [rootNodeId, sourceNodeId];
+  let activeNodeId: ULID = sourceNodeId;
+  const toPathNodes = () =>
+    pathNodeIds.map((nodeId, position) => ({
+      id: `path-node-${position}` as ULID,
+      pathId,
+      position,
+      nodeId,
+      createdAt: now,
+    }));
 
   const repositories: Omit<
     GenerateParallelContinuationsDependencies,
-    'providerRegistry' | 'retry'
-  > = {
+    'providerRegistry' | 'retry' | 'pathRepository'
+  > & {
+    readonly pathRepository: Pick<
+      IPathRepository,
+      'findById' | 'getNodeSequence' | 'appendNode' | 'replaceSuffix'
+    >;
+    readonly pathStateRepository: Pick<IPathStateRepository, 'setActiveNode'>;
+  } = {
     agentRepository: {
       findById: async (id) => (id === modelAgentId ? modelAgent : null),
     },
@@ -158,6 +194,27 @@ export const createInMemoryDialogueStore = () => {
     },
     pathRepository: {
       findById: async (id) => (id === pathId ? path : null),
+      getNodeSequence: async () => toPathNodes(),
+      appendNode: async (_pathId, nodeId) => {
+        pathNodeIds = [...pathNodeIds, nodeId];
+        return toPathNodes()[pathNodeIds.length - 1];
+      },
+      replaceSuffix: async (_pathId, startPosition, nodeIds) => {
+        pathNodeIds = [...pathNodeIds.slice(0, startPosition), ...nodeIds];
+      },
+    },
+    pathStateRepository: {
+      setActiveNode: async (_pathId, agentId, nodeId, mode) => {
+        activeNodeId = nodeId;
+        return {
+          id: 'path-state' as ULID,
+          pathId,
+          agentId,
+          mode: mode ?? 'dialogue',
+          activeNodeId: nodeId,
+          updatedAt: now,
+        };
+      },
     },
     rawApiResponseRepository: {
       create: async (input) => {
@@ -173,6 +230,9 @@ export const createInMemoryDialogueStore = () => {
       findByNodeId: async (nodeId) => rawResponses.get(nodeId) ?? null,
       deleteByNodeId: async (nodeId) => rawResponses.delete(nodeId),
     },
+    modelOutputLimits: {
+      maxOutputTokens: async () => options.outputLimit,
+    },
   };
 
   return {
@@ -182,6 +242,8 @@ export const createInMemoryDialogueStore = () => {
     rawResponses,
     createdNodeTexts,
     touchCount: () => touchCount,
+    pathNodeIds: () => pathNodeIds,
+    activeNodeId: () => activeNodeId,
     childrenOfSource: () =>
       edges
         .filter((edge) =>

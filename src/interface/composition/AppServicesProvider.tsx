@@ -14,18 +14,19 @@ import {
   EditDialogueNodeUseCase,
   ExportLoomTreeUseCase,
   ExportPathMarkdownUseCase,
-  ForkAgentForTreeUseCase,
   GenerateDialogueContinuationUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
+  TitleTreeFromFirstMessageUseCase,
   GetSetupStatusUseCase,
   ImportLoomTreeUseCase,
   SendDialogueTurnUseCase,
   SwitchDialoguePathUseCase,
   UpdateAgentConfigurationUseCase,
-  UpdateTreeDefaultAgentUseCase,
+  UpdateTreeModelSettingsUseCase,
 } from '@application/use-cases';
 import {
+  CatalogModelOutputLimits,
   LMStudioAdapter,
   OpenRouterAdapter,
   OpenRouterModelCatalog,
@@ -56,7 +57,7 @@ import { findProviderApiKey } from '@/interface/components/chat/provider-key';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 
-type AppServices = {
+export type AppServices = {
   readonly repositories: {
     readonly agentRepo: WatermelonAgentRepository;
     readonly continuationCountRepo: WatermelonContinuationCountPreferenceRepository;
@@ -86,16 +87,16 @@ type AppServices = {
     readonly editDialogueNodeUseCase: EditDialogueNodeUseCase;
     readonly exportLoomTreeUseCase: ExportLoomTreeUseCase;
     readonly exportPathMarkdownUseCase: ExportPathMarkdownUseCase;
-    readonly forkAgentForTreeUseCase: ForkAgentForTreeUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
+    readonly titleTreeFromFirstMessageUseCase: TitleTreeFromFirstMessageUseCase;
     readonly getSetupStatusUseCase: GetSetupStatusUseCase;
     readonly importLoomTreeUseCase: ImportLoomTreeUseCase;
     readonly sendDialogueTurnUseCase: SendDialogueTurnUseCase;
     readonly switchDialoguePathUseCase: SwitchDialoguePathUseCase;
     readonly updateAgentConfigurationUseCase: UpdateAgentConfigurationUseCase;
-    readonly updateTreeDefaultAgentUseCase: UpdateTreeDefaultAgentUseCase;
+    readonly updateTreeModelSettingsUseCase: UpdateTreeModelSettingsUseCase;
   };
 };
 
@@ -146,14 +147,16 @@ const buildAppServices = (): AppServices => {
   const openRouterAdapter = new OpenRouterAdapter();
   const lmStudioAdapter = new LMStudioAdapter();
 
+  const openRouterCatalog = new OpenRouterModelCatalog(database);
   const adapters = {
     providerRegistry: new ProviderRegistry({
       openrouter: openRouterAdapter,
       lmstudio: lmStudioAdapter,
     }),
     credentialStore: new ExpoSecureCredentialStore(),
-    openRouterCatalog: new OpenRouterModelCatalog(database),
+    openRouterCatalog,
   } as const;
+  const modelOutputLimits = new CatalogModelOutputLimits(openRouterCatalog);
 
   const useCases = {
     createDialogueLoomTreeUseCase: new CreateDialogueLoomTreeUseCase({
@@ -179,6 +182,7 @@ const buildAppServices = (): AppServices => {
       pathStateRepository: repositories.pathStateRepo,
       rawApiResponseRepository: repositories.rawApiResponseRepo,
       providerRegistry: adapters.providerRegistry,
+      modelOutputLimits,
     }),
     generateDialogueContinuationUseCase:
       new GenerateDialogueContinuationUseCase({
@@ -190,6 +194,7 @@ const buildAppServices = (): AppServices => {
         pathStateRepository: repositories.pathStateRepo,
         rawApiResponseRepository: repositories.rawApiResponseRepo,
         providerRegistry: adapters.providerRegistry,
+        modelOutputLimits,
       }),
     generateParallelContinuationsUseCase:
       new GenerateParallelContinuationsUseCase({
@@ -200,6 +205,7 @@ const buildAppServices = (): AppServices => {
         pathRepository: repositories.pathRepo,
         rawApiResponseRepository: repositories.rawApiResponseRepo,
         providerRegistry: adapters.providerRegistry,
+        modelOutputLimits,
       }),
     switchDialoguePathUseCase: new SwitchDialoguePathUseCase({
       pathRepository: repositories.pathRepo,
@@ -207,20 +213,16 @@ const buildAppServices = (): AppServices => {
       nodeRepository: repositories.nodeRepo,
       edgeRepository: repositories.edgeRepo,
     }),
-    // Agent management use cases (used by chat ⚙️ sheet and Settings → Agents)
+    // Agents: Settings → Agents, and a tree's Model Settings
     createSharedAgentUseCase: new CreateSharedAgentUseCase({
       agentRepository: repositories.agentRepo,
     }),
     updateAgentConfigurationUseCase: new UpdateAgentConfigurationUseCase({
       agentRepository: repositories.agentRepo,
     }),
-    forkAgentForTreeUseCase: new ForkAgentForTreeUseCase({
+    updateTreeModelSettingsUseCase: new UpdateTreeModelSettingsUseCase({
       agentRepository: repositories.agentRepo,
       loomTreeRepository: repositories.treeRepo,
-    }),
-    updateTreeDefaultAgentUseCase: new UpdateTreeDefaultAgentUseCase({
-      loomTreeRepository: repositories.treeRepo,
-      agentRepository: repositories.agentRepo,
     }),
     deleteAgentUseCase: new DeleteAgentUseCase({
       agentRepository: repositories.agentRepo,
@@ -254,6 +256,9 @@ const buildAppServices = (): AppServices => {
       agentRepository: repositories.agentRepo,
       userPreferencesRepository: repositories.userPreferencesRepo,
       providerRegistry: adapters.providerRegistry,
+    }),
+    titleTreeFromFirstMessageUseCase: new TitleTreeFromFirstMessageUseCase({
+      loomTreeRepository: repositories.treeRepo,
     }),
     // First-run onboarding and the Home / Loom Trees empty states.
     getSetupStatusUseCase: new GetSetupStatusUseCase({

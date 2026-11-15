@@ -15,7 +15,8 @@ type UseMessageActionsInput = {
   readonly startEditForNode: NodeAction;
   readonly rewindToNode: NodeAction;
   readonly copyNodeText: NodeAction;
-  readonly openNodeDetail: (nodeId: ULID) => void;
+  /** Opens the node's "Node Info" sheet. */
+  readonly openNodeInfo: (nodeId: ULID) => void;
   readonly toggleBookmark: NodeAction;
   readonly togglePrune: NodeAction;
 };
@@ -30,7 +31,7 @@ export const useMessageActions = ({
   startEditForNode,
   rewindToNode,
   copyNodeText,
-  openNodeDetail,
+  openNodeInfo,
   toggleBookmark,
   togglePrune,
 }: UseMessageActionsInput) => {
@@ -55,7 +56,7 @@ export const useMessageActions = ({
           await copyNodeText(targetNodeId);
           break;
         case 'info':
-          openNodeDetail(targetNodeId);
+          openNodeInfo(targetNodeId);
           break;
         case 'bookmark':
           await toggleBookmark(targetNodeId);
@@ -68,7 +69,7 @@ export const useMessageActions = ({
     [
       continuations,
       copyNodeText,
-      openNodeDetail,
+      openNodeInfo,
       regenerateFromNode,
       rewindToNode,
       startEditForNode,

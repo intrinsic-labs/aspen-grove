@@ -1,6 +1,6 @@
 import { ContentHash, ULID, LocalId } from '../value-objects';
 import { Content } from './content';
-import { AgentType } from './enums';
+import { NodeAuthorType } from './enums';
 
 /**
  * Node: a single unit of content within a LoomTree.
@@ -12,7 +12,7 @@ export interface Node {
   readonly content: Content;
   readonly summary?: string;
   readonly authorAgentId: ULID;
-  readonly authorType: AgentType;
+  readonly authorType: NodeAuthorType;
   readonly contentHash: ContentHash;
   readonly createdAt: Date;
   readonly metadata: NodeMetadata;

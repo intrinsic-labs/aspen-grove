@@ -32,6 +32,12 @@ export interface AgentConfiguration {
   readonly systemPrompt?: string;
   readonly temperature?: number;
   readonly maxTokens?: number;
+  /**
+   * "Always use maximum allowed" (Latent Spaces' tree model settings):
+   * `maxTokens` follows the model's own output limit, including when the
+   * model changes.
+   */
+  readonly useMaxTokens?: boolean;
   readonly stopSequences?: string[];
   readonly customParameters?: Record<string, unknown>;
 }

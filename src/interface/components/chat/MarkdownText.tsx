@@ -9,6 +9,13 @@ import {
   parseMarkdownUncached,
   sharedMarkdownIt,
 } from './markdown/markdown-parse';
+import { toMessageType } from './message-type';
+import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
+
+const DEFAULT_TYPE = toMessageType(
+  loomUiTokens.typography.defaultMessageFontSize,
+  undefined
+);
 
 // Extract background color from theme to apply to ScrollView
 const CODE_BLOCK_BACKGROUND =
@@ -33,16 +40,19 @@ export const MarkdownText = memo(
 
     const styles = useMemo(() => {
       const fontFamily = baseStyle?.fontFamily ?? 'Cardo-Regular';
-      const fontSize = baseStyle?.fontSize ?? 17;
-      const lineHeight = baseStyle?.lineHeight ?? 27;
+      const fontSize = baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize;
+      const lineHeight = baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight;
       const textColor = baseStyle?.color ?? colors.textColor;
 
       return {
+        // Blocks sit one empty line apart, as plain text with a blank line
+        // between paragraphs reads in Latent Spaces.
         body: {
           fontFamily,
           fontSize,
           lineHeight,
           color: textColor,
+          gap: lineHeight,
         } as TextStyle,
 
         // Headings
@@ -198,7 +208,8 @@ export const MarkdownText = memo(
 
         // Paragraph
         paragraph: {
-          marginVertical: 4,
+          marginTop: 0,
+          marginBottom: 0,
         } as ViewStyle,
 
         // Tables

@@ -26,6 +26,15 @@ export interface IRawApiResponseRepository {
   findByNodeId(nodeId: ULID): Promise<RawApiResponse | null>;
 
   /**
+   * The model identifier recorded for each of these Nodes that has a
+   * RawApiResponse, keyed by node id. Reads no payloads (nothing is
+   * decompressed), so it suits labelling many nodes at once.
+   */
+  findModelIdentifiersByNodeIds(
+    nodeIds: readonly ULID[]
+  ): Promise<ReadonlyMap<ULID, string>>;
+
+  /**
    * Create a new RawApiResponse record.
    * Implementation should compress responseBody and responseHeaders (gzip).
    */

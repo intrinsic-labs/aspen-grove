@@ -38,6 +38,10 @@ export default class UserPreferences extends Model {
   /** First-run setup finished or skipped (schema v9). */
   @date('onboarding_completed_at') onboardingCompletedAt!: Date | null;
 
+  /** The first tree's tips were closed with Begin (schema v10). */
+  @date('tree_onboarding_completed_at')
+  treeOnboardingCompletedAt!: Date | null;
+
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
 }

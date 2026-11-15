@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import {
   Pressable,
   StyleSheet,
-  TextInput,
   View,
   type TextInput as TextInputType,
 } from 'react-native';
@@ -19,6 +18,7 @@ import {
   useDialogueDraft,
 } from './dialogue-draft-store';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
+import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
 const getParamString = (
   value: string | string[] | undefined
@@ -85,7 +85,7 @@ export const ExpandedDialogueComposerView = () => {
           </Pressable>
         </View>
 
-        <TextInput
+        <AppTextInput
           testID="compose-input"
           ref={inputRef}
           value={draft}

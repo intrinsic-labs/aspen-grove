@@ -300,6 +300,8 @@ export class WatermelonAgentRepository implements IAgentRepository {
       temperature:
         typeof raw.temperature === 'number' ? raw.temperature : undefined,
       maxTokens: typeof raw.maxTokens === 'number' ? raw.maxTokens : undefined,
+      useMaxTokens:
+        typeof raw.useMaxTokens === 'boolean' ? raw.useMaxTokens : undefined,
       stopSequences,
       customParameters: isPlainObject(raw.customParameters)
         ? raw.customParameters

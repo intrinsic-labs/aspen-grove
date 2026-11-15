@@ -13,8 +13,15 @@ export type ComposerMode = {
   readonly sendLabel: string;
 };
 
-/** Composer copy for sending a new message versus saving an edit. */
-export const toComposerMode = (editTarget: EditTarget | null): ComposerMode =>
+/**
+ * Composer copy for sending a new message versus saving an edit. A new
+ * message addresses the tree's agent, as Latent Spaces addresses its model
+ * (LoomTreeView.swift:88).
+ */
+export const toComposerMode = (
+  editTarget: EditTarget | null,
+  agentName?: string
+): ComposerMode =>
   editTarget
     ? {
         isEditing: true,
@@ -25,6 +32,8 @@ export const toComposerMode = (editTarget: EditTarget | null): ComposerMode =>
     : {
         isEditing: false,
         editLabel: undefined,
-        composerPlaceholder: 'Send a message...',
+        composerPlaceholder: agentName
+          ? `Reply to ${agentName}`
+          : 'Send a message...',
         sendLabel: 'Send',
       };

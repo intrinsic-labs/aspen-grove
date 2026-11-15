@@ -17,6 +17,8 @@ import {
   createStreamDiagnostics,
   logStreamDiagnostics,
 } from './stream-diagnostics';
+import { interruptionNotice, isStoppedBeforeText } from './stopped-generation';
+import type { StopGeneration } from './useStopGeneration';
 
 type UseRegenerateFromNodeInput = {
   readonly session: ChatSession | null;
@@ -38,6 +40,8 @@ type UseRegenerateFromNodeInput = {
     ReturnType<typeof useStreamingAssistantRow>,
     'appendDelta' | 'reset'
   >;
+  /** The composer's stop button for the new response. */
+  readonly stopGeneration: StopGeneration;
   readonly continuations: Pick<ReturnType<typeof useNodeContinuations>, 'hide'>;
   readonly refreshRows: (session: ChatSession) => Promise<void>;
   readonly refreshRowsAndContinuations: (session: ChatSession) => Promise<void>;
@@ -66,6 +70,7 @@ export const useRegenerateFromNode = ({
   getRowById,
   shouldAutoScrollRef,
   streaming,
+  stopGeneration,
   continuations,
   refreshRows,
   refreshRowsAndContinuations,
@@ -87,6 +92,7 @@ export const useRegenerateFromNode = ({
         return;
       }
 
+      const signal = stopGeneration.begin();
       try {
         setSending(true);
         setError(null);
@@ -137,6 +143,7 @@ export const useRegenerateFromNode = ({
           providerAppName: 'Aspen Grove RN',
           stream: true,
           activateGeneratedNode: true,
+          signal,
           onAssistantTextDelta: async ({ delta }) => {
             diagnostics.recordDelta();
             appendDelta(delta);
@@ -151,19 +158,25 @@ export const useRegenerateFromNode = ({
         });
         reset();
 
-        if (result.completion.interruptionReason) {
-          setError(
-            `Stream interrupted (${result.completion.interruptionReason}). Saved partial response.`
-          );
-        } else {
+        // A stopped response keeps its partial text, unmarked, as a sibling.
+        const reason = result.completion.interruptionReason;
+        const notice = interruptionNotice(reason);
+        if (notice) {
+          setError(notice);
+        } else if (!reason) {
           onModelNodeCompleted(result.assistantNodeId);
         }
       } catch (caught) {
-        showProviderError(caught, session.model?.provider);
+        // Stopped before any text is not a failure; nothing was saved.
+        if (!isStoppedBeforeText(signal, caught)) {
+          showProviderError(caught, session.model?.provider);
+        }
         // Rows were trimmed optimistically; reload from the (unchanged)
-        // path so the old response reappears after a failed regenerate.
+        // path so the old response reappears after a failed or stopped
+        // regenerate.
         await refreshRows(session);
       } finally {
+        stopGeneration.end(signal);
         reset();
         setSending(false);
       }
@@ -187,6 +200,7 @@ export const useRegenerateFromNode = ({
       setSending,
       shouldAutoScrollRef,
       showProviderError,
+      stopGeneration,
     ]
   );
 };

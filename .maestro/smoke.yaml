@@ -1,24 +1,24 @@
-# Cold-start smoke walk: onboarding, then skip, then every screen a fresh install can reach
-# without a provider key.
+# Cold-start smoke walk: onboarding's pages and its setup page, then skip, then every screen a
+# fresh install can reach without a provider key (Home, its menu, Search, Settings,
+# Connections, Agents).
 # Run from the repo root with the app installed on a booted simulator:
 #   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml
-# A fresh install opens onboarding over Home. Capture step 1 with each provider, then skip.
-- assertVisible:
-    id: onboarding-step-provider
-- takeScreenshot: 01-onboarding-openrouter
+# A fresh install opens onboarding over Home: Latent Spaces' six pages, then the setup page
+# with each provider. Then skip it.
+- runFlow: walk-onboarding.yaml
+- takeScreenshot: 01-onboarding-setup-openrouter
 - tapOn:
     id: onboarding-provider-lmstudio
 - assertVisible:
     id: connections-lmstudio-endpoint-input
-- takeScreenshot: 02-onboarding-lmstudio
+- takeScreenshot: 02-onboarding-setup-lmstudio
 - tapOn:
     id: onboarding-provider-openrouter
-- tapOn:
-    id: onboarding-skip
+- runFlow: skip-onboarding.yaml
 
 - extendedWaitUntil:
     visible:
@@ -30,40 +30,48 @@ appId: com.intrinsiclabs.aspengrove
     id: onboarding-screen
 - takeScreenshot: 03-home
 
-- runFlow: open-drawer.yaml
-- takeScreenshot: 04-drawer
-
-- tapOn:
-    id: drawer-nav-trees
+# Home's `···` menu: Latent Spaces' items plus Search.
+- runFlow: open-home-menu.yaml
+- assertVisible: 'Show Onboarding'
+- takeScreenshot: 04-home-menu
+# Show Onboarding reopens it on its first page.
+- tapOn: 'Show Onboarding'
+- extendedWaitUntil:
+    visible:
+      id: onboarding-page-1
+    timeout: 10000
 - assertVisible:
-    id: trees-screen
-- assertVisible:
-    id: trees-empty
-- assertVisible:
-    id: trees-setup-action
-- takeScreenshot: 05-trees-empty
-
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-search
+    id: onboarding-next
+- takeScreenshot: 05-onboarding-reopened
+- runFlow: skip-onboarding.yaml
+- runFlow: open-home-menu.yaml
+- tapOn: Search
 - assertVisible:
     id: search-screen
 - takeScreenshot: 06-search
+- runFlow: go-home.yaml
 
-- runFlow: open-drawer.yaml
-- tapOn:
-    id: drawer-nav-settings
-- assertVisible:
-    id: settings-screen
+- runFlow: open-settings.yaml
 - takeScreenshot: 07-settings
 
 - tapOn:
     id: settings-link-connections
 - assertVisible:
-    id: connections-openrouter-key-input
-- assertVisible:
-    id: connections-lmstudio-endpoint-input
+    id: connections-openrouter-edit
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-endpoint-input
 - takeScreenshot: 08-connections
+# The key is entered in a sheet, as in Latent Spaces' API Keys page.
+- tapOn:
+    id: connections-openrouter-edit
+- assertVisible:
+    id: connections-openrouter-key-input
+- takeScreenshot: 08b-connections-key-sheet
+- tapOn:
+    id: connections-openrouter-key-cancel
+- assertNotVisible:
+    id: connections-openrouter-key-input
 # `back` is Android-only in Maestro; tap the stack header's back button, and
 # retry, since a tap during the push transition can be dropped.
 - repeat:

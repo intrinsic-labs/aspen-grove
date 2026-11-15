@@ -11,6 +11,7 @@ import { createVerifiedModelContinuationNode } from '@application/services/creat
 import {
   collectCompletion,
   type CompletionResponse,
+  type IModelOutputLimits,
   type IProviderRegistry,
 } from '@application/services/llm';
 import { prepareDialogueContinuation } from '@application/services/dialogue-continuation';
@@ -31,6 +32,13 @@ export type GenerateDialogueContinuationInput = {
   readonly providerAppName?: string;
   readonly stream?: boolean;
   readonly activateGeneratedNode?: boolean;
+  /**
+   * Stops the generation (regenerate's stop button). Streamed text is saved
+   * as is, with no marker, as for a send; a stop
+   * before any text saves nothing, leaves the path as it was and rejects
+   * with a `cancelled` `LlmProviderError`.
+   */
+  readonly signal?: AbortSignal;
   readonly onAssistantTextDelta?: (input: {
     readonly delta: string;
     readonly content: string;
@@ -80,6 +88,8 @@ export type GenerateDialogueContinuationDependencies = {
     'create' | 'findByNodeId' | 'deleteByNodeId'
   >;
   readonly providerRegistry: IProviderRegistry;
+  /** Caps a request's `maxTokens` at the model's output limit, when known. */
+  readonly modelOutputLimits: IModelOutputLimits;
 };
 
 /**
@@ -99,6 +109,7 @@ export class GenerateDialogueContinuationUseCase {
   private readonly pathStateRepository: GenerateDialogueContinuationDependencies['pathStateRepository'];
   private readonly rawApiResponseRepository: GenerateDialogueContinuationDependencies['rawApiResponseRepository'];
   private readonly providerRegistry: IProviderRegistry;
+  private readonly modelOutputLimits: IModelOutputLimits;
 
   constructor(dependencies: GenerateDialogueContinuationDependencies) {
     this.agentRepository = dependencies.agentRepository;
@@ -109,6 +120,7 @@ export class GenerateDialogueContinuationUseCase {
     this.pathStateRepository = dependencies.pathStateRepository;
     this.rawApiResponseRepository = dependencies.rawApiResponseRepository;
     this.providerRegistry = dependencies.providerRegistry;
+    this.modelOutputLimits = dependencies.modelOutputLimits;
   }
 
   async execute(
@@ -141,13 +153,14 @@ export class GenerateDialogueContinuationUseCase {
         edgeRepository: this.edgeRepository,
         pathRepository: this.pathRepository,
         providerRegistry: this.providerRegistry,
+        modelOutputLimits: this.modelOutputLimits,
       }
     );
 
     const completion = await collectCompletion({
       llmProvider,
       stream: input.stream ?? false,
-      request,
+      request: { ...request, signal: input.signal },
       onTextDelta: input.onAssistantTextDelta,
     });
 

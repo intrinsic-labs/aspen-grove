@@ -8,6 +8,7 @@ import type {
 } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { CreateLoomTreeInput } from '@application/repositories';
+import { buildOpenLoomDocument } from '@application/services/open-loom';
 import { ImportLoomTreeUseCase } from './ImportLoomTreeUseCase';
 
 const now = new Date('2026-07-08T12:00:00.000Z');
@@ -360,5 +361,119 @@ describe('ImportLoomTreeUseCase', () => {
     const rootId = fakes.createdTrees[0].rootNodeId;
     const rootNode = fakes.createdNodes.find((node) => node.id === rootId);
     expect(rootNode?.content).toEqual({ type: 'text', text: '' });
+  });
+
+  describe('system messages', () => {
+    const ownerAgentId = '01KOWNER000000000000000000' as ULID;
+    const groveId = '01KGROVE000000000000000000' as ULID;
+    const withSystemNode = JSON.stringify({
+      format: 'open-loom',
+      version: '2.0',
+      trees: [
+        {
+          id: 't1',
+          title: 'System',
+          rootNodeIds: ['a'],
+          nodes: {
+            a: {
+              id: 'a',
+              content: [{ type: 'text', text: 'Hi' }],
+              author: { role: 'human' },
+            },
+            s: {
+              id: 's',
+              content: [{ type: 'text', text: 'Be terse.' }],
+              author: { role: 'system' },
+            },
+            m: {
+              id: 'm',
+              content: [{ type: 'text', text: 'Fine.' }],
+              author: { role: 'mixed' },
+            },
+          },
+          edges: [
+            { type: 'continuation', sources: [{ nodeId: 'a' }], targetNodeId: 's' },
+            { type: 'continuation', sources: [{ nodeId: 's' }], targetNodeId: 'm' },
+          ],
+        },
+      ],
+    });
+
+    it('imports a system node as a system node, attributed to the importer', async () => {
+      const fakes = buildFakes();
+      await fakes.useCase.execute({ groveId, ownerAgentId, raw: withSystemNode });
+
+      const byText = (text: string) =>
+        fakes.createdNodes.find(
+          (node) => node.content.type === 'text' && node.content.text === text
+        );
+      expect(byText('Be terse.')?.authorType).toBe('system');
+      expect(byText('Be terse.')?.authorAgentId).toBe(ownerAgentId);
+      expect(byText('Fine.')?.authorType).toBe('human');
+    });
+
+    it('round-trips a system node through export and import', async () => {
+      const first = buildFakes();
+      await first.useCase.execute({ groveId, ownerAgentId, raw: withSystemNode });
+      const tree = first.createdTrees[0];
+
+      const exported = await buildOpenLoomDocument({
+        tree: {
+          id: tree.id as ULID,
+          groveId,
+          title: 'System',
+          rootNodeId: tree.rootNodeId,
+          mode: 'dialogue',
+          createdAt: now,
+          updatedAt: now,
+        } as LoomTree,
+        nodes: first.createdNodes,
+        edges: first.createdEdges,
+        agentsById: new Map(),
+        rawResponsesByNodeId: new Map(),
+      });
+      const roles = Object.values(exported.trees[0].nodes).map(
+        (node) => node.author.role
+      );
+      expect(roles).toEqual(['human', 'system', 'human']);
+
+      const second = buildFakes();
+      await second.useCase.execute({
+        groveId,
+        ownerAgentId,
+        raw: JSON.stringify(exported),
+      });
+      expect(second.createdNodes.map((node) => node.authorType)).toEqual([
+        'human',
+        'system',
+        'human',
+      ]);
+    });
+
+    it('maps a Latent Spaces (v1) system author to a system node', async () => {
+      const fakes = buildFakes();
+      await fakes.useCase.execute({
+        groveId,
+        ownerAgentId,
+        raw: JSON.stringify({
+          title: 'Legacy',
+          rootNodeId: 'r',
+          bookmarkedNodes: {},
+          nodes: {
+            r: { text: 'hello', author: 'user', childrenIds: ['s'] },
+            s: {
+              text: 'System message updated: be terse.',
+              author: 'system',
+              parentId: 'r',
+              childrenIds: [],
+            },
+          },
+        }),
+      });
+      expect(fakes.createdNodes.map((node) => node.authorType)).toEqual([
+        'human',
+        'system',
+      ]);
+    });
   });
 });

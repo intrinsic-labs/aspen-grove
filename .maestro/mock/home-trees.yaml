@@ -1,0 +1,97 @@
+# Home with trees, against the mock server (no key): two trees started from
+# Home's composer, the list, the `···` menu, then a rename and a delete by
+# swipe. Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/home-trees.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+# Auto-Title stays on (the default): after each first reply the app asks the
+# model for a title, and the mock answers that call with "Mock title #<n>"
+# (<n> is the request number, so the rows are matched by pattern).
+- runFlow: ../go-home.yaml
+- assertVisible: 'Good .*\.\nWelcome to Aspen Grove\.'
+- takeScreenshot: home-00-empty
+
+# Two trees, each from a first message; wait for each reply to land.
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Write me a short story about a lighthouse keeper
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- takeScreenshot: home-01-tree-from-composer
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Name three rivers that run north
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- runFlow: ../go-home.yaml
+# The row reads as one element: "<title>, <date>, ". Both trees carry their
+# auto-title; wait for it, since the title call lands just after the reply.
+- extendedWaitUntil:
+    visible:
+      text: 'Mock title #\d+, .*'
+      index: 1
+    timeout: 15000
+- assertNotVisible: 'Name three rivers that\.\.\..*'
+- assertNotVisible: 'Write me a short\.\.\..*'
+- takeScreenshot: home-02-trees
+
+# The menu.
+- runFlow: ../open-home-menu.yaml
+- assertVisible: 'OpenLoom Docs'
+- assertVisible: 'Search'
+- waitForAnimationToEnd
+- takeScreenshot: home-03-menu
+# Close the menu with a tap on empty space below the list.
+- tapOn:
+    point: '50%,75%'
+- waitForAnimationToEnd
+
+# Swipe right: Edit Name, then rename in the alert.
+- swipe:
+    from:
+      id: home-trees-row-.*
+      index: 1
+    direction: RIGHT
+- waitForAnimationToEnd
+- assertVisible:
+    id: home-trees-rename-.*
+- takeScreenshot: home-04-swipe-edit
+- tapOn:
+    id: home-trees-rename-.*
+- assertVisible: 'Loom Tree Name'
+- eraseText: 60
+- inputText: The Lighthouse
+- tapOn: Save
+- extendedWaitUntil:
+    visible: 'The Lighthouse.*'
+    timeout: 5000
+
+# Swipe left: Delete.
+- swipe:
+    from:
+      text: 'The Lighthouse.*'
+    direction: LEFT
+- waitForAnimationToEnd
+- takeScreenshot: home-05-swipe-delete
+- tapOn:
+    text: 'Delete'
+- extendedWaitUntil:
+    notVisible: 'The Lighthouse.*'
+    timeout: 5000
+- assertVisible: 'Mock title #\d+, .*'
+
+# The composer, focused with a draft (left unsent).
+- tapOn:
+    id: home-composer-input
+- inputText: Tell me about the oldest trees on Earth
+- takeScreenshot: home-06-composer-text

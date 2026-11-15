@@ -1,0 +1,40 @@
+# From onboarding's first page, step through Latent Spaces' six pages with Next
+# (a screenshot of each) to the last page, where a model is set up. Ends there,
+# with Begin Weaving showing.
+appId: com.intrinsiclabs.aspengrove
+---
+- extendedWaitUntil:
+    visible:
+      id: onboarding-next
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-1
+- tapOn:
+    id: onboarding-next
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-2
+- tapOn:
+    id: onboarding-next
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-3
+- tapOn:
+    id: onboarding-next
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-4
+- tapOn:
+    id: onboarding-next
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-5
+- tapOn:
+    id: onboarding-next
+- waitForAnimationToEnd
+- takeScreenshot: onboarding-6
+- tapOn:
+    id: onboarding-next
+- extendedWaitUntil:
+    visible:
+      id: onboarding-begin
+    timeout: 5000
+- waitForAnimationToEnd
+- assertVisible:
+    id: onboarding-step-setup

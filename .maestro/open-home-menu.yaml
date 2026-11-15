@@ -1,0 +1,14 @@
+# Open Home's `···` menu (a native pull-down; its items have no testIDs, so
+# pick them by title next). Retries a tap that lands mid-transition.
+appId: com.intrinsiclabs.aspengrove
+---
+- waitForAnimationToEnd
+- repeat:
+    times: 3
+    while:
+      notVisible: 'Import OpenLoom Tree'
+    commands:
+      - tapOn:
+          id: home-menu-button
+      - waitForAnimationToEnd
+- assertVisible: 'Import OpenLoom Tree'

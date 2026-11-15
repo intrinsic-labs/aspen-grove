@@ -15,20 +15,12 @@ env:
 - runFlow: open-tree-timed.yaml
 - runFlow: open-tree-timed.yaml
 - tapOn:
-    id: trees-list-row-.*
+    id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
       id: chat-message-row-.*
     timeout: 60000
 - runFlow: open-rail-timed.yaml
 - runFlow: switch-branch-timed.yaml
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: trees-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+- runFlow: ../go-home.yaml
 - runFlow: search-timed.yaml

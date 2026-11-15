@@ -18,7 +18,7 @@ const now = new Date('2026-02-23T12:00:00.000Z');
 
 const createNode = (input: {
   id: ULID;
-  authorType: 'human' | 'model';
+  authorType: Node['authorType'];
   authorAgentId: ULID;
   contentHash: string;
   text: string;
@@ -254,6 +254,8 @@ describe('SendDialogueTurnUseCase', () => {
           },
         }),
       } as unknown as IProviderRegistry,
+      // A limit above the agent's: the stored value goes out as is.
+      modelOutputLimits: { maxOutputTokens: async () => 8192 },
     });
 
     const result = await useCase.execute({

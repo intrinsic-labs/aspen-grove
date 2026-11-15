@@ -1,0 +1,17 @@
+# Open Settings from Home with its trailing toolbar button. A tap that lands
+# while a transition is still settling can be dropped, so retry until
+# Settings shows. Run from another flow with `- runFlow: open-settings.yaml`.
+appId: com.intrinsiclabs.aspengrove
+---
+- waitForAnimationToEnd
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: settings-screen
+    commands:
+      - tapOn:
+          id: home-settings-button
+      - waitForAnimationToEnd
+- assertVisible:
+    id: settings-screen

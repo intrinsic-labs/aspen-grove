@@ -12,6 +12,7 @@ const session: ChatSession = {
 
 const model: ChatSessionModel = {
   modelAgentId: '01KAGENT000000000000000000' as ULID,
+  agentName: 'Haiku',
   modelIdentifier: 'anthropic/claude-haiku',
   provider: 'openrouter',
 };

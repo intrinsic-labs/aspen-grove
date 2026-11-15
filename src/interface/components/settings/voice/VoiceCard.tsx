@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { LoomVoice } from '@domain/value-objects';
-import { AppText } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { VOICE_APPEARANCE } from '../../voice';
 
 type VoiceCardProps = {
@@ -28,17 +28,20 @@ export const VoiceCard = ({
         onPress={() => onPressPortrait(voice)}
         style={[styles.portrait, { backgroundColor: appearance.color }]}
       >
-        <Ionicons name={appearance.icon} size={65} color="#fff" />
+        <Ionicons
+          name={appearance.icon}
+          size={chooser.portraitIconSize}
+          color="#fff"
+        />
       </Pressable>
-      <AppText variant="body" tone="primary" style={styles.name}>
-        {voice.name}
-      </AppText>
-      <AppText variant="mono" tone="secondary" style={styles.description}>
-        {voice.description}
-      </AppText>
+      <Text style={styles.name}>{voice.name}</Text>
+      {/* Calling Code in Latent Spaces; Aspen Grove ships IBM Plex Mono. */}
+      <Text style={styles.description}>{voice.description}</Text>
     </View>
   );
 };
+
+const chooser = loomUiTokens.voiceChooser;
 
 const styles = StyleSheet.create({
   page: {
@@ -46,24 +49,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   portrait: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: chooser.portraitSize,
+    height: chooser.portraitSize,
+    borderRadius: chooser.portraitSize / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: chooser.portraitBottomGap,
   },
   name: {
     fontFamily: 'Cardo-Regular',
-    fontSize: 32,
-    lineHeight: 40,
-    marginBottom: 16,
+    fontSize: chooser.nameSize,
+    color: '#FFFFFF',
+    marginBottom: chooser.nameBottomGap,
   },
   description: {
     fontFamily: 'IBMPlexMono-Regular',
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: chooser.descriptionSize,
+    color: loomUiTokens.settingsForm.colors.secondaryLabel,
     textAlign: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: chooser.descriptionInset,
   },
 });

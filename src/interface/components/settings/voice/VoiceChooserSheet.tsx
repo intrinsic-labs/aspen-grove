@@ -4,6 +4,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -11,8 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LOOM_VOICES } from '@domain/value-objects';
-import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
-import { AppText } from '@/interface/ui/value-objects';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { useVoiceChooser } from './useVoiceChooser';
 import { VoiceCard } from './VoiceCard';
 
@@ -30,7 +30,6 @@ export const VoiceChooserSheet = ({
   visible,
   onClose,
 }: VoiceChooserSheetProps) => {
-  const { colors } = useAspenGroveTheme();
   const insets = useSafeAreaInsets();
   const { index, savedIndex, showPage, onPressPortrait, select } =
     useVoiceChooser(visible, onClose);
@@ -66,53 +65,48 @@ export const VoiceChooserSheet = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      {/* No visible title: Latent Spaces sets `navigationTitle` without a
+          NavigationStack, so its sheet shows none (LoomVoiceChooser.swift:62). */}
       <View
         testID="settings-voice-chooser"
-        style={[
-          styles.container,
-          {
-            backgroundColor: colors.oppositePrimary,
-            paddingBottom: Math.max(insets.bottom, 20),
-          },
-        ]}
+        accessibilityLabel="Choose a voice"
+        style={[styles.container, { paddingBottom: insets.bottom }]}
       >
-        <AppText variant="ui" tone="primary" style={styles.title}>
-          Choose a voice
-        </AppText>
-        <ScrollView
-          ref={pagerRef}
-          testID="settings-voice-pager"
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onLayout={onPagerLayout}
-          onMomentumScrollEnd={onMomentumScrollEnd}
-          style={styles.pager}
-        >
-          {pageWidth > 0
-            ? LOOM_VOICES.map((voice) => (
-                <VoiceCard
-                  key={voice.name}
-                  voice={voice}
-                  width={pageWidth}
-                  onPressPortrait={onPressPortrait}
-                />
-              ))
-            : null}
-        </ScrollView>
-        <View style={styles.dots}>
-          {LOOM_VOICES.map((voice, dotIndex) => (
-            <View
-              key={voice.name}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor:
-                    dotIndex === index ? colors.primary : colors.tertiary,
-                },
-              ]}
-            />
-          ))}
+        <View style={styles.pagerArea}>
+          <ScrollView
+            ref={pagerRef}
+            testID="settings-voice-pager"
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onLayout={onPagerLayout}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            style={styles.pager}
+          >
+            {pageWidth > 0
+              ? LOOM_VOICES.map((voice) => (
+                  <VoiceCard
+                    key={voice.name}
+                    voice={voice}
+                    width={pageWidth}
+                    onPressPortrait={onPressPortrait}
+                  />
+                ))
+              : null}
+          </ScrollView>
+          {/* `PageTabViewStyle(indexDisplayMode: .always)` draws its dots over
+              the bottom of the pages (LoomVoiceChooser.swift:27). */}
+          <View pointerEvents="none" style={styles.dots}>
+            {LOOM_VOICES.map((voice, dotIndex) => (
+              <View
+                key={voice.name}
+                style={[
+                  styles.dot,
+                  dotIndex === index ? styles.currentDot : styles.otherDot,
+                ]}
+              />
+            ))}
+          </View>
         </View>
         <Pressable
           testID="settings-voice-select"
@@ -120,53 +114,64 @@ export const VoiceChooserSheet = ({
           onPress={select}
           style={({ pressed }) => [
             styles.select,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+            { opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <AppText
-            variant="ui"
-            style={[styles.selectText, { color: colors.oppositePrimary }]}
-          >
-            Select
-          </AppText>
+          <Text style={styles.selectText}>Select</Text>
         </Pressable>
       </View>
     </Modal>
   );
 };
 
+const chooser = loomUiTokens.voiceChooser;
+// `VStack(spacing: 20)` between the pages and the button (LoomVoiceChooser.swift:19)
+const STACK_SPACING = 20;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    gap: 20,
+    backgroundColor: loomUiTokens.settingsForm.colors.sheetBackground,
   },
-  title: {
-    alignSelf: 'center',
-    marginTop: 18,
-    fontSize: 17,
-    fontWeight: '600',
+  pagerArea: {
+    flex: 1,
   },
   pager: {
     flex: 1,
   },
   dots: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: chooser.dotsBottomGap - STACK_SPACING,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: chooser.dotGap,
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    width: chooser.dotSize,
+    height: chooser.dotSize,
+    borderRadius: chooser.dotSize / 2,
   },
+  currentDot: {
+    backgroundColor: '#FFFFFF',
+  },
+  otherDot: {
+    backgroundColor: chooser.inactiveDot,
+  },
+  // White capsule, headline bold in `.padding()` (LoomVoiceChooser.swift:51-60)
   select: {
+    marginTop: STACK_SPACING,
     marginHorizontal: 16,
-    borderRadius: 999,
-    paddingVertical: 16,
+    height: chooser.selectHeight,
+    borderRadius: chooser.selectHeight / 2,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   selectText: {
     fontSize: 17,
     fontWeight: '700',
+    color: '#000000',
   },
 });

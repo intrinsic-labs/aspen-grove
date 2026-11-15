@@ -24,7 +24,7 @@ env:
 
 # Open it again (untimed), then the bushy node's rail and a branch switch.
 - tapOn:
-    id: trees-list-row-.*
+    id: home-trees-row-.*
 - extendedWaitUntil:
     visible:
       id: chat-message-row-.*
@@ -33,15 +33,7 @@ env:
 - takeScreenshot: perf-tree-rail
 - runFlow: switch-branch-timed.yaml
 - takeScreenshot: perf-tree-switched
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: trees-screen
-    commands:
-      - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+- runFlow: ../go-home.yaml
 
 - runFlow: search-timed.yaml
 - takeScreenshot: perf-tree-search

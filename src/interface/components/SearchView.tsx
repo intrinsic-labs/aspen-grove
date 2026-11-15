@@ -5,7 +5,6 @@ import {
   Pressable,
   SectionList,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -15,6 +14,7 @@ import type { ULID } from '@domain/value-objects';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen, AppText, Hairline } from '../ui/value-objects';
+import { AppTextInput } from '../ui/components/AppTextInput';
 
 const SEARCH_DEBOUNCE_MS = 250;
 const SNIPPET_RADIUS = 60;
@@ -120,9 +120,10 @@ const SearchView = () => {
   const openResult = useCallback(
     (node: Node) => {
       Keyboard.dismiss();
+      // The tree opens on the result's Node Info sheet.
       router.push({
-        pathname: '/tree/[treeId]/node/[nodeId]',
-        params: { treeId: node.loomTreeId, nodeId: node.id },
+        pathname: '/tree/[treeId]',
+        params: { treeId: node.loomTreeId, nodeSheetId: node.id },
       });
     },
     [router]
@@ -157,7 +158,7 @@ const SearchView = () => {
           ]}
         >
           <Ionicons name="search" size={16} color={colors.secondary} />
-          <TextInput
+          <AppTextInput
             testID="search-input"
             value={query}
             onChangeText={setQuery}
@@ -240,7 +241,7 @@ const SearchView = () => {
                 tone="secondary"
                 style={styles.resultMeta}
               >
-                {item.authorType === 'model' ? 'model' : 'human'} ·{' '}
+                {item.authorType} ·{' '}
                 {item.createdAt.toLocaleDateString()}
               </AppText>
               <AppText tone="primary" style={styles.resultSnippet}>

@@ -8,34 +8,31 @@ import type { BlurVariant } from '../value-objects/blur';
 
 interface MaterialViewProps extends React.ComponentProps<typeof View> {
   variant?: BlurVariant;
-  tintOverride?: 'light' | 'dark' | 'default' | 'prominent';
   children?: React.ReactNode;
 }
 
 export function MaterialView({
-  variant = 'regular',
-  tintOverride,
+  variant = 'systemThinDark',
   style,
   children,
   ...viewProps
 }: MaterialViewProps) {
   const { blur } = useAspenGroveTheme();
   const config = blur[variant];
-  const tint = tintOverride ?? config.tint;
 
   return (
     <View style={[styles.container, style]} {...viewProps}>
       <BlurView
         intensity={config.intensity}
-        tint={tint}
-        experimentalBlurMethod="dimezisBlurView"
+        tint={config.tint}
+        blurMethod="dimezisBlurView"
         style={StyleSheet.absoluteFill}
       />
       {Platform.OS === 'android' && (
         <View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: `rgba(242,242,242,${config.overlayOpacity})` },
+            { backgroundColor: config.overlayColor },
           ]}
         />
       )}

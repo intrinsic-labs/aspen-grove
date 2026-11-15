@@ -1,4 +1,4 @@
-import type { ChatRow } from '../types';
+import type { NativeMenuSections } from '@/interface/ui/components/native-menu';
 
 export type ChatMessageMenuAction =
   | 'regenerate'
@@ -10,68 +10,77 @@ export type ChatMessageMenuAction =
   | 'bookmark'
   | 'prune';
 
-export type ChatMessageMenuItem = {
-  readonly action: ChatMessageMenuAction;
-  readonly title: string;
-  readonly systemIcon?: string;
-  readonly destructive?: boolean;
+export type MessageMenuState = {
+  readonly bookmarked: boolean;
+  readonly pruned: boolean;
+  /** Children in the loom; Continuations is disabled without any. */
+  readonly continuationCount: number;
+  /** The path's current (last) node; Rewind To Node is disabled on it. */
+  readonly isCurrent: boolean;
 };
 
-/** A message row's long-press menu. */
-export const buildMessageMenuItems = (
-  bookmarked: boolean,
-  pruned: boolean,
-  authorType: ChatRow['authorType']
-): readonly ChatMessageMenuItem[] =>
+/**
+ * A message row's long-press menu, in Latent Spaces' order and groups
+ * (NodeView.swift:209-251): [Regenerate Response · Continuations], then
+ * Rewind To Node and Copy Text, a divider, Node Info and Bookmark. Aspen
+ * Grove's own Edit and Prune come last, after one more divider.
+ *
+ * Regenerate is on every node, as in Latent Spaces: on a model node it
+ * draws a sibling response, on a human or system node a new reply under it
+ * (which is how a send that failed gets its reply).
+ */
+export const buildMessageMenuSections = (
+  state: MessageMenuState
+): NativeMenuSections<ChatMessageMenuAction> => [
   [
-    // Regenerate only makes sense on model rows ("replace this response
-    // with a new sibling"). On user rows it read as "regenerate the reply
-    // to this", which both confused the target and triggered an iOS
-    // context-menu dismissal artifact when the rows below the still-mounted
-    // pressed row reflowed mid-animation.
-    ...(authorType === 'model'
-      ? [
-          {
-            action: 'regenerate',
-            title: 'Regenerate',
-            systemIcon: 'arrow.clockwise',
-          } as const,
-        ]
-      : []),
+    {
+      action: 'regenerate',
+      title: 'Regenerate Response',
+      systemIcon: 'repeat',
+    },
     {
       action: 'continuations',
       title: 'Continuations',
-      systemIcon: 'point.topleft.down.curvedto.point.bottomright.up',
+      systemIcon: 'text.append',
+      disabled: state.continuationCount === 0,
     },
-    {
-      action: 'edit',
-      title: 'Edit',
-      systemIcon: 'pencil',
-    },
+  ],
+  [
     {
       action: 'rewind',
       title: 'Rewind To Node',
-      systemIcon: 'backward.end.alt',
+      systemIcon: 'backward',
+      disabled: state.isCurrent,
     },
     {
       action: 'copy',
       title: 'Copy Text',
       systemIcon: 'doc.on.doc',
     },
+  ],
+  [
     {
       action: 'info',
       title: 'Node Info',
-      systemIcon: 'info.circle',
+      systemIcon: 'magnifyingglass',
     },
     {
       action: 'bookmark',
-      title: bookmarked ? 'Remove Bookmark' : 'Bookmark',
-      systemIcon: bookmarked ? 'bookmark.slash' : 'bookmark',
+      title: state.bookmarked ? 'Remove Bookmark' : 'Bookmark',
+      systemIcon: state.bookmarked ? 'bookmark.fill' : 'bookmark',
+    },
+  ],
+  [
+    {
+      action: 'edit',
+      title: 'Edit',
+      systemIcon: 'pencil',
     },
     {
       action: 'prune',
-      title: pruned ? 'Restore' : 'Prune',
-      systemIcon: pruned ? 'arrow.uturn.backward.circle' : 'scissors',
-      destructive: !pruned,
+      title: state.pruned ? 'Restore' : 'Prune',
+      systemIcon: state.pruned ? 'arrow.uturn.backward.circle' : 'scissors',
+      destructive: !state.pruned,
     },
-  ] as const;
+  ],
+];

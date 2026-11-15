@@ -46,6 +46,11 @@ Replies are deterministic: "Mock reply #<request number>." then words seeded by
 the request number and the last message, so parallel cards differ but a rerun
 in the same order repeats them.
 
+Auto-Title's call (non-streaming, with the "You title conversations." system
+prompt or a user message opening "Title this conversation.";
+`title-request.ts`) is answered with a title instead: "Mock title #<request
+number>". It counts as a request, so `--fail-every` can fail it too.
+
 Two things about failures, both from the app's retry policy
 (`src/application/services/llm/retry.ts`):
 
@@ -57,7 +62,10 @@ Two things about failures, both from the app's retry policy
   which the app retries like a network error.
 
 Each request logs a start and an end line with the number of requests open at
-that moment (`active=N`), which shows whether parallel streams overlap.
+that moment (`active=N`), which shows whether parallel streams overlap. A
+completion's start line also shows the `max_tokens`, `temperature` and system
+message it was sent with, so a tree's Model Settings can be checked end to
+end.
 
 ## Test
 

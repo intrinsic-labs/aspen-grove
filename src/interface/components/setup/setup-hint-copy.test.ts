@@ -3,8 +3,8 @@ import { setupHintCopy } from './setup-hint-copy';
 
 describe('setupHintCopy', () => {
   it('sends a user with no agent to onboarding', () => {
-    expect(setupHintCopy('no-agent')?.href).toBe('/onboarding');
-    expect(setupHintCopy('first-run')?.href).toBe('/onboarding');
+    expect(setupHintCopy('no-agent')?.href).toBe('/onboarding?start=setup');
+    expect(setupHintCopy('first-run')?.href).toBe('/onboarding?start=setup');
   });
 
   it('sends a user with no key to Connections', () => {

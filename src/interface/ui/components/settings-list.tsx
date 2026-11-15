@@ -42,11 +42,8 @@ export const SettingsSection = ({
   style,
   testID,
 }: SettingsSectionProps) => {
-  const { isDark } = useAspenGroveTheme();
   const items = Children.toArray(children).filter(Boolean);
-  const dividerColor = isDark
-    ? 'rgba(255, 255, 255, 0.12)'
-    : 'rgba(0, 0, 0, 0.12)';
+  const dividerColor = 'rgba(255, 255, 255, 0.12)';
 
   return (
     <View testID={testID} style={[styles.section, style]}>

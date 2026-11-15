@@ -3,7 +3,8 @@
 # (${SWITCH_TEXT}) is a row on the new path. Timed from choosing "Make Current
 # Node" to the re-rendered list. The card's long-press menu stands in for its
 # double-tap: Maestro's two taps land about 360 ms apart, outside the app's
-# 300 ms double-tap window, so a double-tap reads as a tap (node details).
+# 300 ms double-tap window, so a double-tap reads as a tap (the Continuation
+# Node sheet).
 appId: com.intrinsiclabs.aspengrove
 ---
 - waitForAnimationToEnd

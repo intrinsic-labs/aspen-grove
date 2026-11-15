@@ -1,0 +1,154 @@
+# A tree's Model Settings against the mock server (no key): the form, the
+# Provider menu, "Always use maximum allowed" (a parameter) and the System
+# Message editor, then a send with the new settings; reopened, both stuck.
+# The tree's agent "mock-model" (made by onboarding in setup.yaml) is a
+# shared library agent, so the edit forks it for this tree: the library
+# keeps "mock-model" as it was. The mock's log shows
+# the send's `max_tokens=8192` and the system message.
+# Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/tree-model.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+# setup.yaml ends on onboarding's empty first tree; start one from Home.
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about the oldest rivers
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 15000
+
+# The tree menu's Model pushes Model Settings, on LM Studio's mock-model.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'Provider Options'
+- assertVisible: 'LM Studio'
+- assertVisible:
+    id: tree-model-footer-id
+    text: 'mock-model'
+- assertVisible: 'Maximum Output Tokens'
+- assertVisible:
+    id: tree-model-max-tokens-value
+    text: '4,096'
+- assertVisible: 'Temperature'
+- takeScreenshot: tree-40-model-settings
+
+# The Provider menu: OpenRouter and LM Studio only.
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- assertVisible: 'OpenRouter'
+- assertNotVisible: 'Anthropic'
+- takeScreenshot: tree-41-provider-picker
+# Dismiss it with a tap outside it: the empty band above the section header
+# (the open menu hides the screen's elements from Maestro).
+- tapOn:
+    point: '50%,15%'
+- waitForAnimationToEnd
+
+# A parameter: the maximum the model allows (the mock's context, 8192).
+- tapOn:
+    id: tree-model-use-max-tokens
+- extendedWaitUntil:
+    visible:
+      id: tree-model-max-tokens-value
+      text: '8,192'
+    timeout: 5000
+- takeScreenshot: tree-40b-use-max-tokens
+
+# The System Message editor: focused as it opens; typing saves.
+- tapOn:
+    id: tree-model-system-message
+- extendedWaitUntil:
+    visible:
+      id: tree-system-message-input
+    timeout: 10000
+- waitForAnimationToEnd
+- inputText: Answer like a lighthouse keeper.
+- takeScreenshot: tree-44-system-message
+- tapOn:
+    id: keyboard-done
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: tree-model-screen
+    commands:
+      - tapOn:
+          id: BackButton
+      - waitForAnimationToEnd
+
+# Back on the tree, send with the new settings.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-composer-input
+    commands:
+      - tapOn:
+          id: BackButton
+      - waitForAnimationToEnd
+- tapOn:
+    id: chat-composer-input
+- inputText: And the oldest lakes?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- takeScreenshot: tree-45-sent-with-settings
+
+# Reopened, the settings stuck.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-max-tokens-value
+      text: '8,192'
+    timeout: 10000
+- tapOn:
+    id: tree-model-system-message
+- extendedWaitUntil:
+    visible: 'Answer like a lighthouse keeper.'
+    timeout: 10000
+- tapOn:
+    id: keyboard-done
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: home-welcome
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: BackButton
+
+# The shared agent was forked, not edited: the library still lists
+# "mock-model", and not the tree's copy "mock-model (<title>)".
+- runFlow: ../open-settings.yaml
+- tapOn:
+    id: settings-link-agents
+# (A row is one accessible element, read as "Edit <name>".)
+- extendedWaitUntil:
+    visible: 'Edit mock-model'
+    timeout: 10000
+- assertNotVisible: 'Edit mock-model \(.*\)'
+- takeScreenshot: tree-46-library-unchanged
