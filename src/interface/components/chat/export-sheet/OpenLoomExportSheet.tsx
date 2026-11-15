@@ -1,4 +1,4 @@
-import { Linking, Modal, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import {
   FormButtonRow,
@@ -15,6 +15,7 @@ import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { HOME_LINKS } from '../../home/home-links';
 import type { ExportSheetDraft } from './export-sheet-options';
 import { ExportSheetHero } from './ExportSheetHero';
+import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
 
 const sheet = loomUiTokens.exportSheet;
 const nodeSheet = loomUiTokens.nodeSheet;
@@ -47,13 +48,7 @@ export const OpenLoomExportSheet = ({
     visible && draft !== null
   );
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onBack}
-      onDismiss={onDismissed}
-    >
+    <PageSheet visible={visible} onClose={onBack} onDismiss={onDismissed}>
       <FormSurfaceProvider value="sheet">
         <View testID="export-sheet" style={styles.sheet}>
           <FormSheetHeader
@@ -141,7 +136,7 @@ export const OpenLoomExportSheet = ({
           ) : null}
         </View>
       </FormSurfaceProvider>
-    </Modal>
+    </PageSheet>
   );
 };
 

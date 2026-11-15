@@ -12,7 +12,7 @@ type UseTreeDescriptionInput = {
 /**
  * The menu's Edit Description (ToolbarMenu.swift:55-62,118-131): the sheet
  * opens on the tree's description, Save writes it and closes, a swipe down
- * drops the draft.
+ * drops the draft (asking first when it differs from the saved one).
  */
 export const useTreeDescription = ({
   treeId,
@@ -21,6 +21,7 @@ export const useTreeDescription = ({
 }: UseTreeDescriptionInput) => {
   const [visible, setVisible] = useState(false);
   const [draft, setDraft] = useState('');
+  const [saved, setSaved] = useState('');
 
   const open = useCallback(async () => {
     if (!treeId) {
@@ -29,6 +30,7 @@ export const useTreeDescription = ({
     try {
       const tree = await treeRepo.findById(treeId);
       setDraft(tree?.description ?? '');
+      setSaved(tree?.description ?? '');
       setVisible(true);
     } catch (caught) {
       setError(toErrorMessage(caught));
@@ -51,6 +53,7 @@ export const useTreeDescription = ({
     visible,
     draft,
     setDraft,
+    hasUnsavedChanges: draft !== saved,
     open: () => void open(),
     save: () => void save(),
     close: () => setVisible(false),

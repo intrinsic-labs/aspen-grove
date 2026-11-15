@@ -1,17 +1,12 @@
 import { useRef } from 'react';
-import {
-  Modal,
-  StyleSheet,
-  type TextInput,
-  View,
-  type TextStyle,
-} from 'react-native';
+import { StyleSheet, type TextInput, View, type TextStyle } from 'react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import * as Clipboard from 'expo-clipboard';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
 import { FormSheetHeader } from '../form/FormSheetHeader';
 import { GlassIconButton } from '../GlassIconButton';
 import { KeyboardDoneBar } from '../KeyboardDoneBar';
+import { PageSheet } from '../sheet/PageSheet';
 import { useKeyboardAccessoryId } from '../useKeyboardAccessoryId';
 import { findNativeMenuItem, toNativeMenuActions } from '../native-menu';
 import { TEXT_EDITOR_MENU } from './text-editor-menu';
@@ -25,8 +20,10 @@ type TextEditorSheetProps = {
   readonly text: string;
   readonly onChangeText: (text: string) => void;
   readonly onSave: () => void;
-  /** Swipe-down: closes without saving. */
+  /** Swipe-down: closes without saving (asking first if the text changed). */
   readonly onClose: () => void;
+  /** The text differs from what was saved: a swipe down asks first. */
+  readonly hasUnsavedChanges?: boolean;
   /** The loom font the messages use; Cardo when it names no family. */
   readonly textStyle: TextStyle;
   /** Prefix for the sheet's ids: `<testID>`, `-input`, `-save`, `-menu-button`. */
@@ -45,6 +42,7 @@ export const TextEditorSheet = ({
   onChangeText,
   onSave,
   onClose,
+  hasUnsavedChanges,
   textStyle,
   testID,
 }: TextEditorSheetProps) => {
@@ -52,11 +50,10 @@ export const TextEditorSheet = ({
   const accessoryId = useKeyboardAccessoryId(`${testID}-keyboard`, visible);
 
   return (
-    <Modal
+    <PageSheet
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
+      hasUnsavedChanges={hasUnsavedChanges}
       onShow={() => inputRef.current?.focus()}
     >
       <View testID={testID} style={styles.sheet}>
@@ -105,7 +102,7 @@ export const TextEditorSheet = ({
         />
         <KeyboardDoneBar nativeID={accessoryId} />
       </View>
-    </Modal>
+    </PageSheet>
   );
 };
 

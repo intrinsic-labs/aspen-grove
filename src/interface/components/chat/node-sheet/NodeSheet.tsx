@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   ScrollView,
   StyleSheet,
   type TextStyle,
@@ -19,6 +18,7 @@ import type { NodeSheetTarget } from './node-sheet-target';
 import { NodeSheetDetails } from './NodeSheetDetails';
 import { NodeSheetKindHeader } from './NodeSheetKindHeader';
 import { useNodeSheetData } from './useNodeSheetData';
+import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
 
 const sheet = loomUiTokens.nodeSheet;
 
@@ -94,11 +94,9 @@ export const NodeSheet = ({
   };
 
   return (
-    <Modal
+    <PageSheet
       visible={target !== null}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
       onDismiss={() => {
         setShown(null);
         onDismissed();
@@ -153,7 +151,7 @@ export const NodeSheet = ({
           </View>
         ) : null}
       </View>
-    </Modal>
+    </PageSheet>
   );
 };
 

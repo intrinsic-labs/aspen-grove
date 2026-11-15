@@ -41,6 +41,7 @@ export const OpenRouterKeySheet = ({
       testID="connections-openrouter-key-sheet"
       visible={visible}
       onRequestClose={onCancel}
+      hasUnsavedChanges={draft.trim() !== currentKey.trim()}
     >
       <FormSheetHeader
         title="OpenRouter API Key"

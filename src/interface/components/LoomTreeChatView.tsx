@@ -128,6 +128,7 @@ const LoomTreeChatView = () => {
         onChangeText={controller.description.setDraft}
         onSave={controller.description.save}
         onClose={controller.description.close}
+        hasUnsavedChanges={controller.description.hasUnsavedChanges}
         textStyle={sheetTextStyle}
       />
 
