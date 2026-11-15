@@ -930,7 +930,8 @@ stays until the user makes one.
 - **Backend:** WatermelonDB `tags` and `tag_assignments` via `WatermelonTagRepository`
 - **Status:** live
 - **Notes:** A swipe down closes it; with a new tag name typed and not added, it asks
-  "Discard changes?" first. Flow: `.maestro/mock/sheet-swipe.yaml`.
+  "Discard changes?" first, and Discard Changes clears the name, so the sheet reopens
+  empty. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
@@ -1180,8 +1181,9 @@ stays until the user makes one.
   onboarding's setup page (without the token and auto-load rows) with the same ids.
   `connections-lmstudio-status` reads one of Untested, Checking…, Connected or Not
   reachable. A result holds only for the address and token it tested: editing either puts
-  the status back to Untested (and clears the error) until the next test, and the answer to
-  a test of an address edited while it ran is dropped. When the
+  the status back to Untested (and clears the error) until the next test, even once the
+  edit is taken back, and the answer to a test of an address edited while it ran is
+  dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
   again.", plus a phone hint when the address is localhost. The footer's setup hint
