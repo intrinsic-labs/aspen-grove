@@ -27,7 +27,9 @@ type TrailingTextFieldProps = Omit<TextInputProps, 'style'> & {
 export const TrailingTextField = forwardRef<TextInput, TrailingTextFieldProps>(
   ({ value, textStyle, onFocus, onBlur, ...inputProps }, ref) => {
     const [focused, setFocused] = useState(false);
-    const showsResting = !focused && Boolean(value);
+    // A secure field keeps its own dots: the overlay would draw the secret.
+    const showsResting =
+      !focused && Boolean(value) && !inputProps.secureTextEntry;
 
     return (
       <View style={styles.box}>
