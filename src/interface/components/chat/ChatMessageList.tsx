@@ -1,20 +1,10 @@
-import {
-  memo,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, type RefObject, useState } from 'react';
 import {
   ActivityIndicator,
-  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Platform,
   StyleSheet,
-  type TextStyle,
   View,
 } from 'react-native';
 import {
@@ -26,22 +16,22 @@ import type { ULID } from '@domain/value-objects';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useLatestCallback } from '@/interface/hooks/useLatestCallback';
 import { useScreenSettled } from '@/interface/hooks/useScreenSettled';
-import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
 import { ChatErrorNotice } from './ChatErrorNotice';
-import { MarkdownText } from './MarkdownText';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ChatMessageRows } from './message-list/ChatMessageRows';
+import { StreamingMessage } from './message-list/StreamingMessage';
 import {
-  isAtListBottom,
   keyboardExtraSpace,
   messageListBottomPadding,
-  offsetForComposerGrowth,
 } from './message-list/list-insets';
-import { centeredRailOffset } from './message-list/rail-centering';
-import { toMessageTextStyle } from './message-list/message-text-style';
 import type { ContinuationRailState } from './message-list/continuation-rail-state';
 import type { ChatMessageMenuAction } from './message-list/message-menu';
+import { useContinuationRailReveal } from './message-list/useContinuationRailReveal';
+import { useKeepBottomOnComposerGrowth } from './message-list/useKeepBottomOnComposerGrowth';
+import { useListScrollMetrics } from './message-list/useListScrollMetrics';
+import { useMessageTextStyles } from './message-list/useMessageTextStyles';
+import { useSuppressedNodeTap } from './message-list/useSuppressedNodeTap';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
 import type { ChatDisplayPreferences, ChatRow } from './types';
 
@@ -80,9 +70,6 @@ type ChatMessageListProps = {
  */
 const keepVisibleContentInPlace = { minIndexForVisible: 0 } as const;
 
-/** How long a rail's layout gets to settle before it is centered. */
-const RAIL_REVEAL_SETTLE_MS = 60;
-
 export const ChatMessageList = memo(
   ({
     loading,
@@ -108,200 +95,30 @@ export const ChatMessageList = memo(
     const settled = useScreenSettled();
     // Earlier rows are still being mounted above the visible ones.
     const [filling, setFilling] = useState(false);
-    const scrollMetricsRef = useRef({
-      offsetY: 0,
-      viewportHeight: 0,
-      contentHeight: 0,
+    const { messageTextStyle, streamingTextStyle } =
+      useMessageTextStyles(displayPreferences);
+    const {
+      scrollMetricsRef,
+      atBottomRef,
+      handleScroll,
+      handleContentSizeChange,
+      handleScrollLayout,
+    } = useListScrollMetrics(onScroll);
+    const { recordRowLayout, recordRailLayout } = useContinuationRailReveal({
+      continuationRail,
+      headerHeight,
+      composerHeight,
+      scrollRef,
+      scrollMetricsRef,
     });
-    const rowLayoutsRef = useRef(
-      new Map<string, { y: number; height: number }>()
-    );
-    const railLayoutsRef = useRef(
-      new Map<string, { y: number; height: number }>()
-    );
-    const suppressTapUntilByNodeRef = useRef(new Map<string, number>());
-    const revealRailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-      null
-    );
-    const activeRailNodeId =
-      continuationRail.visible && continuationRail.sourceNodeId
-        ? continuationRail.sourceNodeId
-        : null;
-    const { messageFontFamily, messageFontSize, messageLineHeight } =
-      displayPreferences;
-    const messageTextStyle = useMemo<TextStyle>(
-      () =>
-        toMessageTextStyle({
-          messageFontFamily,
-          messageFontSize,
-          messageLineHeight,
-        }),
-      [messageFontFamily, messageFontSize, messageLineHeight]
-    );
-    const streamingTextStyle = useMemo<TextStyle>(
-      () => ({
-        ...messageTextStyle,
-        opacity: loomUiTokens.messageList.messageTextOpacity,
-      }),
-      [messageTextStyle]
-    );
-
-    // Each rail is centered once, when it opens and its cards are in; later
-    // layout changes (cards streaming, growing) leave the scroll alone.
-    const centeredRailRef = useRef<ULID | null>(null);
-    const railLoadingRef = useRef(continuationRail.loading);
-    railLoadingRef.current = continuationRail.loading;
-
-    const revealContinuationRail = useCallback(
-      (nodeId: ULID) => {
-        if (centeredRailRef.current === nodeId) {
-          return;
-        }
-        const rowLayout = rowLayoutsRef.current.get(nodeId);
-        const railLayout = railLayoutsRef.current.get(nodeId);
-        const { offsetY, viewportHeight, contentHeight } =
-          scrollMetricsRef.current;
-        if (!rowLayout || !railLayout || viewportHeight <= 0) {
-          return;
-        }
-
-        const y = centeredRailOffset({
-          railTop: rowLayout.y + railLayout.y,
-          railHeight: railLayout.height,
-          headerHeight,
-          viewportHeight,
-          composerHeight,
-          contentHeight,
-        });
-        if (!railLoadingRef.current) {
-          centeredRailRef.current = nodeId;
-        }
-        if (Math.abs(y - offsetY) > 1) {
-          scrollRef.current?.scrollTo({ y, animated: true });
-        }
-      },
-      [composerHeight, headerHeight, scrollRef]
-    );
-
-    const scheduleRailReveal = useCallback(
-      (nodeId: ULID) => {
-        if (revealRailTimeoutRef.current) {
-          clearTimeout(revealRailTimeoutRef.current);
-        }
-        // Let the row, rail and content size report in before measuring.
-        revealRailTimeoutRef.current = setTimeout(() => {
-          revealContinuationRail(nodeId);
-        }, RAIL_REVEAL_SETTLE_MS);
-      },
-      [revealContinuationRail]
-    );
-
-    useEffect(
-      () => () => {
-        if (revealRailTimeoutRef.current) {
-          clearTimeout(revealRailTimeoutRef.current);
-        }
-      },
-      []
-    );
-
-    useEffect(() => {
-      if (!activeRailNodeId) {
-        centeredRailRef.current = null;
-        return;
-      }
-      if (centeredRailRef.current !== activeRailNodeId) {
-        centeredRailRef.current = null;
-      }
-      scheduleRailReveal(activeRailNodeId);
-    }, [activeRailNodeId, continuationRail.loading, scheduleRailReveal]);
-
-    // Whether the reader was at the end of the tree when they last scrolled.
-    // Read when the composer grows, before the new padding is measured.
-    const atBottomRef = useRef(false);
-    const previousComposerHeightRef = useRef(composerHeight);
-
-    const handleScroll = useCallback(
-      (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const { contentOffset, layoutMeasurement } = event.nativeEvent;
-        scrollMetricsRef.current = {
-          offsetY: contentOffset.y,
-          viewportHeight: layoutMeasurement.height,
-          contentHeight: event.nativeEvent.contentSize.height,
-        };
-        atBottomRef.current = isAtListBottom(scrollMetricsRef.current);
-        onScroll(event);
-      },
-      [onScroll]
-    );
-
-    // The bottom padding follows the composer, but the offset doesn't: keep a
-    // reader at the bottom there as a draft grows to several lines.
-    useEffect(() => {
-      const y = offsetForComposerGrowth({
-        offsetY: scrollMetricsRef.current.offsetY,
-        previousComposerHeight: previousComposerHeightRef.current,
-        composerHeight,
-        wasAtBottom: atBottomRef.current,
-      });
-      previousComposerHeightRef.current = composerHeight;
-      if (y !== null) {
-        scrollRef.current?.scrollTo({ y, animated: false });
-      }
-    }, [composerHeight, scrollRef]);
-
-    const handleContentSizeChange = useCallback(
-      (_width: number, height: number) => {
-        scrollMetricsRef.current = {
-          ...scrollMetricsRef.current,
-          contentHeight: height,
-        };
-      },
-      []
-    );
-
-    const handleScrollLayout = useCallback((event: LayoutChangeEvent) => {
-      scrollMetricsRef.current = {
-        ...scrollMetricsRef.current,
-        viewportHeight: event.nativeEvent.layout.height,
-      };
-    }, []);
-
-    // Rows get stable handlers so a new closure here (on every rail or
-    // composer change) doesn't re-render every message.
-    const recordRowLayout = useLatestCallback(
-      (nodeId: ULID, event: LayoutChangeEvent) => {
-        const { y, height } = event.nativeEvent.layout;
-        rowLayoutsRef.current.set(nodeId, { y, height });
-        if (activeRailNodeId === nodeId) {
-          scheduleRailReveal(nodeId);
-        }
-      }
-    );
-
-    const recordRailLayout = useLatestCallback(
-      (nodeId: ULID, event: LayoutChangeEvent) => {
-        const { y, height } = event.nativeEvent.layout;
-        railLayoutsRef.current.set(nodeId, { y, height });
-        if (activeRailNodeId === nodeId) {
-          scheduleRailReveal(nodeId);
-        }
-      }
-    );
-
-    const suppressNextNodeTap = useCallback((nodeId: ULID) => {
-      suppressTapUntilByNodeRef.current.set(nodeId, Date.now() + 900);
-    }, []);
-
-    const handleNodePress = useLatestCallback((nodeId: ULID) => {
-      const suppressUntil = suppressTapUntilByNodeRef.current.get(nodeId);
-      if (suppressUntil && suppressUntil > Date.now()) {
-        return;
-      }
-      suppressTapUntilByNodeRef.current.delete(nodeId);
-      onNodeTap(nodeId);
+    useKeepBottomOnComposerGrowth({
+      composerHeight,
+      scrollRef,
+      scrollMetricsRef,
+      atBottomRef,
     });
-
+    const { suppressNextNodeTap, handleNodePress } =
+      useSuppressedNodeTap(onNodeTap);
     const handleMessageAction = useLatestCallback(onMessageAction);
 
     if (loading) {
@@ -358,11 +175,10 @@ export const ChatMessageList = memo(
         />
 
         {sending && streamingAssistantText.length > 0 ? (
-          <View testID="chat-streaming-message" style={styles.streamingRow}>
-            <MarkdownText baseStyle={streamingTextStyle} transient>
-              {streamingAssistantText}
-            </MarkdownText>
-          </View>
+          <StreamingMessage
+            text={streamingAssistantText}
+            textStyle={streamingTextStyle}
+          />
         ) : null}
 
         {error ? (
@@ -396,13 +212,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: loomUiTokens.messageList.rowInset,
     flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
-  },
-  streamingRow: {
-    width: '100%',
-    alignItems: 'flex-start',
-    padding: loomUiTokens.messageList.messagePadding,
-    paddingRight:
-      loomUiTokens.messageList.messagePadding +
-      loomUiTokens.messageList.modelRowTrailingInset,
   },
 });
