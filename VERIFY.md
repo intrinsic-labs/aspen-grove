@@ -191,7 +191,17 @@ keeps the app's data) showing the choice and both saved siblings. Start the mock
 fails, and its log shows the three requests open together (`burst=1..3`).
 [.maestro/mock/header-scroll.yaml](.maestro/mock/header-scroll.yaml) goes on from first-turn:
 two more turns, the list pulled down so messages pass under the tree's transparent header
-(the title must stay legible), then Home's header. If 1235 is taken, run the mock on
+(the title must stay legible), then Home's header.
+[.maestro/mock/beta1-loop.yaml](.maestro/mock/beta1-loop.yaml) is the Beta 1 definition of
+done end to end: create a tree, configure its agent, branch, browse siblings inline, edit as a
+branch, bookmark, provenance, export, and a relaunch.
+[.maestro/mock/beta1-empty-states.yaml](.maestro/mock/beta1-empty-states.yaml) walks the
+empty states from a cleared install (no agent, LM Studio unreachable in setup, no trees, no
+OpenRouter key); then stop the mock and run
+[.maestro/mock/beta1-lmstudio-down.yaml](.maestro/mock/beta1-lmstudio-down.yaml) for the
+chat's "LM Studio isn't answering" and its Open Connections action.
+[.maestro/mock/voice-mode.yaml](.maestro/mock/voice-mode.yaml) picks Lily, turns Voice Mode
+on and has a reply read aloud (through the Mac's speakers), then stops it. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →

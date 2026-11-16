@@ -1,0 +1,62 @@
+# Character voices against the mock server (no key): pick Lily in Settings'
+# voice chooser, turn Voice Mode on, then a reply is read aloud when it
+# finishes (its row drawn in Lily's color) and a tap stops it. The simulator
+# plays the speech through the Mac's speakers.
+#   maestro test .maestro/mock/voice-mode.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow: ../open-settings.yaml
+- scrollUntilVisible:
+    element:
+      id: settings-voice-choose
+    timeout: 10000
+- takeScreenshot: voice-01-settings-section
+- tapOn:
+    id: settings-voice-choose
+- extendedWaitUntil:
+    visible:
+      id: settings-voice-chooser
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: voice-02-chooser
+# The chooser opens on the current voice, Jefferson, the middle card; Lily
+# is the card before it. (Every card is in the hierarchy whichever shows,
+# so swipe once, slowly enough to page, rather than wait for one.)
+- swipe:
+    start: 15%, 45%
+    end: 90%, 45%
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: voice-03-chooser-lily
+- tapOn:
+    id: settings-voice-select
+- extendedWaitUntil:
+    notVisible:
+      id: settings-voice-chooser
+    timeout: 10000
+- assertVisible: 'Current voice: Lily'
+- tapOn:
+    id: settings-voice-mode-toggle
+- waitForAnimationToEnd
+- takeScreenshot: voice-04-voice-mode-on
+- runFlow: ../go-home.yaml
+
+# A reply is read aloud once it finishes; its row takes Lily's color.
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Say something short.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- takeScreenshot: voice-05-reply-reading
+# A tap stops it.
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- waitForAnimationToEnd
+- takeScreenshot: voice-06-stopped

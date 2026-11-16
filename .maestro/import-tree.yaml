@@ -5,10 +5,13 @@ appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-home-menu.yaml
 - tapOn: Import OpenLoom Tree
-- tapOn: Browse
+# The picker reopens where it was last left, which may already be "On My
+# iPhone" (its Browse tab isn't always matchable then); from the Browse root,
+# step into "On My iPhone".
+- tapOn:
+    text: Browse
+    optional: true
 - waitForAnimationToEnd
-# The picker reopens where it was last left: from the Browse root, step into
-# "On My iPhone".
 - tapOn:
     text: 'On My iPhone'
     optional: true
