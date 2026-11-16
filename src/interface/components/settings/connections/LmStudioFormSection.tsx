@@ -10,6 +10,7 @@ import {
   formText,
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { LmStudioTestFailureFooter } from './LmStudioTestFailureFooter';
 import { showsLmStudioHint } from './lmstudio-hint';
 import type {
   ConnectionsController,
@@ -51,8 +52,8 @@ export const LmStudioFormSection = ({
   footer = 'Connect to your LM Studio server for local inference. Models are picked when you create an agent.',
 }: LmStudioFormSectionProps) => {
   const status = controller.lmstudioConnectionStatus;
-  const showError =
-    status === 'disconnected' && controller.lmstudioConnectionError;
+  const failure =
+    status === 'disconnected' ? controller.lmstudioConnectionError : null;
   const showHint = showsLmStudioHint(status);
 
   return (
@@ -60,15 +61,15 @@ export const LmStudioFormSection = ({
       testID="connections-lmstudio"
       header="LM Studio"
       footer={
-        showError || showHint ? (
+        failure || showHint ? (
           <>
-            {showError ? (
-              <Text
-                testID="connections-lmstudio-error"
-                style={[formText.footer, styles.error]}
-              >
-                {controller.lmstudioConnectionError}
-              </Text>
+            {failure ? (
+              <LmStudioTestFailureFooter
+                key={`${failure}${controller.lmstudioConnectionErrorDetail ?? ''}`}
+                message={failure}
+                detail={controller.lmstudioConnectionErrorDetail}
+                expandedByDefault={controller.verboseErrorAlerts}
+              />
             ) : null}
             {showHint ? (
               <Text testID="connections-lmstudio-hint" style={formText.footer}>
@@ -166,8 +167,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  error: {
-    color: '#FF453A',
   },
 });

@@ -8,13 +8,7 @@ import type {
   LMStudioStats,
 } from './types';
 
-export const toJsonString = (value: unknown): string => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
+export { toJsonString } from '../to-json-string';
 
 export const headersToString = (headers: Headers): string => {
   const lines: string[] = [];

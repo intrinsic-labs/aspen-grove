@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import { describeProviderError } from '@application/services/llm';
 import { DEFAULT_LMSTUDIO_SETTINGS } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
+import { useVerboseErrorAlerts } from '../../error-details';
 import {
   type LmStudioConnectionTarget,
   useLmStudioConnectionTest,
@@ -29,6 +30,9 @@ const toDraftKey = (draft: ConnectionsDraft): string => JSON.stringify(draft);
  */
 export const useConnectionsController = () => {
   const { repositories, adapters } = useAppServices();
+  const verboseErrorAlerts = useVerboseErrorAlerts(
+    repositories.userPreferencesRepo
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,7 +109,7 @@ export const useConnectionsController = () => {
       describeProviderError(caught, {
         provider: 'lmstudio',
         lmstudioEndpoint: endpoint,
-      }).message,
+      }),
     []
   );
   const lmstudioTest = useLmStudioConnectionTest(
@@ -272,6 +276,10 @@ export const useConnectionsController = () => {
     setLmstudioAutoLoadModels,
     lmstudioConnectionStatus: lmstudioTest.status,
     lmstudioConnectionError: lmstudioTest.error,
+    /** The failed test's technical form, behind a details toggle. */
+    lmstudioConnectionErrorDetail: lmstudioTest.errorDetail,
+    /** Details start expanded ("Verbose Error Alerts"). */
+    verboseErrorAlerts,
     testLmstudioConnection: lmstudioTest.test,
 
     saveNow,

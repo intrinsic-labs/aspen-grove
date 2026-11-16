@@ -6,5 +6,6 @@ export * from './request-max-tokens';
 export * from './retry';
 export * from './selectable-provider-from-model-ref';
 export * from './describe-provider-error';
+export * from './provider-error-copy';
 export * from './missing-provider-key-error';
 export * from './openrouter-catalog-model';

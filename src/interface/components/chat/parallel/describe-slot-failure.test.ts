@@ -48,6 +48,23 @@ describe('describeSlotFailure', () => {
     );
   });
 
+  it('words any other provider failure as one plain line, never the raw form', () => {
+    const described = describeSlotFailure(
+      failure(
+        new LlmProviderError({
+          code: 'unknown',
+          message: 'Injected failure on request #4.',
+          provider: 'lmstudio',
+          retryable: false,
+        })
+      ),
+      'lmstudio'
+    );
+    expect(described.type === 'error' && described.message).toBe(
+      'LM Studio returned an error.'
+    );
+  });
+
   it('passes other events through untouched', () => {
     const delta: ContinuationSlotEvent = {
       slot: 1,

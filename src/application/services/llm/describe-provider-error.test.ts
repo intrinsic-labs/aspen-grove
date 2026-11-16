@@ -97,7 +97,7 @@ describe('describeProviderError: keys', () => {
 });
 
 describe('describeProviderError: everything else', () => {
-  it('keeps the provider detail for other provider errors', () => {
+  it('gives other provider errors a plain line and keeps the raw form as detail', () => {
     const result = describeProviderError(
       new LlmProviderError({
         code: 'rateLimited',
@@ -108,13 +108,82 @@ describe('describeProviderError: everything else', () => {
     );
     expect(result).toEqual({
       kind: 'other',
-      message: '[openrouter:rateLimited] slow down',
+      message:
+        'OpenRouter is limiting requests right now. Wait a moment, then try again.',
       action: null,
+      detail: '[openrouter:rateLimited] slow down',
     });
   });
 
-  it('passes plain errors through', () => {
-    expect(describeProviderError(new Error('nope')).message).toBe('nope');
+  it("says an unknown LM Studio failure plainly (the mock's injected failure)", () => {
+    const result = describeProviderError(
+      lmstudioError('unknown', 'Injected failure on request #4.')
+    );
+    expect(result.message).toBe('LM Studio returned an error.');
+    expect(result.detail).toBe(
+      '[lmstudio:unknown] Injected failure on request #4.'
+    );
+  });
+
+  it('passes plain errors through, with no detail to repeat', () => {
+    expect(describeProviderError(new Error('nope'))).toEqual({
+      kind: 'other',
+      message: 'nope',
+      action: null,
+    });
     expect(describeProviderError('odd').message).toBe('odd');
+    expect(describeProviderError('odd').detail).toBeUndefined();
+  });
+});
+
+describe('describeProviderError: no failure shows its raw form', () => {
+  const codes: LlmProviderError['code'][] = [
+    'authenticationFailed',
+    'rateLimited',
+    'contextTooLong',
+    'modelNotFound',
+    'invalidRequest',
+    'serverError',
+    'networkError',
+    'timeout',
+    'contentFiltered',
+    'cancelled',
+    'unknown',
+  ];
+
+  const providers: LlmProviderError['provider'][] = ['openrouter', 'lmstudio'];
+  it.each(
+    providers.flatMap((provider) =>
+      codes.map(
+        (code): [LlmProviderError['provider'], LlmProviderError['code']] => [
+          provider,
+          code,
+        ]
+      )
+    )
+  )('%s %s', (provider, code) => {
+    const error = new LlmProviderError({
+      code,
+      message: 'HTTP 500: {"error":"raw body"}',
+      provider,
+      retryable: false,
+    });
+    const result = describeProviderError(error);
+    expect(result.message).not.toMatch(/\[(openrouter|lmstudio):/);
+    expect(result.message).not.toContain('raw body');
+    expect(result.message).not.toMatch(/\blmstudio\b|\bopenrouter\b/);
+    expect(result.detail).toBe(
+      `[${provider}:${code}] HTTP 500: {"error":"raw body"}`
+    );
+  });
+
+  it('keeps the friendly mappings and still offers the raw form as detail', () => {
+    const unreachable = describeProviderError(
+      lmstudioError('networkError', 'Network request failed')
+    );
+    expect(unreachable.kind).toBe('lmstudio-unreachable');
+    expect(unreachable.detail).toBe(
+      '[lmstudio:networkError] Network request failed'
+    );
   });
 });

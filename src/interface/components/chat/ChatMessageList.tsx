@@ -57,6 +57,8 @@ type ChatMessageListProps = {
   readonly error: string | null;
   /** What fixes `error`, when something does (e.g. open Connections). */
   readonly errorAction: ProviderErrorAction;
+  /** The failure's technical form, offered behind "Details" on the notice. */
+  readonly errorDetail?: string;
   readonly onErrorAction: () => void;
   readonly scrollRef: RefObject<KeyboardAwareScrollViewRef | null>;
   readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -92,6 +94,7 @@ export const ChatMessageList = memo(
     bottomInset,
     error,
     errorAction,
+    errorDetail,
     onErrorAction,
     scrollRef,
     onScroll,
@@ -364,8 +367,10 @@ export const ChatMessageList = memo(
 
         {error ? (
           <ChatErrorNotice
+            key={error}
             message={error}
             action={errorAction}
+            detail={errorDetail}
             onAction={onErrorAction}
           />
         ) : null}

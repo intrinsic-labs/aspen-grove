@@ -21,6 +21,12 @@ type ContinuationCardShellProps = {
   readonly caption: ReactNode;
   readonly cardStyle?: StyleProp<ViewStyle>;
   readonly testID?: string;
+  /**
+   * A tap on a card with no saved node (a failed one, to show its details).
+   * Its pressable carries `pressTestID`.
+   */
+  readonly onPressWithoutNode?: () => void;
+  readonly pressTestID?: string;
   readonly onSelect: (nodeId: ULID) => void;
   readonly onMenuAction: (nodeId: ULID, action: ContinuationMenuAction) => void;
   readonly children: ReactNode;
@@ -38,6 +44,8 @@ export const ContinuationCardShell = ({
   caption,
   cardStyle,
   testID,
+  onPressWithoutNode,
+  pressTestID,
   onSelect,
   onMenuAction,
   children,
@@ -68,6 +76,15 @@ export const ContinuationCardShell = ({
             {children}
           </Pressable>
         </ContextMenu>
+      ) : onPressWithoutNode ? (
+        <Pressable
+          testID={pressTestID}
+          accessibilityRole="button"
+          onPress={onPressWithoutNode}
+          style={style}
+        >
+          {children}
+        </Pressable>
       ) : (
         <View style={style}>{children}</View>
       )}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { LlmProviderError } from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
 import {
   initialParallelSlotsState,
@@ -53,6 +54,29 @@ describe('parallelSlotsReducer', () => {
     expect(state.slots[1]).toMatchObject({ nodeId: 'n1', interruptionReason: 'network' });
     expect(state.slots[2].error).toBe('rate limited');
     expect(state.slots[2].nodeId).toBeUndefined();
+  });
+
+  it('keeps a failure\'s raw form apart from its plain line', () => {
+    const cause = new LlmProviderError({
+      code: 'unknown',
+      message: 'Injected failure on request #4.',
+      provider: 'lmstudio',
+      retryable: false,
+    });
+    const state = run([
+      { type: 'start', sourceNodeId: source, count: 2 },
+      {
+        type: 'outcome',
+        outcome: { slot: 0, type: 'error', message: 'LM Studio returned an error.', cause },
+      },
+      { type: 'outcome', outcome: { slot: 1, type: 'error', message: 'nope', cause: new Error('nope') } },
+    ]);
+
+    expect(state.slots[0]).toMatchObject({
+      error: 'LM Studio returned an error.',
+      errorDetail: '[lmstudio:unknown] Injected failure on request #4.',
+    });
+    expect(state.slots[1].errorDetail).toBeUndefined();
   });
 
   it('shows a stop as stopping, then cancelled with or without a saved node', () => {

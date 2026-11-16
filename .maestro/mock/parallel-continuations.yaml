@@ -1,6 +1,8 @@
 # Several continuations at once, against the mock server (no key): a turn,
 # its rail, N picked (up to 4, then 3), Generate 3; the cards stream side by
-# side, one fails on its own while the other two finish and are saved; one
+# side, one fails on its own (a plain line, its raw error one tap away) while
+# the other two finish and are saved; the rail scrolled to its end shows the
+# last card whole; one
 # is expanded (its provenance verified) and made current from its menu; then a relaunch shows the choice and
 # both siblings kept.
 # Needs Metro and the mock server started so that one stream of each
@@ -104,6 +106,48 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible:
     id: 'chat-continuation-slot-state-1-failed'
 - takeScreenshot: par-04-result
+
+# The failed card reads plainly; the raw error waits behind a tap.
+- swipe:
+    start: 60%, 16%
+    end: 32%, 16%
+    duration: 800
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-error-1'
+    text: 'LM Studio returned an error.'
+# iOS reads the card as one button: the line, then "Tap for details."
+- assertVisible:
+    id: 'chat-continuation-slot-error-toggle-1'
+    text: '.*Tap for details\.'
+- assertNotVisible:
+    id: 'chat-continuation-slot-error-detail-1'
+- takeScreenshot: par-04a-failed-collapsed
+- tapOn:
+    id: 'chat-continuation-slot-error-toggle-1'
+- assertVisible:
+    id: 'chat-continuation-slot-error-detail-1'
+    text: '\[lmstudio:.*'
+- takeScreenshot: par-04b-failed-expanded
+- tapOn:
+    id: 'chat-continuation-slot-error-toggle-1'
+- assertNotVisible:
+    id: 'chat-continuation-slot-error-detail-1'
+
+# Scrolled to its end, the rail shows the last card whole, with the same
+# margin after it as before the first. Long swipes from the right edge: a
+# short one from the rail's middle can stop short of the end.
+- swipe:
+    start: 92%, 30%
+    end: 8%, 30%
+- waitForAnimationToEnd
+- swipe:
+    start: 92%, 30%
+    end: 8%, 30%
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-state-2-done'
+- takeScreenshot: par-04c-rail-end
 
 # Choose one: slot 2's saved card. At the rail's end it is the only
 # saved card on screen (iOS lists only on-screen elements, and flattens the

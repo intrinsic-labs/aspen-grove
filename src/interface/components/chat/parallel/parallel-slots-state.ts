@@ -1,5 +1,8 @@
 import type { ContinuationSlotOutcome } from '@application/services/dialogue-continuation';
-import type { StreamInterruptionReason } from '@application/services/llm';
+import {
+  providerErrorDetail,
+  type StreamInterruptionReason,
+} from '@application/services/llm';
 import type { ULID } from '@domain/value-objects';
 
 export type ParallelSlotStatus =
@@ -20,7 +23,10 @@ export type ParallelSlotView = {
   readonly status: ParallelSlotStatus;
   /** Text so far while streaming; the streamed text once settled. */
   readonly text: string;
+  /** A failed slot's plain line. */
   readonly error?: string;
+  /** Its technical form, shown only when asked for; absent if it would repeat `error`. */
+  readonly errorDetail?: string;
   readonly interruptionReason?: StreamInterruptionReason;
   /** The saved node, when there is one to choose. */
   readonly nodeId?: ULID;
@@ -74,8 +80,15 @@ const settle = (
         nodeId: outcome.saved?.nodeId,
         interruptionReason: 'cancelled',
       };
-    case 'error':
-      return { ...view, status: 'error', error: outcome.message };
+    case 'error': {
+      const detail = providerErrorDetail(outcome.cause);
+      return {
+        ...view,
+        status: 'error',
+        error: outcome.message,
+        ...(detail && detail !== outcome.message ? { errorDetail: detail } : {}),
+      };
+    }
   }
 };
 
