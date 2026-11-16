@@ -21,6 +21,9 @@ const main = () => {
                 ? `drop after ${config.dropAfter} tokens`
                 : `HTTP ${config.failStatus}`
             })`
+          : '') +
+        (config.failInBurst > 0
+          ? `, stream #${config.failInBurst} of each overlapping burst fails`
           : '')
     );
   });

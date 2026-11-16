@@ -16,6 +16,13 @@ export type MockConfig = {
   readonly missingModelId: string;
   /** Every Nth completion request fails (0: never). */
   readonly failEvery: number;
+  /**
+   * In each burst of overlapping completion requests (parallel cards), the
+   * Nth to arrive fails if it is streamed (0: never). A burst starts when a
+   * request arrives with none open, so a failure here also shows the
+   * requests really overlapped.
+   */
+  readonly failInBurst: number;
   /** `status`: answer `failStatus`; `drop`: cut the stream after `dropAfter` tokens. */
   readonly failMode: FailMode;
   readonly failStatus: number;
@@ -62,6 +69,7 @@ export const parseConfig = (args: readonly string[]): MockConfig => {
       model: { type: 'string', default: 'mock-model' },
       'missing-model': { type: 'string', default: 'mock-missing' },
       'fail-every': { type: 'string', default: '0' },
+      'fail-in-burst': { type: 'string', default: '0' },
       'fail-mode': { type: 'string', default: 'status' },
       'fail-status': { type: 'string', default: '500' },
       'drop-after': { type: 'string', default: '8' },
@@ -78,6 +86,7 @@ export const parseConfig = (args: readonly string[]): MockConfig => {
     modelId: values.model as string,
     missingModelId: values['missing-model'] as string,
     failEvery: toInt('fail-every', values['fail-every'] as string, 0),
+    failInBurst: toInt('fail-in-burst', values['fail-in-burst'] as string, 0),
     failMode: toFailMode(values['fail-mode'] as string),
     failStatus: toInt('fail-status', values['fail-status'] as string, 400),
     dropAfter: toInt('drop-after', values['drop-after'] as string, 0),

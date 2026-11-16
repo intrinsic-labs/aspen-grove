@@ -627,7 +627,8 @@ stays until the user makes one.
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
   `chat-continuation-generate-button`. Stop one card with `chat-continuation-slot-stop-<slot>`,
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
-  `chat-continuation-card-<nodeId>`.
+  `chat-continuation-card-<nodeId>`. Driven end to end, failure and relaunch included, by
+  `.maestro/mock/parallel-continuations.yaml` (VERIFY.md).
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
