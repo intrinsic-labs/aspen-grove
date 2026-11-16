@@ -1,8 +1,11 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { ProviderErrorAction } from '@application/services/llm';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { AppText } from '@/interface/ui/value-objects';
+import {
+  useErrorDetailDisclosure,
+  useErrorDetailsExpandedByDefault,
+} from '../error-details';
 
 const ACTION_LABELS: Record<NonNullable<ProviderErrorAction>, string> = {
   'open-connections': 'Open Connections',
@@ -19,7 +22,8 @@ type ChatErrorNoticeProps = {
 /**
  * The dialogue's error line, with the fix right under it when there is one.
  * The provider's own words stay behind a "Details" toggle, as Latent Spaces
- * keeps them out of its alert unless asked for.
+ * keeps them out of its alert unless asked for; with Verbose Error Alerts
+ * on they show from the start.
  */
 export const ChatErrorNotice = ({
   message,
@@ -27,7 +31,9 @@ export const ChatErrorNotice = ({
   onAction,
   detail,
 }: ChatErrorNoticeProps) => {
-  const [showDetail, setShowDetail] = useState(false);
+  const { shown: showDetail, toggle } = useErrorDetailDisclosure(
+    useErrorDetailsExpandedByDefault()
+  );
   return (
     <View style={styles.container}>
       <AppText testID="chat-error" variant="meta" tone="accent">
@@ -46,7 +52,7 @@ export const ChatErrorNotice = ({
       {detail ? (
         <Pressable
           testID="chat-error-details-toggle"
-          onPress={() => setShowDetail((shown) => !shown)}
+          onPress={toggle}
           hitSlop={8}
           accessibilityRole="button"
           style={({ pressed }) => [

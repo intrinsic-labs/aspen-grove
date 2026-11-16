@@ -9,11 +9,18 @@ export type LmStudioConnectionTarget = {
   readonly token: string;
 };
 
+/** A failed test: the plain line, and the technical form when there is one. */
+export type LmStudioTestFailure = {
+  readonly message: string;
+  readonly detail?: string;
+};
+
 type TestResult = {
   /** The target the test ran against (`targetKey`). */
   readonly key: string;
   readonly status: Exclude<LmStudioConnectionStatus, 'idle'>;
   readonly error: string | null;
+  readonly errorDetail?: string;
 };
 
 const targetKey = (target: LmStudioConnectionTarget): string =>
@@ -28,7 +35,10 @@ const targetKey = (target: LmStudioConnectionTarget): string =>
 export const useLmStudioConnectionTest = (
   target: LmStudioConnectionTarget,
   connect: (target: LmStudioConnectionTarget) => Promise<void>,
-  describeError: (caught: unknown, target: LmStudioConnectionTarget) => string
+  describeError: (
+    caught: unknown,
+    target: LmStudioConnectionTarget
+  ) => LmStudioTestFailure
 ) => {
   const [result, setResult] = useState<TestResult | null>(null);
   const key = targetKey(target);
@@ -58,13 +68,19 @@ export const useLmStudioConnectionTest = (
       await connect(tested);
       settle({ status: 'connected', error: null });
     } catch (caught) {
-      settle({ status: 'disconnected', error: describeError(caught, tested) });
+      const failure = describeError(caught, tested);
+      settle({
+        status: 'disconnected',
+        error: failure.message,
+        errorDetail: failure.detail,
+      });
     }
   }, [connect, describeError, endpoint, token]);
 
   return {
     status: current?.status ?? ('idle' as LmStudioConnectionStatus),
     error: current?.error ?? null,
+    errorDetail: current?.errorDetail,
     test,
   };
 };

@@ -1,7 +1,10 @@
-import { useState } from 'react';
 import { ActivityIndicator, Pressable, type TextStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ULID } from '@domain/value-objects';
+import {
+  useErrorDetailDisclosure,
+  useErrorDetailsExpandedByDefault,
+} from '../../error-details';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import { ContinuationCardCaption } from '../ContinuationCardCaption';
@@ -33,7 +36,7 @@ type StreamingContinuationCardProps = {
  * `[n]`, and a stop button while it can be stopped. Once saved it takes the
  * card gestures, so a tap expands it and a double tap makes it current. A
  * failed card says what went wrong in a plain line; a tap shows (and hides)
- * the provider's own words.
+ * the provider's own words, shown from the start with Verbose Error Alerts.
  */
 export const StreamingContinuationCard = ({
   view,
@@ -46,7 +49,9 @@ export const StreamingContinuationCard = ({
 }: StreamingContinuationCardProps) => {
   const state = toSlotCardState(view);
   const failed = state.key === 'failed';
-  const [showDetail, setShowDetail] = useState(false);
+  const detailDisclosure = useErrorDetailDisclosure(
+    useErrorDetailsExpandedByDefault()
+  );
   const canExpand = failed && Boolean(state.detail);
   const detail =
     state.key === 'done' && preview
@@ -85,9 +90,7 @@ export const StreamingContinuationCard = ({
           }
         />
       }
-      onPressWithoutNode={
-        canExpand ? () => setShowDetail((shown) => !shown) : undefined
-      }
+      onPressWithoutNode={canExpand ? detailDisclosure.toggle : undefined}
       pressTestID={`chat-continuation-slot-error-toggle-${view.slot}`}
       onSelect={onSelect}
       onMenuAction={onMenuAction}
@@ -97,7 +100,7 @@ export const StreamingContinuationCard = ({
           slot={view.slot}
           message={state.body}
           detail={state.detail}
-          showDetail={showDetail}
+          showDetail={detailDisclosure.shown}
           textStyle={textStyle}
         />
       ) : (

@@ -19,6 +19,7 @@ import { NodeSheet } from './chat/node-sheet/NodeSheet';
 import { TreeTagsSheet } from './chat/tags/TreeTagsSheet';
 import { useTreeHeaderMenu } from './chat/tree-menu/useTreeHeaderMenu';
 import { useLoomTreeChatController } from './chat/useLoomTreeChatController';
+import { ErrorDetailsDefaultProvider } from './error-details';
 import { TreeOnboardingSheet } from './onboarding/tree/TreeOnboardingSheet';
 import { useTreeOnboarding } from './onboarding/tree/useTreeOnboarding';
 import { useVoiceMode } from './voice';
@@ -59,66 +60,68 @@ const LoomTreeChatView = () => {
 
   return (
     <AppScreen testID="chat-screen" style={styles.container}>
-      <BlurTargetScope>
-        {/* What the composer's material blurs. */}
-        <BlurTarget style={styles.container}>
-          <ChatMessageList
+      <ErrorDetailsDefaultProvider value={controller.verboseErrorAlerts}>
+        <BlurTargetScope>
+          {/* What the composer's material blurs. */}
+          <BlurTarget style={styles.container}>
+            <ChatMessageList
+              loading={controller.loading}
+              sending={controller.sending}
+              rows={controller.rows}
+              streamingAssistantText={controller.streamingAssistantText}
+              composerHeight={composerHeight}
+              headerHeight={headerHeight}
+              bottomInset={insets.bottom}
+              error={controller.error}
+              errorAction={controller.errorAction}
+              errorDetail={controller.errorDetail}
+              onErrorAction={controller.onErrorAction}
+              scrollRef={controller.scrollRef}
+              onScroll={controller.onMessageListScroll}
+              onMessageAction={controller.onMessageAction}
+              onNodeTap={controller.onNodeTap}
+              speakingRow={controller.speakingRow}
+              continuationRail={controller.continuationRail}
+              displayPreferences={controller.displayPreferences}
+            />
+
+            {/* The whole screen fades to black over its last 10%
+          (MessageInputView.swift:24-34). */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={['transparent', 'transparent', colors.oppositePrimary]}
+              locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+          </BlurTarget>
+
+          <HeaderScrollEdge />
+
+          <ChatComposer
+            input={controller.input}
+            onChangeInput={controller.setInput}
+            onSend={controller.onSend}
+            canSend={controller.canSend}
+            sendLabel={controller.sendLabel}
+            placeholder={controller.composerPlaceholder}
+            editLabel={controller.editLabel}
+            onCancelEdit={controller.onCancelEdit}
             loading={controller.loading}
             sending={controller.sending}
-            rows={controller.rows}
-            streamingAssistantText={controller.streamingAssistantText}
-            composerHeight={composerHeight}
-            headerHeight={headerHeight}
+            canStop={controller.canStop}
+            stopping={controller.stopping}
+            onStop={controller.onStop}
+            inputRef={controller.inputRef}
+            onInputFocus={controller.onComposerFocus}
+            onComposerLayout={setComposerHeight}
+            onExpandInput={controller.onExpandComposer}
             bottomInset={insets.bottom}
-            error={controller.error}
-            errorAction={controller.errorAction}
-            errorDetail={controller.errorDetail}
-            onErrorAction={controller.onErrorAction}
-            scrollRef={controller.scrollRef}
-            onScroll={controller.onMessageListScroll}
-            onMessageAction={controller.onMessageAction}
-            onNodeTap={controller.onNodeTap}
-            speakingRow={controller.speakingRow}
-            continuationRail={controller.continuationRail}
             displayPreferences={controller.displayPreferences}
+            needsAgent={controller.needsAgent}
+            onChooseAgent={controller.onChooseAgent}
           />
-
-          {/* The whole screen fades to black over its last 10%
-          (MessageInputView.swift:24-34). */}
-          <LinearGradient
-            pointerEvents="none"
-            colors={['transparent', 'transparent', colors.oppositePrimary]}
-            locations={[0, loomUiTokens.bottomFade.clearUntil, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </BlurTarget>
-
-        <HeaderScrollEdge />
-
-        <ChatComposer
-          input={controller.input}
-          onChangeInput={controller.setInput}
-          onSend={controller.onSend}
-          canSend={controller.canSend}
-          sendLabel={controller.sendLabel}
-          placeholder={controller.composerPlaceholder}
-          editLabel={controller.editLabel}
-          onCancelEdit={controller.onCancelEdit}
-          loading={controller.loading}
-          sending={controller.sending}
-          canStop={controller.canStop}
-          stopping={controller.stopping}
-          onStop={controller.onStop}
-          inputRef={controller.inputRef}
-          onInputFocus={controller.onComposerFocus}
-          onComposerLayout={setComposerHeight}
-          onExpandInput={controller.onExpandComposer}
-          bottomInset={insets.bottom}
-          displayPreferences={controller.displayPreferences}
-          needsAgent={controller.needsAgent}
-          onChooseAgent={controller.onChooseAgent}
-        />
-      </BlurTargetScope>
+        </BlurTargetScope>
+      </ErrorDetailsDefaultProvider>
 
       <NodeSheet
         target={controller.nodeSheet.target}

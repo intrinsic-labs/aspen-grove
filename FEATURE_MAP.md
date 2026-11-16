@@ -431,7 +431,8 @@ stays until the user makes one.
   "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
   on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
   shows it in `chat-error-detail` (selectable), as Latent Spaces keeps the raw error out of
-  its alert unless asked (`verboseErrorAlerts`).
+  its alert unless asked; with Verbose Error Alerts on (`settings.behavior.verbose-errors`)
+  it starts shown.
   **Thinking indicator:** while a single send or regenerate is in flight (the same state
   that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
   the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
@@ -648,7 +649,11 @@ stays until the user makes one.
   its stop button beside it. Card states: `pending` ("Waiting for the model…", request sent,
   no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (a plain line in the card's usual text, dimmed, with "Tap for
-  details."; a tap shows the raw `[provider:code] message` under it, another hides it). Saving follows the single-generation
+  details."; a tap shows the raw `[provider:code] message` under it, another hides it; with
+  Verbose Error Alerts on it starts shown). Scrolled to its end, the rail shows the last card
+  whole, with the same 16 pt margin after it as before the first (`.padding()` around
+  `HStack(spacing: 22)`, ChildNodesView.swift:21-27); like Latent Spaces' it doesn't snap, so
+  mid-scroll a card can rest partly off screen. Saving follows the single-generation
   convention: a stop after text saves the partial text as is (no marker, so the next turn
   doesn't send one to the model); a network, timeout or provider interruption after text saves
   it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
@@ -1189,8 +1194,8 @@ stays until the user makes one.
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1204,7 +1209,11 @@ stays until the user makes one.
   dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. The footer's setup hint
+  again.", plus a phone hint when the address is localhost. Under it,
+  `connections-lmstudio-error-details-toggle` ("Show Details" / "Hide Details") shows what the
+  network or server actually said (`connections-lmstudio-error-detail`, `[lmstudio:<code>]
+  <message>`, monospaced and selectable); it starts shown with Verbose Error Alerts on
+  (`settings.behavior.verbose-errors`). The footer's setup hint
   (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
   server in LM Studio…" on onboarding) shows until a test connects and again after a failed
   one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
@@ -1212,7 +1221,8 @@ stays until the user makes one.
   start and is cut off with an ellipsis (`TrailingTextField`, as an unfocused SwiftUI
   `TextField`), and focused it scrolls as usual. A focused row is kept clear of the
   keyboard and, on iOS, its toolbar (`SettingsScreenScaffold`'s keyboard offset).
-  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not).
+  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not);
+  `.maestro/mock/verbose-error-details.yaml` for the detail shown from the start.
 
 ### Message typography
 - **ID:** `settings.typography`
@@ -1249,15 +1259,22 @@ stays until the user makes one.
 - **Status:** live
 ### Verbose error alerts setting
 - **ID:** `settings.behavior.verbose-errors`
-- **Purpose:** A switch meant to show detailed provider failures in the UI.
+- **Purpose:** Shows failures' technical detail from the start, as Latent Spaces adds the raw
+  error to its alert (`verboseErrorAlerts`, LoomTreeView.swift:164-173).
 - **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
 - **Reach:** `home-settings-button` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
-- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/components/error-details/`
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
-- **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
-- **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
+- **Status:** live
+- **Notes:** Off by default. Every failure surface shows a plain line and keeps the raw
+  `[provider:code] message` behind a toggle: the failed send (`chat-error-details-toggle`),
+  a failed continuation card (a tap on the card) and the LM Studio connection test
+  (`connections-lmstudio-error-details-toggle`). With this on, those details start shown;
+  the toggle still hides them. Read on each focus (`useVerboseErrorAlerts`), so a change
+  holds once you go back to the Dialogue or to Connections. The Dialogue passes it down by
+  context (`ErrorDetailsDefaultProvider`). Flow: `.maestro/mock/verbose-error-details.yaml`.
 
 ### Voice Mode setting
 - **ID:** `settings.voice`

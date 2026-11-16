@@ -2,7 +2,7 @@
 # address it tested. After setup.yaml the mock reads Connected; editing the
 # Server address puts the status back to Untested, and it stays Untested when
 # the edit is taken back. Testing the edited
-# (wrong) address reads Not reachable. Restoring the address reads Untested
+# (wrong) address reads Not reachable, with the raw error behind Show Details. Restoring the address reads Untested
 # until it is tested again, then Connected. Last, a long address: the
 # focused row clear of the keyboard, the row truncated once it's put away.
 # Needs the mock server and Metro:
@@ -85,6 +85,32 @@ env:
       text: 'Not reachable'
     timeout: 15000
 - takeScreenshot: 82-lmstudio-edited-not-reachable
+# The plain line, with what the network said one tap away.
+- assertVisible:
+    id: connections-lmstudio-error
+- assertNotVisible:
+    id: connections-lmstudio-error-detail
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-error-details-toggle
+    timeout: 10000
+- assertVisible:
+    id: connections-lmstudio-error-details-toggle
+    text: 'Show Details'
+- tapOn:
+    id: connections-lmstudio-error-details-toggle
+- assertVisible:
+    id: connections-lmstudio-error-detail
+    text: '\[lmstudio:.*'
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-error-details-toggle
+    timeout: 10000
+- takeScreenshot: 82b-lmstudio-not-reachable-detail
+- tapOn:
+    id: connections-lmstudio-error-details-toggle
+- assertNotVisible:
+    id: connections-lmstudio-error-detail
 
 # Back to the mock's address: untested until tested again.
 - tapOn:
