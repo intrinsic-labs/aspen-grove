@@ -49,8 +49,11 @@ export const StreamingContinuationCard = ({
 }: StreamingContinuationCardProps) => {
   const state = toSlotCardState(view);
   const failed = state.key === 'failed';
+  // A slot's card stays mounted across runs: reset the choice when it
+  // stops being failed, so each new failure opens at the default.
   const detailDisclosure = useErrorDetailDisclosure(
-    useErrorDetailsExpandedByDefault()
+    useErrorDetailsExpandedByDefault(),
+    failed ? `failed:${state.detail ?? ''}` : view.status
   );
   const canExpand = failed && Boolean(state.detail);
   const detail =

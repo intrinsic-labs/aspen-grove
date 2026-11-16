@@ -34,4 +34,21 @@ describe('useErrorDetailDisclosure', () => {
     await rerender(true);
     expect(result.current.shown).toBe(false);
   });
+
+  it('drops the choice when the reset key changes, so a new failure opens at the default', async () => {
+    const useDisclosure = (resetKey: string) =>
+      useErrorDetailDisclosure(false, resetKey);
+    const { result, rerender } = renderHook<
+      string,
+      ReturnType<typeof useErrorDetailDisclosure>
+    >(useDisclosure, 'failed:first');
+    await act(() => result.current.toggle());
+    expect(result.current.shown).toBe(true);
+    await rerender('streaming');
+    expect(result.current.shown).toBe(false);
+    await rerender('failed:second');
+    expect(result.current.shown).toBe(false);
+    await act(() => result.current.toggle());
+    expect(result.current.shown).toBe(true);
+  });
 });
