@@ -1,5 +1,6 @@
 import { forwardRef, useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -23,13 +24,18 @@ type TrailingTextFieldProps = Omit<TextInputProps, 'style'> & {
  * its first break ("http://") with the rest wrapped out of sight. So at rest
  * the field's own text is clear and the value is drawn over it in one
  * truncated line; focused, the field shows and scrolls its text as usual.
+ * iOS only: Android's field already shows a long value on one line, and
+ * its text isn't fully hidden by a clear color, so an overlay would ghost.
  */
 export const TrailingTextField = forwardRef<TextInput, TrailingTextFieldProps>(
   ({ value, textStyle, onFocus, onBlur, ...inputProps }, ref) => {
     const [focused, setFocused] = useState(false);
     // A secure field keeps its own dots: the overlay would draw the secret.
     const showsResting =
-      !focused && Boolean(value) && !inputProps.secureTextEntry;
+      Platform.OS === 'ios' &&
+      !focused &&
+      Boolean(value) &&
+      !inputProps.secureTextEntry;
 
     return (
       <View style={styles.box}>
