@@ -1,28 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
   FormSection,
   formText,
   useFormColors,
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { keyStorageCopy } from './key-storage-copy';
 
 const hero = loomUiTokens.apiKeysHero;
 
-/**
- * Only what is true of Aspen Grove: keys go to `expo-secure-store` with its
- * defaults (iOS Keychain, readable while unlocked, not iCloud-synchronizable)
- * and to the provider itself. Latent Spaces' AES-GCM and biometric claims do
- * not apply here, and default Keychain items can ride in an encrypted device
- * backup, so there is no "no backups" claim either.
- */
-const BULLETS = [
-  'Secure storage in the iOS Keychain',
-  'Never synced to iCloud Keychain',
-  'Sent only to the provider it belongs to',
-  'No Aspen Grove server in between',
-  'iOS app sandboxing',
-] as const;
+// Platform-correct: where expo-secure-store keeps the key (key-storage-copy).
+const BULLETS = keyStorageCopy(Platform.OS).bullets;
 
 /** The API Keys page's opening card (APIKeySettingsView.swift:20-52). */
 export const ApiKeysHeroSection = () => {
