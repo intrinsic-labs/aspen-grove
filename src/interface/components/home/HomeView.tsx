@@ -91,6 +91,9 @@ const HomeView = () => {
                 activeTag={home.activeTag}
                 onClearTag={() => home.setActiveTagId(null)}
                 error={home.error}
+                noTrees={
+                  home.loaded && home.trees.length === 0 && !home.activeTag
+                }
               />
             }
             bottomInset={composerHeight}

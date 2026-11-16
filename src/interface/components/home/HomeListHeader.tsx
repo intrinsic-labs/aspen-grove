@@ -13,21 +13,30 @@ type HomeListHeaderProps = {
   readonly activeTag: Tag | null;
   readonly onClearTag: () => void;
   readonly error: string | null;
+  /** Ready to start a tree, and there are none yet (no filter on). */
+  readonly noTrees: boolean;
 };
+
+/** Home's empty state once a tree can start: where the first one begins. */
+export const NO_TREES_HINT =
+  'No trees yet. Write a first message below to begin one.';
 
 /**
  * What sits above Home's tree card, all Aspen Grove's own: the setup hint
  * until a tree can start, the tag the list is filtered by, and an error.
- * Renders nothing in the usual case, as Latent Spaces has nothing there.
+ * Renders nothing in the usual case, as Latent Spaces has nothing there;
+ * with no trees at all, one line says how the first one starts.
  */
 export const HomeListHeader = ({
   setupStatus,
   activeTag,
   onClearTag,
   error,
+  noTrees,
 }: HomeListHeaderProps) => {
   const showSetup = setupStatus !== null && setupStatus !== 'ready';
-  if (!showSetup && !activeTag && !error) {
+  const showEmpty = !showSetup && noTrees;
+  if (!showSetup && !showEmpty && !activeTag && !error) {
     return null;
   }
 
@@ -39,6 +48,16 @@ export const HomeListHeader = ({
           testIDPrefix="home"
           style={styles.setup}
         />
+      ) : null}
+      {showEmpty ? (
+        <AppText
+          testID="home-empty-hint"
+          variant="meta"
+          tone="secondary"
+          style={[styles.setup, styles.centered]}
+        >
+          {NO_TREES_HINT}
+        </AppText>
       ) : null}
       {error ? (
         <AppText
@@ -81,6 +100,9 @@ const styles = StyleSheet.create({
   },
   setup: {
     paddingTop: 8,
+  },
+  centered: {
+    textAlign: 'center',
   },
   error: {
     textAlign: 'center',
