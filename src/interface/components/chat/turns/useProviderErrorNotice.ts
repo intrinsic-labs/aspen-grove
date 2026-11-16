@@ -14,7 +14,8 @@ type UseProviderErrorNoticeInput = {
 /**
  * Shows a failed generation as a plain message plus the action that fixes
  * it (e.g. open Connections). The action is kept with the message it belongs
- * to, so any later `setError` (or clearing it) drops the action too.
+ * to, so any later `setError` (or clearing it) drops the action too; the
+ * same goes for the technical detail offered behind "Details".
  */
 export const useProviderErrorNotice = ({
   error,
@@ -33,8 +34,9 @@ export const useProviderErrorNotice = ({
     [setError]
   );
 
-  const errorAction: ProviderErrorAction =
-    described && described.message === error ? described.action : null;
+  const current = described && described.message === error ? described : null;
+  const errorAction: ProviderErrorAction = current ? current.action : null;
+  const errorDetail: string | undefined = current?.detail;
 
-  return { showProviderError, errorAction };
+  return { showProviderError, errorAction, errorDetail };
 };

@@ -407,7 +407,7 @@ stays until the user makes one.
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
@@ -428,7 +428,12 @@ stays until the user makes one.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
-  provider errors keep their `[provider:code]` detail.
+  provider errors get one plain line by error code ("LM Studio returned an error.",
+  "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
+  on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
+  shows it in `chat-error-detail` (selectable), as Latent Spaces keeps the raw error out of
+  its alert unless asked; with Verbose Error Alerts on (`settings.behavior.verbose-errors`)
+  it starts shown.
   **Thinking indicator:** while a single send or regenerate is in flight (the same state
   that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
   the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
@@ -633,7 +638,7 @@ stays until the user makes one.
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
-- **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>`; once saved, the card's pressable is `chat-continuation-card-<nodeId>`
+- **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>` (the plain line), `chat-continuation-slot-error-toggle-<slot>` (the failed card's pressable), `chat-continuation-slot-error-detail-<slot>` (shown once tapped); once saved, the card's pressable is `chat-continuation-card-<nodeId>`
 - **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
   or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
@@ -645,7 +650,12 @@ stays until the user makes one.
 - **Notes:** A card's caption shows its state in brackets where a saved card has `[n]`, with
   its stop button beside it. Card states: `pending` ("Waiting for the model…", request sent,
   no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
-  (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
+  (reason)` and `failed` (a plain line in the card's usual text, dimmed, with "Tap for
+  details."; a tap shows the raw `[provider:code] message` under it, another hides it; with
+  Verbose Error Alerts on it starts shown). Scrolled to its end, the rail shows the last card
+  whole, with the same 16 pt margin after it as before the first (`.padding()` around
+  `HStack(spacing: 22)`, ChildNodesView.swift:21-27); like Latent Spaces' it doesn't snap, so
+  mid-scroll a card can rest partly off screen. Saving follows the single-generation
   convention: a stop after text saves the partial text as is (no marker, so the next turn
   doesn't send one to the model); a network, timeout or provider interruption after text saves
   it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
@@ -656,7 +666,8 @@ stays until the user makes one.
   only while it is still open on the run's node: it never reopens a closed rail or replaces
   the node you moved to. When the run ends the rows reload against the session as it is then,
   so an agent switched mid-run stays switched. A failed card's error uses the same plain
-  wording as a failed send (missing or rejected key, LM Studio not answering). LM Studio gets N concurrent
+  wording as a failed send (missing or rejected key, LM Studio not answering, otherwise one
+  line by error code such as "LM Studio returned an error."). LM Studio gets N concurrent
   requests; a server that runs one prediction at a time queues them, so cards sit in
   `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
   late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
@@ -1185,8 +1196,8 @@ stays until the user makes one.
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1200,7 +1211,11 @@ stays until the user makes one.
   dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
   the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. The footer's setup hint
+  again.", plus a phone hint when the address is localhost. Under it,
+  `connections-lmstudio-error-details-toggle` ("Show Details" / "Hide Details") shows what the
+  network or server actually said (`connections-lmstudio-error-detail`, `[lmstudio:<code>]
+  <message>`, monospaced and selectable); it starts shown with Verbose Error Alerts on
+  (`settings.behavior.verbose-errors`). The footer's setup hint
   (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
   server in LM Studio…" on onboarding) shows until a test connects and again after a failed
   one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
@@ -1208,7 +1223,8 @@ stays until the user makes one.
   start and is cut off with an ellipsis (`TrailingTextField`, as an unfocused SwiftUI
   `TextField`), and focused it scrolls as usual. A focused row is kept clear of the
   keyboard and, on iOS, its toolbar (`SettingsScreenScaffold`'s keyboard offset).
-  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not).
+  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not);
+  `.maestro/mock/verbose-error-details.yaml` for the detail shown from the start.
 
 ### Message typography
 - **ID:** `settings.typography`
@@ -1245,15 +1261,22 @@ stays until the user makes one.
 - **Status:** live
 ### Verbose error alerts setting
 - **ID:** `settings.behavior.verbose-errors`
-- **Purpose:** A switch meant to show detailed provider failures in the UI.
+- **Purpose:** Shows failures' technical detail from the start, as Latent Spaces adds the raw
+  error to its alert (`verboseErrorAlerts`, LoomTreeView.swift:164-173).
 - **Where:** Settings → User Interface Settings, the "Verbose Error Alerts" toggle.
 - **Reach:** `home-settings-button` → `settings-behavior-verbose-errors` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-behavior-verbose-errors`
-- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/components/error-details/`
 - **Backend:** WatermelonDB `user_preferences.verbose_error_alerts`
-- **Status:** placeholder — the switch persists, but nothing outside the settings code reads `verboseErrorAlerts` (grepped `src/` at `revision:`), so it changes no behavior yet
-- **Notes:** Check this on the first walk. If a consumer appears, flip it to live.
+- **Status:** live
+- **Notes:** Off by default. Every failure surface shows a plain line and keeps the raw
+  `[provider:code] message` behind a toggle: the failed send (`chat-error-details-toggle`),
+  a failed continuation card (a tap on the card) and the LM Studio connection test
+  (`connections-lmstudio-error-details-toggle`). With this on, those details start shown;
+  the toggle still hides them. Read on each focus (`useVerboseErrorAlerts`), so a change
+  holds once you go back to the Dialogue or to Connections. The Dialogue passes it down by
+  context (`ErrorDetailsDefaultProvider`). Flow: `.maestro/mock/verbose-error-details.yaml`.
 
 ### Voice Mode setting
 - **ID:** `settings.voice`

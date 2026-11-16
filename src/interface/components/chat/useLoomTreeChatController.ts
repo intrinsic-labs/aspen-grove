@@ -32,6 +32,7 @@ import { useChatSessionLoader } from './session/useChatSessionLoader';
 import { useChatSessionState } from './session/useChatSessionState';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
+import { useVerboseErrorAlerts } from '../error-details';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendFirstMessage } from './turns/useSendFirstMessage';
 import { useSendTurn } from './turns/useSendTurn';
@@ -76,6 +77,9 @@ export const useLoomTreeChatController = () => {
   } = state;
   const [sending, setSending] = useState(false);
   const providerError = useProviderErrorNotice({ error, setError });
+  const verboseErrorAlerts = useVerboseErrorAlerts(
+    repositories.userPreferencesRepo
+  );
   const textPrompt = useTextPrompt();
   const title = useTreeTitle({
     navigation,
@@ -363,6 +367,9 @@ export const useLoomTreeChatController = () => {
     sending,
     error,
     errorAction: providerError.errorAction,
+    errorDetail: providerError.errorDetail,
+    /** Failure details start expanded ("Verbose Error Alerts"). */
+    verboseErrorAlerts,
     onErrorAction: () => router.push('/connections'),
     input,
     setInput,

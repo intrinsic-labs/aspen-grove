@@ -21,8 +21,10 @@ export type SlotCardState = {
   readonly label: string;
   /** The stop button shows while the slot can still be stopped. */
   readonly canStop: boolean;
-  /** The card's body: streamed text, or the error for a failed slot. */
+  /** The card's body: streamed text, or a failed slot's plain line. */
   readonly body: string;
+  /** A failed slot's technical detail, for its card's "details" tap. */
+  readonly detail?: string;
 };
 
 const toKey = (view: ParallelSlotView): SlotCardStateKey => {
@@ -73,5 +75,8 @@ export const toSlotCardState = (view: ParallelSlotView): SlotCardState => {
     label: `${LABELS[key]}${reason}`,
     canStop: key === 'pending' || key === 'streaming',
     body: toBody(view, key),
+    ...(key === 'failed' && view.errorDetail
+      ? { detail: view.errorDetail }
+      : {}),
   };
 };

@@ -1,0 +1,88 @@
+# Settings → Verbose Error Alerts: with it on, a failure shows its technical
+# detail from the start, as Latent Spaces adds `\(error)` to its alert. Here
+# through the LM Studio connection test: a wrong address fails with the raw
+# error already under the plain line; Hide Details still hides it. The
+# setting is turned back off at the end.
+# Needs the mock server and Metro:
+#   maestro test .maestro/mock/verbose-error-details.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow: ../open-settings.yaml
+- scrollUntilVisible:
+    element:
+      id: settings-behavior-verbose-errors
+    timeout: 10000
+- tapOn:
+    id: settings-behavior-verbose-errors
+# Settings saves after a short pause.
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 90-verbose-error-alerts-on
+- scrollUntilVisible:
+    element:
+      id: settings-link-connections
+    direction: UP
+    timeout: 10000
+- tapOn:
+    id: settings-link-connections
+- extendedWaitUntil:
+    visible:
+      id: settings-connections-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-test
+    timeout: 10000
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- inputText: '9'
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- tapOn:
+    id: connections-lmstudio-test
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-status
+      text: 'Not reachable'
+    timeout: 15000
+- assertVisible:
+    id: connections-lmstudio-error-detail
+    text: '\[lmstudio:.*'
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-error-details-toggle
+    timeout: 10000
+- takeScreenshot: 91-verbose-connection-detail-shown
+- assertVisible:
+    id: connections-lmstudio-error-details-toggle
+    text: 'Hide Details'
+- tapOn:
+    id: connections-lmstudio-error-details-toggle
+- assertNotVisible:
+    id: connections-lmstudio-error-detail
+
+# Put the address and the setting back.
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- eraseText: 1
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: settings-behavior-verbose-errors
+    timeout: 10000
+- tapOn:
+    id: settings-behavior-verbose-errors
+- waitForAnimationToEnd:
+    timeout: 2000

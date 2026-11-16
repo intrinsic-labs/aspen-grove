@@ -1,6 +1,10 @@
 import { ActivityIndicator, Pressable, type TextStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ULID } from '@domain/value-objects';
+import {
+  useErrorDetailDisclosure,
+  useErrorDetailsExpandedByDefault,
+} from '../../error-details';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import { ContinuationCardCaption } from '../ContinuationCardCaption';
@@ -9,6 +13,7 @@ import { continuationCardStyles } from '../continuation-card-styles';
 import type { ContinuationMenuAction } from '../continuation-menu';
 import type { ContinuationPreview } from '../types';
 import type { ParallelSlotView } from './parallel-slots-state';
+import { FailedCardBody } from './FailedCardBody';
 import { toSlotCardState } from './slot-card-state';
 
 const rail = loomUiTokens.continuationRail;
@@ -29,7 +34,9 @@ type StreamingContinuationCardProps = {
  * One of N continuations started together, in the same caption and tan card
  * as a saved one. The caption carries its state where a saved card has its
  * `[n]`, and a stop button while it can be stopped. Once saved it takes the
- * card gestures, so a tap expands it and a double tap makes it current.
+ * card gestures, so a tap expands it and a double tap makes it current. A
+ * failed card says what went wrong in a plain line; a tap shows (and hides)
+ * the provider's own words, shown from the start with Verbose Error Alerts.
  */
 export const StreamingContinuationCard = ({
   view,
@@ -42,6 +49,13 @@ export const StreamingContinuationCard = ({
 }: StreamingContinuationCardProps) => {
   const state = toSlotCardState(view);
   const failed = state.key === 'failed';
+  // A slot's card stays mounted across runs: reset the choice when it
+  // stops being failed, so each new failure opens at the default.
+  const detailDisclosure = useErrorDetailDisclosure(
+    useErrorDetailsExpandedByDefault(),
+    failed ? `failed:${state.detail ?? ''}` : view.status
+  );
+  const canExpand = failed && Boolean(state.detail);
   const detail =
     state.key === 'done' && preview
       ? `[${preview.onBranchCount}]`
@@ -79,25 +93,34 @@ export const StreamingContinuationCard = ({
           }
         />
       }
+      onPressWithoutNode={canExpand ? detailDisclosure.toggle : undefined}
+      pressTestID={`chat-continuation-slot-error-toggle-${view.slot}`}
       onSelect={onSelect}
       onMenuAction={onMenuAction}
     >
-      <AppText
-        testID={
-          failed ? `chat-continuation-slot-error-${view.slot}` : undefined
-        }
-        variant={failed ? 'meta' : 'body'}
-        numberOfLines={rail.previewTextMaxLines}
-        style={[
-          failed ? null : textStyle,
-          continuationCardStyles.cardText,
-          state.key === 'pending' || (state.key === 'stopped' && !view.nodeId)
-            ? continuationCardStyles.quietText
-            : null,
-        ]}
-      >
-        {state.key === 'pending' ? 'Waiting for the model…' : state.body}
-      </AppText>
+      {failed ? (
+        <FailedCardBody
+          slot={view.slot}
+          message={state.body}
+          detail={state.detail}
+          showDetail={detailDisclosure.shown}
+          textStyle={textStyle}
+        />
+      ) : (
+        <AppText
+          variant="body"
+          numberOfLines={rail.previewTextMaxLines}
+          style={[
+            textStyle,
+            continuationCardStyles.cardText,
+            state.key === 'pending' || (state.key === 'stopped' && !view.nodeId)
+              ? continuationCardStyles.quietText
+              : null,
+          ]}
+        >
+          {state.key === 'pending' ? 'Waiting for the model…' : state.body}
+        </AppText>
+      )}
     </ContinuationCardShell>
   );
 };

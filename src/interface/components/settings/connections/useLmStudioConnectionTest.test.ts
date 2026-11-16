@@ -13,7 +13,10 @@ const setup = (
 ) =>
   renderHook(
     (target: LmStudioConnectionTarget) =>
-      useLmStudioConnectionTest(target, connect, () => 'Not reachable'),
+      useLmStudioConnectionTest(target, connect, () => ({
+        message: 'Not reachable',
+        detail: '[lmstudio:networkError] Network request failed',
+      })),
     MOCK
   );
 
@@ -44,9 +47,13 @@ describe('useLmStudioConnectionTest', () => {
     await act(() => result.current.test());
     expect(result.current.status).toBe('disconnected');
     expect(result.current.error).toBe('Not reachable');
+    expect(result.current.errorDetail).toBe(
+      '[lmstudio:networkError] Network request failed'
+    );
     await rerender({ ...MOCK, endpoint: 'http://localhost:1236' });
     expect(result.current.status).toBe('idle');
     expect(result.current.error).toBeNull();
+    expect(result.current.errorDetail).toBeUndefined();
   });
 
   it('tests the trimmed address, so surrounding spaces are not an edit', async () => {
