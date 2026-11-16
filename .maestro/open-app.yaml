@@ -5,52 +5,7 @@
 # -e METRO_URL=http://localhost:<port> (its port picks the listed server; the
 # URL is typed in only when no server on that port is listed).
 appId: com.intrinsiclabs.aspengrove
-env:
-  METRO_PORT: ${METRO_PORT || (METRO_URL || ':8081').split(':').pop().split('/')[0]}
-  # A listed server on that port, by any host.
-  METRO_ROW: ${'http://[^ ]+:' + (METRO_PORT || (METRO_URL || ':8081').split(':').pop().split('/')[0]) + '/?'}
 ---
 - launchApp:
     clearState: true
-# The development build opens on Expo's launcher, which lists the Metro
-# servers it finds. iOS lists one by localhost or by the Mac's network
-# address (http://192.168.…:8081) and offers "Enter URL manually"; Android
-# lists it by network address. Tap the listed server on Metro's port; type the
-# URL only when none is listed. (Optional waits and taps, so a build that
-# skips the launcher still passes.)
-- extendedWaitUntil:
-    visible: 'Enter URL manually|${METRO_ROW}'
-    timeout: 30000
-    optional: true
-- runFlow:
-    when:
-      visible: '${METRO_ROW}'
-    commands:
-      - tapOn: '${METRO_ROW}'
-- runFlow:
-    when:
-      visible: 'Enter URL manually'
-      notVisible: '${METRO_ROW}'
-    commands:
-      - tapOn: 'Enter URL manually'
-      - tapOn:
-          text: 'http://'
-      - inputText: ${METRO_URL || 'http://localhost:' + METRO_PORT}
-      - tapOn: 'Connect'
-# Then the dev menu, which differs by platform; ios-dev-menu.yaml and
-# android-dev-menu.yaml wait for the bundle (the first Metro bundle can take a
-# minute to build), close the menu and switch off its floating Tools button.
-- runFlow:
-    when:
-      platform: iOS
-    file: ios-dev-menu.yaml
-- runFlow:
-    when:
-      platform: Android
-    file: android-dev-menu.yaml
-# A first launch shows onboarding over Home; a set-up install shows Home.
-- extendedWaitUntil:
-    visible:
-      id: 'home-welcome|onboarding-screen'
-    timeout: 120000
-- waitForAnimationToEnd
+- runFlow: connect-metro.yaml

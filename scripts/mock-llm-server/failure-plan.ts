@@ -10,20 +10,32 @@ export type RequestPlan =
 /**
  * Decides a completion request's fate from its 1-based number and model.
  * The missing model always answers 404; otherwise every `failEvery`th
- * request fails in the configured mode.
+ * request fails in the configured mode, and so does the `failInBurst`th
+ * stream of a burst of overlapping ones (`burstPosition`, 1-based; absent
+ * for a request that isn't streamed).
  */
 export const planRequest = (
   config: Pick<
     MockConfig,
-    'missingModelId' | 'failEvery' | 'failMode' | 'failStatus' | 'dropAfter'
+    | 'missingModelId'
+    | 'failEvery'
+    | 'failInBurst'
+    | 'failMode'
+    | 'failStatus'
+    | 'dropAfter'
   >,
   requestNumber: number,
-  model: string
+  model: string,
+  burstPosition?: number
 ): RequestPlan => {
   if (model === config.missingModelId) {
     return { kind: 'missing-model' };
   }
-  if (config.failEvery > 0 && requestNumber % config.failEvery === 0) {
+  const failsByCount =
+    config.failEvery > 0 && requestNumber % config.failEvery === 0;
+  const failsInBurst =
+    config.failInBurst > 0 && burstPosition === config.failInBurst;
+  if (failsByCount || failsInBurst) {
     return config.failMode === 'drop'
       ? { kind: 'drop', afterTokens: config.dropAfter }
       : { kind: 'status', status: config.failStatus };

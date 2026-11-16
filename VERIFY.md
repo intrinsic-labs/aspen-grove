@@ -99,7 +99,8 @@ also floats a **Tools** button (a gear) at the top right, over onboarding's Skip
 under the dev menu's Tools → **Tools button** (tap the switch, not the label). A cleared
 install turns it back on. The launcher only lists Metro on its default ports; on another
 port, use **Enter URL manually** with `http://localhost:<port>`. The Maestro flows handle all
-of this in [open-app.yaml](.maestro/open-app.yaml), on both platforms: it taps the listed
+of this in [open-app.yaml](.maestro/open-app.yaml) (its launcher steps live in
+[connect-metro.yaml](.maestro/connect-metro.yaml), shared with `relaunch-app.yaml`), on both platforms: it taps the listed
 server on Metro's port, whatever its host, and types the URL only when none is listed. Pass
 `-e METRO_PORT=<port>` (or `-e METRO_URL=http://localhost:<port>`) when Metro isn't on 8081.
 The dev-menu steps differ by platform and live in
@@ -153,7 +154,7 @@ create an agent on the LM Studio model `mock-model` (the model `mock-missing`, l
 answers 404). `--slow` gives time to tap stop mid-stream, and you need it to screenshot
 streaming states: at `--pace 20` a parallel-continuation card finishes in about 3 s; `--fail-every 3 --fail-status 422`
 fails every third completion outright (a 5xx is retried by the app); `--fail-mode drop` cuts
-a stream after a few tokens. Stop it with `kill "$(cat .verify/mock.pid)"`.
+a stream after a few tokens; `--fail-in-burst 2` fails the second of a set of parallel cards. Stop it with `kill "$(cat .verify/mock.pid)"`.
 [.maestro/mock/setup.yaml](.maestro/mock/setup.yaml) does all of that in one run: it clears
 state and goes through onboarding the way a new user does: the six pages, then LM Studio
 on the mock at 1235, the model `mock-model` and Begin Weaving, which creates the agent
@@ -181,6 +182,13 @@ context menu in a tree (the human bubble, the reply, a continuation card), scree
 lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
 again on recycled native views.
+[.maestro/mock/parallel-continuations.yaml](.maestro/mock/parallel-continuations.yaml) draws
+several continuations at once: a turn, its rail, N picked (4, then 3), Generate 3, the cards
+streaming side by side while one fails on its own and the other two finish, one expanded (its
+provenance verified) and made current from its menu, then a relaunch ([relaunch-app.yaml](.maestro/relaunch-app.yaml), which
+keeps the app's data) showing the choice and both saved siblings. Start the mock for it with
+`--pace 3 --fail-in-burst 2 --fail-status 422`: the second stream of each overlapping burst
+fails, and its log shows the three requests open together (`burst=1..3`).
 [.maestro/mock/header-scroll.yaml](.maestro/mock/header-scroll.yaml) goes on from first-turn:
 two more turns, the list pulled down so messages pass under the tree's transparent header
 (the title must stay legible), then Home's header. If 1235 is taken, run the mock on

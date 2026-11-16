@@ -78,6 +78,18 @@ describe('planRequest', () => {
     });
   });
 
+  it('fails only the configured stream of a burst with --fail-in-burst', () => {
+    const config = { ...base, failInBurst: 2, failStatus: 422 };
+    const kinds = [1, 2, 3].map(
+      (position) => planRequest(config, 10 + position, 'mock-model', position).kind
+    );
+    expect(kinds).toEqual(['ok', 'status', 'ok']);
+    // A request that isn't streamed has no place in a burst.
+    expect(planRequest(config, 2, 'mock-model')).toEqual({ kind: 'ok' });
+    expect(parseConfig(['--fail-in-burst', '2']).failInBurst).toBe(2);
+    expect(() => parseConfig(['--fail-in-burst', '-1'])).toThrow('--fail-in-burst');
+  });
+
   it('always answers 404 for the missing model', () => {
     expect(planRequest(base, 1, 'mock-missing')).toEqual({
       kind: 'missing-model',

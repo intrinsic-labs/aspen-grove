@@ -1,0 +1,11 @@
+# Quits the app and launches it again keeping its data, through the dev
+# launcher to Home: what a restart does to whatever was saved.
+# Run from another flow with `- runFlow: relaunch-app.yaml`; takes the same
+# METRO_PORT / METRO_URL as open-app.yaml.
+appId: com.intrinsiclabs.aspengrove
+---
+- stopApp
+- launchApp:
+    clearState: false
+    stopApp: true
+- runFlow: connect-metro.yaml
