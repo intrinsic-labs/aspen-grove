@@ -363,6 +363,7 @@ export const useLoomTreeChatController = () => {
     sending,
     error,
     errorAction: providerError.errorAction,
+    errorDetail: providerError.errorDetail,
     onErrorAction: () => router.push('/connections'),
     input,
     setInput,

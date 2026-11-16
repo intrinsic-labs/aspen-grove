@@ -72,6 +72,7 @@ const LoomTreeChatView = () => {
             bottomInset={insets.bottom}
             error={controller.error}
             errorAction={controller.errorAction}
+            errorDetail={controller.errorDetail}
             onErrorAction={controller.onErrorAction}
             scrollRef={controller.scrollRef}
             onScroll={controller.onMessageListScroll}

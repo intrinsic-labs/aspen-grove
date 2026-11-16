@@ -35,6 +35,25 @@ describe('toSlotCardState', () => {
     });
   });
 
+  it("carries a failure's detail for the details tap, and only on failures", () => {
+    expect(
+      toSlotCardState(
+        view({
+          status: 'error',
+          error: 'LM Studio returned an error.',
+          errorDetail: '[lmstudio:unknown] boom',
+        })
+      )
+    ).toMatchObject({
+      key: 'failed',
+      body: 'LM Studio returned an error.',
+      detail: '[lmstudio:unknown] boom',
+    });
+    expect(
+      toSlotCardState(view({ text: 'Once', errorDetail: 'stale' })).detail
+    ).toBeUndefined();
+  });
+
   it('marks stopped and interrupted cards, saying when nothing was saved', () => {
     expect(
       toSlotCardState(

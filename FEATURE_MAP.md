@@ -406,7 +406,7 @@ stays until the user makes one.
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
@@ -427,7 +427,11 @@ stays until the user makes one.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
-  provider errors keep their `[provider:code]` detail.
+  provider errors get one plain line by error code ("LM Studio returned an error.",
+  "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
+  on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
+  shows it in `chat-error-detail` (selectable), as Latent Spaces keeps the raw error out of
+  its alert unless asked (`verboseErrorAlerts`).
   **Thinking indicator:** while a single send or regenerate is in flight (the same state
   that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
   the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
@@ -631,7 +635,7 @@ stays until the user makes one.
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
-- **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>`; once saved, the card's pressable is `chat-continuation-card-<nodeId>`
+- **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>` (the plain line), `chat-continuation-slot-error-toggle-<slot>` (the failed card's pressable), `chat-continuation-slot-error-detail-<slot>` (shown once tapped); once saved, the card's pressable is `chat-continuation-card-<nodeId>`
 - **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
   or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
@@ -643,7 +647,8 @@ stays until the user makes one.
 - **Notes:** A card's caption shows its state in brackets where a saved card has `[n]`, with
   its stop button beside it. Card states: `pending` ("Waiting for the model…", request sent,
   no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
-  (reason)` and `failed` (the error in the card, dimmed). Saving follows the single-generation
+  (reason)` and `failed` (a plain line in the card's usual text, dimmed, with "Tap for
+  details."; a tap shows the raw `[provider:code] message` under it, another hides it). Saving follows the single-generation
   convention: a stop after text saves the partial text as is (no marker, so the next turn
   doesn't send one to the model); a network, timeout or provider interruption after text saves
   it with a `[stream interrupted: <reason>]` line appended; a failure or stop before any text
@@ -654,7 +659,8 @@ stays until the user makes one.
   only while it is still open on the run's node: it never reopens a closed rail or replaces
   the node you moved to. When the run ends the rows reload against the session as it is then,
   so an agent switched mid-run stays switched. A failed card's error uses the same plain
-  wording as a failed send (missing or rejected key, LM Studio not answering). LM Studio gets N concurrent
+  wording as a failed send (missing or rejected key, LM Studio not answering, otherwise one
+  line by error code such as "LM Studio returned an error."). LM Studio gets N concurrent
   requests; a server that runs one prediction at a time queues them, so cards sit in
   `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
   late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
