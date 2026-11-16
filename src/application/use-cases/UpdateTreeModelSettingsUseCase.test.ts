@@ -35,8 +35,6 @@ const makeAgent = (id: ULID, ownerTreeId?: ULID): Agent => ({
     loomAware: false,
     loomWrite: true,
     loomGenerate: false,
-    docRead: true,
-    docWrite: false,
   },
   ownerTreeId,
   createdAt: now,

@@ -57,6 +57,12 @@ const sleep = (ms: number): Promise<void> =>
 export const createMockServer = (config: MockConfig, log: Log): Server => {
   let requestCount = 0;
   let active = 0;
+  // Completion requests open now, and how many have arrived since the last
+  // moment none were: a burst is one set of parallel cards. Counted on
+  // arrival, before the body is read, so positions follow the order the
+  // app opened its requests (bodies can finish arriving in another order).
+  let openCompletions = 0;
+  let burstSize = 0;
   const tokenMs = 1000 / config.pace;
 
   const streamReply = async (
@@ -100,6 +106,12 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
   ): Promise<void> => {
     const number = ++requestCount;
     const id = `mock-${number}`;
+    burstSize = openCompletions === 0 ? 1 : burstSize + 1;
+    const arrival = burstSize;
+    openCompletions += 1;
+    res.on('close', () => {
+      openCompletions -= 1;
+    });
     let body: ChatBody;
     try {
       body = JSON.parse(await readBody(req)) as ChatBody;
@@ -109,10 +121,13 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     }
     const model = typeof body.model === 'string' ? body.model : '';
     const stream = body.stream === true;
-    const plan = planRequest(config, number, model);
+    // Only a streamed reply (a card) takes part in --fail-in-burst.
+    const burstPosition = stream ? arrival : undefined;
+    const plan = planRequest(config, number, model, burstPosition);
     const started = Date.now();
     active += 1;
-    log(`#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active} ${requestSummary(body)}`);
+    const burst = burstPosition ? ` burst=${burstPosition}` : '';
+    log(`#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active}${burst} ${requestSummary(body)}`);
 
     let closed = false;
     res.on('close', () => {

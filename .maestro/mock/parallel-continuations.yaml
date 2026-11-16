@@ -1,0 +1,197 @@
+# Several continuations at once, against the mock server (no key): a turn,
+# its rail, N picked (up to 4, then 3), Generate 3; the cards stream side by
+# side, one fails on its own while the other two finish and are saved; one
+# is expanded (its provenance verified) and made current from its menu; then a relaunch shows the choice and
+# both siblings kept.
+# Needs Metro and the mock server started so that one stream of each
+# overlapping burst fails, slowly enough to catch the cards mid-stream:
+#   node scripts/mock-llm-server/cli.ts --port 1235 --pace 3 --fail-in-burst 2 --fail-status 422
+#   maestro test .maestro/mock/parallel-continuations.yaml --test-output-dir "$SHOTS"
+# The mock's log shows the three requests open at once (burst=1..3, active=3).
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about aspen groves.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+# Auto-Title's call comes after the reply; let it finish so the run below is
+# the only traffic on the mock.
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 30000
+- waitForAnimationToEnd
+
+# The human turn's rail: its one continuation so far, and the generate row.
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-generate-button
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Pick N: up to the most (4, where + stops), then back down to 3.
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          id: chat-continuation-count-increase
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '4'
+- tapOn:
+    id: chat-continuation-count-increase
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '4'
+- tapOn:
+    id: chat-continuation-count-decrease
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '3'
+# The button's accessibility label (what Maestro reads) spells out its title.
+- assertVisible: 'Generate 3 continuations'
+- takeScreenshot: par-01-pick-n
+
+# Generate 3: every card streams at once, in its own card. The rail scrolls
+# to its end, the last card. The mock fails the second request of the burst,
+# which is slot 1's (the slots' requests go out in slot order).
+- tapOn:
+    id: chat-continuation-generate-button
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-stop-all
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-slot-state-2-streaming'
+    timeout: 15000
+- takeScreenshot: par-02-streaming
+
+# Back along the rail: the failed card says so while slot 0 keeps going.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: 'chat-continuation-slot-state-0-.*'
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: RIGHT
+      - waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-error-1'
+- assertVisible:
+    id: 'chat-continuation-slot-state-0-streaming'
+- takeScreenshot: par-03-one-failed-others-streaming
+
+# Both survivors finish and are saved; the failed one stays failed.
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 60000
+- assertVisible:
+    id: 'chat-continuation-slot-state-0-done'
+- assertVisible:
+    id: 'chat-continuation-slot-state-1-failed'
+- takeScreenshot: par-04-result
+
+# Choose one: slot 2's saved card. At the rail's end it is the only
+# saved card on screen (iOS lists only on-screen elements, and flattens the
+# card out of its slot, so it is picked by id alone). Remember its reply
+# number so the chat (and the relaunch) can be checked against it.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: 'chat-continuation-slot-state-2-done'
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: LEFT
+      - waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-state-2-done'
+- copyTextFrom:
+    id: 'chat-continuation-card-.*'
+- runScript: remember-reply-number.js
+# A tap expands it: the saved node with its own raw response, verified.
+- tapOn:
+    id: 'chat-continuation-card-.*'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'Verified.*'
+- takeScreenshot: par-05-saved-card-provenance
+- tapOn:
+    id: node-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+# Make it current from its menu. (A double tap does the same, but Maestro's
+# two taps on iOS land further apart than the app's 300 ms double-tap window.)
+- longPressOn:
+    id: 'chat-continuation-card-.*'
+- tapOn: 'Make Current Node'
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: '${output.chosen}\.[\s\S]*'
+- takeScreenshot: par-06-chosen-current
+
+# Restart: the chosen card is still the current path, and the rail still
+# holds the first reply and both saved siblings, the chosen one checked.
+- runFlow: ../relaunch-app.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: '${output.chosen}\.[\s\S]*'
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 15000
+- waitForAnimationToEnd
+# Three cards: the first reply and the two saved siblings. The check (the
+# card the active path runs through) is on the chosen one, the last.
+- assertVisible: 'Continuations: 3'
+- takeScreenshot: par-07-after-relaunch
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: chat-continuation-card-check
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: LEFT
+      - waitForAnimationToEnd
+- assertVisible:
+    id: chat-continuation-card-check
+- assertVisible: '${output.chosen}\.[\s\S]*'
+- takeScreenshot: par-08-after-relaunch-chosen-checked

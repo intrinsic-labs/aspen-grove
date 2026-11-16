@@ -58,7 +58,7 @@ export interface IAgentRepository {
     includeTreeOwned?: boolean
   ): Promise<Agent[]>;
 
-  /** Find agents by model reference (e.g., all agents using 'anthropic:claude-sonnet-4-20250514'). */
+  /** Find agents by model reference (e.g., all agents using 'openrouter:anthropic/claude-sonnet-4'). */
   findByModelRef(modelRef: ModelRef, onlyActive?: boolean): Promise<Agent[]>;
 
   /** Find agents with specific permissions. */

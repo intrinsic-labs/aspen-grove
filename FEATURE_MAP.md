@@ -33,12 +33,13 @@ every entry on a device or simulator.
 
 **Scope.** v1 is branching dialogue, inline continuations, edit-as-branch, bookmarks,
 provenance as it stands, Open Loom import and export, and OpenRouter and LM Studio as
-providers. None of the cut features (sync, sharing or publishing, Field Guide, memory or stash,
-the documents editor, RFC 3161 timestamps) has UI in the app today, so none is mapped. Export
-uses the OS share sheet only to hand off the Open Loom file. That is the in-scope export, not
-the cut "sharing" feature. Code for cut features that exists only in the domain, schema or
-repositories (documents, links, timestamp certificates) is not user-visible and is not
-listed here.
+providers. The cut features (sync, sharing or publishing, Field Guide, memory or stash, the
+documents editor, RFC 3161 and other provenance extras, native Anthropic or OpenAI adapters,
+MCP, connectors and web search) have no UI, route, setting or code in the app, so none is
+mapped. Export uses the OS share sheet only to hand off the Open Loom file. That is the
+in-scope export, not the cut "sharing" feature. The only leftovers are kept for stored data
+and are not user-visible: the extra `Provider` values, and the ignored legacy keys
+`useMcpTools` (LM Studio settings) and `docRead`/`docWrite` (agent permissions); see AGENTS.md.
 
 **First-launch state and the two prerequisite paths.**
 
@@ -632,7 +633,8 @@ stays until the user makes one.
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
   `chat-continuation-generate-button`. Stop one card with `chat-continuation-slot-stop-<slot>`,
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
-  `chat-continuation-card-<nodeId>`.
+  `chat-continuation-card-<nodeId>`. Driven end to end, failure and relaunch included, by
+  `.maestro/mock/parallel-continuations.yaml` (VERIFY.md).
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.

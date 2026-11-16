@@ -134,8 +134,6 @@ describe('GenerateDialogueContinuationUseCase', () => {
         loomAware: false,
         loomWrite: true,
         loomGenerate: false,
-        docRead: true,
-        docWrite: false,
       },
       createdAt: now,
       updatedAt: now,
