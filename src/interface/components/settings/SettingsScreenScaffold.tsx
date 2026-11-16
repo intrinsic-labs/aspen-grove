@@ -36,6 +36,20 @@ type SettingsScreenScaffoldProps = {
 const LARGE_TITLE_SCROLL_THRESHOLD = 34;
 
 /**
+ * How far above the keyboard KeyboardAwareScrollView keeps the focused
+ * field. It places the field's caret, not the field, so a single-line row
+ * reaches this far below its caret; iOS adds the keyboard toolbar floating
+ * over the keyboard; and then a gap, so the whole row stays in sight.
+ */
+const CARET_TO_ROW_BOTTOM = 30;
+const IOS_KEYBOARD_TOOLBAR = 52; // 42 pt bar, floating 10 pt above the keys
+const FIELD_GAP = 12;
+const KEYBOARD_BOTTOM_OFFSET =
+  CARET_TO_ROW_BOTTOM +
+  FIELD_GAP +
+  (Platform.OS === 'ios' ? IOS_KEYBOARD_TOOLBAR : 0);
+
+/**
  * Shared shell for every settings screen: Latent Spaces' inset-grouped Form
  * on black, keyboard-aware scroll, iOS keyboard toolbar, loading spinner.
  */
@@ -70,7 +84,7 @@ export const SettingsScreenScaffold = ({
       ) : (
         <KeyboardAwareScrollView
           enabled
-          bottomOffset={Platform.OS === 'ios' ? 62 : 0}
+          bottomOffset={KEYBOARD_BOTTOM_OFFSET}
           extraKeyboardSpace={0}
           style={styles.container}
           contentContainerStyle={[

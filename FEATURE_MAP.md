@@ -1172,7 +1172,7 @@ stays until the user makes one.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1190,7 +1190,11 @@ stays until the user makes one.
   (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
   server in LM Studio…" on onboarding) shows until a test connects and again after a failed
   one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
-  Flow: `.maestro/mock/lmstudio-connection.yaml`.
+  The Server field takes the row after its title; at rest a long address shows from its
+  start and is cut off with an ellipsis (`TrailingTextField`, as an unfocused SwiftUI
+  `TextField`), and focused it scrolls as usual. A focused row is kept clear of the
+  keyboard and, on iOS, its toolbar (`SettingsScreenScaffold`'s keyboard offset).
+  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not).
 
 ### Message typography
 - **ID:** `settings.typography`

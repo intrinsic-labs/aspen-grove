@@ -3,11 +3,14 @@
 # Server address puts the status back to Untested, and it stays Untested when
 # the edit is taken back. Testing the edited
 # (wrong) address reads Not reachable. Restoring the address reads Untested
-# until it is tested again, then Connected. Needs the mock server and Metro:
+# until it is tested again, then Connected. Last, a long address: the
+# focused row clear of the keyboard, the row truncated once it's put away.
+# Needs the mock server and Metro:
 #   maestro test .maestro/mock/lmstudio-connection.yaml --test-output-dir "$SHOTS"
 appId: com.intrinsiclabs.aspengrove
 env:
   MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+  LONG_URL: http://lmstudio-workstation.tail1a2b3c.ts.net:1234
 ---
 - runFlow: setup.yaml
 - runFlow: ../go-home.yaml
@@ -105,3 +108,28 @@ env:
       text: 'Connected'
     timeout: 10000
 - takeScreenshot: 83-lmstudio-retested-connected
+
+# A long address (a tailnet host, say): typed in, the focused Server row stays
+# clear of the keyboard and its toolbar; put away, the row shows the address
+# from its start, cut off with an ellipsis, as a UITextField does.
+- tapOn:
+    id: connections-lmstudio-endpoint-input
+- longPressOn:
+    id: connections-lmstudio-endpoint-input
+- tapOn:
+    text: 'Select All'
+    optional: true
+- eraseText: 80
+- inputText: ${LONG_URL}
+- waitForAnimationToEnd
+- assertVisible:
+    id: connections-lmstudio-endpoint-input
+    text: ${LONG_URL}
+- takeScreenshot: 84-lmstudio-long-address-focused
+- tapOn:
+    id: keyboard.toolbar.done
+- waitForAnimationToEnd
+- assertVisible:
+    id: connections-lmstudio-endpoint-input
+    text: ${LONG_URL}
+- takeScreenshot: 85-lmstudio-long-address

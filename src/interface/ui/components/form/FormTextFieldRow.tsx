@@ -5,13 +5,16 @@ import { FormLabel } from './FormLabel';
 import { FormRow } from './FormRow';
 import { formText } from './form-text';
 import { AppTextInput } from '../AppTextInput';
+import { TrailingTextField } from './TrailingTextField';
 
 const form = loomUiTokens.settingsForm;
 
 type FormTextFieldRowProps = Omit<TextInputProps, 'style'> & {
   /**
    * With a title, the field is trailing and right-aligned in secondary text
-   * (the Username row, LoomSettingsView.swift:214-220). Without one it fills
+   * and takes the row after the title (the Username row,
+   * LoomSettingsView.swift:214-220); a long value is cut off with an
+   * ellipsis while the field isn't focused. Without one it fills
    * the row (the key field, APIKeySettingsView.swift:110).
    */
   readonly title?: string;
@@ -23,18 +26,27 @@ type FormTextFieldRowProps = Omit<TextInputProps, 'style'> & {
 export const FormTextFieldRow = forwardRef<TextInput, FormTextFieldRowProps>(
   ({ title, minHeight, multiline, ...inputProps }, ref) => (
     <FormRow style={multiline ? styles.multilineRow : null}>
-      {title ? <FormLabel title={title} /> : null}
-      <AppTextInput
-        ref={ref}
-        placeholderTextColor={form.colors.tertiaryLabel}
-        multiline={multiline}
-        {...inputProps}
-        style={[
-          title ? formText.value : formText.body,
-          title ? styles.trailingField : styles.fullField,
-          multiline ? [styles.multiline, { minHeight }] : null,
-        ]}
-      />
+      {title ? <FormLabel title={title} hug /> : null}
+      {title && !multiline ? (
+        <TrailingTextField
+          ref={ref}
+          placeholderTextColor={form.colors.tertiaryLabel}
+          {...inputProps}
+          textStyle={formText.value}
+        />
+      ) : (
+        <AppTextInput
+          ref={ref}
+          placeholderTextColor={form.colors.tertiaryLabel}
+          multiline={multiline}
+          {...inputProps}
+          style={[
+            title ? formText.value : formText.body,
+            title ? styles.trailingField : styles.fullField,
+            multiline ? [styles.multiline, { minHeight }] : null,
+          ]}
+        />
+      )}
     </FormRow>
   )
 );
