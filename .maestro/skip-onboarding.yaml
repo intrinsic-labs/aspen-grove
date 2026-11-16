@@ -2,7 +2,7 @@
 # Home. Run right after open-app.yaml by flows that set things up their own
 # way (Settings, an import) rather than through onboarding.
 # Onboarding is a page sheet with no skip button, as in Latent Spaces: swipe
-# it down. That leaves it unfinished (no agent, nothing recorded), so Home
+# it down (on Android, where it is a full-screen modal, press back). That leaves it unfinished (no agent, nothing recorded), so Home
 # shows its setup hint; it doesn't open again in this launch.
 appId: com.intrinsiclabs.aspengrove
 ---
@@ -17,10 +17,19 @@ appId: com.intrinsiclabs.aspengrove
             visible:
               id: onboarding-wordmark
           commands:
-            - swipe:
-                start: 50%, 12%
-                end: 50%, 95%
-                duration: 400
+            - runFlow:
+                when:
+                  platform: iOS
+                commands:
+                  - swipe:
+                      start: 50%, 12%
+                      end: 50%, 95%
+                      duration: 400
+            - runFlow:
+                when:
+                  platform: Android
+                commands:
+                  - back
             - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:

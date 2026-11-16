@@ -23,6 +23,12 @@ type FormLabelProps = {
   /** `accent` for a button or link row (the Form's tint), red to destroy. */
   readonly tone?: 'primary' | 'accent' | 'destructive';
   readonly numberOfLines?: number;
+  /**
+   * Take only the title's width rather than fill the row: the label of a
+   * field row (`Text` then `Spacer` then a greedy `TextField`), so the field
+   * gets the rest of the row.
+   */
+  readonly hug?: boolean;
 };
 
 /** A row title, with the icon column when there is an icon. Icons are gold. */
@@ -31,8 +37,9 @@ export const FormLabel = ({
   icon,
   tone = 'primary',
   numberOfLines,
+  hug = false,
 }: FormLabelProps) => (
-  <View style={styles.label}>
+  <View style={[styles.label, hug ? styles.hug : null]}>
     {icon ? (
       <View style={styles.iconColumn}>
         <Ionicons
@@ -57,6 +64,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
+  },
+  hug: {
+    flex: 0,
+    flexShrink: 0,
   },
   iconColumn: {
     width: form.labelIconColumn,

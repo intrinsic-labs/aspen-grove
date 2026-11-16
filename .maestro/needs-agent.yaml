@@ -43,8 +43,7 @@ appId: com.intrinsiclabs.aspengrove
       notVisible:
         id: chat-needs-agent
     commands:
-      - tapOn:
-          id: BackButton
+      - runFlow: go-back.yaml
       - waitForAnimationToEnd
 
 # Create an agent elsewhere; back on the tree, it has adopted it.

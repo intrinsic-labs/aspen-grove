@@ -1,0 +1,46 @@
+# open-app.yaml's dev-menu steps on iOS, after the launcher has opened the
+# bundle. Run through open-app.yaml, not on its own.
+appId: com.intrinsiclabs.aspengrove
+---
+# Each cleared install shows the dev menu's one-time intro sheet once the
+# bundle loads (the first Metro bundle can take a minute to build).
+- extendedWaitUntil:
+    visible: 'Continue'
+    timeout: 120000
+    optional: true
+- tapOn:
+    text: 'Continue'
+    optional: true
+# ...which then may leave the dev menu itself open: close it.
+- tapOn:
+    id: 'xmark'
+    optional: true
+# Let the dev menu finish sliding away before the first tap.
+- extendedWaitUntil:
+    visible:
+      id: 'home-welcome|onboarding-screen'
+    timeout: 120000
+- waitForAnimationToEnd
+# Since SDK 57 the dev menu floats a "Tools" button (gear) at the top right,
+# over onboarding's Skip and Home's header. clearState brings it back on every
+# launch, so open the menu from it and switch it off. The switch is its own
+# element: tapping the "Tools button" label doesn't toggle it.
+- runFlow:
+    when:
+      visible:
+        id: 'gearshape.fill'
+    commands:
+      - tapOn:
+          id: 'gearshape.fill'
+      - scrollUntilVisible:
+          element:
+            text: 'Tools button'
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          below: 'Fast refresh'
+          rightOf: 'Tools button'
+          checked: true
+      - tapOn:
+          id: 'xmark'
+      - waitForAnimationToEnd

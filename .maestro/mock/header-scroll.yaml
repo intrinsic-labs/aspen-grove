@@ -1,0 +1,40 @@
+# The tree's header over scrolled messages: after first-turn.yaml, two more
+# turns fill the screen, the list is pulled down a little so messages sit
+# under the transparent header, and the title must stay legible (iOS 26's
+# scroll-edge effect; on Android, HeaderScrollEdge). Then Home's header.
+# Needs the mock server and Metro, as first-turn.yaml does:
+#   maestro test .maestro/mock/header-scroll.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: first-turn.yaml
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          id: chat-composer-input
+      - inputText: Tell me a longer story about a loom, in a few paragraphs.
+      - tapOn:
+          id: chat-composer-send
+      - extendedWaitUntil:
+          visible:
+            id: chat-streaming-message
+          timeout: 30000
+          optional: true
+      - extendedWaitUntil:
+          notVisible:
+            id: chat-streaming-message
+          timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: header-1-chat-at-end
+# Pull the list down a little (which also puts the keyboard away; Maestro's
+# hideKeyboard is Android's back key, which would leave the tree): earlier
+# messages now pass under the header.
+- swipe:
+    start: 50%, 35%
+    end: 50%, 50%
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: header-2-chat-scrolled-under
+- runFlow: ../go-home.yaml
+- waitForAnimationToEnd
+- takeScreenshot: header-3-home

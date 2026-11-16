@@ -1,98 +1,56 @@
 # Shared start for every flow: a cold launch with cleared data, through the
 # expo-dev-client launcher to the JS bundle served by Metro, to Home.
 # Run from another flow with `- runFlow: open-app.yaml`.
-# The launcher only lists Metro servers it finds itself (and may list another
-# session's). Metro on another port? Pass either
-#   -e METRO_URL=http://localhost:<port>  (always typed into "Enter URL manually"), or
-#   -e METRO_PORT=<port>                  (its row is tapped when listed, else typed).
+# Works on iOS and Android. Metro off 8081? Pass -e METRO_PORT=<port>, or
+# -e METRO_URL=http://localhost:<port> (its port picks the listed server; the
+# URL is typed in only when no server on that port is listed).
 appId: com.intrinsiclabs.aspengrove
+env:
+  METRO_PORT: ${METRO_PORT || (METRO_URL || ':8081').split(':').pop().split('/')[0]}
+  # A listed server on that port, by any host.
+  METRO_ROW: ${'http://[^ ]+:' + (METRO_PORT || (METRO_URL || ':8081').split(':').pop().split('/')[0]) + '/?'}
 ---
 - launchApp:
     clearState: true
-# The development build opens on Expo's launcher. (Optional waits and taps, so
-# a build that skips the launcher still passes.)
+# The development build opens on Expo's launcher, which lists the Metro
+# servers it finds. iOS lists one by localhost or by the Mac's network
+# address (http://192.168.…:8081) and offers "Enter URL manually"; Android
+# lists it by network address. Tap the listed server on Metro's port; type the
+# URL only when none is listed. (Optional waits and taps, so a build that
+# skips the launcher still passes.)
 - extendedWaitUntil:
-    visible: 'Enter URL manually'
+    visible: 'Enter URL manually|${METRO_ROW}'
     timeout: 30000
     optional: true
-# METRO_URL: type it in.
 - runFlow:
     when:
-      true: '${!!METRO_URL}'
+      visible: '${METRO_ROW}'
     commands:
-      - tapOn: 'Enter URL manually'
-      - tapOn:
-          text: 'http://'
-      - inputText: ${METRO_URL}
-      - tapOn: 'Connect'
-# METRO_PORT: pick that server when the launcher lists it...
+      - tapOn: '${METRO_ROW}'
 - runFlow:
     when:
-      true: '${!!METRO_PORT && !METRO_URL}'
-      visible: 'http://localhost:${METRO_PORT}'
-    commands:
-      - tapOn: 'http://localhost:${METRO_PORT}'
-# ...and type its URL only when it isn't listed. (A server tapped above may
-# leave the launcher on screen a moment; while its row shows, this is skipped.)
-- runFlow:
-    when:
-      true: '${!!METRO_PORT && !METRO_URL}'
       visible: 'Enter URL manually'
-      notVisible: 'http://localhost:${METRO_PORT}'
+      notVisible: '${METRO_ROW}'
     commands:
       - tapOn: 'Enter URL manually'
       - tapOn:
           text: 'http://'
-      - inputText: http://localhost:${METRO_PORT}
+      - inputText: ${METRO_URL || 'http://localhost:' + METRO_PORT}
       - tapOn: 'Connect'
-# Neither: pick the running Metro server the launcher lists.
+# Then the dev menu, which differs by platform; ios-dev-menu.yaml and
+# android-dev-menu.yaml wait for the bundle (the first Metro bundle can take a
+# minute to build), close the menu and switch off its floating Tools button.
 - runFlow:
     when:
-      true: '${!METRO_URL && !METRO_PORT}'
-    commands:
-      - tapOn:
-          text: 'http://localhost:.*'
-          optional: true
-# Each cleared install shows the dev menu's one-time intro sheet once the
-# bundle loads (the first Metro bundle can take a minute to build).
-- extendedWaitUntil:
-    visible: 'Continue'
-    timeout: 120000
-    optional: true
-- tapOn:
-    text: 'Continue'
-    optional: true
-# ...which then may leave the dev menu itself open: close it.
-- tapOn:
-    id: 'xmark'
-    optional: true
+      platform: iOS
+    file: ios-dev-menu.yaml
+- runFlow:
+    when:
+      platform: Android
+    file: android-dev-menu.yaml
 # A first launch shows onboarding over Home; a set-up install shows Home.
 - extendedWaitUntil:
     visible:
       id: 'home-welcome|onboarding-screen'
     timeout: 120000
-# Let the dev menu finish sliding away before the first tap.
 - waitForAnimationToEnd
-# Since SDK 57 the dev menu floats a "Tools" button (gear) at the top right,
-# over onboarding's Skip and Home's header. clearState brings it back on every
-# launch, so open the menu from it and switch it off. The switch is its own
-# element: tapping the "Tools button" label doesn't toggle it.
-- runFlow:
-    when:
-      visible:
-        id: 'gearshape.fill'
-    commands:
-      - tapOn:
-          id: 'gearshape.fill'
-      - scrollUntilVisible:
-          element:
-            text: 'Tools button'
-          direction: DOWN
-          timeout: 10000
-      - tapOn:
-          below: 'Fast refresh'
-          rightOf: 'Tools button'
-          checked: true
-      - tapOn:
-          id: 'xmark'
-      - waitForAnimationToEnd

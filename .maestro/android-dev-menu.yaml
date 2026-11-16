@@ -1,0 +1,39 @@
+# open-app.yaml's dev-menu steps on Android, after the launcher has opened
+# the bundle. Run through open-app.yaml, not on its own.
+# A cleared install opens the dev menu as a bottom sheet once the bundle loads
+# (no intro page, unlike iOS); its close button is labelled "Close".
+appId: com.intrinsiclabs.aspengrove
+---
+- extendedWaitUntil:
+    visible: 'Runtime version: .*'
+    timeout: 120000
+    optional: true
+- runFlow:
+    when:
+      visible: 'Runtime version: .*'
+    commands:
+      - tapOn: 'Close'
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: 'home-welcome|onboarding-screen'
+    timeout: 120000
+- waitForAnimationToEnd
+# The floating "Tools" button (top right, over onboarding's Skip and Home's
+# header) comes back with every cleared install: open the menu from it and
+# switch it off. On Android the whole "Tools button" row toggles it.
+- runFlow:
+    when:
+      visible: 'Tools'
+    commands:
+      - tapOn: 'Tools'
+      - waitForAnimationToEnd
+      - scrollUntilVisible:
+          element:
+            text: 'Tools button'
+          direction: DOWN
+          timeout: 10000
+      - tapOn: 'Tools button'
+      - waitForAnimationToEnd
+      - tapOn: 'Close'
+      - waitForAnimationToEnd

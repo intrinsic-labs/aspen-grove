@@ -91,7 +91,7 @@ export const LmStudioFormSection = ({
       />
       {showAdvanced ? (
         <FormRow>
-          <FormLabel title="API Token" />
+          <FormLabel title="API Token" hug />
           <AppTextInput
             testID="connections-lmstudio-token-input"
             value={controller.lmstudioApiTokenInput}

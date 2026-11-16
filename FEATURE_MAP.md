@@ -407,11 +407,15 @@ stays until the user makes one.
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
-- **Notes:** Tapping a message row opens that node's continuation rail
+- **Notes:** Messages scroll under the transparent header. On iOS 26 the bar's automatic
+  scroll-edge effect fades them out under the title; Android has none, so
+  `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
+  Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
+  Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
   A long path mounts its last rows first and fills in the earlier ones once the screen has
@@ -1144,7 +1148,9 @@ stays until the user makes one.
 - **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
   Cancel discards the edit. A swipe down closes the sheet when the field still holds the
   stored key, and asks "Discard changes?" first when it doesn't (`FormSheet`'s
-  `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). Saving an empty field removes the key. The
+  `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). On Android, where a sheet is a
+  full-screen modal, `PageSheet` keeps it below the status bar, so Cancel and Save are
+  reachable. Saving an empty field removes the key. The
   section footer says whether a key is stored. Neither Settings nor onboarding has a show/hide
   button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open Safari.
 ### Connections sheet
@@ -1172,7 +1178,7 @@ stays until the user makes one.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
 - **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
@@ -1190,7 +1196,11 @@ stays until the user makes one.
   (`connections-lmstudio-hint`: "Connect to your LM Studio server…" in Settings, "Start the
   server in LM Studio…" on onboarding) shows until a test connects and again after a failed
   one, never while Connected (`lmstudio-hint.ts`). The Auto-load toggle is gold when on.
-  Flow: `.maestro/mock/lmstudio-connection.yaml`.
+  The Server field takes the row after its title; at rest a long address shows from its
+  start and is cut off with an ellipsis (`TrailingTextField`, as an unfocused SwiftUI
+  `TextField`), and focused it scrolls as usual. A focused row is kept clear of the
+  keyboard and, on iOS, its toolbar (`SettingsScreenScaffold`'s keyboard offset).
+  Flow: `.maestro/mock/lmstudio-connection.yaml` (ends on a long address, focused and not).
 
 ### Message typography
 - **ID:** `settings.typography`

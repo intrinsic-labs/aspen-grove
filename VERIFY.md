@@ -1,12 +1,12 @@
 # Run and verify Aspen Grove
 
-From a fresh checkout to the app running in the iOS Simulator, driven by `testID` and
-screenshotted. Where each feature lives and how to reach it: [FEATURE_MAP.md](FEATURE_MAP.md).
+From a fresh checkout to the app running in the iOS Simulator or an Android emulator, driven
+by `testID` and screenshotted. Where each feature lives and how to reach it: [FEATURE_MAP.md](FEATURE_MAP.md).
 How the code is organised: [AGENTS.md](AGENTS.md).
 
-Scope of this guide: iOS Simulator only. Android builds from the same tree
-(`npm run android`) but is not covered here yet. Simulator captures are simulator captures:
-they don't stand in for feel, performance or anything hardware.
+Steps 1 to 8 cover the iOS Simulator; [section 9](#9-android-emulator) covers the Android
+emulator, from the same tree and with the same Maestro flows. Simulator and emulator captures
+are just that: they don't stand in for feel, performance or anything hardware.
 
 ## 1. Prerequisites
 
@@ -28,6 +28,9 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 export JAVA_HOME=/opt/homebrew/opt/openjdk; export PATH="$JAVA_HOME/bin:$PATH"   # skip if `java -version` already works
 export LANG=en_US.UTF-8
 ```
+
+Maestro needs `DEVELOPER_DIR` too: without it in the same shell, `maestro --device <UDID>`
+reports "Device … was requested, but it is not connected" even though the simulator is booted.
 
 Install dependencies from the lockfile: `npm ci`. Never symlink `node_modules` from another
 checkout: `npm ci` follows the link and empties the original.
@@ -89,15 +92,19 @@ xcrun simctl launch "$UDID" com.intrinsiclabs.aspengrove   # or let .maestro/ope
 ```
 
 The build includes `expo-dev-client`, so launching the app opens Expo's development launcher
-first: tap the `http://localhost:8081` server. On a cleared install the dev menu then shows a
+first: tap the Metro server it lists (by `localhost` or by the Mac's network address,
+`http://192.168.…:8081`). On a cleared install the dev menu then shows a
 one-time intro (**Continue**) and stays open (close it with ✕). Since SDK 57 the dev menu
 also floats a **Tools** button (a gear) at the top right, over onboarding's Skip; turn it off
 under the dev menu's Tools → **Tools button** (tap the switch, not the label). A cleared
 install turns it back on. The launcher only lists Metro on its default ports; on another
 port, use **Enter URL manually** with `http://localhost:<port>`. The Maestro flows handle all
-of this in [open-app.yaml](.maestro/open-app.yaml): pass `-e METRO_URL=http://localhost:<port>`
-when Metro isn't on 8081, or when the launcher lists it by the Mac's network address
-(`http://192.168.…:8081`) rather than `localhost`, which the default pick doesn't match.
+of this in [open-app.yaml](.maestro/open-app.yaml), on both platforms: it taps the listed
+server on Metro's port, whatever its host, and types the URL only when none is listed. Pass
+`-e METRO_PORT=<port>` (or `-e METRO_URL=http://localhost:<port>`) when Metro isn't on 8081.
+The dev-menu steps differ by platform and live in
+[ios-dev-menu.yaml](.maestro/ios-dev-menu.yaml) and
+[android-dev-menu.yaml](.maestro/android-dev-menu.yaml).
 
 A fresh install opens on **Home** (`home-welcome`) and, over it, **onboarding**
 (`onboarding-screen`): Latent Spaces' six intro pages (`onboarding-next`), then a page that
@@ -173,7 +180,10 @@ Studio's `mock-model`, and Max Tokens drops to its 8192 limit.
 context menu in a tree (the human bubble, the reply, a continuation card), screenshots each
 lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
-again on recycled native views. If 1235 is taken, run the mock on
+again on recycled native views.
+[.maestro/mock/header-scroll.yaml](.maestro/mock/header-scroll.yaml) goes on from first-turn:
+two more turns, the list pulled down so messages pass under the tree's transparent header
+(the title must stay legible), then Home's header. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
 
 Then create an agent (map path **P1**): Settings → Agents → New → a template or a model →
@@ -200,9 +210,10 @@ maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS
 `--device` is required whenever more than one simulator or emulator is running, and harmless
 otherwise. Both flows start with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
 the dev launcher to Home). From Home, [open-settings.yaml](.maestro/open-settings.yaml) and
-[open-home-menu.yaml](.maestro/open-home-menu.yaml) open Settings and the `···` menu, and
-[go-home.yaml](.maestro/go-home.yaml) comes back from any pushed screen; each retries a tap
-that lands mid-transition. [start-tree.yaml](.maestro/start-tree.yaml) starts a tree from
+[open-home-menu.yaml](.maestro/open-home-menu.yaml) open Settings and the `···` menu,
+[go-back.yaml](.maestro/go-back.yaml) goes back one screen (the header's `BackButton` on iOS,
+the back key on Android), and [go-home.yaml](.maestro/go-home.yaml) comes back from any
+pushed screen; each retries a tap that lands mid-transition. [start-tree.yaml](.maestro/start-tree.yaml) starts a tree from
 Home's composer.
 
 - [smoke.yaml](.maestro/smoke.yaml) clears state, then screenshots Home, its menu, Search,
@@ -292,8 +303,9 @@ didn't record.
   "CoreSimulatorService connection became invalid". That is the sandbox, not the app: the
   build-and-drive steps need a shell with full access to CoreSimulator. CI and every check in
   step 6 run fine in the sandbox.
-- **Maestro's `back` does nothing on iOS** (it's Android's back key). Tap the stack header's
-  back button, `id: BackButton`, as [smoke.yaml](.maestro/smoke.yaml) does.
+- **Maestro's `back` does nothing on iOS** (it's Android's back key), and Android's header back
+  button has no `BackButton` id. Use [go-back.yaml](.maestro/go-back.yaml), which does the
+  right one per platform.
 - **A tap right after a screen transition can be dropped**, the first one after the dev menu
   closes most of all. Wait for the animation and retry until the target screen shows
   (`repeat` … `while: notVisible`), as the flows do, rather than asserting straight away.
@@ -318,3 +330,69 @@ didn't record.
 - **Swipe actions:** Maestro's `swipe` on a `home-trees-row-<treeId>` (`direction: RIGHT` for
   Edit Name, `LEFT` for Delete) opens them; tap the action by its testID.
 - **Watchman** may be unavailable in a sandbox; `jest --no-watchman` avoids its crash.
+
+## 9. Android emulator
+
+The same tree and the same Maestro flows run on an Android emulator. Verified with smoke,
+mock/first-turn and mock/header-scroll on a Pixel 10 AVD (API 37, arm64).
+
+**Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and an AVD (`emulator
+-list-avds`). Gradle needs **JDK 21, Android Studio's bundled one**, not Homebrew's
+openjdk (a newer major version); Maestro keeps using Homebrew's. In the shell that builds:
+
+```sh
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"; export PATH="$JAVA_HOME/bin:$PATH"
+java -version    # 21.x
+```
+
+**Boot, build, install.** If a physical phone is on adb, leave it alone: address the emulator
+by its serial (`emulator-5554`) in every `adb` and Maestro command.
+
+```sh
+$ANDROID_HOME/emulator/emulator -avd <avd> -no-snapshot-save -no-boot-anim -no-audio > .verify/emulator.log 2>&1 &
+adb -s emulator-5554 wait-for-device
+npx expo prebuild -p android                       # generates android/ (gitignored)
+(cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --console=plain) > .verify/gradle.log 2>&1
+adb -s emulator-5554 install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Building only the emulator's ABI keeps the first build to a few minutes. Start Metro and the
+mock server as in steps 3 and 4. The emulator's `localhost` is the emulator itself, so
+forward the ports the app uses to the Mac:
+
+```sh
+adb -s emulator-5554 reverse tcp:8081 tcp:8081     # Metro (the launcher can also reach it by network address)
+adb -s emulator-5554 reverse tcp:1235 tcp:1235     # the mock server, so http://localhost:1235 works as on iOS
+```
+
+(Without the reverse, LM Studio on the Mac is `http://10.0.2.2:1234` from the emulator.)
+
+**Drive it.** The flows are the iOS ones; Maestro's Java stays Homebrew's:
+
+```sh
+export JAVA_HOME=/opt/homebrew/opt/openjdk; export PATH="$JAVA_HOME/bin:$PATH"
+maestro --device emulator-5554 test .maestro/smoke.yaml --test-output-dir "$SHOTS"
+maestro --device emulator-5554 test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
+adb -s emulator-5554 exec-out screencap -p > "$SHOTS/<name>.png"   # a one-off screenshot
+```
+
+What differs on Android, and how the shared flows handle it:
+
+- The dev launcher lists Metro by the Mac's network address and the flow taps it by port.
+  A cleared install opens the dev menu as a bottom sheet (no intro page), closed with its
+  **Close** button; the floating **Tools** button is switched off by tapping its whole
+  "Tools button" row ([android-dev-menu.yaml](.maestro/android-dev-menu.yaml)).
+- Onboarding and other modals are full screen, not page sheets: they close with the back key,
+  not a swipe ([skip-onboarding.yaml](.maestro/skip-onboarding.yaml)).
+- Back is the back key ([go-back.yaml](.maestro/go-back.yaml)). Maestro's `hideKeyboard` is
+  also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
+  away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
+- iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
+  mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
+  optional).
+
+**Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`, then
+`adb -s emulator-5554 emu kill`, stop Metro and the mock by PID, and
+`(cd android && ./gradlew --stop)`. Remove the build outputs: `rm -rf android` (generated).
+

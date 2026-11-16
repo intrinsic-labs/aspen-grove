@@ -1,6 +1,5 @@
-# Back to Home from any pushed screen (Settings, Search, a tree): tap the
-# stack header's back button until Home shows (`back` is Android-only in
-# Maestro, and a tap mid-transition can be dropped).
+# Back to Home from any pushed screen (Settings, Search, a tree): go back
+# (go-back.yaml) until Home shows, since a tap mid-transition can be dropped.
 appId: com.intrinsiclabs.aspengrove
 ---
 - repeat:
@@ -10,7 +9,6 @@ appId: com.intrinsiclabs.aspengrove
         id: home-welcome
     commands:
       - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+      - runFlow: go-back.yaml
 - assertVisible:
     id: home-welcome

@@ -157,6 +157,12 @@ export const loomUiTokens = {
   bottomFade: {
     clearUntil: 0.9,
   },
+  // Android's stand-in for a transparent header's scroll-edge effect
+  // (HeaderScrollEdge): black behind the bar, fading out over this much
+  // below it.
+  headerScrollEdge: {
+    fadeHeight: 24,
+  },
   header: {
     // `slider.horizontal.3` stands in as Ionicons `options-outline` (no SF
     // Symbols module in the build yet), sized to match its width (measured).
