@@ -49,6 +49,4 @@ export interface AgentPermissions {
   readonly loomAware: boolean;
   readonly loomWrite: boolean;
   readonly loomGenerate: boolean;
-  readonly docRead: boolean;
-  readonly docWrite: boolean;
 }

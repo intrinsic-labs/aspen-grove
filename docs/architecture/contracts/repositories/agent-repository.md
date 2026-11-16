@@ -21,8 +21,9 @@ Creates a new Agent.
   - `stopSequences` — optional array of strings
   - `customParameters` — optional key-value map
 - `permissions` — AgentPermissions object:
-  - `read` — boolean (default: true)
-  - `write` — boolean (default: true)
+  - `loomAware` — boolean (default: false)
+  - `loomWrite` — boolean (default: true)
+  - `loomGenerate` — boolean (default: true)
 - `loomAware` — boolean
 
 **Behavior:**

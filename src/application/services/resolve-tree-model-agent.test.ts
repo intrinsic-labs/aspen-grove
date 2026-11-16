@@ -21,8 +21,6 @@ const modelAgent = (id: string, changes: Partial<Agent> = {}): Agent => ({
     loomAware: false,
     loomWrite: true,
     loomGenerate: false,
-    docRead: false,
-    docWrite: false,
   },
   createdAt: now,
   updatedAt: now,
