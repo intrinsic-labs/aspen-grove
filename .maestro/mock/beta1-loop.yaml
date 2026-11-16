@@ -1,0 +1,252 @@
+# The Beta 1 definition of done, end to end, against the mock server (no key):
+# create a tree, pick and configure its agent, converse with branching,
+# browse siblings inline, edit as a branch, bookmark, view provenance,
+# export, and survive a restart (.dev/BUILD-PLAN.md, Milestone D).
+# Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/beta1-loop.yaml --test-output-dir "$SHOTS"
+# Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
+appId: com.intrinsiclabs.aspengrove
+---
+# Pick and configure an agent: onboarding's LM Studio page, model mock-model.
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+
+# Create a tree and converse.
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about aspen groves.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: dod-01-first-reply
+
+# The tree's agent is configurable from its menu (Model Settings).
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible: 'mock-model'
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: dod-02-model-settings
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-screen
+    commands:
+      - waitForAnimationToEnd
+      - runFlow: ../go-back.yaml
+
+# Branch: regenerate the reply, which grows a sibling.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# Browse the siblings inline: the human turn's rail shows both replies.
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 2'
+- takeScreenshot: dod-03-siblings-inline
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# A second turn.
+- tapOn:
+    id: chat-composer-input
+- inputText: How old can they get?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# Edit as a branch: the edit becomes a new human node beside the original.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 2
+- tapOn: 'Edit'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-edit-banner
+    timeout: 10000
+- eraseText: 60
+- inputText: How big can one grove get?
+- takeScreenshot: dod-04-editing
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible: 'How big can one grove get\?'
+    timeout: 15000
+- waitForAnimationToEnd
+- hideKeyboard
+# The reply above it now has two continuations: the original and the edit.
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 2'
+- takeScreenshot: dod-05-edited-branch
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# A reply on the new branch.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 2
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Bookmark the reply.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 3
+- tapOn: 'Bookmark'
+- waitForAnimationToEnd
+
+# Provenance: the reply's Node Info verifies its hash chain.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 3
+- assertVisible: 'Remove Bookmark'
+- tapOn: 'Node Info'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+# The Provenance section sits below the text and metadata.
+- scrollUntilVisible:
+    element: 'Verified.*'
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: dod-06-provenance
+- tapOn:
+    id: node-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Export: the Open Loom sheet, then the system share sheet with the file.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Export to OpenLoom Format'
+- extendedWaitUntil:
+    visible:
+      id: export-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: 'Include Bookmarks'
+- takeScreenshot: dod-07-export-sheet
+- tapOn:
+    id: export-sheet-share
+- extendedWaitUntil:
+    visible: '.*\.openloom.*'
+    timeout: 15000
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: dod-08-export-share
+# Close the share sheet (its close button), then the export sheet.
+- tapOn:
+    text: 'Close'
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    id: export-sheet-back
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: export-sheet
+    timeout: 10000
+
+# Survive a restart: the edited branch is current, its reply bookmarked,
+# and the original turn kept beside the edit.
+- runFlow: ../relaunch-app.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: 'How big can one grove get\?'
+- takeScreenshot: dod-09-after-restart
+- runFlow: ../open-tree-menu.yaml
+- assertVisible: 'Bookmarks'
+- takeScreenshot: dod-10-after-restart-bookmarks
+- tapOn:
+    point: '50%,75%'
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 2'
+- takeScreenshot: dod-11-after-restart-branches

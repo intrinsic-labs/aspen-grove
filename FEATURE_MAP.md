@@ -216,9 +216,11 @@ stays until the user makes one.
   last edit), each with its title on one line and its date. Tap a row to open it.
 - **Where:** Home, one inset-grouped card under the date line; it scrolls under the greeting.
 - **Reach:** Cold start; rows appear once a tree exists (P2, or `trees.import`).
-- **Requires:** none. With no trees the card is simply absent, as in Latent Spaces.
-- **Selector:** working — `home-trees-list`, rows `home-trees-row-<treeId>`
-- **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
+- **Requires:** none. With no trees the card is absent, as in Latent Spaces; once a tree can
+  start (no setup hint showing) and no tag filters the list, one line above it says "No trees
+  yet. Write a first message below to begin one." (`home-empty-hint`).
+- **Selector:** working — `home-trees-list`, rows `home-trees-row-<treeId>`, `home-empty-hint`
+- **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
 - **Notes:** Reloaded each time Home comes into view. The title is in the mono face (IBM Plex
