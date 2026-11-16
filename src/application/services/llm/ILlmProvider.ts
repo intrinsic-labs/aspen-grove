@@ -136,7 +136,7 @@ export class LlmProviderError extends Error {
 }
 
 /**
- * App-layer contract for provider adapters (OpenRouter/OpenAI/etc).
+ * App-layer contract for provider adapters (OpenRouter and LM Studio).
  */
 export interface ILlmProvider {
   readonly provider: Provider;

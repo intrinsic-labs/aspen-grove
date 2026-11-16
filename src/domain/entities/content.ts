@@ -2,7 +2,7 @@
  * Content Types
  *
  * Discriminated union pattern for extensible node content.
- * These are the core conent primitives used by Nodes and Documents.
+ * These are the core content primitives used by Nodes.
  *
  * Design notes:
  * - References (ref) point to filesystem; actual bytes never stored in db
