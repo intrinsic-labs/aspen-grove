@@ -15,8 +15,7 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: settings-agents-list
     timeout: 10000
-# Back to Settings (`back` is Android-only in Maestro), retrying a tap that
-# lands mid-transition.
+# Back to Settings (go-back.yaml), retrying a tap that lands mid-transition.
 - repeat:
     times: 3
     while:
@@ -24,5 +23,4 @@ appId: com.intrinsiclabs.aspengrove
         id: settings-screen
     commands:
       - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+      - runFlow: go-back.yaml

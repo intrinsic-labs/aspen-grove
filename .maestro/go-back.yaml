@@ -1,0 +1,16 @@
+# One step back from a pushed screen: the stack header's back button on iOS
+# (Maestro's `back` is Android's back key and does nothing there), the back
+# key on Android (its header's back button has no `BackButton` id).
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: BackButton
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back

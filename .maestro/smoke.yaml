@@ -72,8 +72,8 @@ appId: com.intrinsiclabs.aspengrove
     id: connections-openrouter-key-cancel
 - assertNotVisible:
     id: connections-openrouter-key-input
-# `back` is Android-only in Maestro; tap the stack header's back button, and
-# retry, since a tap during the push transition can be dropped.
+# Back to Settings (go-back.yaml), retried, since a tap during the push
+# transition can be dropped.
 - repeat:
     times: 3
     while:
@@ -81,8 +81,7 @@ appId: com.intrinsiclabs.aspengrove
         id: settings-screen
     commands:
       - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+      - runFlow: go-back.yaml
 - assertVisible:
     id: settings-screen
 

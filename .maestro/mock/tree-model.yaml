@@ -86,8 +86,7 @@ appId: com.intrinsiclabs.aspengrove
       notVisible:
         id: tree-model-screen
     commands:
-      - tapOn:
-          id: BackButton
+      - runFlow: ../go-back.yaml
       - waitForAnimationToEnd
 
 # Back on the tree, send with the new settings.
@@ -97,8 +96,7 @@ appId: com.intrinsiclabs.aspengrove
       notVisible:
         id: chat-composer-input
     commands:
-      - tapOn:
-          id: BackButton
+      - runFlow: ../go-back.yaml
       - waitForAnimationToEnd
 - tapOn:
     id: chat-composer-input
@@ -138,8 +136,7 @@ appId: com.intrinsiclabs.aspengrove
         id: home-welcome
     commands:
       - waitForAnimationToEnd
-      - tapOn:
-          id: BackButton
+      - runFlow: ../go-back.yaml
 
 # The shared agent was forked, not edited: the library still lists
 # "mock-model", and not the tree's copy "mock-model (<title>)".
