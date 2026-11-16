@@ -1147,7 +1147,9 @@ stays until the user makes one.
 - **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
   Cancel discards the edit. A swipe down closes the sheet when the field still holds the
   stored key, and asks "Discard changes?" first when it doesn't (`FormSheet`'s
-  `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). Saving an empty field removes the key. The
+  `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). On Android, where a sheet is a
+  full-screen modal, `PageSheet` keeps it below the status bar, so Cancel and Save are
+  reachable. Saving an empty field removes the key. The
   section footer says whether a key is stored. Neither Settings nor onboarding has a show/hide
   button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open Safari.
 ### Connections sheet
