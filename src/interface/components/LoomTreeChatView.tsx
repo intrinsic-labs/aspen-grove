@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { BlurTarget } from '../ui/components/blur/BlurTarget';
 import { BlurTargetScope } from '../ui/components/blur/BlurTargetScope';
+import { HeaderScrollEdge } from '../ui/components/header/HeaderScrollEdge';
 import { TextEditorSheet } from '../ui/components/text-editor/TextEditorSheet';
 import { TextPromptDialog } from '../ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '../ui/value-objects';
@@ -90,6 +91,8 @@ const LoomTreeChatView = () => {
             style={StyleSheet.absoluteFill}
           />
         </BlurTarget>
+
+        <HeaderScrollEdge />
 
         <ChatComposer
           input={controller.input}
