@@ -1,8 +1,12 @@
 # LM Studio unreachable in a tree: after beta1-empty-states.yaml, with the
 # mock server stopped, a send in the tree on the mock agent fails with a
-# plain message and a way to Connections. Keeps the app's data.
+# plain message naming the saved address and a way to Connections. Keeps
+# the app's data.
 #   (stop the mock) maestro test .maestro/mock/beta1-lmstudio-down.yaml --test-output-dir "$SHOTS"
+# Set up on another port? Pass the same -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
 ---
 - runFlow: ../relaunch-app.yaml
 - tapOn:
@@ -23,7 +27,7 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: chat-error
     timeout: 60000
-- assertVisible: "LM Studio isn't answering.*"
+- assertVisible: "LM Studio isn't answering at ${MOCK_URL}\\. .*"
 - hideKeyboard
 - waitForAnimationToEnd
 - takeScreenshot: es-08-chat-lmstudio-unreachable

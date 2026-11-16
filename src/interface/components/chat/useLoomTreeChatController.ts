@@ -55,7 +55,11 @@ export const useLoomTreeChatController = () => {
   const state = useChatSessionState();
   const { activeTreeIdRef, error, setError, rows, session } = state;
   const [sending, setSending] = useState(false);
-  const providerError = useProviderErrorNotice({ error, setError });
+  const providerError = useProviderErrorNotice({
+    error,
+    setError,
+    userPreferencesRepo: repositories.userPreferencesRepo,
+  });
   const verboseErrorAlerts = useVerboseErrorAlerts(
     repositories.userPreferencesRepo
   );

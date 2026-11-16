@@ -429,7 +429,9 @@ stays until the user makes one.
   (`message-list/list-insets.ts`) so the last message stays visible.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
-  `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
+  `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. LM
+  Studio not answering names the address saved in Connections ("LM Studio isn't answering
+  at http://localhost:1234. …", read each time the tree is focused). Other
   provider errors get one plain line by error code ("LM Studio returned an error.",
   "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
   on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
