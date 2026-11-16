@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Modal } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
+import { BelowStatusBar } from './BelowStatusBar';
 import { useDiscardGuard } from './useDiscardGuard';
 
 type PageSheetProps = {
@@ -40,7 +40,6 @@ export const PageSheet = ({
   children,
 }: PageSheetProps) => {
   const requestClose = useDiscardGuard(hasUnsavedChanges, onClose, onDiscard);
-  const insets = useSafeAreaInsets();
   return (
     <Modal
       visible={visible}
@@ -51,22 +50,12 @@ export const PageSheet = ({
       onShow={onShow}
       onDismiss={onDismiss}
     >
-      {Platform.OS === 'android' ? (
-        // Android has no page sheet: the Modal fills the screen, edge to
-        // edge, so keep the sheet's own bar out from under the status bar.
-        <View style={[styles.androidSheet, { paddingTop: insets.top }]}>
-          {children}
-        </View>
-      ) : (
-        children
-      )}
+      {/* Android has no page sheet: the Modal fills the screen. */}
+      <BelowStatusBar
+        backgroundColor={loomUiTokens.settingsForm.colors.sheetBackground}
+      >
+        {children}
+      </BelowStatusBar>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  androidSheet: {
-    flex: 1,
-    backgroundColor: loomUiTokens.settingsForm.colors.sheetBackground,
-  },
-});

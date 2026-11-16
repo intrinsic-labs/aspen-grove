@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { GlassView } from 'expo-glass-effect';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
+import { useSheetBarTopInset } from '../sheet/useSheetBarTopInset';
 
 const header = loomUiTokens.sheetHeader;
 
@@ -68,23 +69,41 @@ const GlassButton = ({ button }: { readonly button: SheetButton }) => (
 /**
  * A sheet's navigation bar as iOS 26 draws it in Latent Spaces: Cancel and
  * Save as glass capsules either side of a semibold title
- * (APIKeySettingsView.swift:117-130).
+ * (APIKeySettingsView.swift:117-130). On Android it keeps itself below the
+ * status bar (`useSheetBarTopInset`), so a modal screen drawing it, such as
+ * the agent editor or the Connections sheet, needs nothing of its own.
  */
 export const FormSheetHeader = ({
   title,
   leading,
   trailing,
-}: FormSheetHeaderProps) => (
-  <View style={styles.bar}>
-    <View style={styles.side}>{leading ? <Side item={leading} /> : null}</View>
-    <Text numberOfLines={1} style={styles.title}>
-      {title}
-    </Text>
-    <View style={[styles.side, styles.trailing]}>
-      {trailing ? <Side item={trailing} /> : null}
+}: FormSheetHeaderProps) => {
+  // Below Android's status bar when the sheet is a full-screen screen.
+  const topInset = useSheetBarTopInset();
+  return (
+    <View
+      style={[
+        styles.bar,
+        topInset > 0
+          ? {
+              paddingTop: header.topPadding + topInset,
+              minHeight: header.topPadding + header.buttonHeight + topInset,
+            }
+          : null,
+      ]}
+    >
+      <View style={styles.side}>
+        {leading ? <Side item={leading} /> : null}
+      </View>
+      <Text numberOfLines={1} style={styles.title}>
+        {title}
+      </Text>
+      <View style={[styles.side, styles.trailing]}>
+        {trailing ? <Side item={trailing} /> : null}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   bar: {

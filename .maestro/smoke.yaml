@@ -1,6 +1,6 @@
 # Cold-start smoke walk: onboarding's pages and its setup page, then skip, then every screen a
 # fresh install can reach without a provider key (Home, its menu, Search, Settings,
-# Connections, Agents).
+# Connections, Agents and the agent editor).
 # Run from the repo root with the app installed on a booted simulator:
 #   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
@@ -95,3 +95,13 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible:
     id: agent-editor-sheet
 - takeScreenshot: 10-agent-editor
+# The editor's own bar is reachable: Cancel closes it (on Android, where the editor is a
+# full-screen screen, the bar sits below the status bar).
+- tapOn:
+    id: agent-editor-cancel
+- extendedWaitUntil:
+    notVisible:
+      id: agent-editor-sheet
+    timeout: 10000
+- assertVisible:
+    id: settings-agents-screen

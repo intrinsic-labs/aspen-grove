@@ -127,7 +127,7 @@ The app has no server. A model agent needs either provider:
   ([provider-key.ts](src/interface/components/chat/provider-key.ts)). Or type it into
   Settings → Connections: tap `connections-openrouter-edit`, type it into
   `connections-openrouter-key-input` in the sheet and tap `connections-openrouter-key-save`.
-  It is stored in the Keychain. `EXPO_PUBLIC_*` values are inlined into the JS bundle: use the variable only for
+  It is stored with `expo-secure-store` (the Keychain on iOS, the Android Keystore on Android). `EXPO_PUBLIC_*` values are inlined into the JS bundle: use the variable only for
   local dev builds, never for an export or release build, and never write it into a
   committed file (`.env*.local` is gitignored if you want a file).
 - **LM Studio, local.** Load a model in LM Studio and start its server (default

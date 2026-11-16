@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import {
   FormSection,
   FormSheet,
   FormSheetHeader,
   FormTextFieldRow,
 } from '@/interface/ui/components/form';
+import { keyStorageCopy } from './key-storage-copy';
 
 type OpenRouterKeySheetProps = {
   readonly visible: boolean;
@@ -62,7 +63,7 @@ export const OpenRouterKeySheet = ({
       >
         <FormSection
           style={styles.firstSection}
-          footer="Your API key will be stored in the iOS Keychain on this device. Save an empty field to remove it."
+          footer={keyStorageCopy(Platform.OS).sheetFooter}
         >
           <FormTextFieldRow
             testID="connections-openrouter-key-input"
