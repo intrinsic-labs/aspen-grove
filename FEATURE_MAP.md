@@ -414,6 +414,7 @@ stays until the user makes one.
 - **Notes:** Messages scroll under the transparent header. On iOS 26 the bar's automatic
   scroll-edge effect fades them out under the title; Android has none, so
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
+  Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
