@@ -17,6 +17,4 @@ export const DEFAULT_MODEL_AGENT_PERMISSIONS: AgentPermissions = {
   loomAware: false,
   loomWrite: true,
   loomGenerate: false,
-  docRead: true,
-  docWrite: false,
 };

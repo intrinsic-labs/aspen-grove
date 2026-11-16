@@ -49,7 +49,7 @@ The Beta 1 milestones and v1 list live in [.dev/BUILD-PLAN.md](./.dev/BUILD-PLAN
 
 Do not build or re-document these: sync, sharing and publishing; the Field Guide; the memory/stash system; the documents editor (and cross-tree Links); RFC 3161 timestamps, TLS Notary and other provenance extras; hosted-inference revenue; native provider adapters; provider tools, connectors, web search or MCP.
 
-One leftover stays on purpose: the extra values in the `Provider` type (`hyperbolic`, `anthropic`, `openai`, `google`, `local`, `custom`). Stored data can carry them (agent `modelRef`s are parsed against that list, `raw_api_responses.provider`, secure-store key names), so dropping them could break an existing install. Don't build on them. Older installs may also hold a `useMcpTools` key in `user_preferences.lmstudio_settings`; it is ignored and dropped on the next save.
+One leftover stays on purpose: the extra values in the `Provider` type (`hyperbolic`, `anthropic`, `openai`, `google`, `local`, `custom`). Stored data can carry them (agent `modelRef`s are parsed against that list, `raw_api_responses.provider`, secure-store key names), so dropping them could break an existing install. Don't build on them. Older installs may also hold a `useMcpTools` key in `user_preferences.lmstudio_settings`; it is ignored and dropped on the next save. Likewise, agents saved by older installs may hold `docRead` / `docWrite` in their `permissions` JSON (for the cut documents feature); they are ignored and dropped when the agent's permissions are next written.
 
 ## Stack
 

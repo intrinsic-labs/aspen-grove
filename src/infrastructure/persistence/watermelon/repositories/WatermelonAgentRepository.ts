@@ -31,8 +31,6 @@ const DEFAULT_AGENT_PERMISSIONS: AgentPermissions = {
   loomAware: false,
   loomWrite: true,
   loomGenerate: true,
-  docRead: true,
-  docWrite: true,
 };
 
 /** WatermelonDB implementation of `IAgentRepository`. */
@@ -257,8 +255,6 @@ export class WatermelonAgentRepository implements IAgentRepository {
       loomWrite: permissions?.loomWrite ?? DEFAULT_AGENT_PERMISSIONS.loomWrite,
       loomGenerate:
         permissions?.loomGenerate ?? DEFAULT_AGENT_PERMISSIONS.loomGenerate,
-      docRead: permissions?.docRead ?? DEFAULT_AGENT_PERMISSIONS.docRead,
-      docWrite: permissions?.docWrite ?? DEFAULT_AGENT_PERMISSIONS.docWrite,
     };
   }
 
@@ -309,6 +305,11 @@ export class WatermelonAgentRepository implements IAgentRepository {
     };
   }
 
+  /**
+   * Agents saved by older installs may also carry `docRead` / `docWrite`
+   * (permissions for the cut documents feature). They are ignored here and
+   * dropped the next time the agent's permissions are written.
+   */
   private readPermissions(
     raw: unknown,
     loomAwareColumn: boolean | null
@@ -324,9 +325,6 @@ export class WatermelonAgentRepository implements IAgentRepository {
               typeof raw.loomGenerate === 'boolean'
                 ? raw.loomGenerate
                 : undefined,
-            docRead: typeof raw.docRead === 'boolean' ? raw.docRead : undefined,
-            docWrite:
-              typeof raw.docWrite === 'boolean' ? raw.docWrite : undefined,
           }
         : undefined
     );

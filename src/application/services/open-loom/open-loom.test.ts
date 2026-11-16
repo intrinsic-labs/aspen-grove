@@ -61,8 +61,6 @@ const humanAgent: Agent = {
     loomAware: true,
     loomWrite: true,
     loomGenerate: false,
-    docRead: true,
-    docWrite: true,
   },
   createdAt: now,
   updatedAt: now,

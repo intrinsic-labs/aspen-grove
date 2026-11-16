@@ -16,8 +16,6 @@ const OWNER_PERMISSIONS = {
   loomAware: true,
   loomWrite: true,
   loomGenerate: true,
-  docRead: true,
-  docWrite: true,
 } as const;
 
 export type InitializeAppDefaultsResult = {

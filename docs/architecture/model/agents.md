@@ -44,14 +44,17 @@ The core abstraction for any entity that can participate in or operate on a Loom
 
 ### AgentPermissions Properties
 
-- **read** — boolean, can view Loom Trees and content
-- **write** — boolean, can create Nodes, Edges, and perform tree operations
+- **loomAware** — boolean, can see tree structure and use the navigation tools (after v1)
+- **loomWrite** — boolean, can create nodes and perform tree operations
+- **loomGenerate** — boolean, can request continuations from other model agents (after v1)
+
+Stored as JSON on the agent row; `loomAware` is also kept in its own column for queries. Older installs may also hold `docRead` / `docWrite` (the cut documents feature); they are ignored.
 
 ### Constraints
 
 - `type` is immutable after creation (required for stable hash verification — see [Provenance](./provenance.md))
 - `modelRef` is required when `type: model`, must be null when `type: human`
-- Permissions default to `read: true`, `write: true` for new Agents
+- New model Agents default to `loomWrite: true`, `loomGenerate: false`
 - `loomAware` defaults to `true` for human agents, `false` for model agents
 - One model can back multiple Agents (different configurations/personas)
 - There is exactly one human Agent marked as the **owner Agent** (see Default Agents below)
@@ -282,7 +285,7 @@ On first launch, create these default entities:
 - type: `human`
 - modelRef: null
 - loomAware: true
-- permissions: read + write
+- permissions: loomAware, loomWrite, loomGenerate
 - This agent is referenced by `Grove.ownerAgentId`
 
 ### Suggested Model Agent Templates
