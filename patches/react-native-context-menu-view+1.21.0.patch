@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-context-menu-view/index.d.ts b/node_modules/react-native-context-menu-view/index.d.ts
-index 25c92fd..7681ad8 100644
+index 25c92fd..582b09f 100644
 --- a/node_modules/react-native-context-menu-view/index.d.ts
 +++ b/node_modules/react-native-context-menu-view/index.d.ts
 @@ -47,6 +47,11 @@ export interface ContextMenuAction {
@@ -14,6 +14,33 @@ index 25c92fd..7681ad8 100644
    /**
     * Child actions. When child actions are supplied, the child's callback will contain its name but the same index as the topmost parent menu/action index
     */
+@@ -124,6 +129,13 @@ export interface ContextMenuProps extends ViewProps {
+    * Disable shadow in preview
+    */
+   disableShadow?: boolean;
++  /**
++   * Keeps the lifted preview between these insets from the window's top and
++   * bottom edges: a taller view is scaled down to fit, one reaching above
++   * the top inset moves down (iOS only).
++   */
++  previewTopInset?: number;
++  previewBottomInset?: number;
+   /**
+    * Custom font name to use for menu items (Android only). The font must be available in your app's font resources.
+    */
+diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenu.m b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
+index f1b3603..5cc80fe 100644
+--- a/node_modules/react-native-context-menu-view/ios/ContextMenu.m
++++ b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
+@@ -25,6 +25,8 @@ - (UIView *) view {
+ RCT_EXPORT_VIEW_PROPERTY(borderBottomRightRadius, CGFloat)
+ RCT_EXPORT_VIEW_PROPERTY(borderBottomLeftRadius, CGFloat)
+ RCT_EXPORT_VIEW_PROPERTY(disableShadow, BOOL)
++RCT_EXPORT_VIEW_PROPERTY(previewTopInset, CGFloat)
++RCT_EXPORT_VIEW_PROPERTY(previewBottomInset, CGFloat)
+ RCT_CUSTOM_VIEW_PROPERTY(dropdownMenuMode, BOOL, ContextMenuView) {
+     if (@available(iOS 14.0, *)) {
+         view.showsMenuAsPrimaryAction = json != nil ? [RCTConvert BOOL:json] : view.showsMenuAsPrimaryAction;
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h b/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h
 index 13fdaba..7e73799 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuAction.h
@@ -26,8 +53,22 @@ index 13fdaba..7e73799 100644
  @property (nullable, nonatomic, copy) NSArray<ContextMenuAction*>* actions;
  
  @end
+diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
+index 63964b2..28e2572 100644
+--- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
++++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
+@@ -25,5 +25,9 @@
+ @property (nonatomic, assign) CGFloat borderBottomRightRadius;
+ @property (nonatomic, assign) CGFloat borderBottomLeftRadius;
+ @property (nonatomic, assign) BOOL disableShadow;
++// The band, from the window's top and bottom edges, a lifted preview must
++// fit in (0: no limit on that side).
++@property (nonatomic, assign) CGFloat previewTopInset;
++@property (nonatomic, assign) CGFloat previewBottomInset;
+ 
+ @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..d448124 100644
+index e10a830..b048b8d 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 @@ -18,6 +18,10 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
@@ -120,17 +161,13 @@ index e10a830..d448124 100644
          
          [path moveToPoint: CGPointMake(CGRectGetMinX(bounds) + topLeftRadius, CGRectGetMinY(bounds))];
  
-@@ -158,30 +192,64 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -158,30 +192,100 @@ - (UIPreviewParameters *)getPreviewParams {
      return previewParams;
  }
  
 -- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
 -    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:self.reactSubviews.firstObject.center];
 -    
--    
--    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
--                                        parameters:[self getPreviewParams]
--                                            target:previewTarget];
 +// Whether the interaction is this view's own (UIControl's, used by
 +// dropdownMenuMode) or one it put on a subview it still hosts.
 +- (BOOL)ownsInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
@@ -139,10 +176,11 @@ index e10a830..d448124 100644
 +      return YES;
 +    }
 +    return view != nil && [_hostedInteractions objectForKey:view] == interaction;
- }
++}
  
--- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
--    UIView *hostView = self.reactSubviews.firstObject;
+-    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
 +// The view the menu lifts: the hosted subview that was pressed, else the
 +// first one this view really contains. Under Fabric's interop layer
 +// `reactSubviews` can be empty or out of step with the real subviews.
@@ -161,15 +199,53 @@ index e10a830..d448124 100644
 +      }
 +    }
 +    return nil;
+ }
+     
+-- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
+-    UIView *hostView = self.reactSubviews.firstObject;
++// A preview that lifts the hosted view in place, or nil (UIKit's default
++// preview) when it or its container isn't in a window: UIPreviewTarget and
++// UITargetedPreview both assert that they are.
++// Where the lifted preview goes. With previewTopInset / previewBottomInset
++// set, it is kept in the band between them, as a system context menu keeps
++// its preview clear of the navigation bar: a view taller than the band is
++// scaled down to fit it, and one reaching above the band moves down into
++// it. Otherwise (and for the dismissal, which returns the view to its
++// place) it lifts where it is.
++- (UIPreviewTarget *)previewTargetForView:(UIView *)hostView container:(UIView *)container clamped:(BOOL)clamped API_AVAILABLE(ios(13.0)) {
++    UIWindow *window = hostView.window;
++    BOOL hasBand = _previewTopInset > 0 || _previewBottomInset > 0;
++    if (!clamped || !hasBand || window == nil) {
++      return [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
++    }
++
++    CGRect frame = [container convertRect:hostView.frame toView:nil];
++    CGFloat windowHeight = CGRectGetHeight(window.bounds);
++    CGFloat bandTop = MAX(0, _previewTopInset);
++    CGFloat bandBottom = windowHeight - MAX(0, _previewBottomInset);
++    CGFloat bandHeight = bandBottom - bandTop;
++    if (bandHeight <= 0 || CGRectGetHeight(frame) <= 0) {
++      return [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
++    }
++
++    CGFloat scale = MIN(1.0, bandHeight / CGRectGetHeight(frame));
++    CGFloat height = CGRectGetHeight(frame) * scale;
++    CGFloat centerY = CGRectGetMidY(frame);
++    if (scale < 1.0) {
++      centerY = bandTop + height / 2.0;
++    } else if (centerY - height / 2.0 < bandTop) {
++      centerY = bandTop + height / 2.0;
++    }
++    CGPoint center = [container convertPoint:CGPointMake(CGRectGetMidX(frame), centerY) fromView:nil];
++    return [[UIPreviewTarget alloc] initWithContainer:container
++                                               center:center
++                                            transform:CGAffineTransformMakeScale(scale, scale)];
 +}
  
 -    if (!hostView.window) {
 -        // The view is no longer available; it was unmounted.
 -        return nil;
-+// A preview that lifts the hosted view in place, or nil (UIKit's default
-+// preview) when it or its container isn't in a window: UIPreviewTarget and
-+// UITargetedPreview both assert that they are.
-+- (UITargetedPreview *)targetedPreviewForInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
++- (UITargetedPreview *)targetedPreviewForInteraction:(UIContextMenuInteraction *)interaction clamped:(BOOL)clamped API_AVAILABLE(ios(13.0)) {
 +    if (![self ownsInteraction:interaction]) {
 +      return nil;
 +    }
@@ -178,10 +254,10 @@ index e10a830..d448124 100644
 +    if (hostView == nil || container == nil || hostView.window == nil || container.window == nil) {
 +      return nil;
      }
- 
+     
 -    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
-+    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
- 
++    UIPreviewTarget* previewTarget = [self previewTargetForView:hostView container:container clamped:clamped];
+     
      return [[UITargetedPreview alloc] initWithView:hostView
 -                                        parameters:[self getPreviewParams]
 +                                        parameters:[self getPreviewParamsForView:hostView]
@@ -189,17 +265,17 @@ index e10a830..d448124 100644
  }
  
 +- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
-+    return [self targetedPreviewForInteraction:interaction];
++    return [self targetedPreviewForInteraction:interaction clamped:YES];
 +}
 +
 +- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
-+    return [self targetedPreviewForInteraction:interaction];
++    return [self targetedPreviewForInteraction:interaction clamped:NO];
 +}
 +
  - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atIndexPath:(NSArray<NSNumber *> *)indexPath {
      UIMenuElement* menuElement = nil;
      UIImage *iconImage = nil;
-@@ -245,6 +313,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -245,6 +349,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
          actionMenu.subtitle = action.subtitle;
        }
  

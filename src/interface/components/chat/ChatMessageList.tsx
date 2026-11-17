@@ -1,4 +1,4 @@
-import { memo, type RefObject, useState } from 'react';
+import { memo, type RefObject, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   type NativeScrollEvent,
@@ -32,6 +32,7 @@ import { useKeepBottomOnComposerGrowth } from './message-list/useKeepBottomOnCom
 import { useRestAboveKeyboard } from './message-list/useRestAboveKeyboard';
 import { useListScrollMetrics } from './message-list/useListScrollMetrics';
 import { useMessageTextStyles } from './message-list/useMessageTextStyles';
+import { PreviewAreaContext } from './message-list/preview-area-context';
 import { useSuppressedNodeTap } from './message-list/useSuppressedNodeTap';
 import type { SpeakingRow } from './read-aloud/useChatReadAloud';
 import type { ChatDisplayPreferences, ChatRow } from './types';
@@ -122,6 +123,10 @@ export const ChatMessageList = memo(
     const { suppressNextNodeTap, handleNodePress } =
       useSuppressedNodeTap(onNodeTap);
     const handleMessageAction = useLatestCallback(onMessageAction);
+    const previewArea = useMemo(
+      () => ({ headerHeight, bottomInset }),
+      [headerHeight, bottomInset]
+    );
 
     if (loading) {
       return (
@@ -158,23 +163,25 @@ export const ChatMessageList = memo(
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        <ChatMessageRows
-          rows={rows}
-          settled={settled}
-          onFillingChange={setFilling}
-          railSourceNodeId={continuationRail.sourceNodeId}
-          continuationRail={continuationRail}
-          messageTextStyle={messageTextStyle}
-          displayPreferences={displayPreferences}
-          speakingRow={speakingRow}
-          captionIconColor={colors.tertiary}
-          captionTextColor={colors.secondaryVariant}
-          onPress={handleNodePress}
-          onLongPress={suppressNextNodeTap}
-          onMessageAction={handleMessageAction}
-          onRowLayout={recordRowLayout}
-          onRailLayout={recordRailLayout}
-        />
+        <PreviewAreaContext value={previewArea}>
+          <ChatMessageRows
+            rows={rows}
+            settled={settled}
+            onFillingChange={setFilling}
+            railSourceNodeId={continuationRail.sourceNodeId}
+            continuationRail={continuationRail}
+            messageTextStyle={messageTextStyle}
+            displayPreferences={displayPreferences}
+            speakingRow={speakingRow}
+            captionIconColor={colors.tertiary}
+            captionTextColor={colors.secondaryVariant}
+            onPress={handleNodePress}
+            onLongPress={suppressNextNodeTap}
+            onMessageAction={handleMessageAction}
+            onRowLayout={recordRowLayout}
+            onRailLayout={recordRailLayout}
+          />
+        </PreviewAreaContext>
 
         {sending && streamingAssistantText.length > 0 ? (
           <StreamingMessage
