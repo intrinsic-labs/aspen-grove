@@ -5,19 +5,21 @@ appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-home-menu.yaml
 - tapOn: Import OpenLoom Tree
-# The picker reopens where it was last left, which may already be "On My
-# iPhone" (its Browse tab isn't always matchable then); from the Browse root,
-# step into "On My iPhone".
-- tapOn:
-    text: Browse
-    optional: true
 - waitForAnimationToEnd
+# The picker is another process, and on iOS 26 Maestro sees its contents
+# only now and then, so nothing in it can be matched by text or id. Search
+# it for the file instead: one result, always in the same place. The picker
+# opens on "On My iPhone" (where it was last left), its search field at the
+# top; the search covers every location, so the file's folder doesn't matter.
 - tapOn:
-    text: 'On My iPhone'
-    optional: true
+    point: 50%,19%
+- inputText: ${TREE_FILE}
+- pressKey: Enter
 - waitForAnimationToEnd
 - evalScript: ${output.t0 = Date.now()}
-- tapOn: '${TREE_FILE}, openloom.*'
+# The single result's cell, under the "Name Contains" suggestion.
+- tapOn:
+    point: 18%,43%
 - extendedWaitUntil:
     visible: 'Import complete'
     timeout: 180000

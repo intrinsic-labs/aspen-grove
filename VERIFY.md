@@ -243,13 +243,22 @@ Home's composer.
   from Home's composer, waits for the reply and opens its Node Info with the provenance
   check. It spends one short OpenRouter completion and one title call.
 
-A third, [perf/](.maestro/perf/), times a big tree: opening it, opening a continuation
-rail, switching branch and searching. Copy the seed tree (`scripts/seed-perf-tree`) and
-`.maestro/perf/fixtures/perf-tiny.openloom` into the simulator's Files ("On My iPhone")
-first. `perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
+A third, [perf/](.maestro/perf/), times a big tree: importing it, opening it, opening a
+continuation rail, switching branch and searching. Generate the seed tree
+(`node scripts/seed-perf-tree/cli.ts --fake`), then copy it and
+`.maestro/perf/fixtures/perf-tiny.openloom` into the simulator's Files ("On My iPhone"):
+the `File Provider Storage` folder of the app group whose
+`.com.apple.mobile_container_manager.metadata.plist` names
+`group.com.apple.FileProvider.LocalStorage`, under
+`~/Library/Developer/CoreSimulator/Devices/$UDID/data/Containers/Shared/AppGroup/`.
+`perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
 a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>` lines into
-the run's `maestro.log`. The numbers are Maestro wall clock: compare runs on one machine
-and simulator, three runs or more, by median. No key needed.
+the run's `maestro.log` (`grep -o 'JsConsole: PERF .*'`). Measure a Release build (Path B
+with `-configuration Release`, no Metro) and pass `-e RELEASE_BUILD=1`, which skips the dev
+launcher. The numbers are Maestro wall clock, and Maestro's cost grows with what is on
+screen (a long tree's hierarchy snapshot takes about twice the floor's): compare runs on one
+machine and simulator, three runs or more, by median, and confirm a gap with in-app timing
+before calling it a stall. No key needed. Last results: [.dev/voices-plan.md](.dev/voices-plan.md) section 3.
 
 [needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
 `perf-tiny.openloom` before any agent exists: the tree opens with its messages and the

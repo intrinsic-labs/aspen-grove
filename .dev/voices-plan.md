@@ -133,43 +133,61 @@ Outside the chat area, these are over 300 lines too, for a later pass:
   - It needs `OPENROUTER_API_KEY` and `--yes`. It resumes from its cache.
   - To run it: `node scripts/seed-perf-tree/cli.ts --seed 1 --yes`, once a key exists.
 
-**Measured on the fake tree** (iPhone simulator AEA31DA2, dev build with
-Metro):
-- Times are Maestro wall clock, so they include Maestro's own overhead. The
-  3-node floor shows that overhead.
+**Measured on the fake tree** (2026-11-16, branch `owner/ag-beta1-perf`;
+Release build, iPhone 17 simulator AEA31DA2, iOS 26.5). `perf-tree.yaml` and
+`perf-floor.yaml`, three runs each. Times are Maestro wall clock, medians
+(open tree: the three timed opens of each run, nine in all):
 
-| step | 520-node tree | 3-node floor |
-| --- | --- | --- |
-| import | 2149 ms | 2986 ms |
-| open tree (cold, warm, warm) | 3033, 2863, 2923 (median 2923) | 2684, 2456, 2695 (median 2684) |
-| open rail | not measured (flow issue, below) | 2256 ms |
+| step | 520-node tree (runs) | median | 3-node floor (runs) | median | over floor |
+| --- | --- | --- | --- | --- | --- |
+| import | 2034, 2966, 1974 | 2034 | 2378, 2350, 2323 | 2350 | -316 |
+| open tree | 2796-3198 | 2922 | 2679-2794 | 2721 | +201 |
+| open rail | 3198, 3163, 3934 | 3198 | 2011, 2248, 2094 | 2094 | +1104 |
+| switch branch | 4091, 3592, 3924 | 3924 | 2370, 2434, 2395 | 2395 | +1529 |
+| search | 2594, 2614, 2140 | 2594 | 1777, 1801, 2051 | 1801 | +793 |
 
-- Opening a 520-node path costs about 240 ms over the floor. That is not a
-  visible stall.
-- No fix was made, so there is no before/after pair yet.
+**Verdict: no step stalls on 520 nodes. No fix was needed.**
+- The gaps over the floor are Maestro's, not the app's. Each Maestro
+  view-hierarchy snapshot of the tree's screen (long markdown rows) takes
+  about 380 ms against 160 ms on the floor, and a step polls several times.
+  The snapshots stay flat through each step: XCUITest waits for an idle main
+  thread, so a blocked one would show there.
+- In-app timestamps (a temporary probe build, not committed) put the app's
+  own work at tens of milliseconds:
 
-**Flow issues to fix before the next measurement:**
-- On this iOS, the document picker's file cells aren't in Maestro's view
-  hierarchy. `import-tree.yaml`'s `tapOn: '<file>, openloom.*'` can't match
-  them.
-  - This run tapped the cell by its grid position and then reverted.
-  - A durable fix is to seed the file into the app's own container and import
-    it from a dev-only deep link. Alternatively, keep the point tap with a
-    fixed file order.
-  - The picker now opens straight in "On My iPhone", so the `Browse` tap is
-    optional (committed).
-- `open-rail-timed.yaml`:
-  - Maestro takes "Draft a SQL query" as visible while it is still under the
-    header's blur at the bottom of a long path. Its tap misses, and the rail
-    never opens.
-  - Scrolling with `visibilityPercentage` plus an extra swipe, or giving the
-    row a testID by node id, would fix it.
-  - `switch-branch-timed.yaml` depends on it.
-- `perf-floor.yaml`'s switch step: "Make Current Node" on card index 1 closes
-  the rail without switching. The second card there is probably the current
-  one now. Pick the card by text instead.
-- To measure: copy both `.openloom` files into the simulator's
-  `group.com.apple.FileProvider.LocalStorage/File Provider Storage`, then run
-  `perf-tree.yaml` and `perf-floor.yaml` three times each and take medians.
-  Use a Release build for numbers that matter: dev mode with Metro inflates
-  everything.
+  | step | 520-node tree | floor |
+  | --- | --- | --- |
+  | import (use case, 520 nodes) | 308 ms | 10 ms |
+  | open tree, warm: last rows drawn | 65-81 ms | 56-66 ms |
+  | open tree, cold (first open after launch) | 589 ms | 619 ms |
+  | open rail: tap to cards drawn | 33 ms | 40 ms |
+  | switch branch: menu to new path drawn | 57 ms | 17 ms |
+  | search "lantern" (100 hits): query to drawn | 19 ms | 17 ms |
+
+- Switching also scrolls to the end of the new path. That animation keeps
+  the screen moving about 0.6 s longer than on the floor, which Maestro
+  waits out.
+
+**List virtualization:** the chat list is not virtualized. It is a
+`KeyboardAwareScrollView` that mounts every row on the path, tail first
+(`useProgressiveRows`). On the deepest path (46 rows), the last 5 rows are
+drawn at about 70 ms and all 46 are mounted by about 900 ms, after the push
+transition. A switch re-renders the 38-row path in 47 ms. That is fine at
+this size. A path of several hundred rows would mount them all, so that is
+the point to move to a windowed list.
+
+**Flows** (all pass on the Release build):
+- `import-tree.yaml` searches the document picker for the file and taps the
+  single result by position. On iOS 26, Maestro only sometimes sees the
+  picker's contents, because it runs in another process.
+- `open-rail-timed.yaml` scrolls up and then back down with centering. That
+  lifts a row Maestro first finds under the composer, and a check keeps it
+  below the header. Imported node ids are new on every import, so a testID by
+  node id can't be used.
+- `switch-branch-timed.yaml` drags the rail to bring the second card in, then
+  long-presses it by its text.
+- `-e RELEASE_BUILD=1` makes `open-app.yaml` and `relaunch-app.yaml` skip the
+  dev launcher.
+
+**Open:** real-content numbers (the seed's OpenRouter mode, about $0.15)
+and a device run. Simulator timings don't stand in for a phone.

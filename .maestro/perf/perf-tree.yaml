@@ -3,7 +3,7 @@
 # scripts/seed-perf-tree/README.md. Timings print as `PERF <name>_ms=<n>` lines in
 # ~/.maestro/tests/<run>/maestro.log (Maestro wall clock, so compare runs on the same
 # machine and simulator, never absolute numbers across machines). perf-floor.yaml
-# runs the same steps on a two-node tree: Maestro's own overhead.
+# runs the same steps on a three-node tree: Maestro's own overhead.
 appId: com.intrinsiclabs.aspengrove
 env:
   TREE_FILE: perf-tree-1-fake.openloom
