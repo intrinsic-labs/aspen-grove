@@ -1,5 +1,6 @@
 import type { Provider } from '@domain/entities';
 import { LlmProviderError } from './ILlmProvider';
+import { lmStudioUnreachableMessage } from './lmstudio-unreachable-copy';
 import { MissingProviderKeyError } from './missing-provider-key-error';
 import {
   plainProviderErrorLine,
@@ -38,11 +39,6 @@ export type DescribeProviderErrorContext = {
 const NETWORK_FAILURE_PATTERN =
   /network request failed|failed to fetch|could not connect|connection refused|econnrefused|network error|timed out|unable to resolve host|offline/i;
 
-const isLoopbackEndpoint = (endpoint: string): boolean =>
-  /^(https?:\/\/)?(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(
-    endpoint.trim()
-  );
-
 const isLmStudioUnreachable = (
   error: unknown,
   context: DescribeProviderErrorContext
@@ -62,23 +58,6 @@ const isLmStudioUnreachable = (
     error instanceof TypeError ||
     (error instanceof Error && NETWORK_FAILURE_PATTERN.test(error.message))
   );
-};
-
-const TRY_AGAIN = 'Start its local server, then try again.';
-
-/**
- * The address gets a line of its own, so a narrow notice never breaks it
- * mid-URL (after "http://") and it reads as the thing to check.
- */
-const lmStudioUnreachableMessage = (endpoint?: string): string => {
-  const trimmed = endpoint?.trim();
-  if (!trimmed) {
-    return `LM Studio isn't answering. ${TRY_AGAIN}`;
-  }
-  const loopbackHint = isLoopbackEndpoint(trimmed)
-    ? " On a phone, use your computer's network address instead of localhost."
-    : '';
-  return `LM Studio isn't answering at this address:\n${trimmed}\n${TRY_AGAIN}${loopbackHint}`;
 };
 
 const withDetail = (

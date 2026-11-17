@@ -178,6 +178,7 @@ export const useLoomTreeChatController = () => {
     continuations,
     refreshRows,
     credentialStore: adapters.credentialStore,
+    userPreferencesRepo: repositories.userPreferencesRepo,
     continuationCountRepo: repositories.continuationCountRepo,
     generateParallelContinuationsUseCase:
       useCases.generateParallelContinuationsUseCase,

@@ -1,0 +1,24 @@
+# A model reply's markdown: a numbered list nested under a bullet keeps its
+# numbers (and a bullet under a number its bullet), and a code block sits
+# close to the text around it. Copy
+# .maestro/fixtures/markdown-sample.openloom into the simulator's Files
+# ("On My iPhone") first, as for the perf flows. iOS; no key needed.
+#   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
+- runFlow:
+    file: import-tree.yaml
+    env:
+      TREE_FILE: markdown-sample.openloom
+- tapOn:
+    id: home-trees-row-.*
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*|tree-onboarding-begin
+    timeout: 30000
+- runFlow: dismiss-tree-onboarding.yaml
+- waitForAnimationToEnd
+- assertVisible: '.*Draw three continuations.*'
+- takeScreenshot: md-01-nested-lists-and-code

@@ -4,8 +4,8 @@ import { codepenEmbed } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 /** Matches `styles.text.lineHeight`. */
 const CODE_LINE_HEIGHT = 20;
-/** `scrollContent`'s top padding plus the horizontal scrollbar's clearance. */
-const CODE_VERTICAL_CHROME = 12 + 16;
+/** `scrollContent`'s top and bottom padding. */
+const CODE_VERTICAL_CHROME = 12 + 12;
 
 type CodeBlockProps = {
   readonly code: string;
@@ -14,8 +14,9 @@ type CodeBlockProps = {
 
 /**
  * A code block, syntax highlighted, that scrolls sideways instead of
- * wrapping. Its height is set from the line count up front, so the message
- * doesn't jump when the highlighter lays out.
+ * wrapping, without a scroll bar (as in Latent Spaces). Its height is set
+ * from the line count up front, so the message doesn't jump when the
+ * highlighter lays out. The space around it is the body rule's.
  */
 export const CodeBlock = ({ code, language }: CodeBlockProps) => {
   const lineCount = code.split('\n').length;
@@ -37,7 +38,6 @@ export const CodeBlock = ({ code, language }: CodeBlockProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
     overflow: 'hidden',
     backgroundColor: '#000',
   },
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     backgroundColor: '#000',
     paddingTop: 12,
-    paddingBottom: 16, // clearance for horizontal scrollbar
+    paddingBottom: 12,
     paddingLeft: 12,
     paddingRight: 24, // extra padding so code doesn't touch edge when scrolled
   },
@@ -63,4 +63,5 @@ const scrollViewProps = {
   style: styles.scrollView,
   contentContainerStyle: styles.scrollContent,
   nestedScrollEnabled: true,
+  showsHorizontalScrollIndicator: false,
 };

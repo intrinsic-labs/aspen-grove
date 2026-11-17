@@ -422,6 +422,8 @@ stays until the user makes one.
   scroll-edge effect fades them out under the title; Android has none, so
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
   Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
+  A reply's markdown (nested lists, a code block between paragraphs):
+  `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
@@ -585,7 +587,10 @@ stays until the user makes one.
   language (en-GB, en-AU, en-IE), then the system default. Leaving the Dialogue screen stops
   speech. Parallel continuations are not read aloud. The first utterance sets the shared audio
   session to playback with duck-others (expo-audio, no microphone permission), so the silent
-  switch doesn't mute it.
+  switch doesn't mute it. On Android (checked on a Pixel 10 emulator, API 37) Google's TTS
+  reads it; a voice whose language pack isn't downloaded falls back to another English voice
+  while the pack downloads. Android has no ducking: nothing requests audio focus.
+  Flow: `.maestro/mock/voice-mode.yaml` (iOS and Android).
 
 ### Rewind to a node
 - **ID:** `chat.rewind`
@@ -643,7 +648,8 @@ stays until the user makes one.
   `chat-continuation-generate-button`. Stop one card with `chat-continuation-slot-stop-<slot>`,
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
   `chat-continuation-card-<nodeId>`. Driven end to end, failure and relaunch included, by
-  `.maestro/mock/parallel-continuations.yaml` (VERIFY.md).
+  `.maestro/mock/parallel-continuations.yaml`, and with LM Studio down (each card naming the
+  saved address) by `.maestro/mock/parallel-lmstudio-down.yaml` (VERIFY.md).
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.

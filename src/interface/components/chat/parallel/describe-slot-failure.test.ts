@@ -21,7 +21,9 @@ describe('describeSlotFailure', () => {
       provider: 'openrouter',
       retryable: false,
     });
-    const described = describeSlotFailure(failure(rejected), 'openrouter');
+    const described = describeSlotFailure(failure(rejected), {
+      provider: 'openrouter',
+    });
     expect(described).toMatchObject({
       type: 'error',
       message: "OpenRouter didn't accept your key. Check it in Connections.",
@@ -31,17 +33,37 @@ describe('describeSlotFailure', () => {
   it('names LM Studio not answering from a raw network failure, using the run provider', () => {
     const described = describeSlotFailure(
       failure(new TypeError('Network request failed')),
-      'lmstudio'
+      { provider: 'lmstudio' }
     );
-    expect(described.type === 'error' && described.message).toMatch(
-      /^LM Studio isn't answering/
+    expect(described.type === 'error' && described.message).toBe(
+      "LM Studio isn't answering. Start its local server, then try again."
+    );
+  });
+
+  it('names the LM Studio address in a card-sized form', () => {
+    const described = describeSlotFailure(
+      failure(new TypeError('Network request failed')),
+      { provider: 'lmstudio', lmstudioEndpoint: 'http://192.168.1.20:1234' }
+    );
+    expect(described.type === 'error' && described.message).toBe(
+      "LM Studio isn't answering at\nhttp://192.168.1.20:1234\nStart its server, then try again."
+    );
+  });
+
+  it('adds a short phone hint when the address is localhost', () => {
+    const described = describeSlotFailure(
+      failure(new TypeError('Network request failed')),
+      { provider: 'lmstudio', lmstudioEndpoint: ' http://localhost:1234 ' }
+    );
+    expect(described.type === 'error' && described.message).toBe(
+      "LM Studio isn't answering at\nhttp://localhost:1234\nStart its server, then try again.\nOn a phone, use your computer's address."
     );
   });
 
   it('words a missing key', () => {
     const described = describeSlotFailure(
       failure(new MissingProviderKeyError('openrouter')),
-      'openrouter'
+      { provider: 'openrouter' }
     );
     expect(described.type === 'error' && described.message).toBe(
       'Add your OpenRouter key in Connections to generate.'
@@ -58,7 +80,7 @@ describe('describeSlotFailure', () => {
           retryable: false,
         })
       ),
-      'lmstudio'
+      { provider: 'lmstudio' }
     );
     expect(described.type === 'error' && described.message).toBe(
       'LM Studio returned an error.'
@@ -72,6 +94,6 @@ describe('describeSlotFailure', () => {
       delta: 'a',
       content: 'a',
     };
-    expect(describeSlotFailure(delta, 'openrouter')).toBe(delta);
+    expect(describeSlotFailure(delta, { provider: 'openrouter' })).toBe(delta);
   });
 });
