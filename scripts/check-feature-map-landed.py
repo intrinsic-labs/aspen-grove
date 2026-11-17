@@ -13,7 +13,8 @@ than one merged change behind main.
 
 Exit 0: nothing landed since `revision:` touches a mapped entry, or HEAD is BASE_REF's merge-base
 itself (a push to main), where it only warns.
-Exit 1: entries to re-read, and the merge-base to set as `revision:`.
+Exit 1: entries to re-read, and the merge-base to set as `revision:`; or a `revision:` that is not
+a commit on BASE_REF.
 """
 from __future__ import annotations
 
@@ -41,9 +42,11 @@ def main(argv: list[str]) -> int:
         print(f"feature map: can't find the merge-base of HEAD and {base_ref}", file=sys.stderr)
         return 2
     if fm.git(root, "merge-base", "--is-ancestor", rev, base) is None:
-        # revision isn't behind the merge-base (or is invalid, which check:map reports).
-        print(f"feature map: revision {rev[:10]} is not behind {base_ref}; nothing landed to reconcile")
-        return 0
+        # A revision that isn't on the base (a commit only on this branch, or a typo) would
+        # silently switch this gate off, so it fails: `revision:` must name a commit on main.
+        print(f"feature map: revision {rev[:10] or '(none)'} is not a commit on {base_ref}. "
+              f"Set FEATURE_MAP.md's `revision:` to a commit on {base_ref}, such as the merge-base, {base}.")
+        return 1
 
     stale = []
     for e in entries:
