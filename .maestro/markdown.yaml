@@ -3,7 +3,7 @@
 # close to the text around it. Copy
 # .maestro/fixtures/markdown-sample.openloom into the simulator's Files
 # ("On My iPhone") first, as for the perf flows. iOS; no key needed.
-#   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS/markdown"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml

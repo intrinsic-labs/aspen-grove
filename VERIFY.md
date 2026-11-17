@@ -218,18 +218,38 @@ Selectors are React Native `testID`s, which surface on iOS as accessibility iden
 start, and the two prerequisite paths (P1 agent, P2 open a tree). Native context-menu items
 and system sheets have no testID: pick them by visible title.
 
-Two Maestro flows prove the base:
+**The minimum a verifier runs, with no key** (Metro and the mock server up, step 4): `smoke`,
+`mock/first-turn`, `mock/beta1-loop` and `mock/beta1-empty-states`. Then add the flows for
+each area the change touched:
+
+| Area touched | Add |
+|--------------|-----|
+| Home, the tree list | `mock/home-trees` |
+| Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
+| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/sheet-swipe`, `mock/header-scroll` |
+| Continuation rail, parallel cards | `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
+| Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
+| Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |
+| Markdown, import | `markdown`, `needs-agent` |
+| Performance | `perf/` (below) |
+
+`first-turn.yaml` (no `mock/`) is the same first turn on a real OpenRouter key.
 
 ```sh
-SHOTS=.verify/shots/$(git rev-parse --short HEAD); mkdir -p "$SHOTS"
-maestro --device "$UDID" test .maestro/smoke.yaml --test-output-dir "$SHOTS"       # no key needed
-maestro --device "$UDID" test .maestro/first-turn.yaml --test-output-dir "$SHOTS"  # needs step 4
+SHOTS=.verify/shots/$(git rev-parse --short HEAD)
+for f in smoke mock/first-turn mock/beta1-loop mock/beta1-empty-states; do
+  maestro --device "$UDID" test ".maestro/$f.yaml" --test-output-dir "$SHOTS/${f//\//-}"
+done
 # Metro or the mock off their defaults (8081, 1235)? Add, for example:
 #   -e METRO_URL=http://localhost:8084 -e MOCK_URL=http://localhost:1236
 ```
 
+Give each flow its own output dir, as above. Maestro 2.7 nests inside it:
+`<dir>/<timestamp>/<flow>/takeScreenshot/<name>.png` (plus `maestro.log` and, on a failure,
+the failing screen), so `find "$SHOTS" -name '*.png'` lists a run's screenshots.
+
 `--device` is required whenever more than one simulator or emulator is running, and harmless
-otherwise. Both flows start with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
+otherwise. Every flow starts with [open-app.yaml](.maestro/open-app.yaml) (cold launch through
 the dev launcher to Home). From Home, [open-settings.yaml](.maestro/open-settings.yaml) and
 [open-home-menu.yaml](.maestro/open-home-menu.yaml) open Settings and the `···` menu,
 [go-back.yaml](.maestro/go-back.yaml) goes back one screen (the header's `BackButton` on iOS,
@@ -315,14 +335,16 @@ pid=$(cat .verify/metro.pid)
 lsof -nP -t -iTCP:8081 -sTCP:LISTEN       # the listener is $pid or its child
 kill "$pid"                               # stops Metro
 kill "$(cat .verify/mock.pid)"            # if you started the mock server
+xcrun simctl uninstall "$UDID" com.intrinsiclabs.aspengrove   # the app and its data
 xcrun simctl shutdown "<device name>"     # if you booted it
 ```
 
 With `npx expo start` the recorded PID is the npm wrapper and the port listener is its child;
 killing the recorded PID stops both. Confirm with `lsof` that the ports are free.
 
-Then remove only build outputs: `rm -rf .verify/DerivedData dist ios` (`ios/` is generated).
-Leave `.verify/shots` in place until you have reported the screenshots. Always build with
+Then remove only build outputs: `rm -rf .verify/DerivedData dist ios node_modules` (`ios/` is
+generated; `npm ci` restores `node_modules`). Leave `.verify/shots` in
+place until you have reported the screenshots. Always build with
 `-derivedDataPath .verify/DerivedData` so nothing global is created. If you used
 `expo run:ios`, it writes to `~/Library/Developer/Xcode/DerivedData/AspenGrove-*`, which other
 sessions on this Mac may share: delete only a folder you created (check its timestamp), never
@@ -350,9 +372,14 @@ didn't record.
   iOS 27 SDK. `ios.enableSceneSupport` in [app.json](app.json) turns it on (SDK 57; see
   AGENTS.md). After a prebuild, check it took:
   `/usr/libexec/PlistBuddy -c "Print :UIApplicationSceneManifest" ios/AspenGrove/Info.plist`
-  should name `EXExpoAppSceneDelegate`, and `ios/AspenGrove/AppDelegate.swift` should not create
-  a `UIWindow`. The simulator can't prove the iOS 27 launch unless an iOS 27 runtime is
-  installed; a device on iOS 27 can.
+  should name `EXExpoAppSceneDelegate`, and
+  `grep -nE 'UIWindow\(|makeKeyAndVisible|startReactNative' ios/AspenGrove/AppDelegate.swift`
+  should print nothing (the template's `var window: UIWindow?` declaration is expected).
+  Only an iOS 27 runtime or device proves the launch: an older runtime launches the app either
+  way.
+- **A blue "Refreshing..." banner** over the first screen is React Native's hot-update notice
+  from Metro, not the app. The flows wait for it to go (end of `connect-metro.yaml`); a one-off
+  `simctl` screenshot taken straight after launch can still catch it.
 - **Native dependency changed?** A JS reload won't pick it up: rerun `npx expo run:ios`.
   After an `app.json` native change, `npx expo prebuild --clean -p ios` regenerates `ios/`.
 - **Startup does not seed a tree.** `AppServicesProvider` passes
@@ -370,12 +397,15 @@ didn't record.
 The same tree and the same Maestro flows run on an Android emulator. Verified with smoke,
 mock/first-turn and mock/header-scroll on a Pixel 10 AVD (API 37, arm64).
 
-**Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and an AVD (`emulator
--list-avds`). Gradle needs **JDK 21, Android Studio's bundled one**, not Homebrew's
+**Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and the project's AVD,
+`Pixel_10` (API 37.1, arm64; other AVDs belong to other work). Missing from `emulator
+-list-avds`? Create it in Android Studio's Device Manager (Pixel 10, the API 37.1 Google Play
+16 KB arm64 image, named `Pixel_10`), or with the SDK command-line tools:
+`avdmanager create avd -n Pixel_10 -d pixel_10 -k "system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a"`. Gradle needs **JDK 21, Android Studio's bundled one**, not Homebrew's
 openjdk (a newer major version); Maestro keeps using Homebrew's. In the shell that builds:
 
 ```sh
-export ANDROID_HOME=$HOME/Library/Android/sdk
+export ANDROID_HOME=$HOME/Library/Android/sdk; export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"   # adb, emulator
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"; export PATH="$JAVA_HOME/bin:$PATH"
 java -version    # 21.x
 ```
@@ -384,8 +414,9 @@ java -version    # 21.x
 by its serial (`emulator-5554`) in every `adb` and Maestro command.
 
 ```sh
-$ANDROID_HOME/emulator/emulator -avd <avd> -no-snapshot-save -no-boot-anim -no-audio > .verify/emulator.log 2>&1 &
-adb -s emulator-5554 wait-for-device
+emulator -avd Pixel_10 -no-snapshot-save -no-boot-anim -no-audio > .verify/emulator.log 2>&1 &
+adb -s emulator-5554 wait-for-device   # returns before boot ends; installing now fails with "Can't find service: package"
+until [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do sleep 2; done
 npx expo prebuild -p android                       # generates android/ (gitignored)
 (cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --console=plain) > .verify/gradle.log 2>&1
 adb -s emulator-5554 install -r android/app/build/outputs/apk/debug/app-debug.apk
@@ -406,8 +437,8 @@ adb -s emulator-5554 reverse tcp:1235 tcp:1235     # the mock server, so http://
 
 ```sh
 export JAVA_HOME=/opt/homebrew/opt/openjdk; export PATH="$JAVA_HOME/bin:$PATH"
-maestro --device emulator-5554 test .maestro/smoke.yaml --test-output-dir "$SHOTS"
-maestro --device emulator-5554 test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
+maestro --device emulator-5554 test .maestro/smoke.yaml --test-output-dir "$SHOTS/android-smoke"
+maestro --device emulator-5554 test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS/android-mock-first-turn"
 adb -s emulator-5554 exec-out screencap -p > "$SHOTS/<name>.png"   # a one-off screenshot
 ```
 
@@ -426,7 +457,9 @@ What differs on Android, and how the shared flows handle it:
   mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
   optional).
 
-**Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`, then
+**Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`,
+`adb -s emulator-5554 uninstall com.intrinsiclabs.aspengrove`, then
 `adb -s emulator-5554 emu kill`, stop Metro and the mock by PID, and
-`(cd android && ./gradlew --stop)`. Remove the build outputs: `rm -rf android` (generated).
+`(cd android && ./gradlew --stop)`. Remove the build outputs: `rm -rf android node_modules`
+(`android/` is generated).
 

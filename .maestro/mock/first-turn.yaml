@@ -2,7 +2,7 @@
 # onboarding against the mock server (setup.yaml), then a tree started from
 # Home's composer with one message, and the reply streamed to the end.
 # Needs the mock server (default 1235) and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/first-turn.yaml --test-output-dir "$SHOTS/first-turn"
 # Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 ---

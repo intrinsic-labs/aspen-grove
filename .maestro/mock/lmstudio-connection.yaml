@@ -6,7 +6,7 @@
 # until it is tested again, then Connected. Last, a long address: the
 # focused row clear of the keyboard, the row truncated once it's put away.
 # Needs the mock server and Metro:
-#   maestro test .maestro/mock/lmstudio-connection.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/lmstudio-connection.yaml --test-output-dir "$SHOTS/lmstudio-connection"
 appId: com.intrinsiclabs.aspengrove
 env:
   MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}

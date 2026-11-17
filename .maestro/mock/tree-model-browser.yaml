@@ -5,7 +5,7 @@
 # Nothing is sent to OpenRouter (no key):
 # the catalog is public. Needs the mock server, Metro and a network
 # connection (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/tree-model-browser.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/tree-model-browser.yaml --test-output-dir "$SHOTS/tree-model-browser"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

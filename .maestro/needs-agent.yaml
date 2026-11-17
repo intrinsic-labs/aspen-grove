@@ -2,7 +2,7 @@
 # an agent; once one exists, the tree adopts it. Copy
 # .maestro/perf/fixtures/perf-tiny.openloom into the simulator's Files
 # ("On My iPhone") first. No key needed: nothing is sent.
-#   maestro test .maestro/needs-agent.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/needs-agent.yaml --test-output-dir "$SHOTS/needs-agent"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml

@@ -6,7 +6,7 @@
 # keeps "mock-model" as it was. The mock's log shows
 # the send's `max_tokens=8192` and the system message.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/tree-model.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/tree-model.yaml --test-output-dir "$SHOTS/tree-model"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml
