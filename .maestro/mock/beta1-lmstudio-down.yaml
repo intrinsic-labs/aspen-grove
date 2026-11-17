@@ -2,7 +2,7 @@
 # mock server stopped, a send in the tree on the mock agent fails with a
 # plain message naming the saved address and a way to Connections. Keeps
 # the app's data.
-#   (stop the mock) maestro test .maestro/mock/beta1-lmstudio-down.yaml --test-output-dir "$SHOTS"
+#   (stop the mock) maestro test .maestro/mock/beta1-lmstudio-down.yaml --test-output-dir "$SHOTS/beta1-lmstudio-down"
 # Set up on another port? Pass the same -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 env:

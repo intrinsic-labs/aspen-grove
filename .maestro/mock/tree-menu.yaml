@@ -3,7 +3,7 @@
 # sheet with its menu and rename, the export sheet, Edit Title's alert,
 # Edit Description's sheet and Show Onboarding's tree tips. Needs the mock
 # server and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/tree-menu.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/tree-menu.yaml --test-output-dir "$SHOTS/tree-menu"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

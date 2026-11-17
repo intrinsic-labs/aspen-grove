@@ -2,7 +2,7 @@
 # fresh install can reach without a provider key (Home, its menu, Search, Settings,
 # Connections, Agents and the agent editor).
 # Run from the repo root with the app installed on a booted simulator:
-#   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/smoke.yaml --test-output-dir "$SHOTS/smoke"
 # Screenshots land in the test output directory. Selectors are the testIDs in FEATURE_MAP.md.
 appId: com.intrinsiclabs.aspengrove
 ---

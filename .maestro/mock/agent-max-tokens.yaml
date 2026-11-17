@@ -5,7 +5,7 @@
 # unloaded mock-missing); it allows 8192, so the field drops to 8192 and the
 # Generation footer names the limit. Saved, the agent keeps 8192. Needs the
 # mock server, Metro and a network connection for OpenRouter's catalog:
-#   maestro test .maestro/mock/agent-max-tokens.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/agent-max-tokens.yaml --test-output-dir "$SHOTS/agent-max-tokens"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

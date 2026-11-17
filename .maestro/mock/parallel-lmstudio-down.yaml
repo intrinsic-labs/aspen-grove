@@ -2,7 +2,7 @@
 # parallel-continuations.yaml, with the mock server stopped, Generate on the
 # rail fails every card, and each names the saved address on a line of its
 # own, in a form that fits the card. Keeps the app's data.
-#   (stop the mock) maestro test .maestro/mock/parallel-lmstudio-down.yaml --test-output-dir "$SHOTS"
+#   (stop the mock) maestro test .maestro/mock/parallel-lmstudio-down.yaml --test-output-dir "$SHOTS/parallel-lmstudio-down"
 # Set up on another port? Pass the same -e MOCK_URL=http://localhost:<port>.
 appId: com.intrinsiclabs.aspengrove
 env:

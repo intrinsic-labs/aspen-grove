@@ -4,7 +4,7 @@
 # rail; and the same menus again after leaving the tree and reopening it
 # from Home, when React Native has unmounted and recycled the old rows.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/long-press-menus.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/long-press-menus.yaml --test-output-dir "$SHOTS/long-press-menus"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml
