@@ -86,7 +86,7 @@ Agents have two flavors depending on whether they're managed at the application 
 ### Tree-Owned (Private / Ad-Hoc) Agents
 
 - `ownerTreeId === <some LoomTree id>`
-- Created implicitly when a user customizes dialogue settings inside a chat without explicitly managing agents ("feels like changing settings for this conversation")
+- Created implicitly when a user changes a tree's Model Settings without explicitly managing agents ("feels like changing settings for this conversation")
 - Filtered out of the global Agents list (Settings → Agents shows only shared agents)
 - Lifecycle is tied to the owning LoomTree — hard-deleting the tree hard-deletes the tree-owned agent
 - Editing a tree-owned agent affects only that tree (no propagation)
@@ -95,8 +95,8 @@ Agents have two flavors depending on whether they're managed at the application 
 ### UX Flows
 
 - **From Settings**: User edits a shared agent. Changes affect every tree using it.
-- **From a chat's dialogue settings sheet**, if the tree currently uses a **shared** agent: user chooses between "Edit shared agent (affects N other trees)" or "Customize for this tree only" — the latter forks the shared agent into a tree-owned copy and re-points the tree at the copy.
-- **From a chat's dialogue settings sheet**, if the tree currently uses a **tree-owned** agent: edits apply directly to that agent. No fork prompt; it already belongs to this tree.
+- **From a tree's Model Settings screen**, if the tree currently uses a **shared** agent: user chooses between "Edit shared agent (affects N other trees)" or "Customize for this tree only" — the latter forks the shared agent into a tree-owned copy and re-points the tree at the copy.
+- **From a tree's Model Settings screen**, if the tree currently uses a **tree-owned** agent: edits apply directly to that agent. No fork prompt; it already belongs to this tree.
 
 ---
 
