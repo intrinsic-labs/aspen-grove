@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import {
-  KeyboardEvents,
-  type KeyboardAwareScrollViewRef,
-} from 'react-native-keyboard-controller';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import type { ChatRow } from '../types';
 import { isNearBottom } from './scroll-position';
 
@@ -54,18 +51,6 @@ export const useChatAutoScroll = ({
     }
     scrollRef.current?.scrollToEnd({ animated: false });
   }, [streamingText]);
-
-  // The keyboard's space is added to the list as it opens, after the focus
-  // scroll has run: settle at the end again once it is up, so the last
-  // message stays above the composer as in Latent Spaces.
-  useEffect(() => {
-    const subscription = KeyboardEvents.addListener('keyboardDidShow', () => {
-      if (shouldAutoScrollRef.current) {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }
-    });
-    return () => subscription.remove();
-  }, []);
 
   const onMessageListScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {

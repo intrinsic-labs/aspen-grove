@@ -432,7 +432,10 @@ stays until the user makes one.
   The list's bottom padding follows the composer's measured height (and the keyboard's,
   while it is up), so the last line rests just above the composer; when a draft grows to
   several lines while the list is at its end, the list scrolls with it
-  (`message-list/list-insets.ts`) so the last message stays visible.
+  (`message-list/list-insets.ts`) so the last message stays visible. When the keyboard
+  opens, it first takes the free space under a short tree's last message and moves the
+  list only by what it would cover; a long tree's last line stays the same distance above
+  the composer (`keyboardRestingOffset`, `message-list/useRestAboveKeyboard.ts`).
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. LM

@@ -3,6 +3,7 @@ import {
   BOTTOM_PIN_TOLERANCE,
   isAtListBottom,
   keyboardExtraSpace,
+  keyboardRestingOffset,
   offsetForComposerGrowth,
   messageListBottomPadding,
   visibleContentBottom,
@@ -122,5 +123,71 @@ describe('offsetForComposerGrowth', () => {
         wasAtBottom: true,
       })
     ).toBeNull();
+  });
+});
+
+describe('keyboardRestingOffset', () => {
+  const viewportHeight = 800;
+  const keyboardSpace = 300;
+
+  it("doesn't move a short tree the keyboard doesn't reach", () => {
+    // 500 pt free under the last message: the keyboard's 300 fit in it.
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 300,
+        viewportHeight,
+        keyboardSpace,
+      })
+    ).toBe(0);
+  });
+
+  it('moves a short tree only by what the keyboard covers', () => {
+    // 100 pt free: the keyboard eats it, then lifts the content 200.
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 700,
+        viewportHeight,
+        keyboardSpace,
+      })
+    ).toBe(200);
+  });
+
+  it('lifts a tree that just fills the screen by the whole keyboard', () => {
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 800,
+        viewportHeight,
+        keyboardSpace,
+      })
+    ).toBe(300);
+  });
+
+  it("keeps a long tree's last line where it was above the composer", () => {
+    // At the end with the keyboard down the offset is 1200; it grows by the
+    // keyboard's whole space, as before.
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 2000,
+        viewportHeight,
+        keyboardSpace,
+      })
+    ).toBe(2000 - viewportHeight + keyboardSpace);
+  });
+
+  it('stays put with no keyboard space', () => {
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 2000,
+        viewportHeight,
+        keyboardSpace: 0,
+      })
+    ).toBe(1200);
+    expect(
+      keyboardRestingOffset({
+        contentHeight: 300,
+        viewportHeight,
+        keyboardSpace: 0,
+      })
+    ).toBe(0);
   });
 });

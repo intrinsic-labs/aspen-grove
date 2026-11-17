@@ -25,6 +25,30 @@ export const messageListBottomPadding = (composerHeight: number): number =>
 export const keyboardExtraSpace = (safeAreaBottom: number): number =>
   -safeAreaBottom;
 
+/**
+ * Where a reader at the end of the tree rests once the keyboard is up. The
+ * keyboard takes the free space under the last message first, so content
+ * moves only by what it would otherwise cover: max(0, keyboard space - free
+ * space), the free space being what the viewport shows below the content.
+ * A tree longer than the screen has none, so its last line keeps the same
+ * distance above the composer as with the keyboard down. `contentHeight` is
+ * the content's own height (its bottom padding included, the keyboard's
+ * space not); `keyboardSpace` is how far the keyboard lifts the composer.
+ */
+export const keyboardRestingOffset = ({
+  contentHeight,
+  viewportHeight,
+  keyboardSpace,
+}: {
+  readonly contentHeight: number;
+  readonly viewportHeight: number;
+  readonly keyboardSpace: number;
+}): number => {
+  const freeSpace = Math.max(0, viewportHeight - contentHeight);
+  const atEnd = Math.max(0, contentHeight - viewportHeight);
+  return atEnd + Math.max(0, keyboardSpace - freeSpace);
+};
+
 /** The bottom edge of the readable area, in content coordinates. */
 export const visibleContentBottom = (
   offsetY: number,

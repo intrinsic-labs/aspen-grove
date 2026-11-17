@@ -29,6 +29,7 @@ import type { ContinuationRailState } from './message-list/continuation-rail-sta
 import type { ChatMessageMenuAction } from './message-list/message-menu';
 import { useContinuationRailReveal } from './message-list/useContinuationRailReveal';
 import { useKeepBottomOnComposerGrowth } from './message-list/useKeepBottomOnComposerGrowth';
+import { useRestAboveKeyboard } from './message-list/useRestAboveKeyboard';
 import { useListScrollMetrics } from './message-list/useListScrollMetrics';
 import { useMessageTextStyles } from './message-list/useMessageTextStyles';
 import { useSuppressedNodeTap } from './message-list/useSuppressedNodeTap';
@@ -117,6 +118,7 @@ export const ChatMessageList = memo(
       scrollMetricsRef,
       atBottomRef,
     });
+    useRestAboveKeyboard({ bottomInset, scrollRef, scrollMetricsRef });
     const { suppressNextNodeTap, handleNodePress } =
       useSuppressedNodeTap(onNodeTap);
     const handleMessageAction = useLatestCallback(onMessageAction);
@@ -208,9 +210,11 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  // No flexGrow: the content's height must be its own, or a short tree
+  // counts as filling the screen and the keyboard lifts it by its whole
+  // height (`keyboardRestingOffset`), and scrolls to the end overshoot.
   content: {
     paddingHorizontal: loomUiTokens.messageList.rowInset,
-    flexGrow: 1,
     gap: loomUiTokens.messageList.rowGap,
   },
 });
