@@ -591,7 +591,8 @@ stays until the user makes one.
   duck-others (expo-audio, no microphone permission), so the silent switch doesn't mute it.
   On Android (Pixel 10 emulator, API 37) Google's TTS reads it: the local module
   `modules/android-speech` reports which voices are installed and offline, and holds
-  transient may-duck audio focus while speaking, so other apps duck as on iOS. There Lily
+  transient may-duck audio focus while speaking, so other apps duck as on iOS; another app
+  taking the focus for good (starting its own playback) stops the reading. There Lily
   reads as `en-au-x-aua-local`, Jefferson `en-gb-x-gbd-local`, Eve `en-gb-x-gbc-local` (no
   Irish voice).
   Flow: `.maestro/mock/voice-mode.yaml` (iOS and Android).

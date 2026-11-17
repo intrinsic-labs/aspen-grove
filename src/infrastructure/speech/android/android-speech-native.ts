@@ -11,8 +11,15 @@ export interface AndroidVoiceDetail {
   readonly installed: boolean;
 }
 
+/** Sent when another app takes audio focus for good while speech holds it. */
+export const AUDIO_FOCUS_LOST_EVENT = 'onAudioFocusLost';
+
 /** The local module in `modules/android-speech` (Android only). */
 export interface AndroidSpeechNative {
+  addListener(
+    event: typeof AUDIO_FOCUS_LOST_EVENT,
+    listener: () => void
+  ): { remove(): void };
   /** Transient may-duck focus; resolves whether it was granted. */
   requestDuckingFocus(): Promise<boolean>;
   abandonFocus(): Promise<void>;

@@ -1,4 +1,7 @@
 import * as Speech from 'expo-speech';
+import { JEFFERSON_VOICE } from '@domain/value-objects';
+import { ReadAloudService } from '@application/services/speech';
+import { fakeAndroidSpeech } from './android/fake-android-speech';
 import { ExpoSpeechSynthesizer } from './ExpoSpeechSynthesizer';
 
 jest.mock('@infrastructure/logging/dev-log', () => ({
@@ -75,11 +78,7 @@ describe('ExpoSpeechSynthesizer', () => {
   });
 
   it('holds Android audio focus from the first piece until the utterance settles', async () => {
-    const android = {
-      requestDuckingFocus: jest.fn(() => Promise.resolve(true)),
-      abandonFocus: jest.fn(() => Promise.resolve()),
-      getVoiceDetails: jest.fn(() => Promise.resolve([])),
-    };
+    const { native: android } = fakeAndroidSpeech();
     new ExpoSpeechSynthesizer(android).speak(
       utterance('First sentence here. Second sentence here. Third one.'),
       {}
@@ -94,11 +93,7 @@ describe('ExpoSpeechSynthesizer', () => {
   });
 
   it('abandons Android audio focus on stop', async () => {
-    const android = {
-      requestDuckingFocus: jest.fn(() => Promise.resolve(true)),
-      abandonFocus: jest.fn(() => Promise.resolve()),
-      getVoiceDetails: jest.fn(() => Promise.resolve([])),
-    };
+    const { native: android } = fakeAndroidSpeech();
     const synthesizer = new ExpoSpeechSynthesizer(android);
     synthesizer.speak(utterance('Short.'), {});
     await flush();
@@ -116,20 +111,15 @@ describe('ExpoSpeechSynthesizer', () => {
         quality: 'Enhanced',
       },
     ]);
-    const android = {
-      requestDuckingFocus: jest.fn(() => Promise.resolve(true)),
-      abandonFocus: jest.fn(() => Promise.resolve()),
-      getVoiceDetails: jest.fn(() =>
-        Promise.resolve([
-          {
-            name: 'en-gb-x-gbd-local',
-            quality: 400,
-            requiresNetwork: false,
-            installed: false,
-          },
-        ])
-      ),
-    };
+    const { native: android } = fakeAndroidSpeech();
+    android.getVoiceDetails.mockResolvedValueOnce([
+      {
+        name: 'en-gb-x-gbd-local',
+        quality: 400,
+        requiresNetwork: false,
+        installed: false,
+      },
+    ]);
 
     await expect(
       new ExpoSpeechSynthesizer(android).getAvailableVoices()
@@ -143,5 +133,21 @@ describe('ExpoSpeechSynthesizer', () => {
         installed: false,
       },
     ]);
+  });
+
+  it('ends the reading as stopped when another app takes the focus for good', async () => {
+    const { native: android, loseFocus } = fakeAndroidSpeech();
+    const service = new ReadAloudService(new ExpoSpeechSynthesizer(android));
+    const listener = { onEnd: jest.fn() };
+
+    await service.speakText('Short.', JEFFERSON_VOICE, listener);
+    await flush();
+    loseFocus();
+    // The engine then reports the stop, which must not end it twice.
+    optionsAt(0).onStopped?.();
+
+    expect(listener.onEnd).toHaveBeenCalledTimes(1);
+    expect(Speech.stop).toHaveBeenCalled();
+    expect(android.abandonFocus).toHaveBeenCalled();
   });
 });

@@ -27,8 +27,9 @@ import { splitSpeechText } from './split-speech-text';
  *
  * Android: expo-speech takes no audio focus and says nothing of which voices
  * are installed or offline. The local `android-speech` module adds both: each
- * utterance holds transient may-duck focus until it ends, and the voices
- * carry those details for `resolveSystemVoice`.
+ * utterance holds transient may-duck focus until it ends (and is stopped if
+ * another app takes the focus for good), and the voices carry those details
+ * for `resolveSystemVoice`.
  */
 export class ExpoSpeechSynthesizer implements ISpeechSynthesizer {
   private readonly android: AndroidSpeechNative | null;
@@ -65,7 +66,11 @@ export class ExpoSpeechSynthesizer implements ISpeechSynthesizer {
       voice: utterance.voiceIdentifier ?? 'system default',
       pitch: utterance.pitch,
     });
-    const releaseFocus = this.focus.acquire();
+    // Another app took the audio focus for good: end the reading as a stop.
+    const releaseFocus = this.focus.acquire(() => {
+      settle(events.onStopped);
+      void this.stop();
+    });
     let settled = false;
     const settle = (callback?: () => void) => {
       if (!settled) {

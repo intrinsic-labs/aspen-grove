@@ -11,10 +11,20 @@ private const val TAG = "AndroidSpeech"
 /**
  * Transient, may-duck audio focus for one stretch of speech: other apps lower
  * their volume (or the system ducks them) until it is abandoned.
+ *
+ * A permanent loss (another app started its own playback) calls `onLoss`, so
+ * the reading stops. A transient loss is left alone: the TTS engine can't
+ * pause, and the interruption is short.
  */
-class SpeechAudioFocus(private val audioManager: AudioManager) {
+class SpeechAudioFocus(
+  private val audioManager: AudioManager,
+  private val onLoss: () -> Unit
+) {
   private val listener = AudioManager.OnAudioFocusChangeListener { change ->
     Log.i(TAG, "audio focus changed: $change")
+    if (change == AudioManager.AUDIOFOCUS_LOSS) {
+      onLoss()
+    }
   }
 
   private val request: AudioFocusRequest? =
