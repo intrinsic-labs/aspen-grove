@@ -39,9 +39,11 @@ appId: com.intrinsiclabs.aspengrove
     id: tree-model-footer-id
     text: 'mock-model'
 - assertVisible: 'Maximum Output Tokens'
+# Onboarding's agent sets no maximum, so its sends carry no max_tokens and
+# the form says the provider decides.
 - assertVisible:
     id: tree-model-max-tokens-value
-    text: '4,096'
+    text: 'Provider default'
 - assertVisible: 'Temperature'
 - takeScreenshot: tree-40-model-settings
 

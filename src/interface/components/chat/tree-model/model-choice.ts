@@ -11,7 +11,7 @@ import { toTreeModelValues } from './tree-model-values';
  * own limit (TreeModelSettingsView.swift:171-175); with it off, the saved
  * value held to the new limit, as Latent Spaces' slider range holds
  * `tree.maxTokens`. Saving what the form shows keeps a request from asking
- * for more than the new model allows.
+ * for more than the new model allows. An agent that sets none keeps none.
  */
 export const modelChoiceChanges = (
   provider: SelectableProvider,
@@ -25,6 +25,8 @@ export const modelChoiceChanges = (
   );
   return {
     modelRef: parseModelRef(`${provider}:${modelId}`),
-    ...(maxTokens !== configuration.maxTokens ? { maxTokens } : {}),
+    ...(maxTokens !== null && maxTokens !== configuration.maxTokens
+      ? { maxTokens }
+      : {}),
   };
 };

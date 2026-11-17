@@ -53,4 +53,15 @@ describe('modelChoiceChanges', () => {
       })
     ).toEqual({ modelRef: 'openrouter:small', maxTokens: 2048 });
   });
+
+  it('leaves an agent that sets no Maximum Output Tokens with none', () => {
+    // Its requests send no max_tokens; choosing a model must not start
+    // sending one the reader never set.
+    expect(modelChoiceChanges('lmstudio', large.id, large, {})).toEqual({
+      modelRef: 'lmstudio:large',
+    });
+    expect(
+      modelChoiceChanges('openrouter', small.id, small, { useMaxTokens: false })
+    ).toEqual({ modelRef: 'openrouter:small' });
+  });
 });
