@@ -8,16 +8,19 @@ import type {
   ContinuationSlotEvent,
   ContinuationSlotOutcome,
 } from '@application/services/dialogue-continuation';
-import { describeProviderError } from '@application/services/llm';
-import type { SelectableProvider } from '@domain/entities';
+import type { IUserPreferencesRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import type { ChatSession } from '../types';
+import { useSavedLmStudioEndpoint } from '../useSavedLmStudioEndpoint';
 import {
   initialParallelSlotsState,
   parallelSlotsReducer,
 } from './parallel-slots-state';
-import { describeSlotFailure } from './describe-slot-failure';
+import {
+  cardFailureMessage,
+  describeSlotFailure,
+} from './describe-slot-failure';
 import { useBufferedSlotText } from './useBufferedSlotText';
 
 type UseParallelContinuationsInput = {
@@ -27,6 +30,8 @@ type UseParallelContinuationsInput = {
     'execute'
   >;
   readonly credentialStore: ICredentialStore;
+  /** Where the LM Studio address is saved, to name it when it isn't answering. */
+  readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
   /** Each slot's outcome, as it settles (to reload what shows saved nodes). */
   readonly onSlotSettled?: (outcome: ContinuationSlotOutcome) => void;
 };
@@ -35,9 +40,6 @@ type RunControls = {
   readonly all: AbortController;
   readonly perSlot: readonly AbortController[];
 };
-
-const toMessage = (caught: unknown, provider: SelectableProvider): string =>
-  describeProviderError(caught, { provider }).message;
 
 /**
  * Drives "draw several continuations at once" for the chat screen: starts N
@@ -53,6 +55,9 @@ export const useParallelContinuations = (
 ) => {
   const { session, generateParallelContinuationsUseCase, credentialStore } =
     input;
+  const lmstudioEndpointRef = useSavedLmStudioEndpoint(
+    input.userPreferencesRepo
+  );
   const onSlotSettledRef = useRef(input.onSlotSettled);
   onSlotSettledRef.current = input.onSlotSettled;
   const [state, dispatch] = useReducer(
@@ -93,6 +98,10 @@ export const useParallelContinuations = (
       controlsRef.current = controls;
       discard();
       dispatch({ type: 'start', sourceNodeId, count });
+      const failureContext = {
+        provider: model.provider,
+        lmstudioEndpoint: lmstudioEndpointRef.current,
+      };
 
       try {
         const providerApiKey = await getProviderApiKey(
@@ -111,7 +120,7 @@ export const useParallelContinuations = (
           signal: controls.all.signal,
           slotSignals: controls.perSlot.map((controller) => controller.signal),
           onSlotEvent: (event) =>
-            onSlotEvent(describeSlotFailure(event, model.provider)),
+            onSlotEvent(describeSlotFailure(event, failureContext)),
         });
         flushNow();
         dispatch({ type: 'finished' });
@@ -120,7 +129,7 @@ export const useParallelContinuations = (
         discard();
         dispatch({
           type: 'failed',
-          message: toMessage(caught, model.provider),
+          message: cardFailureMessage(caught, failureContext),
         });
         return null;
       } finally {
@@ -134,6 +143,7 @@ export const useParallelContinuations = (
       discard,
       flushNow,
       generateParallelContinuationsUseCase,
+      lmstudioEndpointRef,
       onSlotEvent,
       session,
     ]

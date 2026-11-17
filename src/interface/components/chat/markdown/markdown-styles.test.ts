@@ -10,13 +10,12 @@ const colors = {
 const base = { fontFamily: 'Face', fontSize: 20, lineHeight: 30 };
 
 describe('createMarkdownStyles', () => {
-  it('sizes the body from the base style, a blank line between blocks', () => {
+  it('sizes the body from the base style', () => {
     expect(createMarkdownStyles(base, colors).body).toEqual({
       fontFamily: 'Face',
       fontSize: 20,
       lineHeight: 30,
       color: 'white',
-      gap: 30,
     });
   });
 

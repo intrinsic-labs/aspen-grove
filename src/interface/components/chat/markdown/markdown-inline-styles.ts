@@ -6,14 +6,12 @@ export const markdownInlineStyles = (
   { fontFamily, fontSize, lineHeight, textColor }: MarkdownTypography,
   colors: MarkdownColors
 ) => ({
-  // Blocks sit one empty line apart, as plain text with a blank line
-  // between paragraphs reads in Latent Spaces.
+  // The space between blocks is the body rule's (`blockSpacing`).
   body: {
     fontFamily,
     fontSize,
     lineHeight,
     color: textColor,
-    gap: lineHeight,
   } as TextStyle,
   paragraph: {
     marginTop: 0,

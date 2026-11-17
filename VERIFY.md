@@ -200,6 +200,9 @@ empty states from a cleared install (no agent, LM Studio unreachable in setup, n
 OpenRouter key); then stop the mock and run
 [.maestro/mock/beta1-lmstudio-down.yaml](.maestro/mock/beta1-lmstudio-down.yaml) for the
 chat's "LM Studio isn't answering" and its Open Connections action.
+[.maestro/mock/parallel-lmstudio-down.yaml](.maestro/mock/parallel-lmstudio-down.yaml) goes on
+from parallel-continuations, also with the mock stopped: Generate fails every card, and each
+names the saved address on a line of its own.
 [.maestro/mock/voice-mode.yaml](.maestro/mock/voice-mode.yaml) picks Lily, turns Voice Mode
 on and has a reply read aloud (through the Mac's speakers), then stops it. If 1235 is taken, run the mock on
 another port and pass `-e MOCK_URL=http://localhost:<port>` to these flows.
@@ -259,6 +262,10 @@ launcher. The numbers are Maestro wall clock, and Maestro's cost grows with what
 screen (a long tree's hierarchy snapshot takes about twice the floor's): compare runs on one
 machine and simulator, three runs or more, by median, and confirm a gap with in-app timing
 before calling it a stall. No key needed. Last results: [.dev/voices-plan.md](.dev/voices-plan.md) section 3.
+
+[markdown.yaml](.maestro/markdown.yaml) imports `.maestro/fixtures/markdown-sample.openloom`
+(copy it into Files as for the perf flows) and screenshots a reply's markdown: a numbered list
+under a bullet, a bullet under a number, and a code block between paragraphs. No key needed.
 
 [needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
 `perf-tiny.openloom` before any agent exists: the tree opens with its messages and the

@@ -1,0 +1,67 @@
+# Several continuations with LM Studio not answering: after
+# parallel-continuations.yaml, with the mock server stopped, Generate on the
+# rail fails every card, and each names the saved address on a line of its
+# own, in a form that fits the card. Keeps the app's data.
+#   (stop the mock) maestro test .maestro/mock/parallel-lmstudio-down.yaml --test-output-dir "$SHOTS"
+# Set up on another port? Pass the same -e MOCK_URL=http://localhost:<port>.
+appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+---
+- runFlow: ../relaunch-app.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 15000
+- waitForAnimationToEnd
+
+# The human turn's rail, then Generate (the remembered count, 3).
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-generate-button
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-continuation-generate-button
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-slot-state-2-failed'
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-error-2'
+    text: "(?s)LM Studio isn't answering at\\n${MOCK_URL}\\n.*"
+- takeScreenshot: pld-01-rail-end-failed
+
+# Back along the rail: every card failed the same way.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: 'chat-continuation-slot-state-0-.*'
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: RIGHT
+      - waitForAnimationToEnd
+- assertVisible:
+    id: 'chat-continuation-slot-error-0'
+    text: "(?s)LM Studio isn't answering at\\n${MOCK_URL}\\n.*"
+- takeScreenshot: pld-02-rail-start-failed
+# The raw error is one tap away.
+- tapOn:
+    id: 'chat-continuation-slot-error-toggle-0'
+- waitForAnimationToEnd
+- takeScreenshot: pld-03-failed-details

@@ -1,0 +1,65 @@
+{
+ "format": "open-loom",
+ "version": "2.0",
+ "exportedAt": "2026-01-01T00:00:10.000Z",
+ "generator": {
+  "name": "aspen-grove markdown sample"
+ },
+ "trees": [
+  {
+   "id": "markdown-sample",
+   "title": "Markdown sample",
+   "mode": "dialogue",
+   "systemContext": "",
+   "rootNodeIds": [
+    "m-0"
+   ],
+   "currentNodeId": "m-1",
+   "createdAt": "2026-01-01T00:00:00.000Z",
+   "updatedAt": "2026-01-01T00:00:10.000Z",
+   "nodes": {
+    "m-0": {
+     "id": "m-0",
+     "content": [
+      {
+       "type": "text",
+       "text": "Show me some markdown."
+      }
+     ],
+     "author": {
+      "role": "human"
+     },
+     "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    "m-1": {
+     "id": "m-1",
+     "content": [
+      {
+       "type": "text",
+       "text": "Here is how to weave a branch:\n\n- Gather the threads\n  1. Pick a node\n  2. Draw three continuations\n- Compare them side by side\n\nA short example:\n\n```js\nconst loom = weave('aspen');\nloom.branch(3);\n```\n\nThe paragraph after the code block.\n\n1. Numbered outer\n   - a bullet inside\n2. Second step"
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "anthropic/claude-haiku-5.5"
+     },
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    }
+   },
+   "edges": [
+    {
+     "id": "e-1",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "m-0",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "m-1",
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    }
+   ]
+  }
+ ]
+}

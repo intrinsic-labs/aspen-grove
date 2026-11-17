@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { LlmProviderError } from '@application/services/llm';
 import { GenerateParallelContinuationsUseCase } from '@application/use-cases';
 import {
   createInMemoryDialogueStore,
@@ -22,6 +23,13 @@ import { useParallelRail } from './useParallelRail';
 jest.mock('expo-crypto', () =>
   require('../../../../test-support/node-expo-crypto')
 );
+
+// The address saved in Connections (read on focus in the app).
+jest.mock('../useSavedLmStudioEndpoint', () => ({
+  useSavedLmStudioEndpoint: () => ({ current: 'http://192.168.1.20:1234' }),
+}));
+const LMSTUDIO_ENDPOINT = 'http://192.168.1.20:1234';
+const userPreferencesRepo = { get: async () => ({}) as never };
 
 const session: ChatSession = {
   ownerAgentId,
@@ -86,6 +94,7 @@ const setup = (
         },
         refreshRows,
         credentialStore,
+        userPreferencesRepo,
         continuationCountRepo: countRepo,
         generateParallelContinuationsUseCase: useCase,
       }),
@@ -145,6 +154,41 @@ describe('useParallelRail', () => {
     expect(hook.result.current.running).toBe(false);
   });
 
+  it('names the saved LM Studio address on a card when LM Studio is not answering', async () => {
+    const lmstudioSession: ChatSession = {
+      ...session,
+      model: session.model && { ...session.model, provider: 'lmstudio' },
+    };
+    const { hook } = setup(
+      [
+        [
+          {
+            throw: new LlmProviderError({
+              code: 'networkError',
+              message: 'LM Studio streaming error: Network request failed',
+              provider: 'lmstudio',
+              retryable: false,
+            }),
+          },
+        ],
+      ],
+      1
+    );
+    await hook.rerender({ railSource: sourceNodeId, session: lmstudioSession });
+    await settle(); // the stored count loads
+
+    await act(() => hook.result.current.generate());
+
+    const [failed] = hook.result.current.cards;
+    if (failed.kind !== 'slot') {
+      throw new Error('expected a slot card');
+    }
+    expect(toSlotCardState(failed.view)).toMatchObject({
+      key: 'failed',
+      body: `LM Studio isn't answering at\n${LMSTUDIO_ENDPOINT}\nStart its server, then try again.`,
+    });
+  });
+
   it('stops one of N, keeping its partial text as a saved node marked as stopped', async () => {
     const held = deferred();
     const { store, hook } = setup([
@@ -176,9 +220,7 @@ describe('useParallelRail', () => {
     expect(slotStates(hook)).toEqual(['done', 'stopped', 'done']);
     const stopped = hook.result.current.cards[1];
     if (stopped.kind !== 'slot') throw new Error('expected a slot card');
-    expect(savedText(store, stopped.view.nodeId)).toBe(
-      'Partial'
-    );
+    expect(savedText(store, stopped.view.nodeId)).toBe('Partial');
     expect(store.childrenOfSource()).toHaveLength(3);
   });
 

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { IContinuationCountPreferenceRepository } from '@application/repositories';
+import type {
+  IContinuationCountPreferenceRepository,
+  IUserPreferencesRepository,
+} from '@application/repositories';
 import type { ICredentialStore } from '@application/services/security';
 import type { ContinuationSlotOutcome } from '@application/services/dialogue-continuation';
 import type { GenerateParallelContinuationsUseCase } from '@application/use-cases';
@@ -20,6 +23,8 @@ type UseParallelRailInput = {
   >;
   readonly refreshRows: (session: ChatSession) => Promise<void>;
   readonly credentialStore: ICredentialStore;
+  /** Where the LM Studio address is saved, for a failed card to name it. */
+  readonly userPreferencesRepo: Pick<IUserPreferencesRepository, 'get'>;
   readonly continuationCountRepo: Pick<
     IContinuationCountPreferenceRepository,
     'get' | 'set'
@@ -73,6 +78,7 @@ export const useParallelRail = (input: UseParallelRailInput) => {
     generateParallelContinuationsUseCase:
       input.generateParallelContinuationsUseCase,
     credentialStore: input.credentialStore,
+    userPreferencesRepo: input.userPreferencesRepo,
     onSlotSettled,
   });
   const { running, phase, start, reset } = parallel;

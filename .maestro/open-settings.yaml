@@ -4,6 +4,17 @@
 appId: com.intrinsiclabs.aspengrove
 ---
 - waitForAnimationToEnd
+# Android pans the window over the keyboard (`softwareKeyboardLayoutMode:
+# pan`), so with Home's composer focused the header is off screen: the back
+# key puts the keyboard away first.
+- runFlow:
+    when:
+      platform: Android
+      notVisible:
+        id: home-settings-button
+    commands:
+      - back
+      - waitForAnimationToEnd
 - repeat:
     times: 3
     while:

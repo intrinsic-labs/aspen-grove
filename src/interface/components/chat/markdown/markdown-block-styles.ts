@@ -13,7 +13,7 @@ const codeBlockStyle = ({
   fontFamily: 'IBMPlexMono-Regular',
   fontSize: fontSize * 0.85,
   lineHeight: lineHeight * 0.9,
-  backgroundColor: 'red',
+  backgroundColor: 'transparent',
   padding: 0,
   borderRadius: 0,
   borderWidth: 0,

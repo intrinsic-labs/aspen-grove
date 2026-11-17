@@ -6,7 +6,7 @@ import {
 } from '@application/services/llm';
 import type { IUserPreferencesRepository } from '@application/repositories';
 import type { SelectableProvider } from '@domain/entities';
-import { useSavedLmStudioEndpoint } from './useSavedLmStudioEndpoint';
+import { useSavedLmStudioEndpoint } from '../useSavedLmStudioEndpoint';
 
 type UseProviderErrorNoticeInput = {
   readonly error: string | null;
