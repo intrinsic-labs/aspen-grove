@@ -6,6 +6,13 @@ import type {
   SpeechUtterance,
   SystemVoice,
 } from '@application/services/speech';
+import {
+  androidSpeechNative,
+  type AndroidSpeechNative,
+} from './android/android-speech-native';
+import { SpeechAudioFocus } from './android/SpeechAudioFocus';
+import { withVoiceDetails } from './android/with-voice-details';
+import { devLog } from '@infrastructure/logging/dev-log';
 import { splitSpeechText } from './split-speech-text';
 
 /**
@@ -17,11 +24,24 @@ import { splitSpeechText } from './split-speech-text';
  * with duck-others), the first utterance first sets the shared session to
  * playback through expo-audio, so speech plays with the switch on and other
  * apps' audio ducks under it. A failure there only costs silent-mode playback.
+ *
+ * Android: expo-speech takes no audio focus and says nothing of which voices
+ * are installed or offline. The local `android-speech` module adds both: each
+ * utterance holds transient may-duck focus until it ends (and is stopped if
+ * another app takes the focus for good), and the voices carry those details
+ * for `resolveSystemVoice`.
  */
 export class ExpoSpeechSynthesizer implements ISpeechSynthesizer {
+  private readonly android: AndroidSpeechNative | null;
+  private readonly focus: SpeechAudioFocus;
   private audioSession: Promise<void> | null = null;
   /** Bumped by stop(), so an utterance still waiting on the session never starts. */
   private generation = 0;
+
+  constructor(android: AndroidSpeechNative | null = androidSpeechNative) {
+    this.android = android;
+    this.focus = new SpeechAudioFocus(android);
+  }
 
   speak(utterance: SpeechUtterance, events: SpeechEvents): void {
     const generation = this.generation;
@@ -42,10 +62,20 @@ export class ExpoSpeechSynthesizer implements ISpeechSynthesizer {
    */
   private speakPieces(utterance: SpeechUtterance, events: SpeechEvents): void {
     const pieces = splitSpeechText(utterance.text, Speech.maxSpeechInputLength);
+    devLog('Speaking', {
+      voice: utterance.voiceIdentifier ?? 'system default',
+      pitch: utterance.pitch,
+    });
+    // Another app took the audio focus for good: end the reading as a stop.
+    const releaseFocus = this.focus.acquire(() => {
+      settle(events.onStopped);
+      void this.stop();
+    });
     let settled = false;
     const settle = (callback?: () => void) => {
       if (!settled) {
         settled = true;
+        releaseFocus();
         callback?.();
       }
     };
@@ -87,15 +117,22 @@ export class ExpoSpeechSynthesizer implements ISpeechSynthesizer {
 
   stop(): Promise<void> {
     this.generation += 1;
+    this.focus.release();
     return Speech.stop();
   }
 
   async getAvailableVoices(): Promise<readonly SystemVoice[]> {
-    const voices = await Speech.getAvailableVoicesAsync();
-    return voices.map((voice) => ({
-      identifier: voice.identifier,
-      name: voice.name,
-      language: voice.language,
-    }));
+    const [voices, details] = await Promise.all([
+      Speech.getAvailableVoicesAsync(),
+      this.android?.getVoiceDetails().catch(() => []) ?? [],
+    ]);
+    return withVoiceDetails(
+      voices.map((voice) => ({
+        identifier: voice.identifier,
+        name: voice.name,
+        language: voice.language,
+      })),
+      details
+    );
   }
 }

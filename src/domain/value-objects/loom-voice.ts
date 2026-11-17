@@ -19,6 +19,14 @@ export interface LoomVoice {
   readonly systemVoiceName: string;
   /** BCP 47 language of the preferred voice, for the language fallbacks. */
   readonly language: string;
+  /**
+   * Android has none of the iOS voices, so each persona names the Google TTS
+   * voices closest to its feel (accent and gender), best first. Each is a name
+   * prefix that matches the voice's `-local` and `-network` variants. Ones
+   * outside `language` are nearby accents, used only when no voice of
+   * `language` is installed.
+   */
+  readonly androidVoices: readonly string[];
   readonly description: string;
   /** What the voice says when demoed in the chooser. */
   readonly sampleSpeech: string;
@@ -30,6 +38,15 @@ export const JEFFERSON_VOICE: LoomVoice = {
   synthesizerIdentifier: 'com.apple.ttsbundle.Daniel-compact',
   systemVoiceName: 'Daniel',
   language: 'en-GB',
+  // UK male voices, then US male ones.
+  androidVoices: [
+    'en-gb-x-gbd',
+    'en-gb-x-gbb',
+    'en-gb-x-rjs',
+    'en-us-x-iom',
+    'en-us-x-tpd',
+    'en-us-x-iol',
+  ],
   description: 'Musing male voice from across the pond.',
   sampleSpeech:
     "Greetings. I'm Jefferson. Perhaps you'd care for a spot of humor? Why don't scientists trust atoms? Because they make up everything. Ha ha ha.",
@@ -41,6 +58,8 @@ export const LILY_VOICE: LoomVoice = {
   synthesizerIdentifier: 'com.apple.ttsbundle.Karen-compact',
   systemVoiceName: 'Karen',
   language: 'en-AU',
+  // Australian female voices, then US female ones.
+  androidVoices: ['en-au-x-aua', 'en-au-x-auc', 'en-us-x-tpf', 'en-us-x-tpc'],
   description: 'A contemplative female voice with an Australian accent.',
   sampleSpeech:
     "I'm Lily. I enjoy long walks in the evening, when the sun is low and the air is sweet, and the grass rolls in the breeze like a golden ocean.",
@@ -52,6 +71,14 @@ export const EVE_VOICE: LoomVoice = {
   synthesizerIdentifier: 'com.apple.ttsbundle.Moira-compact',
   systemVoiceName: 'Moira',
   language: 'en-IE',
+  // Google TTS has no Irish English: UK female voices, then US female ones.
+  androidVoices: [
+    'en-gb-x-gbc',
+    'en-gb-x-gbg',
+    'en-gb-x-gba',
+    'en-us-x-iob',
+    'en-us-x-sfg',
+  ],
   description: 'Warm female voice with an Irish accent.',
   sampleSpeech:
     "Hello there! I'm Eve, and I'm delighted to meet you. I belive Semisonic had it right - every new beginning comes from some other beginning's end.",

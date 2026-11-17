@@ -587,19 +587,24 @@ stays until the user makes one.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
   up; it plays with the iOS silent switch on, as in Latent Spaces.
 - **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`
+- **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`, `src/application/services/speech/rank-persona-voices.ts`, `src/infrastructure/speech/android/SpeechAudioFocus.ts`, `modules/android-speech/android/src/main/java/expo/modules/androidspeech/AndroidSpeechModule.kt`
 - **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
 - **Status:** live
 - **Notes:** With Voice Mode on, a single tap waits 320 ms (the double-tap window) before it
   opens the rail; with it off taps are immediate. Each voice uses its Latent Spaces iOS voice
-  when installed, otherwise a voice with the same name and language, then any voice in that
-  language (en-GB, en-AU, en-IE), then the system default. Leaving the Dialogue screen stops
-  speech. Parallel continuations are not read aloud. The first utterance sets the shared audio
-  session to playback with duck-others (expo-audio, no microphone permission), so the silent
-  switch doesn't mute it. On Android (checked on a Pixel 10 emulator, API 37) Google's TTS
-  reads it; a voice whose language pack isn't downloaded falls back to another English voice
-  while the pack downloads. Android has no ducking: nothing requests audio focus.
+  when installed, otherwise the best installed, offline voice in its language (en-GB, en-AU,
+  en-IE): same name first, then the persona's Android voices (`LoomVoice.androidVoices`, by
+  accent and gender), then quality; then one of its Android voices in a nearby accent; then
+  the system default. Leaving the Dialogue screen stops speech. Parallel continuations are
+  not read aloud. The first utterance sets the shared audio session to playback with
+  duck-others (expo-audio, no microphone permission), so the silent switch doesn't mute it.
+  On Android (Pixel 10 emulator, API 37) Google's TTS reads it: the local module
+  `modules/android-speech` reports which voices are installed and offline, and holds
+  transient may-duck audio focus while speaking, so other apps duck as on iOS; another app
+  taking the focus for good (starting its own playback) stops the reading. There Lily
+  reads as `en-au-x-aua-local`, Jefferson `en-gb-x-gbd-local`, Eve `en-gb-x-gbc-local` (no
+  Irish voice).
   Flow: `.maestro/mock/voice-mode.yaml` (iOS and Android).
 
 ### Rewind to a node
@@ -1341,12 +1346,12 @@ stays until the user makes one.
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
-- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
+- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/components/settings/voice/useOpenOnPage.ts`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
 - **Backend:** none for the demo (on-device `expo-speech`); Select writes the WatermelonDB local
   key `aspen_grove.voice_mode.voice_name`
 - **Status:** live
-- **Notes:** Opening the sheet plays the saved voice; closing it (swipe down) stops speech
-  without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
+- **Notes:** Opening the sheet shows and plays the saved voice; closing it (swipe down) stops
+  speech without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
 
 ## Coverage
 - `src/app/_layout.tsx` — root stack (Home, Search, Settings, Agents and Connections, the tree screens with compose and Model Settings, and the onboarding, agent-editor and connections modals), providers and theme; referenced by `app.bootstrap` and `home.welcome`
