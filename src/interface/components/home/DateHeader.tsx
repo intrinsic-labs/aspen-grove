@@ -47,18 +47,23 @@ export const DateHeader = ({ displayName }: DateHeaderProps) => {
 
   return (
     <View style={styles.container}>
-      <Text
-        testID="home-greeting"
-        accessibilityRole="header"
-        // Two lines, as Latent Spaces' "Welcome to Loom." fits: "Welcome to
-        // Aspen Grove." is wider, so it shrinks a little rather than wrap.
-        numberOfLines={2}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-        style={[styles.greeting, { color: colors.primary }]}
-      >
-        {greetingText(now, displayName)}
-      </Text>
+      {/* The padding sits on a wrapper, not the Text: Android fits the font
+          to the view's full size, padding included, so a padded Text keeps
+          a size too big for its lines and clips the last word. */}
+      <View style={styles.greetingBox}>
+        <Text
+          testID="home-greeting"
+          accessibilityRole="header"
+          // Two lines, as Latent Spaces' "Welcome to Loom." fits: "Welcome
+          // to Aspen Grove." is wider, so it shrinks a little rather than wrap.
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+          style={[styles.greeting, { color: colors.primary }]}
+        >
+          {greetingText(now, displayName)}
+        </Text>
+      </View>
       <View testID="home-date" style={styles.dateLine}>
         <MaterialCommunityIcons
           name={SYMBOL_GLYPHS[timeOfDaySymbol(now)]}
@@ -78,11 +83,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  greeting: {
-    fontFamily: 'Cardo-Regular',
-    fontSize: tokens.greeting.fontSize,
-    lineHeight: tokens.greeting.lineHeight,
-    textAlign: 'center',
+  greetingBox: {
+    alignSelf: 'stretch',
     paddingTop: tokens.greeting.paddingTop,
     paddingBottom: tokens.greeting.paddingBottom,
     paddingHorizontal: 16,
@@ -92,6 +94,12 @@ const styles = StyleSheet.create({
       tokens.greeting.paddingTop +
       tokens.greeting.lineHeight * 2 +
       tokens.greeting.paddingBottom,
+  },
+  greeting: {
+    fontFamily: 'Cardo-Regular',
+    fontSize: tokens.greeting.fontSize,
+    lineHeight: tokens.greeting.lineHeight,
+    textAlign: 'center',
   },
   dateLine: {
     flexDirection: 'row',
