@@ -963,7 +963,7 @@ stays until the user makes one.
 - **Notes:** Editing a message still works, Save included (it generates nothing). Only
   OpenRouter and LM Studio agents count as usable. The rail's Generate is
   disabled; Regenerate shows `chat-error` ("This tree needs an agent to continue. Choose one
-  in the dialogue settings.", older wording for Model Settings). Coming back to the tree from creating an agent in Settings
+  in Model Settings."). Coming back to the tree from creating an agent in Settings
   makes it adopt that agent.
 
 ### Tree tags

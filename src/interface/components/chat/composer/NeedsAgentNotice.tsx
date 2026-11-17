@@ -6,7 +6,7 @@ import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 
 type NeedsAgentNoticeProps = {
-  /** Opens the tree's dialogue settings, where an agent can be picked. */
+  /** Opens the tree's Model Settings, where an agent can be picked. */
   readonly onChooseAgent: () => void;
 };
 
