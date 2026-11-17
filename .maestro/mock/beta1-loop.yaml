@@ -201,24 +201,46 @@ appId: com.intrinsiclabs.aspengrove
 - takeScreenshot: dod-07-export-sheet
 - tapOn:
     id: export-sheet-share
-- extendedWaitUntil:
-    visible: '.*\.openloom.*'
-    timeout: 15000
-    optional: true
-- waitForAnimationToEnd
-- takeScreenshot: dod-08-export-share
-# Close the share sheet (its close button), then the export sheet.
-- tapOn:
-    text: 'Close'
-    optional: true
-- waitForAnimationToEnd
-- tapOn:
-    id: export-sheet-back
-    optional: true
+# Share closes the export sheet first (iOS shows one sheet at a time), then
+# exports. The system share sheet must come up with the .openloom file in
+# it: a failed export shows `chat-error` and no sheet, and fails here.
 - extendedWaitUntil:
     notVisible:
       id: export-sheet
     timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: ActivityListView
+    timeout: 15000
+- assertVisible: '.*\.openloom, .*'
+- assertVisible: 'Save to Files'
+- assertNotVisible:
+    id: chat-error
+- waitForAnimationToEnd
+- takeScreenshot: dod-08-export-share
+# Close the share sheet. On iOS 26 it is a popover with no Close button:
+# tap outside it (the dismiss region's center is above the sheet). Older
+# share sheets have a Close button. Either way it must be gone after.
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: ActivityListView
+    commands:
+      - tapOn:
+          id: PopoverDismissRegion
+          optional: true
+      - waitForAnimationToEnd
+      - tapOn:
+          text: 'Close'
+          optional: true
+      - waitForAnimationToEnd
+- assertNotVisible:
+    id: ActivityListView
+- assertVisible:
+    id: chat-screen
+- assertNotVisible:
+    id: chat-error
 
 # Survive a restart: the edited branch is current, its reply bookmarked,
 # and the original turn kept beside the edit.
