@@ -2,15 +2,17 @@ import { DEFAULT_AGENT_TEMPERATURE } from '@application/services/agent-defaults'
 import type { AgentConfiguration } from '@domain/entities';
 import { heldMaxTokens } from '../../models/model-max-tokens';
 
-/** A tree's starting Maximum Output Tokens when the agent sets none. */
-export const DEFAULT_MAX_TOKENS = 4096;
-
 /** `Slider(value: $tree.temperature, in: 0...1, step: 0.1)`. */
 export const TEMPERATURE_RANGE = { min: 0, max: 1, step: 0.1 } as const;
 
 export type TreeModelValues = {
   readonly temperature: number;
-  readonly maxTokens: number;
+  /**
+   * `null` when the agent sets none: requests then send no `max_tokens` and
+   * the provider's default applies (`requestMaxTokens`), so the form says so
+   * rather than show a number it doesn't send.
+   */
+  readonly maxTokens: number | null;
   readonly useMaxTokens: boolean;
 };
 
@@ -29,11 +31,14 @@ export const toTreeModelValues = (
       TEMPERATURE_RANGE.min,
       TEMPERATURE_RANGE.max
     ),
-    maxTokens: heldMaxTokens(
-      configuration.maxTokens ?? DEFAULT_MAX_TOKENS,
-      useMaxTokens,
-      maxAllowed
-    ),
+    maxTokens:
+      configuration.maxTokens === undefined && !useMaxTokens
+        ? null
+        : heldMaxTokens(
+            configuration.maxTokens ?? maxAllowed,
+            useMaxTokens,
+            maxAllowed
+          ),
     useMaxTokens,
   };
 };

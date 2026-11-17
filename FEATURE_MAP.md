@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: e2cc411d347b780ea29cbb7fa44d7850a0071f48
+revision: e03af66d98676ac80945b6f2dcee3dd9a38b05fa
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -440,7 +440,10 @@ stays until the user makes one.
   The list's bottom padding follows the composer's measured height (and the keyboard's,
   while it is up), so the last line rests just above the composer; when a draft grows to
   several lines while the list is at its end, the list scrolls with it
-  (`message-list/list-insets.ts`) so the last message stays visible.
+  (`message-list/list-insets.ts`) so the last message stays visible. When the keyboard
+  opens, it first takes the free space under a short tree's last message and moves the
+  list only by what it would cover; a long tree's last line stays the same distance above
+  the composer (`keyboardRestingOffset`, `message-list/useRestAboveKeyboard.ts`).
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. LM
@@ -853,8 +856,9 @@ stays until the user makes one.
   Options" with the Provider menu picker (OpenRouter, LM Studio) and Model, a footer with the
   model id in bold, its description and, for OpenRouter, its context length ("Context:
   128,000 tokens"); Stream Messages (on, disabled: the app always
-  streams); Maximum Output Tokens with its slider (1 to the model's output limit) and "Always
-  use maximum allowed"; Temperature, 0 to 1 in steps of 0.1; and System Message
+  streams); Maximum Output Tokens with its slider (1 to the model's output limit; "Provider
+  default", thumb at the limit, while the agent sets none and requests send no
+  `max_tokens`) and "Always use maximum allowed"; Temperature, 0 to 1 in steps of 0.1; and System Message
   (`chat.model-settings.system-message`). Every change saves at once and reaches only this
   tree: the settings live on the tree's agent, and a shared one is forked first.
 - **Where:** A page pushed from the tree menu's "Model", titled "Model Settings".
@@ -862,7 +866,7 @@ stays until the user makes one.
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
 - **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -882,7 +886,9 @@ stays until the user makes one.
   `top_provider.max_completion_tokens` (8192 when it names none, 4096 for a model not in
   the catalog; a custom id that names a catalog model in another case or as a routing
   variant takes that model's limit, `catalog-model-for-id.ts`), or LM Studio's context
-  length. Coming back to the tree re-reads its agent
+  length. An agent with no output limit set shows "Provider default" in
+  `tree-model-max-tokens-value`, with the slider's thumb at the model's maximum
+  (`max-tokens-display.ts`); dragging sets one. Coming back to the tree re-reads its agent
   and system message. Flow: `.maestro/mock/tree-model.yaml`.
 
 ### OpenRouter model browser (tree)

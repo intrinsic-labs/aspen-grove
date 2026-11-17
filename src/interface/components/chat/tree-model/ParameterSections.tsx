@@ -4,7 +4,7 @@ import {
   FormToggleRow,
   FormValueRow,
 } from '@/interface/ui/components/form';
-import { formatTokensFull } from '../../models/model-info-format';
+import { maxTokensLabel, maxTokensSliderValue } from './max-tokens-display';
 import { formatTemperature, TEMPERATURE_RANGE } from './tree-model-values';
 import type { TreeModelSettings } from './useTreeModelSettings';
 
@@ -36,14 +36,14 @@ export const ParameterSections = ({ settings }: ParameterSectionsProps) => {
         <FormValueRow
           testID="tree-model-max-tokens-value"
           title="Maximum Output Tokens"
-          value={formatTokensFull(settings.maxTokens)}
+          value={maxTokensLabel(settings.maxTokens)}
         />
         {/* Remounted when the range changes: the native slider keeps a
             value it clamped to the old range. */}
         <FormSliderRow
           key={settings.maxAllowed}
           testID="tree-model-max-tokens-slider"
-          value={settings.maxTokens}
+          value={maxTokensSliderValue(settings.maxTokens, settings.maxAllowed)}
           minimumValue={1}
           maximumValue={settings.maxAllowed}
           step={1}

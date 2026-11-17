@@ -3,9 +3,10 @@ import { formatTemperature, toTreeModelValues } from './tree-model-values';
 
 describe('toTreeModelValues', () => {
   it('fills defaults and keeps values in range', () => {
+    // No Maximum Output Tokens set: none is sent, so none is shown.
     expect(toTreeModelValues({}, 8192)).toEqual({
       temperature: 1,
-      maxTokens: 4096,
+      maxTokens: null,
       useMaxTokens: false,
     });
     expect(
@@ -17,6 +18,9 @@ describe('toTreeModelValues', () => {
     expect(
       toTreeModelValues({ maxTokens: 100, useMaxTokens: true }, 16384).maxTokens
     ).toBe(16384);
+    expect(toTreeModelValues({ useMaxTokens: true }, 16384).maxTokens).toBe(
+      16384
+    );
   });
 });
 
