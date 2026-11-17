@@ -2,6 +2,13 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import type { ScrollView } from 'react-native';
 
 /**
+ * Layout widths are fractional on Android (392.727… for a page, 1178.18…
+ * for three), so a page's end can sum to a hair past the content's; allow a
+ * pixel's slack.
+ */
+const LAYOUT_SLACK = 1;
+
+/**
  * Opens a horizontal pager on `page` each time it becomes visible.
  *
  * The scroll has to wait until the pages are laid out: Android clamps
@@ -24,7 +31,7 @@ export const useOpenOnPage = (
     if (
       pending.current &&
       pageWidth > 0 &&
-      contentWidth.current >= (page + 1) * pageWidth
+      contentWidth.current + LAYOUT_SLACK >= (page + 1) * pageWidth
     ) {
       pending.current = false;
       pagerRef.current?.scrollTo({ x: page * pageWidth, animated: false });

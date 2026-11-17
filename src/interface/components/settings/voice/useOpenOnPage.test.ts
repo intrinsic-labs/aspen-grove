@@ -5,12 +5,12 @@ import { useOpenOnPage } from './useOpenOnPage';
 
 type Props = { visible: boolean; pageWidth: number };
 
-const setup = (initial: Props) => {
+const setup = (initial: Props, page = 1) => {
   const scrollTo = jest.fn();
   const pagerRef = { current: { scrollTo } as unknown as ScrollView };
   const hook = renderHook(
     ({ visible, pageWidth }: Props) =>
-      useOpenOnPage(pagerRef, visible, pageWidth, 1),
+      useOpenOnPage(pagerRef, visible, pageWidth, page),
     initial
   );
   return { hook, scrollTo };
@@ -37,5 +37,15 @@ describe('useOpenOnPage', () => {
     await hook.rerender({ visible: false, pageWidth: 400 });
     await hook.rerender({ visible: true, pageWidth: 400 });
     expect(scrollTo).toHaveBeenCalledTimes(2);
+  });
+
+  it("reaches the last page with Android's fractional layout widths", async () => {
+    const pageWidth = 392.7272644042969;
+    const { hook, scrollTo } = setup({ visible: true, pageWidth }, 2);
+    await act(() => hook.result.current(1178.1817626953125));
+    expect(scrollTo).toHaveBeenCalledWith({
+      x: 2 * pageWidth,
+      animated: false,
+    });
   });
 });
