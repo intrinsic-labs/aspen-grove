@@ -432,8 +432,9 @@ stays until the user makes one.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
   `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. LM
-  Studio not answering names the address saved in Connections ("LM Studio isn't answering
-  at http://localhost:1234. …", read each time the tree is focused). Other
+  Studio not answering names the address saved in Connections, on a line of its own ("LM
+  Studio isn't answering at this address:" / "http://localhost:1234" / "Start its local
+  server…"; read each time the tree is focused). Other
   provider errors get one plain line by error code ("LM Studio returned an error.",
   "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
   on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
@@ -1216,8 +1217,8 @@ stays until the user makes one.
   edit is taken back, and the answer to a test of an address edited while it ran is
   dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
-  the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. Under it,
+  the footer: "LM Studio isn't answering at this address:", the address on its own line,
+  then "Start its local server, then try again.", plus a phone hint when the address is localhost. Under it,
   `connections-lmstudio-error-details-toggle` ("Show Details" / "Hide Details") shows what the
   network or server actually said (`connections-lmstudio-error-detail`, `[lmstudio:<code>]
   <message>`, monospaced and selectable); it starts shown with Verbose Error Alerts on

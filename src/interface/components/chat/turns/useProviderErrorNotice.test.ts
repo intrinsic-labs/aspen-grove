@@ -59,7 +59,7 @@ describe('useProviderErrorNotice', () => {
     );
 
     expect(shown).toEqual([
-      "LM Studio isn't answering at http://192.168.1.20:1234. Start its local server, then try again.",
+      "LM Studio isn't answering at this address:\nhttp://192.168.1.20:1234\nStart its local server, then try again.",
     ]);
   });
 
@@ -74,7 +74,7 @@ describe('useProviderErrorNotice', () => {
     );
 
     expect(shown[0]).toMatch(
-      /^LM Studio isn't answering at http:\/\/localhost:1235\. .*network address instead of localhost\.$/
+      /^LM Studio isn't answering at this address:\nhttp:\/\/localhost:1235\n.*network address instead of localhost\.$/
     );
   });
 

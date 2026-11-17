@@ -27,7 +27,8 @@ env:
     visible:
       id: chat-error
     timeout: 60000
-- assertVisible: "LM Studio isn't answering at ${MOCK_URL}\\. .*"
+# The address sits on a line of its own.
+- assertVisible: "(?s)LM Studio isn't answering at this address:\\n${MOCK_URL}\\n.*"
 - hideKeyboard
 - waitForAnimationToEnd
 - takeScreenshot: es-08-chat-lmstudio-unreachable

@@ -64,14 +64,21 @@ const isLmStudioUnreachable = (
   );
 };
 
+const TRY_AGAIN = 'Start its local server, then try again.';
+
+/**
+ * The address gets a line of its own, so a narrow notice never breaks it
+ * mid-URL (after "http://") and it reads as the thing to check.
+ */
 const lmStudioUnreachableMessage = (endpoint?: string): string => {
   const trimmed = endpoint?.trim();
-  const where = trimmed ? ` at ${trimmed}` : '';
-  const loopbackHint =
-    trimmed && isLoopbackEndpoint(trimmed)
-      ? " On a phone, use your computer's network address instead of localhost."
-      : '';
-  return `LM Studio isn't answering${where}. Start its local server, then try again.${loopbackHint}`;
+  if (!trimmed) {
+    return `LM Studio isn't answering. ${TRY_AGAIN}`;
+  }
+  const loopbackHint = isLoopbackEndpoint(trimmed)
+    ? " On a phone, use your computer's network address instead of localhost."
+    : '';
+  return `LM Studio isn't answering at this address:\n${trimmed}\n${TRY_AGAIN}${loopbackHint}`;
 };
 
 const withDetail = (
