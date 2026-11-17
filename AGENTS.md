@@ -88,6 +88,10 @@ src/
 │   ├── components/       screens and feature components (home/, chat/, settings/, onboarding/)
 │   ├── hooks/, services/ (file share/pick), ui/ (tokens, primitives)
 └── app/                  expo-router routes; thin files that render interface components
+modules/
+└── android-speech/       local Expo module (Android only, autolinked): audio focus while
+                          reading aloud, and which TTS voices are installed and offline;
+                          bound in src/infrastructure/speech/android/
 ```
 
 Implemented repositories: Agent, Edge, Grove, LoomTree, Node, Path, PathState, RawApiResponse, Tag, UserPreferences. Providers: OpenRouter and LM Studio only.

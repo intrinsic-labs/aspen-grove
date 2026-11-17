@@ -74,8 +74,15 @@ caveats:
   iOS Settings. `resolve-system-voice` could prefer them when they are
   installed. That is a small change with no key.
 - **Android:** the voices are whatever the device's TTS engine has. Daniel,
-  Karen and Moira don't exist there, so the characters map to the nearest
-  English voices by language. This has not been checked on Android yet.
+  Karen and Moira don't exist there, so each character lists the Google TTS
+  voices closest to its accent and gender (`LoomVoice.androidVoices`), and
+  `resolveSystemVoice` picks an installed, offline one (`rank-persona-voices.ts`).
+  expo-speech reports neither that nor audio focus, so the local module
+  `modules/android-speech` adds both: voice details, and transient may-duck
+  focus while speaking. Checked on the Pixel 10 emulator (API 37): Lily reads
+  as `en-au-x-aua-local`, Jefferson `en-gb-x-gbd-local`, Eve `en-gb-x-gbc-local`
+  (Google has no Irish English), and a playing app ducks under speech. The
+  voices' genders come from Google's naming, not checked by ear.
 
 Hosted TTS such as ElevenLabs or OpenAI `gpt-4o-mini-tts` would sound much
 better, but it costs per character and needs a user key. Under BYO keys that

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LOOM_VOICES } from '@domain/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { useOpenOnPage } from './useOpenOnPage';
 import { useVoiceChooser } from './useVoiceChooser';
 import { VoiceCard } from './VoiceCard';
 import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
@@ -36,16 +37,12 @@ export const VoiceChooserSheet = ({
   const [pageWidth, setPageWidth] = useState(0);
   const pagerRef = useRef<ScrollView>(null);
 
-  // Open on the saved voice's page once the pager has a width.
-  useEffect(() => {
-    if (visible && pageWidth > 0) {
-      pagerRef.current?.scrollTo({
-        x: savedIndex * pageWidth,
-        animated: false,
-      });
-    }
-    // Only when opened or measured, not on every swipe.
-  }, [visible, pageWidth]);
+  const onPagerContentSizeChange = useOpenOnPage(
+    pagerRef,
+    visible,
+    pageWidth,
+    savedIndex
+  );
 
   const onPagerLayout = (event: LayoutChangeEvent) =>
     setPageWidth(event.nativeEvent.layout.width);
@@ -75,6 +72,7 @@ export const VoiceChooserSheet = ({
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onLayout={onPagerLayout}
+            onContentSizeChange={onPagerContentSizeChange}
             onMomentumScrollEnd={onMomentumScrollEnd}
             style={styles.pager}
           >
