@@ -20,6 +20,7 @@ import { useChatReadAloud } from './read-aloud/useChatReadAloud';
 import { useChatAutoScroll } from './scroll/useChatAutoScroll';
 import { useChatSessionLoader } from './session/useChatSessionLoader';
 import { useChatSessionState } from './session/useChatSessionState';
+import { returnTreeDraftToHome } from './session/return-draft-to-home';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
 import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
 import { useVerboseErrorAlerts } from '../error-details';
@@ -107,6 +108,8 @@ export const useLoomTreeChatController = () => {
     fallbackTreeId: activeTreeIdRef.current,
     treeRepo: repositories.treeRepo,
     navigation,
+    // An unsent draft goes back to Home rather than with the tree.
+    onDiscard: returnTreeDraftToHome,
   });
 
   const { refreshRows, refreshRowsAndContinuations } = useChatSessionLoader({

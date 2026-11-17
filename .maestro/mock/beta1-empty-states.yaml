@@ -117,8 +117,19 @@ env:
 - runFlow: ../go-home.yaml
 - assertNotVisible:
     id: home-setup-hint
-# It moved: Home's composer is clear.
+# Left unsent, the draft goes back to Home's composer with the tree discarded.
+- extendedWaitUntil:
+    visible:
+      id: home-composer-input
+      text: 'Hello, loom\.'
+    timeout: 10000
+- takeScreenshot: es-04b-draft-back-on-home
+- tapOn:
+    id: home-composer-input
+- eraseText: 80
 - assertNotVisible: 'Hello, loom\.'
+- tapOn:
+    id: home-greeting
 - assertNotVisible:
     id: home-trees-row-.*
 - extendedWaitUntil:

@@ -198,9 +198,11 @@ stays until the user makes one.
 - **Reach:** P1 → `home-composer-input` → type → `home-composer-send`.
 - **Requires:** A model agent (P1). Without one, sending opens onboarding instead and keeps
   the text (`home/home-draft-store.ts`); once onboarding sets up a model, Begin Weaving moves
-  it, unsent, into the first tree's composer and Home's composer is clear. Generating the reply needs a key or server, as `chat.composer`.
+  it, unsent, into the first tree's composer and Home's composer is clear. Leaving that tree
+  unsent discards it and puts the draft back on Home if Home's composer is empty
+  (`chat/session/return-draft-to-home.ts`). Generating the reply needs a key or server, as `chat.composer`.
 - **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
-- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
+- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`; then as `chat.composer`
 - **Status:** live
@@ -810,12 +812,13 @@ stays until the user makes one.
 ### Discard an empty new tree
 - **ID:** `chat.ephemeral-discard`
 - **Purpose:** A tree created with New Loom Tree is deleted if you leave it without sending a
-  message, so empty trees don't pile up.
+  message, so empty trees don't pile up. An unsent composer draft goes back to Home's
+  composer when that is empty, so nothing typed is lost.
 - **Where:** Dialogue screen, on navigating back.
 - **Reach:** P2 → native back without sending.
 - **Requires:** A tree opened with the `ephemeral` param, which `home.composer` and onboarding set.
 - **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `home-trees-list`
-- **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`
+- **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#hardDelete`
 - **Status:** live
 

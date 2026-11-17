@@ -14,6 +14,8 @@ type UseEphemeralTreeStateInput = {
   readonly fallbackTreeId: ULID | null;
   readonly treeRepo: Pick<ILoomTreeRepository, 'hardDelete'>;
   readonly navigation: Pick<NavigationProp<ParamListBase>, 'dispatch'>;
+  /** Called as the empty tree is discarded, before it is deleted. */
+  readonly onDiscard?: (treeId: ULID) => void;
 };
 
 /**
@@ -27,6 +29,7 @@ export const useEphemeralTreeState = ({
   fallbackTreeId,
   treeRepo,
   navigation,
+  onDiscard,
 }: UseEphemeralTreeStateInput) => {
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
@@ -47,6 +50,7 @@ export const useEphemeralTreeState = ({
     treeRepo,
     navigation,
     onMarkAsNonEphemeral: markAsNonEphemeral,
+    onDiscard,
   });
 
   return { markAsNonEphemeral, resetEphemeralState };

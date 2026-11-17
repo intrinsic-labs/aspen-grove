@@ -18,6 +18,8 @@ type UseDeleteEphemeralTreeOnBackInput = {
   readonly treeRepo: Pick<ILoomTreeRepository, 'hardDelete'>;
   readonly navigation: Pick<NavigationProp<ParamListBase>, 'dispatch'>;
   readonly onMarkAsNonEphemeral: () => void;
+  /** Called as the empty tree is discarded, before it is deleted. */
+  readonly onDiscard?: (treeId: ULID) => void;
 };
 
 /**
@@ -47,6 +49,7 @@ export const useDeleteEphemeralTreeOnBack = (
       }
 
       isHandlingRef.current = true;
+      input.onDiscard?.(treeId);
       void input.treeRepo.hardDelete(treeId).finally(() => {
         input.onMarkAsNonEphemeral();
         isHandlingRef.current = false;

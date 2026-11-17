@@ -5,7 +5,8 @@ type DraftListener = () => void;
 /**
  * What is typed in Home's composer, kept outside the composer so it can move:
  * a message typed before any model is set up goes into the first tree that
- * onboarding opens (`useFinishOnboarding`), rather than staying behind on Home. In
+ * onboarding opens (`useFinishOnboarding`), rather than staying behind on Home,
+ * and comes back if that tree is left unsent (`return-draft-to-home`). In
  * memory only, like the trees' drafts.
  */
 let draft = '';
