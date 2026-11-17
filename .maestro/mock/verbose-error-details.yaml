@@ -4,7 +4,7 @@
 # error already under the plain line; Hide Details still hides it. The
 # setting is turned back off at the end.
 # Needs the mock server and Metro:
-#   maestro test .maestro/mock/verbose-error-details.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/verbose-error-details.yaml --test-output-dir "$SHOTS/verbose-error-details"
 appId: com.intrinsiclabs.aspengrove
 env:
   MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}

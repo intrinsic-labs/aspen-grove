@@ -2,7 +2,7 @@
 # voice chooser, turn Voice Mode on, then a reply is read aloud when it
 # finishes (its row drawn in Lily's color) and a tap stops it. The simulator
 # plays the speech through the Mac's speakers.
-#   maestro test .maestro/mock/voice-mode.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/voice-mode.yaml --test-output-dir "$SHOTS/voice-mode"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

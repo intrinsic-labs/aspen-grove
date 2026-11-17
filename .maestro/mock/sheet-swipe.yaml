@@ -6,7 +6,7 @@
 # Editing leaves it up with the text and Discard Changes closes it without
 # saving. Node Info is opened again after its swipe, so its dismissal
 # finished. Needs the mock server and Metro:
-#   maestro test .maestro/mock/sheet-swipe.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/sheet-swipe.yaml --test-output-dir "$SHOTS/sheet-swipe"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: first-turn.yaml

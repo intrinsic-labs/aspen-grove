@@ -5,7 +5,7 @@
 # no trees once a model is set up, and no OpenRouter key. Ends on Home with
 # one tree on the mock agent; beta1-lmstudio-down.yaml goes on from there.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/beta1-empty-states.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/beta1-empty-states.yaml --test-output-dir "$SHOTS/beta1-empty-states"
 appId: com.intrinsiclabs.aspengrove
 env:
   MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}

@@ -3,7 +3,7 @@ import type { ChatSession, ChatSessionModel } from '../types';
 
 /** Shown when something that generates runs on a tree with no agent. */
 export const NEEDS_AGENT_MESSAGE =
-  'This tree needs an agent to continue. Choose one in the dialogue settings.';
+  'This tree needs an agent to continue. Choose one in Model Settings.';
 
 /** The use cases' session: the chat session with its model filled in. */
 export const toTurnSession = (

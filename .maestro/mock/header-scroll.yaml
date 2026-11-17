@@ -3,7 +3,7 @@
 # under the transparent header, and the title must stay legible (iOS 26's
 # scroll-edge effect; on Android, HeaderScrollEdge). Then Home's header.
 # Needs the mock server and Metro, as first-turn.yaml does:
-#   maestro test .maestro/mock/header-scroll.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/header-scroll.yaml --test-output-dir "$SHOTS/header-scroll"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: first-turn.yaml

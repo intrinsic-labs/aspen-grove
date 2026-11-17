@@ -4,7 +4,7 @@
 # page, and "Use This Model" puts it in the draft and comes back to the
 # editor, which creates the agent on it.
 # Needs Metro and a network connection for the catalog:
-#   maestro test .maestro/model-browser.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/model-browser.yaml --test-output-dir "$SHOTS/model-browser"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml

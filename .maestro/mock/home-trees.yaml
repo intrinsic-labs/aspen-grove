@@ -1,7 +1,7 @@
 # Home with trees, against the mock server (no key): two trees started from
 # Home's composer, the list, the `···` menu, then a rename and a delete by
 # swipe. Needs the mock server and Metro up (see VERIFY.md, "No key?"):
-#   maestro test .maestro/mock/home-trees.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/home-trees.yaml --test-output-dir "$SHOTS/home-trees"
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: setup.yaml

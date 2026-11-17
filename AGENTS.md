@@ -88,6 +88,10 @@ src/
 │   ├── components/       screens and feature components (home/, chat/, settings/, onboarding/)
 │   ├── hooks/, services/ (file share/pick), ui/ (tokens, primitives)
 └── app/                  expo-router routes; thin files that render interface components
+modules/
+└── android-speech/       local Expo module (Android only, autolinked): audio focus while
+                          reading aloud, and which TTS voices are installed and offline;
+                          bound in src/infrastructure/speech/android/
 ```
 
 Implemented repositories: Agent, Edge, Grove, LoomTree, Node, Path, PathState, RawApiResponse, Tag, UserPreferences. Providers: OpenRouter and LM Studio only.
@@ -138,7 +142,7 @@ npm run check:map   # FEATURE_MAP.md matches the routes and screens
 
 How to run the app and verify a change on a device or simulator: [VERIFY.md](./VERIFY.md).
 
-**Map rule:** when you add, remove or change a route, screen or feature, update its entry in [FEATURE_MAP.md](./FEATURE_MAP.md) in the same change, then run `npm run check:map`.
+**Map rule:** when you add, remove or change a route, screen or feature, update its entry in [FEATURE_MAP.md](./FEATURE_MAP.md) in the same change, then run `npm run check:map`. CI fails when code that landed on `main` after the map's `revision:` changed an entry: re-read the entries it names and set `revision:` to the merge-base it prints.
 
 Don't commit secrets, API keys or local `.env` files. Keys are the user's own and live in secure storage only.
 

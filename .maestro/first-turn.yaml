@@ -1,7 +1,7 @@
 # First real turn: create an agent, open a tree, send, see the reply and its provenance.
 # Needs a provider: start Metro with EXPO_PUBLIC_OPENROUTER_API_KEY set (see VERIFY.md),
 # then run after smoke.yaml or on its own:
-#   maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/first-turn.yaml --test-output-dir "$SHOTS/first-turn"
 # It costs one short OpenRouter completion plus one title call.
 appId: com.intrinsiclabs.aspengrove
 ---

@@ -8,7 +8,7 @@
 # Needs Metro and the mock server started so that one stream of each
 # overlapping burst fails, slowly enough to catch the cards mid-stream:
 #   node scripts/mock-llm-server/cli.ts --port 1235 --pace 3 --fail-in-burst 2 --fail-status 422
-#   maestro test .maestro/mock/parallel-continuations.yaml --test-output-dir "$SHOTS"
+#   maestro test .maestro/mock/parallel-continuations.yaml --test-output-dir "$SHOTS/parallel-continuations"
 # The mock's log shows the three requests open at once (burst=1..3, active=3).
 appId: com.intrinsiclabs.aspengrove
 ---

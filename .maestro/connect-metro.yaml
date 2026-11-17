@@ -49,3 +49,8 @@ env:
       id: 'home-welcome|onboarding-screen'
     timeout: 120000
 - waitForAnimationToEnd
+# React Native's blue "Refreshing..." banner (a hot update from Metro) can
+# still be up over the first screen: let it go before the first screenshot.
+- extendedWaitUntil:
+    notVisible: 'Refreshing\.\.\.'
+    timeout: 15000
