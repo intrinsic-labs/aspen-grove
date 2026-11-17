@@ -886,7 +886,9 @@ stays until the user makes one.
   `top_provider.max_completion_tokens` (8192 when it names none, 4096 for a model not in
   the catalog; a custom id that names a catalog model in another case or as a routing
   variant takes that model's limit, `catalog-model-for-id.ts`), or LM Studio's context
-  length. Coming back to the tree re-reads its agent
+  length. An agent with no output limit set shows "Provider default" in
+  `tree-model-max-tokens-value`, with the slider's thumb at the model's maximum
+  (`max-tokens-display.ts`); dragging sets one. Coming back to the tree re-reads its agent
   and system message. Flow: `.maestro/mock/tree-model.yaml`.
 
 ### OpenRouter model browser (tree)
