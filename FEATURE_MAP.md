@@ -197,9 +197,12 @@ stays until the user makes one.
   radius 20, green stroke while focused, send arrow only with text). It rides the keyboard.
 - **Reach:** P1 → `home-composer-input` → type → `home-composer-send`.
 - **Requires:** A model agent (P1). Without one, sending opens onboarding instead and keeps
-  the text. Generating the reply needs a key or server, as `chat.composer`.
+  the text (`home/home-draft-store.ts`); once onboarding sets up a model, Begin Weaving moves
+  it, unsent, into the first tree's composer and Home's composer is clear. Leaving that tree
+  unsent discards it and puts the draft back on Home if Home's composer is empty
+  (`chat/session/return-draft-to-home.ts`). Generating the reply needs a key or server, as `chat.composer`.
 - **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
-- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
+- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`; then as `chat.composer`
 - **Status:** live
@@ -329,7 +332,8 @@ stays until the user makes one.
 - **Purpose:** Page 7. Choose OpenRouter (add a key, pick a model template) or LM Studio (a
   server address, a connection test, a model from the server), with the same storage as
   Settings → Connections. Begin Weaving then creates the agent (the first becomes the
-  default), marks onboarding done and replaces onboarding with a new tree. With nothing
+  default), marks onboarding done and replaces onboarding with a new tree, whose composer
+  holds whatever was typed on Home before setup (unsent). With nothing
   chosen yet, Begin Weaving marks onboarding done and closes it.
 - **Where:** `onboarding` page 7, a Form filling the height between the wordmark and Begin
   Weaving, scrolling under soft top and bottom fades: Provider, then the OpenRouter key
@@ -429,7 +433,10 @@ stays until the user makes one.
   (`message-list/list-insets.ts`) so the last message stays visible.
   A failed send or regenerate shows a plain message in `chat-error`. When the fix is in
   Connections (LM Studio not answering, no OpenRouter key, key refused),
-  `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. Other
+  `chat-error-action` ("Open Connections") opens the Connections sheet over the tree. LM
+  Studio not answering names the address saved in Connections, on a line of its own ("LM
+  Studio isn't answering at this address:" / "http://localhost:1234" / "Start its local
+  server…"; read each time the tree is focused). Other
   provider errors get one plain line by error code ("LM Studio returned an error.",
   "OpenRouter is limiting requests right now…"); the raw `[provider:code] message` is never
   on the face. When there is one, `chat-error-details-toggle` ("Details" / "Hide details")
@@ -805,12 +812,13 @@ stays until the user makes one.
 ### Discard an empty new tree
 - **ID:** `chat.ephemeral-discard`
 - **Purpose:** A tree created with New Loom Tree is deleted if you leave it without sending a
-  message, so empty trees don't pile up.
+  message, so empty trees don't pile up. An unsent composer draft goes back to Home's
+  composer when that is empty, so nothing typed is lost.
 - **Where:** Dialogue screen, on navigating back.
 - **Reach:** P2 → native back without sending.
 - **Requires:** A tree opened with the `ephemeral` param, which `home.composer` and onboarding set.
 - **Selector:** none — triggered by the native back button or gesture; assert that the tree is absent from `home-trees-list`
-- **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`
+- **Code:** `src/interface/components/chat/useDeleteEphemeralTreeOnBack.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#hardDelete`
 - **Status:** live
 
@@ -1212,8 +1220,8 @@ stays until the user makes one.
   edit is taken back, and the answer to a test of an address edited while it ran is
   dropped. When the
   test fails, the button reads "Test Again" and `connections-lmstudio-error` explains it in
-  the footer: "LM Studio isn't answering at <address>. Start its local server, then try
-  again.", plus a phone hint when the address is localhost. Under it,
+  the footer: "LM Studio isn't answering at this address:", the address on its own line,
+  then "Start its local server, then try again.", plus a phone hint when the address is localhost. Under it,
   `connections-lmstudio-error-details-toggle` ("Show Details" / "Hide Details") shows what the
   network or server actually said (`connections-lmstudio-error-detail`, `[lmstudio:<code>]
   <message>`, monospaced and selectable); it starts shown with Verbose Error Alerts on

@@ -17,6 +17,11 @@ export type CreateLoomTreeOptions = {
    * composer focused.
    */
   readonly firstMessage?: string;
+  /**
+   * Text to leave in the new tree's composer, unsent: a message typed on
+   * Home before a model was set up, carried into the first tree.
+   */
+  readonly draft?: string;
 };
 
 /**
@@ -72,8 +77,11 @@ export const useCreateLoomTree = (onError?: (message: string) => void) => {
         });
 
         const firstMessage = options.firstMessage?.trim();
+        const draft = options.draft?.trim();
         if (firstMessage) {
           setFirstMessage(created.tree.id, firstMessage);
+        } else if (draft) {
+          setFirstMessage(created.tree.id, draft, 'draft');
         }
         const target = {
           pathname: '/tree/[treeId]' as const,

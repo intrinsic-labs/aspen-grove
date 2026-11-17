@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, type TextInput, View } from 'react-native';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
@@ -6,6 +6,7 @@ import { ComposerField } from '../chat/composer/ComposerField';
 import { composerFieldMetrics } from '../chat/composer/composer-field-metrics';
 import { ComposerSendButton } from '../chat/composer/ComposerSendButton';
 import type { ChatDisplayPreferences } from '../chat/types';
+import { setHomeDraft, useHomeDraft } from './home-draft-store';
 
 type HomeComposerProps = {
   readonly bottomInset: number;
@@ -21,7 +22,9 @@ type HomeComposerProps = {
 /**
  * Home's "Begin a new loom tree" composer (HomeScreenView.swift:222-238):
  * the same field as the tree chat's, pinned over the bottom of the list and
- * riding the keyboard. Sending creates a tree from the message and opens it.
+ * riding the keyboard. Sending creates a tree from the message and opens it;
+ * with no model set up yet it opens onboarding, which carries the message
+ * into the first tree's composer.
  */
 export const HomeComposer = ({
   bottomInset,
@@ -32,7 +35,10 @@ export const HomeComposer = ({
   onLayoutHeight,
 }: HomeComposerProps) => {
   const inputRef = useRef<TextInput>(null);
-  const [text, setText] = useState('');
+  // Kept in a store, not local state: onboarding carries it into the first
+  // tree when it was typed before setup.
+  const text = useHomeDraft();
+  const setText = setHomeDraft;
   const focusedOnce = useRef(false);
   const metrics = composerFieldMetrics(displayPreferences);
 

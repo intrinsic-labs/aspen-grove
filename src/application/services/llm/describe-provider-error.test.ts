@@ -23,7 +23,7 @@ describe('describeProviderError: LM Studio unreachable', () => {
     expect(result.kind).toBe('lmstudio-unreachable');
     expect(result.action).toBe('open-connections');
     expect(result.message).toBe(
-      "LM Studio isn't answering at http://192.168.1.20:1234. Start its local server, then try again."
+      "LM Studio isn't answering at this address:\nhttp://192.168.1.20:1234\nStart its local server, then try again."
     );
     expect(result.message).not.toMatch(/Network request failed|\{/);
   });
