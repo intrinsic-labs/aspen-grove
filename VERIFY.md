@@ -449,6 +449,8 @@ adb -s emulator-5554 exec-out screencap -p > "$SHOTS/<name>.png"   # a one-off s
 What differs on Android, and how the shared flows handle it:
 
 - The dev launcher lists Metro by the Mac's network address and the flow taps it by port.
+  When its discovery finds nothing, the flow types `http://localhost:<port>` into the
+  launcher's URL field instead, which needs the `adb reverse` above.
   A cleared install opens the dev menu as a bottom sheet (no intro page), closed with its
   **Close** button; the floating **Tools** button is switched off by tapping its whole
   "Tools button" row ([android-dev-menu.yaml](.maestro/android-dev-menu.yaml)).
