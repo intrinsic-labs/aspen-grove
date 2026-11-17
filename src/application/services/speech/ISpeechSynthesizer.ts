@@ -10,6 +10,14 @@ export interface SystemVoice {
   readonly name: string;
   /** BCP 47 language, e.g. `en-GB`. */
   readonly language: string;
+  // The fields below are reported only where the platform knows them
+  // (Android). Left out, a voice counts as installed and offline.
+  /** False when the voice's data still has to be downloaded. */
+  readonly installed?: boolean;
+  /** True for a voice that only speaks over the network. */
+  readonly requiresNetwork?: boolean;
+  /** Higher is better (Android: 100 very low to 500 very high). */
+  readonly quality?: number;
 }
 
 export interface SpeechUtterance {

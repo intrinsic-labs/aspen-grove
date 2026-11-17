@@ -39,6 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+# local Expo modules' Gradle output
+/modules/*/android/build/
 /.dev/loom-ui-demo/
 
 # local verification runs (VERIFY.md)
