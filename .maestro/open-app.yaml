@@ -4,8 +4,21 @@
 # Works on iOS and Android. Metro off 8081? Pass -e METRO_PORT=<port>, or
 # -e METRO_URL=http://localhost:<port> (its port picks the listed server; the
 # URL is typed in only when no server on that port is listed).
+# A Release build has no launcher or dev menu: pass -e RELEASE_BUILD=1.
 appId: com.intrinsiclabs.aspengrove
 ---
 - launchApp:
     clearState: true
-- runFlow: connect-metro.yaml
+- runFlow:
+    when:
+      true: ${!RELEASE_BUILD}
+    file: connect-metro.yaml
+- runFlow:
+    when:
+      true: ${!!RELEASE_BUILD}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: 'home-welcome|onboarding-screen'
+          timeout: 60000
+      - waitForAnimationToEnd

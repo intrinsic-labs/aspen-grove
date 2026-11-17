@@ -2,6 +2,14 @@
 # (in the perf tree, the human turn "Draft a SQL query..." with three children,
 # the only such row on the deepest path) and wait for the first card. Starts in
 # the dialogue with the rail closed; ends with it open.
+#
+# Maestro counts a row as visible while it is under the header's or the
+# composer's blur, and a tap there lands on the header or the composer. Its
+# `centerElement` only scrolls in the direction it is given, so a row first
+# found low on the screen (under the composer) stays there. Hence the second,
+# downward scroll, which lifts it clear of the composer, and the header
+# check after it. Imported node ids are new on every import, so the row has
+# no fixed testID to tap instead.
 appId: com.intrinsiclabs.aspengrove
 ---
 - scrollUntilVisible:
@@ -12,8 +20,33 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 120000
     centerElement: true
 - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: '${RAIL_ROW_TEXT}'
+    direction: DOWN
+    speed: 60
+    timeout: 20000
+    centerElement: true
+- waitForAnimationToEnd
+# Its top edge must be below the header's buttons (`below` compares top edges).
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        text: '${RAIL_ROW_TEXT}'
+        below:
+          id: chat-menu-button
+    commands:
+      - swipe:
+          start: 50%, 35%
+          end: 50%, 50%
+          duration: 600
+      - waitForAnimationToEnd
 - evalScript: ${output.t0 = Date.now()}
-- tapOn: '${RAIL_ROW_TEXT}'
+- tapOn:
+    text: '${RAIL_ROW_TEXT}'
+    below:
+      id: chat-menu-button
 - extendedWaitUntil:
     visible:
       id: 'chat-continuation-card-.*'
