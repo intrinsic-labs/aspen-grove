@@ -1,11 +1,5 @@
-import { memo, useEffect, useRef } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  type TextStyle,
-  View,
-} from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, Text, type TextStyle, View } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
@@ -14,13 +8,8 @@ import {
   ContinuationGenerateControl,
   type ContinuationGenerateControlProps,
 } from './parallel/ContinuationGenerateControl';
-import {
-  countLiveSlots,
-  railCardKey,
-  type RailCard,
-} from './parallel/rail-cards';
-import { StreamingContinuationCard } from './parallel/StreamingContinuationCard';
-import { SavedContinuationCard } from './SavedContinuationCard';
+import { ContinuationCardRow } from './ContinuationCardRow';
+import type { RailCard } from './parallel/rail-cards';
 
 const rail = loomUiTokens.continuationRail;
 
@@ -46,7 +35,7 @@ const countSlots = (cards: readonly RailCard[]) =>
  * A node's continuations, as Latent Spaces lays them out under the node
  * (ChildNodesView.swift): the gesture hint, a horizontal row of cards, and
  * a divider. Aspen Grove adds its generate control under the hint, and the
- * cards of a run stream into the row's end.
+ * cards of a run stream into the row's end (`ContinuationCardRow`).
  */
 export const ContinuationRail = memo(
   ({
@@ -61,20 +50,7 @@ export const ContinuationRail = memo(
     onMenuAction,
     onStopSlot,
   }: ContinuationRailProps) => {
-    const listRef = useRef<ScrollView>(null);
     const slotCount = countSlots(cards);
-    const liveSlotCount = countLiveSlots(cards);
-    const shownLiveSlotCountRef = useRef(0);
-
-    // New streaming cards join the end of the row: bring them into view
-    // whenever a run starts, including a second run whose finished cards
-    // are still showing (the slot count alone doesn't change then).
-    useEffect(() => {
-      if (liveSlotCount > shownLiveSlotCountRef.current) {
-        listRef.current?.scrollToEnd({ animated: true });
-      }
-      shownLiveSlotCountRef.current = liveSlotCount;
-    }, [liveSlotCount]);
 
     if (!visible) {
       return null;
@@ -92,37 +68,14 @@ export const ContinuationRail = memo(
         <ContinuationGenerateControl {...generation} />
 
         {showList ? (
-          <ScrollView
-            ref={listRef}
-            testID="chat-continuation-rail-list"
-            horizontal
-            showsHorizontalScrollIndicator
-            style={styles.list}
-            contentContainerStyle={styles.content}
-          >
-            {cards.map((card) =>
-              card.kind === 'saved' ? (
-                <SavedContinuationCard
-                  key={railCardKey(card)}
-                  item={card.preview}
-                  textStyle={cardTextStyle}
-                  onSelect={onSelect}
-                  onMenuAction={onMenuAction}
-                />
-              ) : (
-                <StreamingContinuationCard
-                  key={railCardKey(card)}
-                  view={card.view}
-                  preview={card.preview}
-                  modelLabel={streamingModelLabel}
-                  textStyle={cardTextStyle}
-                  onStop={onStopSlot}
-                  onSelect={onSelect}
-                  onMenuAction={onMenuAction}
-                />
-              )
-            )}
-          </ScrollView>
+          <ContinuationCardRow
+            cards={cards}
+            streamingModelLabel={streamingModelLabel}
+            cardTextStyle={cardTextStyle}
+            onSelect={onSelect}
+            onMenuAction={onMenuAction}
+            onStopSlot={onStopSlot}
+          />
         ) : loading ? (
           <AppText
             testID="chat-continuation-rail-loading"
@@ -170,14 +123,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: rail.hintPadding,
     paddingHorizontal: rail.hintPadding,
-  },
-  list: {
-    marginBottom: rail.rowBottomPadding,
-  },
-  content: {
-    padding: rail.rowPadding,
-    gap: rail.cardSpacing,
-    alignItems: 'flex-start',
   },
   emptyText: {
     paddingHorizontal: loomUiTokens.layout.horizontalInset,
