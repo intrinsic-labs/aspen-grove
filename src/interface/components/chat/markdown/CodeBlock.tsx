@@ -2,10 +2,11 @@ import { StyleSheet, View } from 'react-native';
 import CodeHighlighter from 'react-native-code-highlighter';
 import { codepenEmbed } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-/** Matches `styles.text.lineHeight`. */
-const CODE_LINE_HEIGHT = 20;
-/** `scrollContent`'s top and bottom padding. */
-const CODE_VERTICAL_CHROME = 12 + 12;
+import {
+  CODE_LINE_HEIGHT,
+  codeBlockHeight,
+  withoutTrailingNewline,
+} from './code-block-height';
 
 type CodeBlockProps = {
   readonly code: string;
@@ -19,8 +20,8 @@ type CodeBlockProps = {
  * highlighter lays out. The space around it is the body rule's.
  */
 export const CodeBlock = ({ code, language }: CodeBlockProps) => {
-  const lineCount = code.split('\n').length;
-  const estimatedHeight = lineCount * CODE_LINE_HEIGHT + CODE_VERTICAL_CHROME;
+  const shown = withoutTrailingNewline(code);
+  const estimatedHeight = codeBlockHeight(shown);
 
   return (
     <View style={[styles.container, { height: estimatedHeight }]}>
@@ -30,7 +31,7 @@ export const CodeBlock = ({ code, language }: CodeBlockProps) => {
         scrollViewProps={scrollViewProps}
         textStyle={styles.text}
       >
-        {code.replace(/\n$/, '')}
+        {shown}
       </CodeHighlighter>
     </View>
   );
