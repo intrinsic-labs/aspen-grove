@@ -51,18 +51,8 @@ describe('native menu sections', () => {
     expect(findNativeMenuItem([sections[0]], at([1]))?.action).toBe('b');
   });
 
-  it('draws one flat list on Android, which has no inline sections', () => {
-    expect(
-      toNativeMenuActions(sections, 'android').map((action) => action.title)
-    ).toEqual(['A', 'B', 'C']);
-  });
-
-  it('finds an Android press, which comes with index alone at the top level', () => {
-    expect(findNativeMenuItem(sections, { index: 2 }, 'android')?.action).toBe(
-      'c'
-    );
-    expect(findNativeMenuItem([sections[0]], { index: 1 }, 'ios')?.action).toBe(
-      'b'
-    );
+  it('reads a press that comes with index alone as a top-level item', () => {
+    expect(findNativeMenuItem([sections[0]], { index: 1 })?.action).toBe('b');
+    expect(findNativeMenuItem(sections, { index: 1 })).toBeUndefined();
   });
 });

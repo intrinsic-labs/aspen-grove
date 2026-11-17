@@ -1,9 +1,178 @@
+diff --git a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
+index c6f5b9a..93b3771 100644
+--- a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
++++ b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
+@@ -17,6 +17,7 @@ import android.view.GestureDetector;
+ import android.view.Menu;
+ import android.view.MenuItem;
+ import android.view.MotionEvent;
++import android.view.SubMenu;
+ import android.view.View;
+ import android.view.ContextMenu;
+ 
+@@ -160,21 +161,51 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+     public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+         contextMenu.clear();
+         setMenuIconDisplay(contextMenu, true);
++        // A divider between items of different groups, as UIMenu draws one
++        // between inline sections (API 28+).
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
++            contextMenu.setGroupDividerEnabled(true);
++        }
+ 
+-        for (int i = 0; i < actions.size(); i++) {
+-            ReadableMap action = actions.getMap(i);
+-            ReadableArray childActions = action.getArray("actions");
++        addMenuActions(contextMenu, actions, new int[0], true, new int[] { Menu.FIRST });
++    }
+ 
+-            // If there are child actions, this action is a submenu
+-            if (childActions != null) {
+-                createContextMenuSubMenu(contextMenu, action, childActions, i);
++    /**
++     * Adds actions to a menu as iOS draws them. An action with
++     * `inlineChildren` becomes a section of its own: its items join this menu
++     * in a new group, so the menu draws a divider before and after them. Any
++     * other action with children becomes a submenu, except inside a submenu
++     * (Android has one level), where it becomes a section. `group` holds the
++     * current group id, shared by the whole menu so ids never repeat.
++     */
++    private void addMenuActions(Menu menu, @Nullable ReadableArray menuActions, int[] parentPath, boolean canNest, int[] group) {
++        if (menuActions == null) {
++            return;
++        }
++        for (int i = 0; i < menuActions.size(); i++) {
++            ReadableMap action = menuActions.getMap(i);
++            ReadableArray childActions = action.hasKey("actions") ? action.getArray("actions") : null;
++            int[] path = appendIndex(parentPath, i);
++
++            if (childActions == null) {
++                createContextMenuAction(menu, action, path, group[0]);
++            } else if (canNest && !(action.hasKey("inlineChildren") && action.getBoolean("inlineChildren"))) {
++                createContextMenuSubMenu(menu, action, childActions, path, group);
+             } else {
+-                // Otherwise its a normal menu item
+-                createContextMenuAction(contextMenu, action, i, -1);
++                group[0] += 1;
++                addMenuActions(menu, childActions, path, canNest, group);
++                group[0] += 1;
+             }
+         }
+     }
+ 
++    private static int[] appendIndex(int[] path, int index) {
++        int[] next = new int[path.length + 1];
++        System.arraycopy(path, 0, next, 0, path.length);
++        next[path.length] = index;
++        return next;
++    }
++
+     public void setActions(@Nullable ReadableArray actions) {
+         this.actions = actions;
+     }
+@@ -206,7 +237,7 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+         return null;
+     }
+ 
+-    private void createContextMenuSubMenu(Menu menu, ReadableMap action, ReadableArray childActions, int i) {
++    private void createContextMenuSubMenu(Menu menu, ReadableMap action, ReadableArray childActions, int[] path, int[] group) {
+         String title = action.getString("title");
+ 
+         // Apply custom font to submenu title
+@@ -216,21 +247,21 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+             spannableTitle.setSpan(new CustomTypefaceSpan("", customFont), 0, title.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+         }
+ 
+-        Menu parentMenu = menu.addSubMenu(spannableTitle);
+-
+-        @Nullable Drawable icon = getResourceWithName(getContext(), action.getString("icon"));
+-        menu.getItem(i).setIcon(icon);  // set icon to current item.
++        SubMenu subMenu = menu.addSubMenu(group[0], Menu.NONE, Menu.NONE, spannableTitle);
+ 
+-        for (int j = 0; j < childActions.size(); j++) {
+-            createContextMenuAction(parentMenu, childActions.getMap(j), j, i);
++        @Nullable Drawable icon = getResourceWithName(getContext(), action.hasKey("icon") ? action.getString("icon") : null);
++        subMenu.getItem().setIcon(icon);
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
++            subMenu.setGroupDividerEnabled(true);
+         }
+ 
+-        parentMenu.setGroupVisible(0, true);
++        int[] subGroup = new int[] { Menu.FIRST };
++        addMenuActions(subMenu, childActions, path, false, subGroup);
+     }
+ 
+-    private void createContextMenuAction(Menu menu, ReadableMap action, int i, int parentIndex) {
++    private void createContextMenuAction(Menu menu, ReadableMap action, int[] path, int groupId) {
+         String title = action.getString("title");
+-        @Nullable Drawable icon = getResourceWithName(getContext(), action.getString("icon"));
++        @Nullable Drawable icon = getResourceWithName(getContext(), action.hasKey("icon") ? action.getString("icon") : null);
+ 
+         // Create spannable string with custom font
+         SpannableString spannableTitle = new SpannableString(title);
+@@ -239,8 +270,14 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+             spannableTitle.setSpan(new CustomTypefaceSpan("", customFont), 0, title.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+         }
+ 
+-        MenuItem item = menu.add(Menu.NONE, Menu.NONE, i, spannableTitle);
++        // Order NONE keeps the items in the order they are added, across groups.
++        MenuItem item = menu.add(groupId, Menu.NONE, Menu.NONE, spannableTitle);
+         item.setEnabled(!action.hasKey("disabled") || !action.getBoolean("disabled"));
++        // A selected item shows a check, as UIMenu's `.on` state does.
++        if (action.hasKey("selected") && action.getBoolean("selected")) {
++            item.setCheckable(true);
++            item.setChecked(true);
++        }
+ 
+         if (action.hasKey("iconColor") && icon != null) {
+             int color = Color.parseColor(action.getString("iconColor"));
+@@ -256,21 +293,20 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+             item.setTitle(redTitle);
+         }
+ 
+-        // We need a different listener for nested menus and parent menus
++        // The press reports the item's full index path, as iOS does.
+         item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+             @Override
+             public boolean onMenuItemClick(@NonNull MenuItem menuItem) {
+                 cancelled = false;
+                 ReactContext reactContext = (ReactContext) getContext();
+                 WritableMap event = Arguments.createMap();
+-                event.putInt("index", i);
++                event.putInt("index", path[path.length - 1]);
+                 event.putString("name", title);
+-                if (parentIndex >= 0) {
+-                    WritableArray indexPath = Arguments.createArray();
+-                    indexPath.pushInt(parentIndex);
+-                    indexPath.pushInt(i);
+-                    event.putArray("indexPath", indexPath);
++                WritableArray indexPath = Arguments.createArray();
++                for (int index : path) {
++                    indexPath.pushInt(index);
+                 }
++                event.putArray("indexPath", indexPath);
+                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(getId(), "onPress", event);
+                 return false;
+             }
 diff --git a/node_modules/react-native-context-menu-view/index.d.ts b/node_modules/react-native-context-menu-view/index.d.ts
-index 25c92fd..7681ad8 100644
+index 25c92fd..d9dd302 100644
 --- a/node_modules/react-native-context-menu-view/index.d.ts
 +++ b/node_modules/react-native-context-menu-view/index.d.ts
-@@ -47,6 +47,11 @@ export interface ContextMenuAction {
-    * Whether its children (if any) should be rendered inline instead of in their own child menu (default: false, iOS only)
+@@ -36,7 +36,7 @@ export interface ContextMenuAction {
+    */
+   destructive?: boolean;
+   /**
+-   * Selected items have a checkmark next to them on iOS, and unchanged on Android. (default: false)
++   * Selected items have a checkmark next to them on iOS and a checked box on Android (patched). (default: false)
+    */
+   selected?: boolean;
+   /**
+@@ -44,9 +44,14 @@ export interface ContextMenuAction {
+    */
+   disabled?: boolean;
+   /**
+-   * Whether its children (if any) should be rendered inline instead of in their own child menu (default: false, iOS only)
++   * Whether its children (if any) should be rendered inline instead of in their own child menu (default: false). On Android (patched) they form a menu group with a divider before and after it.
     */
    inlineChildren?: boolean;
 +  /**
@@ -27,7 +196,7 @@ index 13fdaba..7e73799 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..d448124 100644
+index e10a830..6ea039c 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 @@ -18,6 +18,10 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
@@ -162,7 +331,7 @@ index e10a830..d448124 100644
 +    }
 +    return nil;
 +}
- 
+     
 -    if (!hostView.window) {
 -        // The view is no longer available; it was unmounted.
 -        return nil;
@@ -178,10 +347,10 @@ index e10a830..d448124 100644
 +    if (hostView == nil || container == nil || hostView.window == nil || container.window == nil) {
 +      return nil;
      }
- 
+     
 -    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
 +    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
- 
+     
      return [[UITargetedPreview alloc] initWithView:hostView
 -                                        parameters:[self getPreviewParams]
 +                                        parameters:[self getPreviewParamsForView:hostView]
