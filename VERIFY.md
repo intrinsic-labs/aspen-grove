@@ -319,7 +319,7 @@ label them as iOS Simulator captures wherever you report them.
 npm run typecheck     # tsc --noEmit
 npm run lint          # eslint, including the Clean Architecture layer boundaries
 npm test              # jest (in a sandbox without watchman: npm test -- --no-watchman)
-npm run check:map     # FEATURE_MAP.md: fails on broken entries and unmapped routes; drift warns
+npm run check:map     # FEATURE_MAP.md: fails on broken entries, unmapped routes and drift from code already on main; this change's own drift warns
 npm run check:bundle  # Metro bundles the iOS JS (expo export) into dist/ci-bundle
 ```
 

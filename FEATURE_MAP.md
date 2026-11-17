@@ -25,10 +25,11 @@ lookup. Paths not in that list are still read from code, not observed.
 **Maintenance rule.** If you change a route, a screen or a feature, update its entry in the
 same change: add entries for new features, remove entries for removed ones, and keep `testID`s
 and their entries in step. Then run `npm run check:map` (the vendored checker in
-`scripts/check-feature-map.py`, over `src/app/**/*.tsx`; CI fails on errors and unmapped routes
-and shows drift as a warning). `main` is squash-merged, so `revision:` must always name a
-commit already on `main`, never one on your branch: bump it in a follow-up once the change has
-landed, and only after re-reading every entry the drift warnings name; `npm run
+`scripts/check-feature-map.py`, over `src/app/**/*.tsx`; CI fails on errors and unmapped routes).
+`main` is squash-merged, so `revision:` must always name a commit already on `main`, never one
+on your branch, and your change's own drift only warns. Drift from code that landed on `main`
+after `revision:` fails CI (`scripts/check-feature-map-landed.py`): the next change re-reads
+the entries it names and sets `revision:` to the merge-base it prints; `npm run
 check:map:strict` then passes. Bump `reconciled:` only after a full walk of
 every entry on a device or simulator.
 

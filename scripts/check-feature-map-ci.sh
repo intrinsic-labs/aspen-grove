@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# CI gate for FEATURE_MAP.md. Fails on every checker error and on every warning except
-# "code changed since <revision>".
+# CI gate for FEATURE_MAP.md. Fails on every checker error, on every warning except
+# "code changed since <revision>", and on drift from code that already landed on main.
 #
-# Why drift is advisory here: main is squash-merged, so `revision:` can only name a commit
-# that is already on main. A pull request that edits mapped code therefore always shows
-# drift for its own files until the map is re-walked and `revision:` is bumped on main.
-# Unmapped routes, missing Coverage paths and broken entries still fail the build.
+# Drift from the change itself only warns: main is squash-merged, so `revision:` can only
+# name a commit already on main, and a pull request that edits mapped code always shows
+# drift for its own files. Drift from code that landed on main after `revision:` fails
+# (check-feature-map-landed.py): re-read those entries and set `revision:` to the merge-base.
+# Unmapped routes, missing Coverage paths and broken entries fail too.
 # For a full strict pass (after a reconcile), run `npm run check:map:strict`.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,4 +22,13 @@ if echo "$out" | grep '^warn:' | grep -v 'code changed since' >/dev/null; then
 fi
 if echo "$out" | grep -q 'code changed since'; then
   echo "::warning title=Feature map drift::Entries above touch code changed since the map's revision. Re-read them and update the entries in this change."
+fi
+
+# Code that landed on main since `revision:`. Base: the PR's target branch in CI, else main.
+base="origin/${GITHUB_BASE_REF:-main}"
+git rev-parse --verify --quiet "$base^{commit}" >/dev/null || base=main
+if git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
+  python3 scripts/check-feature-map-landed.py FEATURE_MAP.md "$base"
+else
+  echo "feature map: no origin/main or main to compare with; skipped the landed-drift check" >&2
 fi
