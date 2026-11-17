@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAppServices } from '@interface/composition';
 import { useCreateLoomTree } from '@/interface/hooks/useCreateLoomTree';
+import { getHomeDraft, setHomeDraft } from '../../home/home-draft-store';
 import { validateAgentDraft } from '../../settings/agents/agent-editor-types';
 import { useCreateAgentFromDraft } from '../../settings/agents/useCreateAgentFromDraft';
 import type { OnboardingSetup } from './useOnboardingSetup';
@@ -9,7 +10,8 @@ import type { OnboardingSetup } from './useOnboardingSetup';
 /**
  * "Begin Weaving". With a model set up, it saves the connection, creates
  * the agent (the first becomes the default), records onboarding as done and
- * opens a first tree in place of onboarding. Without one it records
+ * opens a first tree in place of onboarding, with whatever was typed on Home
+ * before setup waiting in its composer. Without one it records
  * onboarding as done and closes, as Latent Spaces' button does; Home then
  * says what is missing.
  */
@@ -58,7 +60,16 @@ export const useFinishOnboarding = (setup: OnboardingSetup) => {
       await setup.connections.saveNow();
       const agent = await createAgentFromDraft(setup.draft);
       await markDone();
-      await createTree({ agentId: agent.id, replace: true });
+      // Moved, not copied: once the tree has it, Home's composer is clear.
+      const carried = getHomeDraft();
+      const opened = await createTree({
+        agentId: agent.id,
+        replace: true,
+        draft: carried,
+      });
+      if (opened && carried.trim()) {
+        setHomeDraft('');
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {

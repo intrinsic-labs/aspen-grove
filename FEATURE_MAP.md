@@ -197,9 +197,10 @@ stays until the user makes one.
   radius 20, green stroke while focused, send arrow only with text). It rides the keyboard.
 - **Reach:** P1 → `home-composer-input` → type → `home-composer-send`.
 - **Requires:** A model agent (P1). Without one, sending opens onboarding instead and keeps
-  the text. Generating the reply needs a key or server, as `chat.composer`.
+  the text (`home/home-draft-store.ts`); once onboarding sets up a model, Begin Weaving moves
+  it, unsent, into the first tree's composer and Home's composer is clear. Generating the reply needs a key or server, as `chat.composer`.
 - **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
-- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
+- **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`; then as `chat.composer`
 - **Status:** live
@@ -329,7 +330,8 @@ stays until the user makes one.
 - **Purpose:** Page 7. Choose OpenRouter (add a key, pick a model template) or LM Studio (a
   server address, a connection test, a model from the server), with the same storage as
   Settings → Connections. Begin Weaving then creates the agent (the first becomes the
-  default), marks onboarding done and replaces onboarding with a new tree. With nothing
+  default), marks onboarding done and replaces onboarding with a new tree, whose composer
+  holds whatever was typed on Home before setup (unsent). With nothing
   chosen yet, Begin Weaving marks onboarding done and closes it.
 - **Where:** `onboarding` page 7, a Form filling the height between the wordmark and Begin
   Weaving, scrolling under soft top and bottom fades: Provider, then the OpenRouter key

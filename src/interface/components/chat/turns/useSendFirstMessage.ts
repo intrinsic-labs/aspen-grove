@@ -17,7 +17,8 @@ type UseSendFirstMessageInput = {
  * Sends the first message Home's composer left for this tree, once the tree
  * has loaded, through the composer's own send path: the reply streams in as
  * if the message had been typed here (HomeScreenView.swift `createtree`).
- * A tree that can't generate keeps it as its draft instead.
+ * A message carried over from before setup, or one a tree can't generate
+ * for, is kept as the composer's draft instead.
  */
 export const useSendFirstMessage = ({
   treeId,
@@ -30,14 +31,14 @@ export const useSendFirstMessage = ({
     if (!loaded || !treeId || !hasFirstMessage(treeId)) {
       return;
     }
-    const text = takeFirstMessage(treeId);
-    if (!text) {
+    const message = takeFirstMessage(treeId);
+    if (!message?.text) {
       return;
     }
-    if (canGenerate) {
-      void sendPrompt(text);
+    if (message.mode === 'send' && canGenerate) {
+      void sendPrompt(message.text);
     } else {
-      keepAsDraft(text);
+      keepAsDraft(message.text);
     }
   }, [canGenerate, keepAsDraft, loaded, sendPrompt, treeId]);
 };

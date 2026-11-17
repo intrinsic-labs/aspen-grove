@@ -1,6 +1,7 @@
 # Beta 1's empty states, each saying what to do next, on a cleared install
 # against the mock server (no key): no agent, a send with no agent (opens
-# onboarding's setup page, not an error), LM Studio unreachable during setup,
+# onboarding's setup page, not an error, and the message waits in the first
+# tree's composer), LM Studio unreachable during setup,
 # no trees once a model is set up, and no OpenRouter key. Ends on Home with
 # one tree on the mock agent; beta1-lmstudio-down.yaml goes on from there.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
@@ -101,6 +102,14 @@ env:
     id: chat-screen
 - assertNotVisible:
     id: chat-error
+# The message typed before setup waits, unsent, in the first tree's composer.
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-input
+      text: 'Hello, loom\.'
+    timeout: 10000
+- assertNotVisible:
+    id: chat-message-row-.*
 - takeScreenshot: es-04-first-tree
 
 # Ready, no trees yet (the empty first tree was discarded): no setup hint;
@@ -108,6 +117,8 @@ env:
 - runFlow: ../go-home.yaml
 - assertNotVisible:
     id: home-setup-hint
+# It moved: Home's composer is clear.
+- assertNotVisible: 'Hello, loom\.'
 - assertNotVisible:
     id: home-trees-row-.*
 - extendedWaitUntil:
@@ -119,11 +130,7 @@ env:
 - waitForAnimationToEnd
 - takeScreenshot: es-05-home-no-trees
 
-# One tree on the mock agent, for beta1-lmstudio-down.yaml. (The message
-# typed before setup is still in Home's composer; clear it first.)
-- tapOn:
-    id: home-composer-input
-- eraseText: 40
+# One tree on the mock agent, for beta1-lmstudio-down.yaml.
 - runFlow:
     file: ../start-tree.yaml
     env:
