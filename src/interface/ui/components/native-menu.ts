@@ -1,9 +1,5 @@
 import type { ContextMenuAction } from 'react-native-context-menu-view';
-import {
-  nativeMenuNests,
-  pressedIndexPath,
-  type NativeMenuPress,
-} from './native-menu-platform';
+import { pressedIndexPath, type NativeMenuPress } from './native-menu-platform';
 
 /** One item in a native (UIMenu) context or dropdown menu. */
 export type NativeMenuItem<Action extends string> = {
@@ -30,26 +26,22 @@ const toAction = <Action extends string>(
   disabled: item.disabled,
 });
 
-/** Groups that have items; Android's menu draws them as one flat list. */
+/** The groups that have items. */
 const visibleGroups = <Action extends string>(
-  sections: NativeMenuSections<Action>,
-  os?: string
-): (readonly NativeMenuItem<Action>[])[] => {
-  const groups = sections.filter((section) => section.length > 0);
-  return nativeMenuNests(os) || groups.length <= 1 ? groups : [groups.flat()];
-};
+  sections: NativeMenuSections<Action>
+): (readonly NativeMenuItem<Action>[])[] =>
+  sections.filter((section) => section.length > 0);
 
 /**
- * The native menu's actions. On iOS each group becomes an untitled inline
- * submenu (UIMenu `displayInline`), drawn as its own section with a divider
- * between sections. A single group stays flat, and so does the whole menu
- * on Android, which has no inline sections.
+ * The native menu's actions. Each group becomes an untitled inline submenu,
+ * drawn as its own section with a divider between sections: UIMenu
+ * `displayInline` on iOS, a menu group on Android (the patched module). A
+ * single group stays flat.
  */
 export const toNativeMenuActions = <Action extends string>(
-  sections: NativeMenuSections<Action>,
-  os?: string
+  sections: NativeMenuSections<Action>
 ): ContextMenuAction[] => {
-  const groups = visibleGroups(sections, os);
+  const groups = visibleGroups(sections);
   if (groups.length === 1) {
     return groups[0].map(toAction);
   }
@@ -66,10 +58,9 @@ export const toNativeMenuActions = <Action extends string>(
  */
 export const findNativeMenuItem = <Action extends string>(
   sections: NativeMenuSections<Action>,
-  press: NativeMenuPress,
-  os?: string
+  press: NativeMenuPress
 ): NativeMenuItem<Action> | undefined => {
-  const groups = visibleGroups(sections, os);
+  const groups = visibleGroups(sections);
   const indexPath = pressedIndexPath(press);
   if (groups.length === 1) {
     return indexPath.length === 1 ? groups[0][indexPath[0]] : undefined;

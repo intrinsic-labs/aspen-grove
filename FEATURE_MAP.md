@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: e03af66d98676ac80945b6f2dcee3dd9a38b05fa
+revision: d9fbcb491a0ed77aeacdb211bfbee670c55a74d1
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -529,11 +529,12 @@ stays until the user makes one.
   disabled on a node without children and Rewind To Node on the current (last) node.
 - **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
   horizontal ControlGroup; here it is an inline section (only the tree menu uses the patched
-  `preferredElementSize`). On Android all groups draw as one flat list with no dividers.
+  `preferredElementSize`). On Android each group is a menu group with a divider between
+  groups (`patches/react-native-context-menu-view+1.21.0.patch`, API 28+).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
@@ -722,15 +723,21 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button`.
 - **Requires:** A tree.
 - **Selector:** working — `chat-menu-button`; items none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/components/chat/tree-menu/useChatMenus.ts`, `src/interface/ui/components/NativeTreeMenu.tsx`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`
+- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/components/chat/tree-menu/useChatMenus.ts`, `src/interface/ui/components/NativeTreeMenu.tsx`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`, `patches/react-native-context-menu-view+1.21.0.patch`
 - **Backend:** none (each item's own entry)
 - **Status:** live
 - **Notes:** The side-by-side pair needs `preferredElementSize`, which
   `react-native-context-menu-view` lacks; `patches/react-native-context-menu-view+1.21.0.patch`
   adds it (iOS 16+). Show Onboarding replays the tree tips, as Latent Spaces' does (Home's
-  menu opens the app onboarding). On Android the menu is one flat list with no dividers and no
-  side-by-side pair; Bookmarks stays a submenu (`menuTreeForPlatform`). Flow:
-  `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`).
+  menu opens the app onboarding). The same patch gives Android's module what upstream
+  draws on iOS only: each inline section (and the ControlGroup) becomes a menu group with a
+  divider before and after it (`Menu.setGroupDividerEnabled`, API 28+), a `selected` item is
+  checked (Voice Mode while on; Android draws a checked box where iOS draws a checkmark),
+  a submenu inside a submenu becomes a section (Android has one submenu level), and every
+  press reports its full index path, as iOS does, so one menu tree serves both platforms.
+  Android still has no side-by-side pair: Model and Voice Mode are two rows in their own
+  section. Flows: `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`),
+  `.maestro/mock/menu-sections.yaml` (dividers and checks on every menu kind).
 
 ### Bookmark a node
 - **ID:** `chat.bookmark`
@@ -866,7 +873,7 @@ stays until the user makes one.
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
 - **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -889,7 +896,9 @@ stays until the user makes one.
   length. An agent with no output limit set shows "Provider default" in
   `tree-model-max-tokens-value`, with the slider's thumb at the model's maximum
   (`max-tokens-display.ts`); dragging sets one. Coming back to the tree re-reads its agent
-  and system message. Flow: `.maestro/mock/tree-model.yaml`.
+  and system message. The Provider and LM Studio model menus (`FormPickerRow`) check the
+  selected item on both platforms (a checked box on Android, through the patched context
+  menu). Flows: `.maestro/mock/tree-model.yaml`, `.maestro/mock/menu-sections.yaml`.
 
 ### OpenRouter model browser (tree)
 - **ID:** `chat.model-settings.openrouter-models`

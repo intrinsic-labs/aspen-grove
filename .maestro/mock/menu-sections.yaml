@@ -1,0 +1,105 @@
+# Native menus' sections and checks against the mock server (no key), on
+# both platforms: the tree menu's dividers, Voice Mode checked while on, a
+# message's long-press menu, the Bookmarks submenu, and the Provider and LM
+# Studio model menus with a check on the selected item. Android draws
+# dividers and checks through the patched react-native-context-menu-view
+# (patches/react-native-context-menu-view+1.21.0.patch); compare its
+# screenshots with iOS's. Needs the mock server and Metro up (VERIFY.md):
+#   maestro test .maestro/mock/menu-sections.yaml --test-output-dir "$SHOTS/menu-sections"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about the oldest forests
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 15000
+
+# The tree menu: its sections, each between dividers.
+- runFlow: ../open-tree-menu.yaml
+- assertVisible: 'Voice Mode'
+- assertVisible: 'Show Onboarding'
+- assertVisible: 'Export Path \(Markdown\)'
+- takeScreenshot: menu-01-tree-menu
+
+# Voice Mode on: the menu checks it. Then off again.
+- tapOn: 'Voice Mode'
+- waitForAnimationToEnd
+- runFlow: ../open-tree-menu.yaml
+- takeScreenshot: menu-02-voice-mode-checked
+- tapOn: 'Voice Mode'
+- waitForAnimationToEnd
+
+# A reply's long-press menu, then a bookmark from it.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- waitForAnimationToEnd
+- assertVisible: 'Copy Text'
+- assertVisible: 'Bookmark'
+- takeScreenshot: menu-03-message-menu
+- tapOn: 'Bookmark'
+- waitForAnimationToEnd
+
+# The Bookmarks submenu now sits in a section of its own.
+- runFlow: ../open-tree-menu.yaml
+- assertVisible: 'Bookmarks'
+- takeScreenshot: menu-04-tree-menu-bookmarks
+- tapOn: 'Bookmarks'
+- waitForAnimationToEnd
+- assertVisible: 'Mock reply #\d+\..*'
+- takeScreenshot: menu-05-bookmarks-submenu
+- tapOn: 'Mock reply #\d+\..*'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: node-sheet-menu-button
+- waitForAnimationToEnd
+- assertVisible: 'Rename Bookmark'
+- takeScreenshot: menu-06-bookmark-sheet-menu
+- tapOn: 'Make Current Node'
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 10000
+
+# Model Settings: the Provider and LM Studio model menus check the choice.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- assertVisible: 'OpenRouter'
+- takeScreenshot: menu-07-provider-checked
+# Choosing the provider it already has changes nothing and closes the menu.
+# (The open menu hides the screen from Maestro, so this is the menu's item.)
+- tapOn: 'LM Studio'
+- waitForAnimationToEnd
+- assertVisible:
+    id: tree-model-screen
+- tapOn:
+    id: tree-model-model
+- waitForAnimationToEnd
+- assertVisible: 'mock-missing'
+- takeScreenshot: menu-08-lmstudio-model-checked
+- tapOn: 'mock-model'
+- waitForAnimationToEnd
+- assertVisible:
+    id: tree-model-footer-id
+    text: 'mock-model'

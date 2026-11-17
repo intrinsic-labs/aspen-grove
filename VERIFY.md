@@ -182,6 +182,10 @@ context menu in a tree (the human bubble, the reply, a continuation card), scree
 lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
 again on recycled native views.
+[.maestro/mock/menu-sections.yaml](.maestro/mock/menu-sections.yaml) screenshots every kind
+of native menu (the tree menu, Voice Mode checked, a message's long-press menu, the Bookmarks
+submenu, a node sheet's menu, the Provider and LM Studio model pickers) for their dividers
+and the check on the selected item; run it on both platforms and compare.
 [.maestro/mock/parallel-continuations.yaml](.maestro/mock/parallel-continuations.yaml) draws
 several continuations at once: a turn, its rail, N picked (4, then 3), Generate 3, the cards
 streaming side by side while one fails on its own and the other two finish, one expanded (its
@@ -226,7 +230,7 @@ each area the change touched:
 |--------------|-----|
 | Home, the tree list | `mock/home-trees` |
 | Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
-| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/sheet-swipe`, `mock/header-scroll` |
+| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/menu-sections`, `mock/sheet-swipe`, `mock/header-scroll` |
 | Continuation rail, parallel cards | `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
 | Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
 | Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |
@@ -445,6 +449,8 @@ adb -s emulator-5554 exec-out screencap -p > "$SHOTS/<name>.png"   # a one-off s
 What differs on Android, and how the shared flows handle it:
 
 - The dev launcher lists Metro by the Mac's network address and the flow taps it by port.
+  When its discovery finds nothing, the flow types `http://localhost:<port>` into the
+  launcher's URL field instead, which needs the `adb reverse` above.
   A cleared install opens the dev menu as a bottom sheet (no intro page), closed with its
   **Close** button; the floating **Tools** button is switched off by tapping its whole
   "Tools button" row ([android-dev-menu.yaml](.maestro/android-dev-menu.yaml)).
