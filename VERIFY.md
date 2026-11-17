@@ -368,7 +368,7 @@ didn't record.
 ## 9. Android emulator
 
 The same tree and the same Maestro flows run on an Android emulator. Verified with smoke,
-mock/first-turn and mock/header-scroll on a Pixel 10 AVD (API 37, arm64).
+mock/first-turn, mock/header-scroll and mock/voice-mode on a Pixel 10 AVD (API 37, arm64).
 
 **Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and an AVD (`emulator
 -list-avds`). Gradle needs **JDK 21, Android Studio's bundled one**, not Homebrew's
@@ -419,11 +419,16 @@ What differs on Android, and how the shared flows handle it:
   "Tools button" row ([android-dev-menu.yaml](.maestro/android-dev-menu.yaml)).
 - Onboarding and other modals are full screen, not page sheets: they close with the back key,
   not a swipe ([skip-onboarding.yaml](.maestro/skip-onboarding.yaml)).
+- The window stays put when the keyboard opens: `softwareKeyboardLayoutMode` is `resize`
+  in [app.json](app.json), and react-native-keyboard-controller draws edge to edge and moves
+  the composers and scroll views itself. Don't set it to `pan`: Android then also pans the
+  whole window, pushing Home's header and greeting under the status bar.
 - Back is the back key ([go-back.yaml](.maestro/go-back.yaml)). Maestro's `hideKeyboard` is
   also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
   away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
 - iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
-  mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
+  mock/lmstudio-connection and the end of mock/tree-model (from its System Message step) are
+  iOS-only for now; mock/setup passes (its "Select All" step is
   optional).
 
 **Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`, then
