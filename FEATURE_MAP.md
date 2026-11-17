@@ -1328,12 +1328,12 @@ stays until the user makes one.
   `settings-voice-select`.
 - **Requires:** none. Sound needs media volume up.
 - **Selector:** working — `settings-voice-chooser`, `settings-voice-pager`, `settings-voice-lily`, `settings-voice-jefferson`, `settings-voice-eve` (the circles; template `settings-voice-${voice.name.toLowerCase()}` in `VoiceCard.tsx`), `settings-voice-select`
-- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
+- **Code:** `src/interface/components/settings/voice/VoiceChooserSheet.tsx`, `src/interface/components/settings/voice/useOpenOnPage.ts`, `src/interface/ui/components/sheet/PageSheet.tsx`, `src/interface/components/settings/voice/VoiceCard.tsx`, `src/interface/components/settings/voice/useVoiceChooser.ts`, `src/interface/components/voice/voice-appearance.ts`, `src/domain/value-objects/loom-voice.ts`
 - **Backend:** none for the demo (on-device `expo-speech`); Select writes the WatermelonDB local
   key `aspen_grove.voice_mode.voice_name`
 - **Status:** live
-- **Notes:** Opening the sheet plays the saved voice; closing it (swipe down) stops speech
-  without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
+- **Notes:** Opening the sheet shows and plays the saved voice; closing it (swipe down) stops
+  speech without saving. The pager is a native horizontal ScrollView, so drive it by swipe.
 
 ## Coverage
 - `src/app/_layout.tsx` — root stack (Home, Search, Settings and the tree screens), providers and theme; referenced by `app.bootstrap` and `home.welcome`
