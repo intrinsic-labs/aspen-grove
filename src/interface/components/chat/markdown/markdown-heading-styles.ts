@@ -22,6 +22,7 @@ const HEADING_SCALES: readonly HeadingScale[] = [
 
 /** Markdown headings, in the bold face, scaled from the body text. */
 export const markdownHeadingStyles = ({
+  faces,
   fontSize,
   lineHeight,
   textColor,
@@ -30,7 +31,8 @@ export const markdownHeadingStyles = ({
     HEADING_SCALES.map((scale, index) => [
       `heading${index + 1}`,
       {
-        fontFamily: 'Cardo-Bold',
+        fontFamily: faces.bold,
+        fontWeight: 'normal',
         fontSize: fontSize * scale.fontScale,
         lineHeight: lineHeight * scale.lineScale,
         marginTop: scale.marginTop,

@@ -27,7 +27,7 @@ export const markdownBlockStyles = (
   typography: MarkdownTypography,
   colors: MarkdownColors
 ) => {
-  const { fontFamily, fontSize, lineHeight, textColor } = typography;
+  const { fontFamily, faces, fontSize, lineHeight, textColor } = typography;
   const listIcon: TextStyle = {
     fontFamily,
     fontSize,
@@ -73,7 +73,8 @@ export const markdownBlockStyles = (
     } as ViewStyle,
     thead: { backgroundColor: colors.codeBackground } as ViewStyle,
     th: {
-      fontFamily: 'Cardo-Bold',
+      fontFamily: faces.bold,
+      fontWeight: 'normal',
       padding: 8,
       borderBottomWidth: 1,
       borderColor: colors.secondary,

@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { createMarkdownStyles } from './markdown-styles';
 
 const colors = {
@@ -51,18 +52,33 @@ describe('createMarkdownStyles', () => {
     expect(styles.body.color).toBe('white');
   });
 
-  it('sets bold and italic by face, without a synthetic weight or slant', () => {
-    // Merged over the library's fontWeight 'bold' / fontStyle 'italic',
-    // which on Android would swap Cardo for the system sans.
-    const { strong, em } = createMarkdownStyles(base, colors);
-    expect(strong).toMatchObject({
-      fontFamily: 'Cardo-Bold',
+  it.each([
+    [fonts.cardoRegular, 'Cardo-Bold', 'Cardo-Italic'],
+    [fonts.mono, fonts.monoBold, fonts.monoItalic],
+    [fonts.openSans, fonts.openSansBold, fonts.openSansItalic],
+    [fonts.vt220, fonts.vt220, fonts.vt220],
+  ])('uses %s faces without synthetic weight or slant', (family, bold, italic) => {
+    const styles = createMarkdownStyles({ ...base, fontFamily: family }, colors);
+    expect(styles.body.fontFamily).toBe(family);
+    expect(styles.strong).toMatchObject({
+      fontFamily: bold,
       fontWeight: 'normal',
     });
-    expect(em).toMatchObject({
-      fontFamily: 'Cardo-Italic',
+    expect(styles.em).toMatchObject({
+      fontFamily: italic,
       fontStyle: 'normal',
     });
+    for (const level of [1, 2, 3, 4, 5, 6] as const) {
+      expect(styles[`heading${level}`]).toMatchObject({
+        fontFamily: bold,
+        fontWeight: 'normal',
+      });
+    }
+    expect(styles.th).toMatchObject({ fontFamily: bold, fontWeight: 'normal' });
+    expect(styles.td.fontFamily).toBe(family);
+    expect(styles.code_inline.fontFamily).toBe(fonts.mono);
+    expect(styles.code_block.fontFamily).toBe(fonts.mono);
+    expect(styles.fence.fontFamily).toBe(fonts.mono);
   });
 
   it('keeps list icons as separate objects', () => {

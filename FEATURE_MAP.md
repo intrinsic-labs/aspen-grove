@@ -435,6 +435,8 @@ stays until the user makes one.
   a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
   a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
+  Emphasis, headings and table headers use the chosen message font's bundled faces;
+  VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).

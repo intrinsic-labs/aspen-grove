@@ -4,7 +4,7 @@ import type { MarkdownColors, MarkdownTypography } from './markdown-typography';
 
 /** Body text, paragraphs, emphasis, inline code and links. */
 export const markdownInlineStyles = (
-  { fontFamily, fontSize, lineHeight, textColor }: MarkdownTypography,
+  { fontFamily, faces, fontSize, lineHeight, textColor }: MarkdownTypography,
   colors: MarkdownColors
 ) => ({
   // The space between blocks is the body rule's (`blockSpacing`).
@@ -21,13 +21,13 @@ export const markdownInlineStyles = (
 
   // Emphasis. The face is already bold or italic: the library's default
   // fontWeight 'bold' / fontStyle 'italic' (merged in) would make Android
-  // look for a bold "Cardo-Bold" and fall back to the system sans.
+  // look for a bold variant of an already-bold face and fall back to the system sans.
   strong: {
-    fontFamily: 'Cardo-Bold',
+    fontFamily: faces.bold,
     fontWeight: 'normal',
   } as TextStyle,
   em: {
-    fontFamily: 'Cardo-Italic',
+    fontFamily: faces.italic,
     fontStyle: 'normal',
   } as TextStyle,
   s: {

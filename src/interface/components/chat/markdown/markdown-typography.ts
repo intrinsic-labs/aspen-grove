@@ -1,3 +1,4 @@
+import { emphasisFaces, fonts } from '@interface/ui/value-objects/fonts';
 import type { ColorValue, TextStyle } from 'react-native';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import { toMessageType } from '../message-type';
@@ -18,6 +19,7 @@ export type MarkdownColors = {
 /** The message's face, size, line height and color every block scales from. */
 export type MarkdownTypography = {
   readonly fontFamily: string;
+  readonly faces: ReturnType<typeof emphasisFaces>;
   readonly fontSize: number;
   readonly lineHeight: number;
   readonly textColor: ColorValue;
@@ -28,7 +30,8 @@ export const toMarkdownTypography = (
   baseStyle: TextStyle | undefined,
   colors: MarkdownColors
 ): MarkdownTypography => ({
-  fontFamily: baseStyle?.fontFamily ?? 'Cardo-Regular',
+  fontFamily: baseStyle?.fontFamily ?? fonts.cardoRegular,
+  faces: emphasisFaces(baseStyle?.fontFamily),
   fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
   lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
   textColor: baseStyle?.color ?? colors.textColor,

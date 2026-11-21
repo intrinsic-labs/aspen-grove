@@ -1,4 +1,5 @@
 import {
+  emphasisFaces,
   fonts,
   messageFontFamilies,
   normalizeMessageFontFamily,
@@ -25,4 +26,45 @@ describe('stored message font preferences', () => {
       expect(toChatFontFace(face)).toBe(fonts.cardoRegular);
     }
   );
+});
+
+describe('message emphasis faces', () => {
+  const cardo = {
+    regular: 'Cardo-Regular',
+    bold: 'Cardo-Bold',
+    italic: 'Cardo-Italic',
+    boldItalic: 'Cardo-Bold',
+  };
+
+  it.each([undefined, fonts.cardoRegular, 'unknown-font'])(
+    'uses Cardo faces for %s',
+    (family) => expect(emphasisFaces(family)).toEqual(cardo)
+  );
+
+  it('uses all four JetBrains Mono faces', () => {
+    expect(emphasisFaces(fonts.mono)).toEqual({
+      regular: 'JetBrainsMono-Regular',
+      bold: 'JetBrainsMono-Bold',
+      italic: 'JetBrainsMono-Italic',
+      boldItalic: 'JetBrainsMono-BoldItalic',
+    });
+  });
+
+  it('uses all four Open Sans faces', () => {
+    expect(emphasisFaces(fonts.openSans)).toEqual({
+      regular: 'OpenSans-Regular',
+      bold: 'OpenSans-Bold',
+      italic: 'OpenSans-Italic',
+      boldItalic: 'OpenSans-BoldItalic',
+    });
+  });
+
+  it('keeps VT220 unchanged for every emphasis', () => {
+    expect(emphasisFaces(fonts.vt220)).toEqual({
+      regular: fonts.vt220,
+      bold: fonts.vt220,
+      italic: fonts.vt220,
+      boldItalic: fonts.vt220,
+    });
+  });
 });
