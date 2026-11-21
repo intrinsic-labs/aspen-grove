@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    color: '#fff',
+    color: loomUiTokens.colors.primary,
     fontSize: tokens.actionTextSize,
     fontWeight: '500',
   },

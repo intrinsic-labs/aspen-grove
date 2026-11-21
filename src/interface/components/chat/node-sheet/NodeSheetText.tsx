@@ -5,7 +5,7 @@ import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import { MarkdownText } from '../MarkdownText';
 
-const SHEET_TEXT_COLOR = '#FFFFFF';
+const SHEET_TEXT_COLOR = loomUiTokens.colors.primary;
 
 type NodeSheetTextProps = {
   readonly text: string;

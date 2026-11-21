@@ -7,6 +7,7 @@ import {
   codeBlockHeight,
   withoutTrailingNewline,
 } from './code-block-height';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 type CodeBlockProps = {
   readonly code: string;
@@ -43,14 +44,14 @@ export const CodeBlock = ({ code, language }: CodeBlockProps) => {
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: loomUiTokens.markdown.codeBlockBackground,
   },
   scrollView: {
-    backgroundColor: '#000',
+    backgroundColor: loomUiTokens.markdown.codeBlockBackground,
     borderRadius: 0,
   },
   scrollContent: {
-    backgroundColor: '#000',
+    backgroundColor: loomUiTokens.markdown.codeBlockBackground,
     paddingTop: 12,
     paddingBottom: 12,
     paddingLeft: 12,

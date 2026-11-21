@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   // The shadow sits outside the clipped material (MessageInputView.swift:51).
   fieldShadow: {
     borderRadius: loomUiTokens.composer.fieldRadius,
-    shadowColor: '#000',
+    shadowColor: loomUiTokens.composer.shadowColor,
     shadowOpacity: loomUiTokens.composer.shadowOpacity,
     shadowRadius: loomUiTokens.composer.shadowRadius,
     shadowOffset: { width: 0, height: 0 },

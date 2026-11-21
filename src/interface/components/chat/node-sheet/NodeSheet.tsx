@@ -146,7 +146,7 @@ export const NodeSheet = ({
           </ScrollView>
         ) : loading ? (
           <View testID="node-sheet-loading" style={styles.notice}>
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={loomUiTokens.colors.primary} />
           </View>
         ) : null}
       </View>
