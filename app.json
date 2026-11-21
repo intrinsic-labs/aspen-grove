@@ -103,6 +103,12 @@
           "backgroundColor": "#000000"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d7b7806b-1d28-4a4b-bd40-a50bd0174781"
+      }
+    },
+    "owner": "rocketbro"
   }
 }
