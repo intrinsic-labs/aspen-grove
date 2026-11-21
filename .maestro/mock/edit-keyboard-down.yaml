@@ -51,11 +51,24 @@ appId: com.intrinsiclabs.aspengrove
 - takeScreenshot: edit-01-keyboard-down
 
 # The second user message, by role and text rather than row index: Android
-# unmounts rows scrolled off-screen, so a row index can land on a reply.
-- longPressOn:
-    id: chat-message-row-human-.*
-    containsDescendants:
-      - text: '.*oldest aspen groves get\?'
+# leaves rows scrolled off-screen out of the hierarchy, so a row index can
+# land on a reply there. iOS exposes the row as one element labelled with its
+# text; Android exposes the text as a child of the row.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - longPressOn:
+          id: chat-message-row-human-.*
+          text: '.*oldest aspen groves get\?'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - longPressOn:
+          id: chat-message-row-human-.*
+          containsDescendants:
+            - text: '.*oldest aspen groves get\?'
 - tapOn: 'Edit'
 - extendedWaitUntil:
     visible:
