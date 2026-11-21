@@ -3,6 +3,7 @@ import type {
   ILoomTreeRepository,
 } from '@application/repositories';
 import { DEFAULT_MODEL_AGENT_PERMISSIONS } from '@application/services/agent-defaults';
+import { modelAgentName } from '@application/services/model-agent-name';
 import type { Agent, AgentConfiguration, LoomTree } from '@domain/entities';
 import type { ModelRef, ULID } from '@domain/value-objects';
 
@@ -12,6 +13,12 @@ export type TreeModelSettingsChanges = {
   readonly temperature?: number;
   readonly maxTokens?: number;
   readonly useMaxTokens?: boolean;
+  /**
+   * The chosen model's display name (OpenRouter's catalog name), which names
+   * the tree's agent when the model changes. Without it, a readable form of
+   * the model id does.
+   */
+  readonly modelName?: string;
 };
 
 export type UpdateTreeModelSettingsInput = {
@@ -37,13 +44,6 @@ export type UpdateTreeModelSettingsDependencies = {
   >;
 };
 
-/** "Mock (Ancient Trees)": the agent it came from, and the tree it is for. */
-export const treeAgentName = (baseName: string, tree: LoomTree): string =>
-  `${baseName} (${tree.title.trim() || 'this tree'})`;
-
-const identifierOf = (modelRef: ModelRef): string =>
-  modelRef.slice(modelRef.indexOf(':') + 1);
-
 /**
  * Latent Spaces keeps provider, model and parameters on the tree. Aspen Grove
  * keeps them on the tree's agent (`LoomTree.defaultModelAgentId`), so an edit
@@ -52,10 +52,17 @@ const identifierOf = (modelRef: ModelRef): string =>
  * - The agent is the tree's own (owned by it, used by no other tree): it is
  *   edited in place.
  * - The agent is shared (a library agent, or one another tree also uses): a
- *   copy owned by this tree is made, named for the tree, the tree is pointed
- *   at it, and the copy is edited. The shared agent is untouched.
+ *   copy owned by this tree is made, the tree is pointed at it, and the copy
+ *   is edited. The shared agent is untouched.
  * - The tree has no model agent: one owned by the tree is made, which needs
  *   a model in the changes.
+ *
+ * Naming: the composer addresses the agent ("Reply to …"), as Latent Spaces
+ * addresses the tree's model. A copy keeps its source's name until the model
+ * changes; a change of model, on a copy, a new agent or the tree's own one,
+ * names the agent after the model (`modelAgentName`). The tree's title is
+ * never part of it: a new tree's title is a timestamp placeholder until it
+ * is auto-titled.
  *
  * Each edit reads the agent, may fork it, then writes it, so edits to one
  * tree run one after another: an overlapping edit would read the agent
@@ -108,10 +115,14 @@ export class UpdateTreeModelSettingsUseCase {
 
     const owned = await this.isTreesOwn(current, tree);
     const target = owned ? current : await this.forkFor(tree, current);
+    const { modelRef, modelName } = input.changes;
+    const modelChanged =
+      modelRef !== undefined && modelRef !== current.modelRef;
     const agent = await this.agents.update({
       id: target.id,
       changes: {
-        modelRef: input.changes.modelRef,
+        ...(modelChanged ? { name: modelAgentName(modelRef, modelName) } : {}),
+        modelRef,
         configuration: mergeConfiguration(target.configuration, input.changes),
       },
     });
@@ -137,7 +148,7 @@ export class UpdateTreeModelSettingsUseCase {
 
   private async forkFor(tree: LoomTree, source: Agent): Promise<Agent> {
     const fork = await this.agents.create({
-      name: treeAgentName(source.name, tree),
+      name: source.name,
       type: 'model',
       modelRef: source.modelRef,
       configuration: source.configuration,
@@ -156,7 +167,7 @@ export class UpdateTreeModelSettingsUseCase {
       throw new Error('Choose a model for this tree first.');
     }
     const agent = await this.agents.create({
-      name: treeAgentName(identifierOf(changes.modelRef), tree),
+      name: modelAgentName(changes.modelRef, changes.modelName),
       type: 'model',
       modelRef: changes.modelRef,
       configuration: mergeConfiguration({}, changes),
