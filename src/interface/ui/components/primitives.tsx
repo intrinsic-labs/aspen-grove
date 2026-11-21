@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { forwardRef } from 'react';
 import {
   Pressable,
@@ -65,14 +66,14 @@ const getTextVariantStyle = (variant: TextVariant): TextStyle => {
       };
     case 'meta':
       return {
-        fontFamily: 'IBMPlexMono-Regular',
+        fontFamily: fonts.mono,
         fontSize: 13,
         lineHeight: 19,
         letterSpacing: 0.4,
       };
     default:
       return {
-        fontFamily: 'IBMPlexMono-Regular',
+        fontFamily: fonts.mono,
         fontSize: 16,
         lineHeight: 22,
       };

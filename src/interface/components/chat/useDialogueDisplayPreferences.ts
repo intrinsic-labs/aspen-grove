@@ -1,3 +1,4 @@
+import { normalizeMessageFontFamily } from '@interface/ui/value-objects/fonts';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import type { IUserPreferencesRepository } from '@application/repositories';
@@ -13,22 +14,8 @@ const MAX_FONT_SIZE = 30;
 const DEFAULT_CORNER_RADIUS = 8;
 const MAX_CORNER_RADIUS = 32;
 
-const SUPPORTED_FONT_FAMILIES = new Set<string>([
-  'Cardo-Regular',
-  'IBMPlexMono-Regular',
-  'OpenSans-Regular',
-]);
-
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
-
-const normalizeFontFamily = (fontFace?: string): string | undefined => {
-  if (!fontFace) {
-    return undefined;
-  }
-  const normalized = fontFace.trim();
-  return SUPPORTED_FONT_FAMILIES.has(normalized) ? normalized : undefined;
-};
 
 const createDefaults = (): ChatDisplayPreferences => {
   const type = toMessageType(DEFAULT_FONT_SIZE, undefined);
@@ -65,7 +52,9 @@ export const useDialogueDisplayPreferences = ({
   const load = useCallback(async () => {
     try {
       const userPreferences = await userPreferencesRepo.get();
-      const messageFontFamily = normalizeFontFamily(userPreferences.fontFace);
+      const messageFontFamily = normalizeMessageFontFamily(
+        userPreferences.fontFace
+      );
       const type = toMessageType(
         clamp(userPreferences.fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE),
         messageFontFamily

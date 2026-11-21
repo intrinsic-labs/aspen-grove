@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { LoomVoice } from '@domain/value-objects';
@@ -35,7 +36,7 @@ export const VoiceCard = ({
         />
       </Pressable>
       <Text style={styles.name}>{voice.name}</Text>
-      {/* Calling Code in Latent Spaces; Aspen Grove ships IBM Plex Mono. */}
+      {/* Calling Code in Latent Spaces; Aspen Grove ships JetBrains Mono. */}
       <Text style={styles.description}>{voice.description}</Text>
     </View>
   );
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     marginBottom: chooser.nameBottomGap,
   },
   description: {
-    fontFamily: 'IBMPlexMono-Regular',
+    fontFamily: fonts.mono,
     fontSize: chooser.descriptionSize,
     color: loomUiTokens.settingsForm.colors.secondaryLabel,
     textAlign: 'center',

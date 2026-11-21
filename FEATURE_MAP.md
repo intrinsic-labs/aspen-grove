@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 721cf2a09373605c95e535fc7e1675d1f5ff3270
+revision: 75923a2fec9752c4ea083ebf7ab04c2251b1b559
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -233,7 +233,7 @@ stays until the user makes one.
 - **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
-- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (IBM Plex
+- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (JetBrains
   Mono standing in for Calling Code), the date is `Date.formatted()`'s "3/4/2025, 2:01 PM".
 
 ### Rename or delete a tree (swipe)
@@ -1317,7 +1317,7 @@ stays until the user makes one.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (IBM Plex Mono, Cardo or Open Sans), the font size, the
+- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or Open Sans), the font size, the
   user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
   sample messages.
 - **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
@@ -1325,7 +1325,7 @@ stays until the user makes one.
   `settings-typography-font` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
-- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`, `src/interface/components/chat/message-type.ts`, `src/interface/ui/value-objects/fonts.ts`
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
@@ -1335,7 +1335,8 @@ stays until the user makes one.
   "Outlined", "20 (material design plebeian)"). Font size offers 12–26, corner radius 0–20 in
   steps of 2. The former per-option ids (`settings-typography-font-<face>`,
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
-  (Cardo) renders 1 pt above the chosen size.
+  (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
+  leading. Saved selections of the retired mono face resolve to JetBrains Mono.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

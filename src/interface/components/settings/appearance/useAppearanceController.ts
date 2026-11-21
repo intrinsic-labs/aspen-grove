@@ -1,24 +1,19 @@
+import {
+  fonts,
+  messageFontFamilies,
+  toChatFontFace,
+} from '@interface/ui/value-objects/fonts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router/react-navigation';
 import type { FontSize, NodeViewStyle } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 import type { ChatFontFace } from '../types';
 
-const SUPPORTED_CHAT_FONT_FACES: readonly ChatFontFace[] = [
-  'Cardo-Regular',
-  'IBMPlexMono-Regular',
-  'OpenSans-Regular',
-];
-const DEFAULT_CHAT_FONT_FACE: ChatFontFace = 'Cardo-Regular';
+const DEFAULT_CHAT_FONT_FACE: ChatFontFace = fonts.cardoRegular;
 const MIN_CHAT_FONT_SIZE = 12;
 const MAX_CHAT_FONT_SIZE = 30;
 const MIN_NODE_CORNER_RADIUS = 0;
 const MAX_NODE_CORNER_RADIUS = 32;
-
-const toChatFontFace = (value?: string): ChatFontFace =>
-  SUPPORTED_CHAT_FONT_FACES.includes(value as ChatFontFace)
-    ? (value as ChatFontFace)
-    : DEFAULT_CHAT_FONT_FACE;
 
 type AppearanceDraft = {
   readonly fontFace: ChatFontFace;
@@ -98,7 +93,7 @@ export const useAppearanceController = () => {
         draft.nodeViewCornerRadiusInput.trim()
       );
 
-      if (!SUPPORTED_CHAT_FONT_FACES.includes(draft.fontFace)) {
+      if (!messageFontFamilies.includes(draft.fontFace)) {
         setError('Selected font is not supported.');
         return;
       }

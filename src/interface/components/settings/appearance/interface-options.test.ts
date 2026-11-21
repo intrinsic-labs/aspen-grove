@@ -1,4 +1,9 @@
-import { cornerRadiusOptions, fontSizeOptions } from './interface-options';
+import { fonts } from '@interface/ui/value-objects/fonts';
+import {
+  FONT_OPTIONS,
+  cornerRadiusOptions,
+  fontSizeOptions,
+} from './interface-options';
 
 describe('interface options', () => {
   it('offers font sizes 12 to 26', () => {
@@ -24,4 +29,11 @@ describe('interface options', () => {
     const values = cornerRadiusOptions(9).map((option) => option.value);
     expect(values.slice(4, 7)).toEqual([8, 9, 10]);
   });
+});
+
+it('offers VT220 immediately after Mono', () => {
+  expect(FONT_OPTIONS.slice(0, 2)).toEqual([
+    { value: fonts.mono, label: 'Mono' },
+    { value: fonts.vt220, label: 'VT220' },
+  ]);
 });

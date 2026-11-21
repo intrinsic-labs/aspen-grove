@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import type { IUserPreferencesRepository } from '@application/repositories';
 import { act, renderHook } from '@interface/test-support/render-hook';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
@@ -63,3 +64,24 @@ describe('useDialogueDisplayPreferences', () => {
     expect(result.current.preferences.messageFontSize).toBe(18);
   });
 });
+
+it.each([
+  ['IBM\u0050lexMono-Regular', fonts.mono, 16, 21.632],
+  [fonts.vt220, fonts.vt220, 18, 27],
+])(
+  'loads stored font %s with its message metrics',
+  async (storedFace, family, size, lineHeight) => {
+    const repo: Repo = {
+      get: async () => ({ ...stored, fontFace: storedFace }),
+    };
+    const { result } = renderHook(useDialogueDisplayPreferences, {
+      userPreferencesRepo: repo,
+    });
+    await act(() => undefined);
+    expect(result.current.preferences.messageFontFamily).toBe(family);
+    expect(result.current.preferences.messageFontSize).toBe(size);
+    expect(result.current.preferences.messageLineHeight).toBeCloseTo(
+      lineHeight
+    );
+  }
+);

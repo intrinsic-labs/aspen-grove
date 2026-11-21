@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { MarkdownColors, MarkdownTypography } from './markdown-typography';
 
@@ -34,7 +35,7 @@ export const markdownInlineStyles = (
   } as TextStyle,
 
   code_inline: {
-    fontFamily: 'IBMPlexMono-Regular',
+    fontFamily: fonts.mono,
     fontSize: fontSize * 0.88,
     backgroundColor: colors.codeBackground,
     paddingHorizontal: 5,

@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { MarkdownColors, MarkdownTypography } from './markdown-typography';
 
@@ -10,7 +11,7 @@ const codeBlockStyle = ({
   lineHeight,
   textColor,
 }: MarkdownTypography): TextStyle => ({
-  fontFamily: 'IBMPlexMono-Regular',
+  fontFamily: fonts.mono,
   fontSize: fontSize * 0.85,
   lineHeight: lineHeight * 0.9,
   backgroundColor: 'transparent',

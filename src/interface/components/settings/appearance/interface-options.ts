@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import type { NodeViewStyle } from '@domain/entities';
 import type { ChatFontFace } from '../types';
 
@@ -6,15 +7,12 @@ export type InterfaceOption<T> = {
   readonly label: string;
 };
 
-/**
- * Aspen Grove's three message fonts, in Latent Spaces' order (mono, Cardo,
- * sans; LoomFont.swift:10-15). Calling Code, VT220 and System are not
- * bundled: IBM Plex Mono and Open Sans stand in.
- */
+/** Latent Spaces' order; JetBrains Mono and Open Sans replace Calling Code and System. */
 export const FONT_OPTIONS: readonly InterfaceOption<ChatFontFace>[] = [
-  { value: 'IBMPlexMono-Regular', label: 'IBM Plex Mono' },
-  { value: 'Cardo-Regular', label: 'Cardo' },
-  { value: 'OpenSans-Regular', label: 'Open Sans' },
+  { value: fonts.mono, label: 'Mono' },
+  { value: fonts.vt220, label: 'VT220' },
+  { value: fonts.cardoRegular, label: 'Cardo' },
+  { value: fonts.openSans, label: 'Open Sans' },
 ];
 
 export const MESSAGE_STYLE_OPTIONS: readonly InterfaceOption<NodeViewStyle>[] =
