@@ -4,7 +4,11 @@
 # message wraps to two lines, so the screenshots also show the edit field
 # holding both lines, before and after it takes focus. (beta1-loop edits
 # with the keyboard already up, which hid both bugs.) A hardware-keyboard
-# simulator draws no keyboard, so the flow checks focus, not the keyboard.
+# simulator draws no keyboard, and Maestro doesn't report a TextInput's
+# focus on iOS (and its inputText types into a field that lost focus), so
+# the flow checks the field's focus stroke (`chat-composer-input-focus-stroke`,
+# drawn only while focused), then types without a tap: the character
+# follows the last word only if the caret is at the end.
 # Needs the mock server and Metro up (see VERIFY.md, "No key?"):
 #   maestro test .maestro/mock/edit-keyboard-down.yaml --test-output-dir "$SHOTS/edit-keyboard-down"
 # Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
@@ -15,7 +19,7 @@ appId: com.intrinsiclabs.aspengrove
 - runFlow:
     file: ../start-tree.yaml
     env:
-      MESSAGE: In one short plain sentence, how old can the oldest aspen groves get?
+      MESSAGE: Which trees share one root system?
 - extendedWaitUntil:
     visible:
       id: chat-message-row-.*
@@ -25,28 +29,48 @@ appId: com.intrinsiclabs.aspengrove
     notVisible:
       id: chat-streaming-message
     timeout: 60000
-- runFlow: ../dismiss-keyboard.yaml
-- assertVisible:
+# A turn typed in the tree's own composer: the field has held text the user
+# typed, then been cleared by the send, as in real use.
+- tapOn:
     id: chat-composer-input
-    focused: false
+- inputText: In one short plain sentence, how old can the oldest aspen groves get?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- runFlow: ../dismiss-keyboard.yaml
+- assertNotVisible:
+    id: chat-composer-input-focus-stroke
 - takeScreenshot: edit-01-keyboard-down
 
 - longPressOn:
     id: chat-message-row-.*
-    index: 0
+    index: 2
 - tapOn: 'Edit'
 - extendedWaitUntil:
     visible:
       id: chat-composer-edit-banner
     timeout: 10000
+- waitForAnimationToEnd
+# Still focused once the menu has gone (a focus taken while it closed was
+# dropped at the end of its dismissal).
 - extendedWaitUntil:
     visible:
-      id: chat-composer-input
-      focused: true
+      id: chat-composer-input-focus-stroke
     timeout: 5000
 - waitForAnimationToEnd
+- assertVisible:
+    id: chat-composer-input-focus-stroke
 - takeScreenshot: edit-02-focused-two-lines
-# The caret is at the end: a typed character follows the last word.
+# Focused, caret at the end: a character typed without a tap follows the
+# last word.
 - inputText: '!'
 - assertVisible:
     id: chat-composer-input

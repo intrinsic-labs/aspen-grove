@@ -62,6 +62,7 @@ export const ComposerField = ({
     <View style={styles.fieldShadow}>
       {isFocused ? (
         <View
+          testID={`${testID}-focus-stroke`}
           pointerEvents="none"
           style={[styles.focusStroke, { borderColor: colors.green }]}
         />
