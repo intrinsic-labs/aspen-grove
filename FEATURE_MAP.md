@@ -393,14 +393,15 @@ stays until the user makes one.
 - **ID:** `search.nodes`
 - **Purpose:** Full-text search across every tree's nodes, grouped by tree. Tap a result to
   open its tree on that node's Node Info sheet (`node.sheet`), or tap a tree header to open
-  the tree.
+  the tree. A result's snippet is plain text, its markdown marks stripped (`stripMarkdown`).
+  Latent Spaces has no search.
 - **Where:** Route `search`, pushed from Home's menu, with the native back button. The
   search bar is at the top.
 - **Reach:** Cold start → `home-menu-button` → "Search" → type at least two
   characters into `search-input`.
 - **Requires:** Nodes to search. When empty it prompts "Type at least two characters".
 - **Selector:** working — `search-screen`, `search-input`, `search-clear-button`, `search-done-button`, `search-results-list`, tree headers `search-results-tree-<treeId>`, rows `search-results-row-<nodeId>`
-- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
+- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`, `src/application/services/text/strip-markdown.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#searchByContent` (limit 100);
   `loom_trees` for titles
 - **Status:** live
@@ -645,7 +646,10 @@ stays until the user makes one.
 - **Purpose:** Shows a node's continuations (its child branches) inline, as Latent Spaces
   does (ChildNodesView): the hint "Tap to expand. Double tap to make current node. Long press
   for more options.", then a horizontal row of tan cards, each captioned with its model ("User" or "System" for a person's or
-  system node; a green check on the one the active path runs through) and `[n]`, then a divider. A tap opens
+  system node; a green check on the one the active path runs through) and `[n]`, then a divider. A card
+  previews its node's text in up to 7 lines, as plain text with the markdown marks stripped
+  (`stripMarkdown`; Latent Spaces' cards are plain `Text`, though they show the source; flow:
+  `.maestro/markdown.yaml`). A tap opens
   the card's "Continuation Node" sheet (`node.sheet`), a double-tap makes it current, and a
   long-press gives Make Current Node and Retrace Branch, a divider, then Copy Text and
   Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
@@ -661,7 +665,7 @@ stays until the user makes one.
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/useFollowNewRun.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/useFollowNewRun.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
@@ -778,7 +782,7 @@ stays until the user makes one.
 - **ID:** `chat.bookmarks`
 - **Purpose:** Latent Spaces' bookmarks (ToolbarMenu.swift:64-77, BookmarkSheet.swift): the
   tree menu's "Bookmarks" submenu lists this tree's bookmarked nodes, oldest first, each by
-  its label or else its text, with `sparkles` for a model node and `person.fill` for the
+  its label or else its text (markdown marks stripped), with `sparkles` for a model node and `person.fill` for the
   user's. Choosing one opens its sheet: the label (or "Bookmarked Node") over a bookmark
   symbol and the node's model, the node's text, and a `···` menu with Rename Bookmark, then
   Make Current Node and Retrace Branch, then Copy Text and Bookmarked. Rename Bookmark asks
@@ -1072,7 +1076,9 @@ stays until the user makes one.
   the tree menu's Bookmarks (`chat.bookmarks`: its label, a bookmark symbol, no `[n]`). The toolbar has a glass back
   button, the title over the node's model (a green check on a continuation the active path
   runs through) and `[n]`, and a glass `···` menu. The body is the node's whole text in the
-  message font, selectable, and under it Aspen Grove's metadata (local id, author, created
+  message font, drawn as its message is in the tree (a model's reply as rendered markdown, a
+  human or system message as typed, as Latent Spaces' sheets reuse its message view),
+  selectable, and under it Aspen Grove's metadata (local id, author, created
   time, edited-from, flags, content hash) and, for model nodes, generation info (provider,
   model, request id, latency, tokens) and provenance (`node.provenance`).
 - **Where:** A page sheet over the Dialogue screen.
@@ -1081,7 +1087,7 @@ stays until the user makes one.
   (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
 - **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-bookmark`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
-- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/node-sheet-target.ts`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetText.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/node-sheet-target.ts`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`
 - **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
 - **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the

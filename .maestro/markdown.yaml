@@ -3,7 +3,8 @@
 # item and a table cell); a wide code block, before and after a sideways
 # swipe; a numbered list nested under a bullet keeps its numbers (and a
 # bullet under a number its bullet), and a code block sits close to the
-# text around it.
+# text around it. Then a reply's continuation rail: its cards preview plain
+# text, markdown stripped, and a card's sheet renders the markdown.
 # Copy .maestro/fixtures/markdown-sample.openloom into the simulator's
 # Files ("On My iPhone") first, as for the perf flows. No key needed.
 #   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS/markdown"
@@ -56,3 +57,29 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 15000
 - waitForAnimationToEnd
 - takeScreenshot: md-01-nested-lists-and-code
+
+# The first reply's rail: its sibling's card shows the words, not the marks.
+- tapOn: 'Here is how to weave a branch.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-rail
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow:
+    file: rail-find.yaml
+    env:
+      TARGET: 'chat-continuation-card-.*'
+- assertVisible: 'Aspen at a glance.*'
+- assertNotVisible: '.*##.*'
+- assertNotVisible: '.*\*\*.*'
+- takeScreenshot: md-05-rail-plain-previews
+- tapOn: 'Aspen at a glance.*'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: '.*A quaking aspen grove is often one plant.*'
+- takeScreenshot: md-06-card-sheet-rendered
+- tapOn:
+    id: node-sheet-back

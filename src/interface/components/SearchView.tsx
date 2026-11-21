@@ -11,6 +11,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import type { Content, Node } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
+import { stripMarkdown } from '@application/services/text/strip-markdown';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '../hooks/useAspenGroveTheme';
 import { AppScreen, AppText, Hairline } from '../ui/value-objects';
@@ -245,7 +246,10 @@ const SearchView = () => {
                 {item.createdAt.toLocaleDateString()}
               </AppText>
               <AppText tone="primary" style={styles.resultSnippet}>
-                {makeSnippet(contentToPlainText(item.content), trimmedQuery)}
+                {makeSnippet(
+                  stripMarkdown(contentToPlainText(item.content)),
+                  trimmedQuery
+                )}
               </AppText>
             </Pressable>
           )}

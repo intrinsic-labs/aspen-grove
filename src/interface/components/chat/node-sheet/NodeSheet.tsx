@@ -17,6 +17,7 @@ import type { NodeInfoMenuAction } from './node-info-menu';
 import type { NodeSheetTarget } from './node-sheet-target';
 import { NodeSheetDetails } from './NodeSheetDetails';
 import { NodeSheetKindHeader } from './NodeSheetKindHeader';
+import { NodeSheetText } from './NodeSheetText';
 import { useNodeSheetData } from './useNodeSheetData';
 import { PageSheet } from '@/interface/ui/components/sheet/PageSheet';
 
@@ -51,7 +52,8 @@ type NodeSheetProps = {
  * A node in a sheet, as Latent Spaces shows one: "Node Info" from a
  * message's menu, "Continuation Node" from a card, a bookmark from the tree
  * menu. The toolbar names the model; the body is the node's whole text,
- * selectable, with Aspen Grove's metadata and provenance under it.
+ * drawn as its message is and selectable, with Aspen Grove's metadata and
+ * provenance under it.
  */
 export const NodeSheet = ({
   target,
@@ -135,14 +137,11 @@ export const NodeSheet = ({
             testID="node-sheet-content"
             contentContainerStyle={styles.content}
           >
-            <AppText
-              testID="node-sheet-text"
-              variant="body"
-              selectable
-              style={[textStyle, styles.text]}
-            >
-              {data.text}
-            </AppText>
+            <NodeSheetText
+              text={data.text}
+              authorType={data.authorType}
+              textStyle={textStyle}
+            />
             <NodeSheetDetails data={data} />
           </ScrollView>
         ) : loading ? (
@@ -163,10 +162,6 @@ const styles = StyleSheet.create({
   content: {
     paddingTop: sheet.textTopGap,
     gap: sheet.detailsGap,
-  },
-  text: {
-    color: '#FFFFFF',
-    paddingHorizontal: sheet.textInset,
   },
   notice: {
     paddingVertical: 40,

@@ -74,6 +74,18 @@ const setup = () => {
 };
 
 describe('useNodeContinuations', () => {
+  it('previews a card as plain text, its markdown marks stripped', async () => {
+    const { hook, nodeRepo } = setup();
+    nodeRepo.findById.mockImplementation(async (nodeId: ULID) =>
+      textNode(nodeId, '## Aspen\n\nA **clonal** grove | one *plant*')
+    );
+    await act(() => hook.result.current.showForNode(nodeA));
+
+    expect(hook.result.current.items[0]?.previewText).toBe(
+      'Aspen\n\nA clonal grove | one plant'
+    );
+  });
+
   it('does not reopen a rail closed while its reload was in flight', async () => {
     const { hook, holdEdges } = setup();
     await act(() => hook.result.current.showForNode(nodeA));

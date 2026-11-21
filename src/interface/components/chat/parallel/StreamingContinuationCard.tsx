@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, type TextStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ULID } from '@domain/value-objects';
+import { stripMarkdown } from '@application/services/text/strip-markdown';
 import {
   useErrorDetailDisclosure,
   useErrorDetailsExpandedByDefault,
@@ -118,7 +119,9 @@ export const StreamingContinuationCard = ({
               : null,
           ]}
         >
-          {state.key === 'pending' ? 'Waiting for the model…' : state.body}
+          {state.key === 'pending'
+            ? 'Waiting for the model…'
+            : stripMarkdown(state.body)}
         </AppText>
       )}
     </ContinuationCardShell>
