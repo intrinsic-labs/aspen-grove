@@ -81,6 +81,7 @@ product inside `.verify/` so nothing global is created:
 ```sh
 UDID=<booted device UDID>
 mkdir -p .verify
+env -u AG_OPENROUTER_API_KEY -u EXPO_PUBLIC_OPENROUTER_API_KEY \
 xcodebuild -workspace ios/AspenGrove.xcworkspace -scheme AspenGrove -configuration Debug \
   -sdk iphonesimulator -destination "id=$UDID" -derivedDataPath .verify/DerivedData \
   build > .verify/xcodebuild.log 2>&1
@@ -131,6 +132,19 @@ The app has no server. A model agent needs either provider:
   It is stored with `expo-secure-store` (the Keychain on iOS, the Android Keystore on Android). `EXPO_PUBLIC_*` values are inlined into the JS bundle: use the variable only for
   local dev builds, never for an export or release build, and never write it into a
   committed file (`.env*.local` is gitignored if you want a file).
+  **Give the key to Metro only, never to the native build.** `xcodebuild` copies the shell's
+  environment into DerivedData, so a key exported in the building shell ends up on disk;
+  Gradle's daemon keeps the environment it started with for later builds. Build with the
+  key unset, then start Metro with it:
+
+  ```sh
+  env -u AG_OPENROUTER_API_KEY -u EXPO_PUBLIC_OPENROUTER_API_KEY xcodebuild …      # iOS, Path B
+  (cd android && env -u AG_OPENROUTER_API_KEY -u EXPO_PUBLIC_OPENROUTER_API_KEY ./gradlew …)   # Android
+  EXPO_PUBLIC_OPENROUTER_API_KEY=<key> npx expo start --dev-client --port 8081      # Metro only
+  ```
+
+  (The `expo run` commands build and serve in one process, so they can't split the two: use
+  Path B and the separate Gradle build when a key is in play.)
 - **LM Studio, local.** Load a model in LM Studio and start its server (default
   `http://localhost:1234`). The iOS Simulator shares the Mac's `localhost`, so the default
   endpoint in Settings → Connections works as is; tap `connections-lmstudio-test` to check.
@@ -289,7 +303,11 @@ the `File Provider Storage` folder of the app group whose
 `~/Library/Developer/CoreSimulator/Devices/$UDID/data/Containers/Shared/AppGroup/`.
 `perf-tree.yaml` runs on the 520-node tree, `perf-floor.yaml` runs the same steps on
 a three-node tree (Maestro's own overhead), and each prints `PERF <name>_ms=<n>` lines into
-the run's `maestro.log` (`grep -o 'JsConsole: PERF .*'`). Measure a Release build (Path B
+the run's `maestro.log` (`grep -o 'JsConsole: PERF .*'`). They default to the fake seed tree;
+for another tree pass its file, the phrase on the rail card to switch to and a word it holds
+with `-e`, as `perf-tree.yaml`'s header shows for the real-text tree (`-e TREE_FILE=…
+-e SWITCH_TEXT=… -e SEARCH_TERM=…`). A flow's own plain `env:` value wins over `-e`, so
+overridable values are written `${NAME || 'default'}`. Measure a Release build (Path B
 with `-configuration Release`, no Metro) and pass `-e RELEASE_BUILD=1`, which skips the dev
 launcher. The numbers are Maestro wall clock, and Maestro's cost grows with what is on
 screen (a long tree's hierarchy snapshot takes about twice the floor's): compare runs on one
@@ -434,7 +452,8 @@ emulator -avd Pixel_10 -no-snapshot-save -no-boot-anim -no-audio > .verify/emula
 adb -s emulator-5554 wait-for-device   # returns before boot ends; installing now fails with "Can't find service: package"
 until [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do sleep 2; done
 npx expo prebuild -p android                       # generates android/ (gitignored)
-(cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --console=plain) > .verify/gradle.log 2>&1
+(cd android && env -u AG_OPENROUTER_API_KEY -u EXPO_PUBLIC_OPENROUTER_API_KEY \
+  ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --console=plain) > .verify/gradle.log 2>&1
 adb -s emulator-5554 install -r android/app/build/outputs/apk/debug/app-debug.apk
 ```
 

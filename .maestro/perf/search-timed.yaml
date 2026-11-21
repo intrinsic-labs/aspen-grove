@@ -1,8 +1,12 @@
-# (d) Search every tree for a common word. In the seed, about 260 of 520 nodes
-# hold "lantern" (the repository caps results at 100). Timed from starting to
-# type to the first result row, so it includes Maestro's typing and the 250 ms
-# debounce: compare against the same search on the tiny tree (perf-floor.yaml).
+# (d) Search every tree for a common word, ${SEARCH_TERM}. In the fake seed,
+# about 260 of 520 nodes hold "lantern", the default (the repository caps
+# results at 100); the real-text tree needs another word ("skeptic"). Timed
+# from starting to type to the first result row, so it includes Maestro's
+# typing and the 250 ms debounce: compare against the same search on the tiny
+# tree (perf-floor.yaml).
 appId: com.intrinsiclabs.aspengrove
+env:
+  SEARCH_TERM: ${SEARCH_TERM || 'lantern'}
 ---
 - runFlow: ../open-home-menu.yaml
 - tapOn: Search
@@ -10,7 +14,7 @@ appId: com.intrinsiclabs.aspengrove
     id: search-input
 - waitForAnimationToEnd
 - evalScript: ${output.t0 = Date.now()}
-- inputText: lantern
+- inputText: ${SEARCH_TERM}
 - extendedWaitUntil:
     visible:
       id: 'search-results-row-.*'

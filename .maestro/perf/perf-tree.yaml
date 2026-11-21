@@ -4,12 +4,21 @@
 # ~/.maestro/tests/<run>/maestro.log (Maestro wall clock, so compare runs on the same
 # machine and simulator, never absolute numbers across machines). perf-floor.yaml
 # runs the same steps on a three-node tree: Maestro's own overhead.
+#
+# Every value below defaults to the fake seed tree and can be overridden with
+# `maestro -e` (a flow's plain `env:` value would win over `-e`). For the
+# real-text tree (`--seed 1` without --fake), for example:
+#   maestro test .maestro/perf/perf-tree.yaml -e TREE_FILE=perf-tree-1-llm.openloom \
+#     -e SWITCH_TEXT='.*conversation_turns.*' -e SEARCH_TERM=skeptic
+# (SWITCH_TEXT is a phrase in the rail card being switched to, which differs
+# per tree; SEARCH_TERM, searched in search-timed.yaml, must occur in it.)
 appId: com.intrinsiclabs.aspengrove
 env:
-  TREE_FILE: perf-tree-1-fake.openloom
+  TREE_FILE: ${TREE_FILE || 'perf-tree-1-fake.openloom'}
   # n-0036, three children; its second card (n-0126) opens with this paragraph.
-  RAIL_ROW_TEXT: 'Draft a SQL query.*'
-  SWITCH_TEXT: '.*Juniper glimmer anchor drift anchor valley.*'
+  RAIL_ROW_TEXT: ${RAIL_ROW_TEXT || 'Draft a SQL query.*'}
+  SWITCH_TEXT: ${SWITCH_TEXT || '.*Juniper glimmer anchor drift anchor valley.*'}
+  SEARCH_TERM: ${SEARCH_TERM || 'lantern'}
 ---
 - runFlow:
     file: setup-import.yaml
@@ -35,5 +44,8 @@ env:
 - takeScreenshot: perf-tree-switched
 - runFlow: ../go-home.yaml
 
-- runFlow: search-timed.yaml
+- runFlow:
+    file: search-timed.yaml
+    env:
+      SEARCH_TERM: ${SEARCH_TERM}
 - takeScreenshot: perf-tree-search
