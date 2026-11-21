@@ -264,6 +264,9 @@ each area the change touched:
 | Performance | `perf/` (below) |
 
 `first-turn.yaml` (no `mock/`) is the same first turn on a real OpenRouter key.
+[real/beta1-openrouter.yaml](.maestro/real/beta1-openrouter.yaml) is beta1-loop on a real
+OpenRouter model (`-e MODEL=<id>`, default `anthropic/claude-haiku-4.5`), plus Generate 3
+and a second relaunch; the key comes from Metro's environment only (step 4). About a cent a run.
 
 ```sh
 SHOTS=.verify/shots/$(git rev-parse --short HEAD)

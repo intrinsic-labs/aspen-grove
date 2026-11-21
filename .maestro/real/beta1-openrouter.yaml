@@ -220,15 +220,6 @@ env:
 - extendedWaitUntil:
     visible: '.*[Hh]ow big can one grove get\?'
     timeout: 15000
-- extendedWaitUntil:
-    visible:
-      id: chat-message-row-.*
-      index: 3
-    timeout: 60000
-- extendedWaitUntil:
-    notVisible:
-      id: chat-streaming-message
-    timeout: 60000
 - waitForAnimationToEnd
 - runFlow: ../dismiss-keyboard.yaml
 - repeat:
@@ -259,6 +250,27 @@ env:
     notVisible:
       id: chat-continuation-rail
     timeout: 10000
+- waitForAnimationToEnd
+
+# A reply on the new branch (an edit doesn't send one by itself).
+- longPressOn:
+    id: chat-message-row-.*
+    index: 2
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
 - waitForAnimationToEnd
 
 # Bookmark the edited turn's reply.
@@ -420,10 +432,13 @@ env:
     text: '3'
 - tapOn:
     id: chat-continuation-generate-button
+# A fast model can finish all three before Maestro looks, so the streaming
+# state is caught when it can be.
 - extendedWaitUntil:
     visible:
       id: chat-continuation-stop-all
-    timeout: 10000
+    timeout: 3000
+    optional: true
 - takeScreenshot: or-15-parallel-streaming
 - extendedWaitUntil:
     notVisible:
@@ -434,8 +449,9 @@ env:
     id: 'chat-continuation-slot-error-.*'
 - takeScreenshot: or-16-parallel-done
 - swipe:
-    start: 92%, 30%
-    end: 8%, 30%
+    from:
+      id: chat-continuation-rail-list
+    direction: LEFT
 - waitForAnimationToEnd
 - takeScreenshot: or-17-parallel-rail-end
 
