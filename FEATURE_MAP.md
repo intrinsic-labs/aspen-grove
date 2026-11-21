@@ -583,13 +583,18 @@ stays until the user makes one.
   `chat-composer-edit-cancel`.
 - **Requires:** At least one message.
 - **Selector:** working — `chat-composer-edit-banner`, `chat-composer-edit-cancel`, `chat-composer-input`, `chat-composer-send`; menu item none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
+- **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/composer/useComposerFocus.ts#focusComposerAtEnd`, `src/interface/ui/components/native-menu-dismissal.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
 - **Backend:** WatermelonDB `nodes` (new node with `edited_from`, authored by the user; an
   edited system message stays `system`), `edges`, `path_nodes`, `path_states`. No provider
   call: saving an edit generates nothing (use `chat.regenerate` for a reply).
 - **Status:** live
 - **Notes:** Edit from the Node Info sheet closes the sheet, then starts the same flow once
-  it has gone on iOS, straight away on Android (`useNodeSheet`).
+  it has gone on iOS, straight away on Android (`useNodeSheet`). The composer takes focus,
+  caret after the text, only once the menu Edit came from has finished closing (a focus
+  taken while it closes is lost when the keyboard was down): the message and Node Info
+  menus report `onMenuShow` / `onMenuDismiss` (added by
+  `patches/react-native-context-menu-view+1.21.0.patch`) to `native-menu-dismissal.ts`.
+  Checked with the keyboard down by `.maestro/mock/edit-keyboard-down.yaml`.
 
 ### Read a message aloud (Voice Mode)
 - **ID:** `chat.read-aloud`

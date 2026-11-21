@@ -1,0 +1,60 @@
+# Edit from a message's menu with the keyboard down, against the mock
+# server (no key). The composer must take focus once the menu has closed,
+# with the caret after the text: a typed character lands at the end. The
+# message wraps to two lines, so the screenshots also show the edit field
+# holding both lines, before and after it takes focus. (beta1-loop edits
+# with the keyboard already up, which hid both bugs.) A hardware-keyboard
+# simulator draws no keyboard, so the flow checks focus, not the keyboard.
+# Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/edit-keyboard-down.yaml --test-output-dir "$SHOTS/edit-keyboard-down"
+# Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: In one short plain sentence, how old can the oldest aspen groves get?
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- runFlow: ../dismiss-keyboard.yaml
+- assertVisible:
+    id: chat-composer-input
+    focused: false
+- takeScreenshot: edit-01-keyboard-down
+
+- longPressOn:
+    id: chat-message-row-.*
+    index: 0
+- tapOn: 'Edit'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-edit-banner
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-input
+      focused: true
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: edit-02-focused-two-lines
+# The caret is at the end: a typed character follows the last word.
+- inputText: '!'
+- assertVisible:
+    id: chat-composer-input
+    text: '.*groves get\?!'
+- takeScreenshot: edit-03-typed-at-end
+
+# Cancel, and the composer is empty again.
+- tapOn:
+    id: chat-composer-edit-cancel
+- assertNotVisible:
+    id: chat-composer-edit-banner

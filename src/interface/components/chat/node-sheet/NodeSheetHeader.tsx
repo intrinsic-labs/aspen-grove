@@ -7,6 +7,7 @@ import {
   toNativeMenuActions,
   type NativeMenuSections,
 } from '@/interface/ui/components/native-menu';
+import { nativeMenuDismissalProps } from '@/interface/ui/components/native-menu-dismissal';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 
 const sheet = loomUiTokens.nodeSheet;
@@ -92,6 +93,7 @@ export const NodeSheetHeader = <Action extends string>({
       <ContextMenu
         dropdownMenuMode
         actions={toNativeMenuActions(menu)}
+        {...nativeMenuDismissalProps}
         onPress={(event) => {
           const item = findNativeMenuItem(menu, event.nativeEvent);
           if (item) {

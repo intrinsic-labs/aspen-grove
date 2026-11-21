@@ -202,6 +202,11 @@ cropped below the tree's header and faded at the cut, with the whole menu under 
 with the reply running on under the composer, it screenshots the composer's bottom with the
 keyboard down and up (no text may show below the composer's field). Start the mock with long replies for it
 (`--pace 200 --words 600`).
+[.maestro/mock/edit-keyboard-down.yaml](.maestro/mock/edit-keyboard-down.yaml) edits a
+two-line message from its menu with the keyboard down: the composer must take focus once the
+menu has closed, with the caret after the text (a typed `!` lands at the end), and the
+screenshots show the field holding both lines. beta1-loop edits with the keyboard already up,
+which hides both.
 [.maestro/mock/rail-current-card.yaml](.maestro/mock/rail-current-card.yaml) checks that the
 continuation rail opens on the current path's card: the last of two, the second of four
 (centered), and a new current card after a branch switch.
@@ -257,6 +262,7 @@ each area the change touched:
 | Home, the tree list | `mock/home-trees` |
 | Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
 | Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/tall-reply-menu` (mock with `--words 600`), `mock/menu-sections`, `mock/sheet-swipe`, `mock/header-scroll` |
+| Composer, edit-as-branch | `mock/edit-keyboard-down` |
 | Continuation rail, parallel cards | `mock/rail-current-card`, `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
 | Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
 | Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |

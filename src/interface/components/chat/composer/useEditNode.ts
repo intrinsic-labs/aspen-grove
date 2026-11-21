@@ -12,7 +12,7 @@ type UseEditNodeInput = {
   readonly continuations: Pick<ReturnType<typeof useNodeContinuations>, 'hide'>;
   readonly setInput: (text: string) => void;
   readonly shouldAutoScrollRef: MutableRefObject<boolean>;
-  readonly focusComposerAtEnd: () => void;
+  readonly focusComposerAtEnd: (text: string) => void;
 };
 
 /**
@@ -56,7 +56,7 @@ export const useEditNode = ({
       continuations.hide();
       shouldAutoScrollRef.current = true;
 
-      focusComposerAtEnd();
+      focusComposerAtEnd(text);
     },
     [
       continuations,
