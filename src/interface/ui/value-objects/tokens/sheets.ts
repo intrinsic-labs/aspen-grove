@@ -44,7 +44,8 @@ export const sheetTokens = {
     titleTopGap: 26,
     titleBottomGap: 9,
     // Calling Code 16, secondary (OpenLoomExportSheet.swift:48-55). JetBrains
-    // Mono stands in.
+    // Mono stands in at the size that gives the same line width; lines sit
+    // 20 pt apart (measured).
     noteFontFamily: fonts.mono,
     noteSize: 14.8,
     noteLineHeight: 20,

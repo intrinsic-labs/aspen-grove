@@ -33,7 +33,7 @@ describe('interface options', () => {
 
 it('offers VT220 immediately after Mono', () => {
   expect(FONT_OPTIONS.slice(0, 2)).toEqual([
-    { value: fonts.mono, label: 'Mono' },
+    { value: fonts.mono, label: 'JetBrains Mono' },
     { value: fonts.vt220, label: 'VT220' },
   ]);
 });

@@ -1,4 +1,9 @@
-/** Native PostScript names; bundled TTF filenames match for Android. */
+/**
+ * Native PostScript names; bundled TTF filenames match for Android.
+ * JetBrains Mono stands in for Latent Spaces' Calling Code (paid). Its
+ * advance is IBM Plex Mono's (600/1000 em), so sizes width-matched for Plex
+ * still hold.
+ */
 export const fonts = {
   cardoRegular: 'Cardo-Regular',
   cardoBold: 'Cardo-Bold',
@@ -20,9 +25,8 @@ export const messageFontFamilies = [
 
 export type MessageFontFamily = (typeof messageFontFamilies)[number];
 
-// Keep the retired persisted identifier readable at runtime while excluding
-// it from source searches for references to the removed font.
-const legacyMono = 'IBM\u0050lexMono-Regular';
+/** The mono face before JetBrains Mono; saved preferences may still name it. */
+const legacyMono = 'IBMPlexMono-Regular';
 
 export const normalizeMessageFontFamily = (
   value?: string

@@ -87,7 +87,8 @@ export const onboardingTokens = {
     tree: {
       // "Loom Trees": Cardo 40 with `.padding(.bottom)`; "Getting Started":
       // Calling Code 22, secondary, `VStack(spacing: 10)`
-      // (LoomTreeOnboarding.swift:20-31). JetBrains Mono stands in.
+      // (LoomTreeOnboarding.swift:20-31). JetBrains Mono stands in at the
+      // width-matched size (8% wider per glyph).
       titleSize: 40,
       titleLineHeight: 54,
       titleBottomPadding: 16,

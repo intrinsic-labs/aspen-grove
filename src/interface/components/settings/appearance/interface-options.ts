@@ -9,7 +9,7 @@ export type InterfaceOption<T> = {
 
 /** Latent Spaces' order; JetBrains Mono and Open Sans replace Calling Code and System. */
 export const FONT_OPTIONS: readonly InterfaceOption<ChatFontFace>[] = [
-  { value: fonts.mono, label: 'Mono' },
+  { value: fonts.mono, label: 'JetBrains Mono' },
   { value: fonts.vt220, label: 'VT220' },
   { value: fonts.cardoRegular, label: 'Cardo' },
   { value: fonts.openSans, label: 'Open Sans' },
