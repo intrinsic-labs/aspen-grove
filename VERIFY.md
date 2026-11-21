@@ -406,7 +406,8 @@ didn't record.
 ## 9. Android emulator
 
 The same tree and the same Maestro flows run on an Android emulator. Verified with smoke,
-mock/first-turn, mock/header-scroll and mock/voice-mode on a Pixel 10 AVD (API 37, arm64).
+mock/first-turn, mock/header-scroll, mock/voice-mode, mock/beta1-loop and
+mock/beta1-empty-states on a Pixel 10 AVD (API 37, arm64).
 
 **Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and the project's AVD,
 `Pixel_10` (API 37.1, arm64; other AVDs belong to other work). Missing from `emulator
@@ -468,8 +469,12 @@ What differs on Android, and how the shared flows handle it:
   the composers and scroll views itself. Don't set it to `pan`: Android then also pans the
   whole window, pushing Home's header and greeting under the status bar.
 - Back is the back key ([go-back.yaml](.maestro/go-back.yaml)). Maestro's `hideKeyboard` is
-  also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
-  away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
+  also the back key, so on a pushed screen it can leave the screen instead; in a tree, use
+  [dismiss-keyboard.yaml](.maestro/dismiss-keyboard.yaml) (`hideKeyboard` on iOS, a slow drag
+  on the message list on Android), or scroll, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
+- The share sheet is Android's Sharesheet (`com.android.intentresolver:id/chooser_container`,
+  the file name in `…:id/content_preview_filename`), closed with back;
+  [beta1-loop.yaml](.maestro/mock/beta1-loop.yaml) checks it per platform.
 - iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
   mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
   optional). mock/tree-model taps the keyboard's Done (`keyboard-done`) only on iOS and
