@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
+import { ComposerBottomBand } from './composer/ComposerBottomBand';
 import { ComposerField } from './composer/ComposerField';
 import { composerFieldMetrics } from './composer/composer-field-metrics';
 import { ComposerSendButton } from './composer/ComposerSendButton';
@@ -87,6 +88,7 @@ export const ChatComposer = memo(
     };
 
     const { colors } = useAspenGroveTheme();
+    const bottomPadding = bottomInset + loomUiTokens.layout.inputBarPadding;
 
     return (
       <KeyboardStickyView
@@ -105,11 +107,10 @@ export const ChatComposer = memo(
           onLayout={onLayout}
           style={[
             styles.composerWrap,
-            {
-              paddingBottom: bottomInset + loomUiTokens.layout.inputBarPadding,
-            },
+            { paddingBottom: bottomPadding },
           ]}
         >
+          <ComposerBottomBand height={bottomPadding} />
           {editLabel ? (
             <View
               testID="chat-composer-edit-banner"

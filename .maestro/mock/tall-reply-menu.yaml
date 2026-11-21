@@ -1,6 +1,8 @@
 # A long-press on a reply taller than the screen: the lifted preview is
 # cropped at full size below the tree's header, its top showing and its cut
-# fading out, with the whole menu under it (iOS).
+# fading out, with the whole menu under it (iOS). Then the composer's
+# bottom: with the reply's text running on under the composer, none of it
+# may show below the composer's field, with the keyboard down or up.
 # Needs Metro and the mock server started with long replies:
 #   node scripts/mock-llm-server/cli.ts --port 1235 --pace 200 --words 600
 #   maestro test .maestro/mock/tall-reply-menu.yaml --test-output-dir "$SHOTS/tall-reply-menu"
@@ -36,3 +38,32 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 - assertNotVisible: 'Regenerate Response'
 - takeScreenshot: tall-03-dismissed
+
+# The reply's text runs on under the composer, mid-reply: the band under
+# the composer's field hides it down to the screen's edge.
+- swipe:
+    start: 50%, 40%
+    end: 50%, 55%
+    duration: 800
+- waitForAnimationToEnd
+- assertVisible:
+    id: chat-composer-bottom-band
+- takeScreenshot: tall-04-composer-bottom
+# With the keyboard up, nothing shows between the field and the keyboard.
+- tapOn:
+    id: chat-composer-input
+# The simulator may not raise its keyboard for a focus alone: typing does.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - inputText: x
+      - eraseText: 1
+      - extendedWaitUntil:
+          visible:
+            id: space
+          timeout: 10000
+- waitForAnimationToEnd
+- assertVisible:
+    id: chat-composer-bottom-band
+- takeScreenshot: tall-05-composer-bottom-keyboard
