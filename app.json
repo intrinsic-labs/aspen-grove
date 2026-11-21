@@ -9,7 +9,13 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.intrinsiclabs.aspengrove"
+      "bundleIdentifier": "com.intrinsiclabs.aspengrove",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Aspen Grove connects to LM Studio on your local network so you can run local models."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -84,7 +90,12 @@
           ]
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-audio",
         {
@@ -103,6 +114,12 @@
           "backgroundColor": "#000000"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d7b7806b-1d28-4a4b-bd40-a50bd0174781"
+      }
+    },
+    "owner": "rocketbro"
   }
 }

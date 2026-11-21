@@ -22,6 +22,19 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appName": "Aspen Grove",
+        "language": "en-US"
+      }
+    },
+    "production-asc-key": {
+      "extends": "production",
+      "ios": {
+        "ascApiKeyPath": "$EXPO_ASC_API_KEY_PATH",
+        "ascApiKeyId": "$EXPO_ASC_KEY_ID",
+        "ascApiKeyIssuerId": "$EXPO_ASC_ISSUER_ID"
+      }
+    }
   }
 }
