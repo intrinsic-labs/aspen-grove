@@ -265,8 +265,10 @@ appId: com.intrinsiclabs.aspengrove
     index: 3
 - assertVisible: 'Remove Bookmark'
 - takeScreenshot: dod-10-after-restart-bookmarked
+# Close it with a tap in the header's band, above the lifted reply (kept
+# below the header; a tap just under the status bar doesn't reach the menu).
 - tapOn:
-    point: '50%,8%'
+    point: '50%,12%'
 - waitForAnimationToEnd
 - assertNotVisible: 'Remove Bookmark'
 # The original turn is kept beside the edit: the rail under the reply above

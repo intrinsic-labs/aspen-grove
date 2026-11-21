@@ -31,7 +31,7 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible: 'Prune'
 - takeScreenshot: tall-02-reply-menu
 - tapOn:
-    point: '12%,60%'
+    point: '50%,12%'
 - waitForAnimationToEnd
 - assertNotVisible: 'Regenerate Response'
 - takeScreenshot: tall-03-dismissed

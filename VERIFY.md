@@ -182,6 +182,10 @@ context menu in a tree (the human bubble, the reply, a continuation card), scree
 lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
 again on recycled native views.
+[.maestro/mock/tall-reply-menu.yaml](.maestro/mock/tall-reply-menu.yaml) long-presses a reply
+taller than the screen: on iOS its lifted preview is scaled to fit below the tree's header
+with the whole menu under it. Start the mock with long replies for it
+(`--pace 200 --words 600`).
 [.maestro/mock/parallel-continuations.yaml](.maestro/mock/parallel-continuations.yaml) draws
 several continuations at once: a turn, its rail, N picked (4, then 3), Generate 3, the cards
 streaming side by side while one fails on its own and the other two finish, one expanded (its
@@ -226,7 +230,7 @@ each area the change touched:
 |--------------|-----|
 | Home, the tree list | `mock/home-trees` |
 | Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
-| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/sheet-swipe`, `mock/header-scroll` |
+| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/tall-reply-menu` (mock with `--words 600`), `mock/sheet-swipe`, `mock/header-scroll` |
 | Continuation rail, parallel cards | `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
 | Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
 | Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |
@@ -461,6 +465,8 @@ What differs on Android, and how the shared flows handle it:
   mock/lmstudio-connection and the end of mock/tree-model (from its System Message step) are
   iOS-only for now; mock/setup passes (its "Select All" step is
   optional).
+- Native context menus have no lifted preview on Android, so mock/tall-reply-menu checks
+  only that the menu opens there.
 
 **Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`,
 `adb -s emulator-5554 uninstall com.intrinsiclabs.aspengrove`, then

@@ -530,13 +530,20 @@ stays until the user makes one.
 - **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
   horizontal ControlGroup; here it is an inline section (only the tree menu uses the patched
   `preferredElementSize`). On Android all groups draw as one flat list with no dividers.
+  On iOS the message lifts as the menu's preview, kept between the tree's header and the
+  room the menu needs under it: a message taller than that band is scaled down to fit it,
+  and one reaching above the header moves down below it (the patched
+  `previewTopInset` / `previewBottomInset` of react-native-context-menu-view).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
+- **Notes:** Flows: `.maestro/mock/long-press-menus.yaml`, and
+  `.maestro/mock/tall-reply-menu.yaml` for a reply taller than the screen (mock started with
+  `--words 600`).
 
 ### Regenerate a response
 - **ID:** `chat.regenerate`

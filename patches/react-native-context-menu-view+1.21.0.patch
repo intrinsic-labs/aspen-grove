@@ -68,10 +68,10 @@ index 63964b2..28e2572 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..b048b8d 100644
+index e10a830..e379737 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-@@ -18,6 +18,10 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -18,6 +18,13 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
  @implementation ContextMenuView {
    BOOL _cancelled;
    UIView *_customView;
@@ -79,10 +79,13 @@ index e10a830..b048b8d 100644
 +  // taken off again. Under Fabric a removed subview is recycled and mounted
 +  // elsewhere; an interaction left on it would still call this view.
 +  NSMapTable<UIView *, UIContextMenuInteraction *> *_hostedInteractions;
++  // The hosted view hidden while a scaled still of it is the menu's preview
++  // (UIKit hides the view only when the view itself is the preview).
++  __weak UIView *_hiddenPreviewSource;
  }
  
  - (id) init {
-@@ -42,18 +46,48 @@ - (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex
+@@ -42,18 +49,48 @@ - (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex
    [super insertReactSubview:subview atIndex:atIndex];
  
    if (@available(iOS 13.0, *)) {
@@ -134,7 +137,7 @@ index e10a830..b048b8d 100644
  - (void)didUpdateReactSubviews
  {
    [super didUpdateReactSubviews];
-@@ -65,7 +99,7 @@ - (void)layoutSubviews
+@@ -65,7 +102,7 @@ - (void)layoutSubviews
  }
  
  - (nullable UIContextMenuConfiguration *)contextMenuInteraction:(nonnull UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location API_AVAILABLE(ios(13.0)) {
@@ -143,7 +146,13 @@ index e10a830..b048b8d 100644
      return nil;
    }
  
-@@ -105,7 +139,7 @@ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willEndFo
+@@ -100,12 +137,13 @@ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willPerfo
+ }
+ 
+ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willEndForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator API_AVAILABLE(ios(13.0)) {
++  [self showHiddenPreviewSource];
+   if (_cancelled && self.onCancel) {
+     self.onCancel(@{});
    }
  }
  
@@ -152,7 +161,7 @@ index e10a830..b048b8d 100644
      UIPreviewParameters* previewParams = [[UIPreviewParameters alloc] init];
      
      if (_previewBackgroundColor != nil) {
-@@ -125,7 +159,7 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -125,7 +163,7 @@ - (UIPreviewParameters *)getPreviewParams {
          CGFloat bottomLeftRadius = self.borderBottomLeftRadius > -1 ? self.borderBottomLeftRadius : radius;
          
          UIBezierPath *path = [UIBezierPath bezierPath];
@@ -161,13 +170,12 @@ index e10a830..b048b8d 100644
          
          [path moveToPoint: CGPointMake(CGRectGetMinX(bounds) + topLeftRadius, CGRectGetMinY(bounds))];
  
-@@ -158,30 +192,100 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -158,28 +196,133 @@ - (UIPreviewParameters *)getPreviewParams {
      return previewParams;
  }
  
 -- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
 -    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:self.reactSubviews.firstObject.center];
--    
 +// Whether the interaction is this view's own (UIControl's, used by
 +// dropdownMenuMode) or one it put on a subview it still hosts.
 +- (BOOL)ownsInteraction:(UIContextMenuInteraction *)interaction API_AVAILABLE(ios(13.0)) {
@@ -177,10 +185,7 @@ index e10a830..b048b8d 100644
 +    }
 +    return view != nil && [_hostedInteractions objectForKey:view] == interaction;
 +}
- 
--    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
--                                        parameters:[self getPreviewParams]
--                                            target:previewTarget];
++
 +// The view the menu lifts: the hosted subview that was pressed, else the
 +// first one this view really contains. Under Fabric's interop layer
 +// `reactSubviews` can be empty or out of step with the real subviews.
@@ -199,52 +204,60 @@ index e10a830..b048b8d 100644
 +      }
 +    }
 +    return nil;
- }
++}
      
--- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
--    UIView *hostView = self.reactSubviews.firstObject;
 +// A preview that lifts the hosted view in place, or nil (UIKit's default
 +// preview) when it or its container isn't in a window: UIPreviewTarget and
 +// UITargetedPreview both assert that they are.
-+// Where the lifted preview goes. With previewTopInset / previewBottomInset
-+// set, it is kept in the band between them, as a system context menu keeps
-+// its preview clear of the navigation bar: a view taller than the band is
-+// scaled down to fit it, and one reaching above the band moves down into
-+// it. Otherwise (and for the dismissal, which returns the view to its
-+// place) it lifts where it is.
-+- (UIPreviewTarget *)previewTargetForView:(UIView *)hostView container:(UIView *)container clamped:(BOOL)clamped API_AVAILABLE(ios(13.0)) {
-+    UIWindow *window = hostView.window;
-+    BOOL hasBand = _previewTopInset > 0 || _previewBottomInset > 0;
-+    if (!clamped || !hasBand || window == nil) {
-+      return [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
++// The band, in window coordinates, a lifted preview must fit in, or
++// CGRectNull when previewTopInset / previewBottomInset aren't set.
++- (CGRect)previewBandInWindow:(UIWindow *)window {
++    if ((_previewTopInset <= 0 && _previewBottomInset <= 0) || window == nil) {
++      return CGRectNull;
 +    }
-+
-+    CGRect frame = [container convertRect:hostView.frame toView:nil];
-+    CGFloat windowHeight = CGRectGetHeight(window.bounds);
-+    CGFloat bandTop = MAX(0, _previewTopInset);
-+    CGFloat bandBottom = windowHeight - MAX(0, _previewBottomInset);
-+    CGFloat bandHeight = bandBottom - bandTop;
-+    if (bandHeight <= 0 || CGRectGetHeight(frame) <= 0) {
-+      return [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
++    CGFloat top = MAX(0, _previewTopInset);
++    CGFloat bottom = CGRectGetHeight(window.bounds) - MAX(0, _previewBottomInset);
++    if (bottom <= top) {
++      return CGRectNull;
 +    }
-+
-+    CGFloat scale = MIN(1.0, bandHeight / CGRectGetHeight(frame));
-+    CGFloat height = CGRectGetHeight(frame) * scale;
-+    CGFloat centerY = CGRectGetMidY(frame);
-+    if (scale < 1.0) {
-+      centerY = bandTop + height / 2.0;
-+    } else if (centerY - height / 2.0 < bandTop) {
-+      centerY = bandTop + height / 2.0;
-+    }
-+    CGPoint center = [container convertPoint:CGPointMake(CGRectGetMidX(frame), centerY) fromView:nil];
-+    return [[UIPreviewTarget alloc] initWithContainer:container
-+                                               center:center
-+                                            transform:CGAffineTransformMakeScale(scale, scale)];
++    return CGRectMake(0, top, CGRectGetWidth(window.bounds), bottom - top);
++}
+ 
+-    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
++// A still of the view drawn at `scale`, standing in for it as a preview that
++// has to shrink: a scale transform on the view itself would leave its hit
++// area full size, so taps around the shrunken preview wouldn't close the menu.
++- (UIView *)scaledSnapshotOfView:(UIView *)view scale:(CGFloat)scale {
++    CGSize size = CGSizeMake(CGRectGetWidth(view.bounds) * scale, CGRectGetHeight(view.bounds) * scale);
++    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:size];
++    UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
++      [view drawViewHierarchyInRect:CGRectMake(0, 0, size.width, size.height) afterScreenUpdates:NO];
++    }];
++    UIImageView *snapshot = [[UIImageView alloc] initWithImage:image];
++    snapshot.frame = CGRectMake(0, 0, size.width, size.height);
++    return snapshot;
+ }
+ 
+-- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
+-    UIView *hostView = self.reactSubviews.firstObject;
++- (void)showHiddenPreviewSource {
++    _hiddenPreviewSource.alpha = 1.0;
++    _hiddenPreviewSource = nil;
 +}
  
 -    if (!hostView.window) {
 -        // The view is no longer available; it was unmounted.
 -        return nil;
++// The preview that lifts the hosted view. With previewTopInset /
++// previewBottomInset set it is kept in the band between them, as a system
++// context menu keeps its preview clear of the navigation bar: a view taller
++// than the band is shown scaled down to fit it, and one reaching above the
++// band moves down into it. Otherwise (and for the dismissal, which returns
++// the view to its place) it lifts where it is. Nil (UIKit's default
++// preview) when the view or its container isn't in a window:
++// UIPreviewTarget and UITargetedPreview both assert that they are.
 +- (UITargetedPreview *)targetedPreviewForInteraction:(UIContextMenuInteraction *)interaction clamped:(BOOL)clamped API_AVAILABLE(ios(13.0)) {
 +    if (![self ownsInteraction:interaction]) {
 +      return nil;
@@ -254,28 +267,58 @@ index e10a830..b048b8d 100644
 +    if (hostView == nil || container == nil || hostView.window == nil || container.window == nil) {
 +      return nil;
      }
-     
--    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
-+    UIPreviewTarget* previewTarget = [self previewTargetForView:hostView container:container clamped:clamped];
-     
-     return [[UITargetedPreview alloc] initWithView:hostView
--                                        parameters:[self getPreviewParams]
-+                                        parameters:[self getPreviewParamsForView:hostView]
-                                             target:previewTarget];
- }
  
+-    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
++    CGRect band = clamped ? [self previewBandInWindow:hostView.window] : CGRectNull;
++    CGRect frame = [container convertRect:hostView.frame toView:nil];
++    if (CGRectIsNull(band) || CGRectGetHeight(frame) <= 0) {
++      UIPreviewTarget *target = [[UIPreviewTarget alloc] initWithContainer:container center:hostView.center];
++      return [[UITargetedPreview alloc] initWithView:hostView
++                                          parameters:[self getPreviewParamsForView:hostView]
++                                              target:target];
++    }
+ 
+-    return [[UITargetedPreview alloc] initWithView:hostView
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
++    CGFloat scale = MIN(1.0, CGRectGetHeight(band) / CGRectGetHeight(frame));
++    CGFloat height = CGRectGetHeight(frame) * scale;
++    CGFloat centerY = MAX(CGRectGetMidY(frame), CGRectGetMinY(band) + height / 2.0);
++    if (scale < 1.0) {
++      centerY = CGRectGetMinY(band) + height / 2.0;
++    }
++    CGPoint center = [container convertPoint:CGPointMake(CGRectGetMidX(frame), centerY) fromView:nil];
++    UIPreviewTarget *target = [[UIPreviewTarget alloc] initWithContainer:container center:center];
++
++    UIView *previewView = hostView;
++    if (scale < 1.0) {
++      previewView = [self scaledSnapshotOfView:hostView scale:scale];
++      hostView.alpha = 0.0;
++      _hiddenPreviewSource = hostView;
++    }
++    // Moved off its place, a see-through preview would sit over other
++    // content: give it the screen's background.
++    UIPreviewParameters *parameters = [self getPreviewParamsForView:previewView];
++    BOOL moved = scale < 1.0 || fabs(centerY - CGRectGetMidY(frame)) > 0.5;
++    if (moved && (_previewBackgroundColor == nil || CGColorGetAlpha(_previewBackgroundColor.CGColor) == 0)) {
++      parameters.backgroundColor = [[UIColor systemBackgroundColor] resolvedColorWithTraitCollection:hostView.traitCollection];
++    }
++    return [[UITargetedPreview alloc] initWithView:previewView
++                                        parameters:parameters
++                                            target:target];
++}
++
 +- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
 +    return [self targetedPreviewForInteraction:interaction clamped:YES];
 +}
 +
 +- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
++    [self showHiddenPreviewSource];
 +    return [self targetedPreviewForInteraction:interaction clamped:NO];
-+}
-+
+ }
+ 
  - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atIndexPath:(NSArray<NSNumber *> *)indexPath {
-     UIMenuElement* menuElement = nil;
-     UIImage *iconImage = nil;
-@@ -245,6 +349,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -245,6 +388,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
          actionMenu.subtitle = action.subtitle;
        }
  
