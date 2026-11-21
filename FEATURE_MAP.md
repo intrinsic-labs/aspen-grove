@@ -847,6 +847,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** iOS's `Alert.prompt` has no placeholder, so the empty field doesn't read
   "Name" there; Android's dialog does. An untitled tree opens the alert empty.
+  The native iOS prompt focuses its field automatically; Android focuses from the dialog's
+  `onShow`, after presentation.
 
 ### Edit tree description
 - **ID:** `chat.description-edit`
@@ -865,8 +867,9 @@ stays until the user makes one.
 - **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`, `src/interface/ui/components/sheet/`
 - **Backend:** WatermelonDB `loom_trees.description` via `WatermelonLoomTreeRepository`
 - **Status:** live
-- **Notes:** The description shows nowhere else in the app yet; it pre-fills the export
-  sheet, goes out with an Open Loom export and heads a Markdown export. Flow: `.maestro/mock/sheet-swipe.yaml`.
+- **Notes:** `TextEditorSheet` focuses its input from `PageSheet.onShow`, after the slide-in
+  animation, each time the sheet opens. The description shows nowhere else in the app yet;
+  it pre-fills the export sheet, goes out with an Open Loom export and heads a Markdown export. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -1010,7 +1013,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** This is the tree's system context: the text the export sheet's "Include System
   Message" writes out, sent to the model after the agent's own system prompt. Editing it
-  never forks the agent.
+  never forks the agent. The input mounts with `autoFocus` once the saved text has loaded,
+  so opening the editor requests the keyboard.
 
 ### Tree without an agent
 - **ID:** `chat.needs-agent`
