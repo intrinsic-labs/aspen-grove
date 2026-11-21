@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Cardo-Regular',
     fontSize: wordmark.fontSize,
     lineHeight: wordmark.lineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
 });

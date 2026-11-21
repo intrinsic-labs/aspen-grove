@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     textAlignVertical: 'top',
     paddingHorizontal: editor.textInset,
     paddingTop: editor.textTopGap,

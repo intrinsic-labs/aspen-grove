@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     fontSize: form.largeTitleSize,
     lineHeight: form.largeTitleLineHeight,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     marginTop: form.largeTitleTopGap,
     marginBottom: -11,
   },

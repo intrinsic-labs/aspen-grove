@@ -58,8 +58,7 @@ export const LmStudioTestFailureFooter = ({
 
 const styles = StyleSheet.create({
   error: {
-    // systemRed, dark
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
   detail: {
     fontFamily: 'IBMPlexMono-Regular',

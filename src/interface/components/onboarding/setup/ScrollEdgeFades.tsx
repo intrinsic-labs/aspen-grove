@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 const { background, setupFade } = loomUiTokens.onboarding;
-const clear = 'rgba(28, 28, 30, 0)';
+const { clear } = setupFade;
 
 /**
  * Soft edges over a scrolling page on the onboarding sheet: content fades

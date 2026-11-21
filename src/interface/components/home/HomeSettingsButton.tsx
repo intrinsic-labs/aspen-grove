@@ -27,7 +27,7 @@ export const HomeSettingsButton = () => {
         <MaterialCommunityIcons
           name="human-greeting"
           size={tokens.settingsIconSize}
-          color="#000"
+          color={tokens.settingsGlyph}
         />
       </View>
     </Pressable>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     width: tokens.settingsCircleSize,
     height: tokens.settingsCircleSize,
     borderRadius: tokens.settingsCircleSize / 2,
-    backgroundColor: '#fff',
+    backgroundColor: tokens.settingsDiscFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

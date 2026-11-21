@@ -1,9 +1,8 @@
 import { Switch } from 'react-native';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { loomUiTokens } from '../value-objects/loom-ui-tokens';
 
-/** Off track: visible against black, clearly dimmer than the on state. */
-const OFF_TRACK = 'rgba(255, 255, 255, 0.22)';
-const THUMB = '#FFFFFF';
+const { switchOffTrack, switchThumb } = loomUiTokens.settingsForm.colors;
 
 type AppSwitchProps = {
   readonly value: boolean;
@@ -37,9 +36,12 @@ export const AppSwitch = ({
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
-      trackColor={{ false: OFF_TRACK, true: onColor ?? colors.accentColor }}
-      ios_backgroundColor={OFF_TRACK}
-      thumbColor={THUMB}
+      trackColor={{
+        false: switchOffTrack,
+        true: onColor ?? colors.accentColor,
+      }}
+      ios_backgroundColor={switchOffTrack}
+      thumbColor={switchThumb}
     />
   );
 };

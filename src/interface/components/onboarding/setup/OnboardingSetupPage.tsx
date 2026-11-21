@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingBottom: loomUiTokens.onboarding.setupFade.bottom,
   },
   error: {
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
     marginTop: 16,
     paddingHorizontal: loomUiTokens.settingsForm.rowPaddingHorizontal,
   },

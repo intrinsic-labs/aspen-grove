@@ -1,5 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 import { formText } from '@/interface/ui/components/form';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 type SettingsStatusProps = {
   readonly saving: boolean;
@@ -55,7 +56,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   error: {
-    // systemRed, dark
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
 });

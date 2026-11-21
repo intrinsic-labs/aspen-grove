@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
     fontFamily: browser.metaFontFamily,
     fontSize: browser.chipSize,
     lineHeight: browser.metaLineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
 });

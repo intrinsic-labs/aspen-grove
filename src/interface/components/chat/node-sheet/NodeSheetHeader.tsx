@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: sheet.titleSize,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   subtitle: {
     flexDirection: 'row',

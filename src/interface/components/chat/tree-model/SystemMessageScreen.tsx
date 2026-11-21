@@ -85,13 +85,13 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     textAlignVertical: 'top',
     paddingHorizontal: editor.textInset,
     paddingTop: PUSHED_TEXT_TOP_GAP,
   },
   error: {
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
     paddingHorizontal: editor.textInset,
     paddingBottom: 12,
   },

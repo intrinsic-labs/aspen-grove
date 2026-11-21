@@ -38,9 +38,14 @@ export const OnboardingButton = ({
     ]}
   >
     {busy ? (
-      <ActivityIndicator color={prominent ? '#FFFFFF' : accent} />
+      <ActivityIndicator color={prominent ? button.prominentLabel : accent} />
     ) : (
-      <Text style={[styles.label, { color: prominent ? '#FFFFFF' : accent }]}>
+      <Text
+        style={[
+          styles.label,
+          { color: prominent ? button.prominentLabel : accent },
+        ]}
+      >
         {label}
       </Text>
     )}

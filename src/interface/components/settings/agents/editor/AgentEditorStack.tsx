@@ -20,8 +20,8 @@ export const AgentEditorStack = () => {
           screenOptions={{
             headerShadowVisible: false,
             headerStyle: { backgroundColor: sheet },
-            headerTintColor: '#FFFFFF',
-            headerTitleStyle: { color: '#FFFFFF' },
+            headerTintColor: loomUiTokens.colors.primary,
+            headerTitleStyle: { color: loomUiTokens.colors.primary },
             headerBackButtonDisplayMode: 'minimal',
             contentStyle: { backgroundColor: sheet },
           }}

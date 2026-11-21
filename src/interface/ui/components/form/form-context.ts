@@ -22,7 +22,6 @@ export const useFormColors = () => {
     card:
       surface === 'sheet' ? colors.sheetRowBackground : colors.rowBackground,
     page: surface === 'sheet' ? colors.sheetBackground : colors.background,
-    // UITableViewCell's selected background, dark (systemGray4).
-    pressed: surface === 'sheet' ? '#48484A' : '#3A3A3C',
+    pressed: surface === 'sheet' ? colors.sheetRowPressed : colors.rowPressed,
   };
 };

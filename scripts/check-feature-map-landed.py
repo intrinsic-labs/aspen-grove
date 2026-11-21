@@ -11,6 +11,11 @@ reconciled. This script reports only that part: files that changed between `revi
 the merge-base of HEAD and BASE_REF. Any such entry fails, so the map can't drift further
 than one merged change behind main.
 
+A landed commit that changed an entry's code and also edited that entry's text in the map
+counts as reconciled for that entry: its pull request already re-read it. So a change that
+keeps its own entries current doesn't force the next pull request to bump `revision:`. Only
+code that landed without its entry being touched still needs a re-read.
+
 Exit 0: nothing landed since `revision:` touches a mapped entry, or HEAD is BASE_REF's merge-base
 itself (a push to main), where it only warns.
 Exit 1: entries to re-read, and the merge-base to set as `revision:`; or a `revision:` that is not
@@ -19,6 +24,7 @@ a commit on BASE_REF.
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -27,6 +33,52 @@ _spec = importlib.util.spec_from_file_location(
 fm = importlib.util.module_from_spec(_spec)
 sys.modules["check_feature_map"] = fm  # dataclasses resolve the module by name
 _spec.loader.exec_module(fm)
+
+
+def landed_commits(root: Path, rev: str, base: str) -> list[str]:
+    """The commits on main after `revision:` up to the merge-base, oldest first."""
+    out = fm.git(root, "rev-list", "--first-parent", "--reverse", f"{rev}..{base}") or ""
+    return [c for c in out.splitlines() if c]
+
+
+def entry_spans(text: str) -> dict[str, tuple[int, int]]:
+    """Each entry's first and last line (1-based) in one version of the map."""
+    _, entries, _ = fm.parse(text)
+    total = len(text.splitlines())
+    spans = {}
+    for i, e in enumerate(entries):
+        end = entries[i + 1].line - 1 if i + 1 < len(entries) else total
+        spans[e.name] = (e.line, end)
+    return spans
+
+
+HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.M)
+
+
+def reconciled_by_commit(root: Path, map_path: Path, rev: str, base: str) -> dict[str, set[str]]:
+    """For each landed commit that edited the map, the entries whose text it changed.
+
+    A change that edits an entry's code and that same entry's text in one squash commit has
+    reconciled it already: its pull request re-read the entry. Only code changes that left
+    the entry's text untouched still need a re-read.
+    """
+    rel = str(map_path.resolve().relative_to(root.resolve()))
+    out: dict[str, set[str]] = {}
+    for commit in landed_commits(root, rev, base):
+        diff = fm.git(root, "diff", "-U0", f"{commit}^", commit, "--", rel) or ""
+        hunks = [(int(a), int(b) if b else 1) for a, b in HUNK_RE.findall(diff)]
+        if not hunks:
+            continue
+        text = fm.git(root, "show", f"{commit}:{rel}") or ""
+        touched = set()
+        for name, (lo, hi) in entry_spans(text).items():
+            for start, count in hunks:
+                # A pure deletion (count 0) sits after line `start`; count it as that line.
+                if start <= hi and start + max(count, 1) - 1 >= lo:
+                    touched.add(name)
+                    break
+        out[commit] = touched
+    return out
 
 
 def main(argv: list[str]) -> int:
@@ -48,15 +100,21 @@ def main(argv: list[str]) -> int:
               f"Set FEATURE_MAP.md's `revision:` to a commit on {base_ref}, such as the merge-base, {base}.")
         return 1
 
+    reconciled = reconciled_by_commit(root, map_path, rev, base)
+    commits = landed_commits(root, rev, base)
     stale = []
     for e in entries:
         ps = [p for p in e.code_paths() if fm.inside(root, p)]
         if not ps:
             continue
-        changed = fm.git(root, "diff", "--name-only", rev, base, "--", *ps) or ""
-        files = sorted({c for c in changed.splitlines() if c})
+        files: set[str] = set()
+        for commit in commits:
+            if e.name in reconciled.get(commit, set()):
+                continue
+            changed = fm.git(root, "diff", "--name-only", f"{commit}^", commit, "--", *ps) or ""
+            files.update(c for c in changed.splitlines() if c)
         if files:
-            stale.append((e, files))
+            stale.append((e, sorted(files)))
 
     if not stale:
         print(f"feature map: nothing that landed on {base_ref} since {rev[:10]} touches a mapped entry")
