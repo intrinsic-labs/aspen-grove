@@ -7,78 +7,14 @@ import {
 } from '@application/services/llm';
 import { LMStudioAdapter } from './LMStudioAdapter';
 import { OpenRouterAdapter } from './OpenRouterAdapter';
+import { openStreams } from './test-support/fake-streaming-fetch';
 
 // Real SHA-256 so hash comparisons and provenance checks mean something.
 jest.mock('expo-crypto', () => require('../../test-support/node-expo-crypto'));
 
-type FakeStream = {
-  readonly push: (text: string) => void;
-  /** Ends the body after `[DONE]`, as a provider does. */
-  readonly end: () => void;
-  /** Ends the body with no terminal event, as a dropped connection can. */
-  readonly drop: () => void;
-  readonly signal: AbortSignal;
-};
-
-const openStreams: FakeStream[] = [];
-
-const sseLine = (text: string) =>
-  `data: ${JSON.stringify({ model: 'test/model', choices: [{ delta: { content: text } }] })}\n\n`;
-
-/**
- * A streaming `fetch` the test drives by hand: each call opens a stream the
- * test pushes SSE events into, and aborting the request's signal rejects the
- * pending read with an AbortError, as a real fetch does.
- */
+// Driven by hand: each fetch opens a stream the test pushes events into.
 jest.mock('expo/fetch', () => ({
-  fetch: async (_url: string, init: { signal: AbortSignal }) => {
-    const queue: (Uint8Array | null)[] = [];
-    let wake: (() => void) | null = null;
-    const encoder = new TextEncoder();
-    const notify = () => {
-      wake?.();
-      wake = null;
-    };
-    openStreams.push({
-      push: (text) => {
-        queue.push(encoder.encode(sseLine(text)));
-        notify();
-      },
-      end: () => {
-        queue.push(encoder.encode('data: [DONE]\n\n'), null);
-        notify();
-      },
-      drop: () => {
-        queue.push(null);
-        notify();
-      },
-      signal: init.signal,
-    });
-    init.signal.addEventListener('abort', notify);
-    return {
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'x-request-id': `req_${openStreams.length}` }),
-      body: {
-        getReader: () => ({
-          read: async () => {
-            while (queue.length === 0 && !init.signal.aborted) {
-              await new Promise<void>((resolve) => {
-                wake = resolve;
-              });
-            }
-            if (init.signal.aborted) {
-              const error = new Error('aborted');
-              error.name = 'AbortError';
-              throw error;
-            }
-            const value = queue.shift();
-            return value ? { done: false, value } : { done: true, value: undefined };
-          },
-        }),
-      },
-    };
-  },
+  fetch: require('./test-support/fake-streaming-fetch').fakeStreamingFetch,
 }));
 
 const request = (signal?: AbortSignal): CompletionRequest => ({

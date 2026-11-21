@@ -478,8 +478,9 @@ What differs on Android, and how the shared flows handle it:
   only that the menu opens there.
 - Start the mock for mock/parallel-continuations with `--pace 1.5` on Android (not 3):
   Maestro's steps there wait out streaming text, and a 20 s stream ends before the flow
-  swipes back along the rail. (Keep streams under 60 s: the app gives up on an LM Studio
-  stream after that.) Which card fails also varies there, since the three requests can
+  swipes back along the rail. (A stream's length doesn't matter: the app gives up on an LM
+  Studio stream only after 2 minutes with no first bytes, or 60 s with none between
+  chunks.) Which card fails also varies there, since the three requests can
   reach the mock in any order; the flow finds cards by state
   ([rail-find.yaml](.maestro/rail-find.yaml)), not by slot.
 

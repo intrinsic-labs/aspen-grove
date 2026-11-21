@@ -1,5 +1,17 @@
+import type { StreamTimeouts } from '../shared/stream-timeouts';
+
 export const DEFAULT_LMSTUDIO_ENDPOINT = 'http://localhost:1234';
+/** A whole non-streaming completion. */
 export const DEFAULT_TIMEOUT_MS = 60000;
+/**
+ * A stream: two minutes for the first bytes, since a local model may have to
+ * load, read a long prompt or wait behind other requests first; then a
+ * minute of silence between chunks.
+ */
+export const DEFAULT_STREAM_TIMEOUTS: StreamTimeouts = {
+  firstByteMs: 120_000,
+  idleMs: 60_000,
+};
 
 export type LMStudioConfig = {
   readonly endpoint: string;

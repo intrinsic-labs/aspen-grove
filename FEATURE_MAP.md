@@ -720,8 +720,9 @@ stays until the user makes one.
   wording as a failed send (missing or rejected key, LM Studio not answering, otherwise one
   line by error code such as "LM Studio returned an error."). LM Studio gets N concurrent
   requests; a server that runs one prediction at a time queues them, so cards sit in
-  `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
-  late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
+  `pending` and stream in turn. A stream waits up to 2 minutes for its first bytes (queueing
+  included), then up to 60 s between chunks, however long it runs; a late card in a long
+  queue can still end `failed` (timeout). To provoke a failure,
   point the tree's agent at a model id that doesn't exist (type it into the model browser's
   search and tap `agent-editor-model-custom` or `tree-model-custom`).
   Parallel continuations are not read aloud.

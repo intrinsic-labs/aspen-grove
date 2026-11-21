@@ -16,8 +16,10 @@ import {
   unloadLMStudioModel,
 } from './lmstudio/models';
 import { streamLMStudioCompletion } from './lmstudio/streaming';
+import type { StreamTimeouts } from './shared/stream-timeouts';
 import {
   DEFAULT_LMSTUDIO_ENDPOINT,
+  DEFAULT_STREAM_TIMEOUTS,
   DEFAULT_TIMEOUT_MS,
   type LMStudioConfig,
   type LMStudioModel,
@@ -25,7 +27,10 @@ import {
 
 export type LMStudioAdapterOptions = {
   readonly autoLoadModels?: boolean;
+  /** A whole non-streaming completion. */
   readonly timeoutMs?: number;
+  /** A stream's wait for its first bytes, then between chunks. */
+  readonly streamTimeouts?: StreamTimeouts;
 };
 
 /**
@@ -41,10 +46,12 @@ export class LMStudioAdapter implements ILlmProvider {
   readonly provider = 'lmstudio' as const;
   private config: LMStudioConfig | null = null;
   private readonly timeoutMs: number;
+  private readonly streamTimeouts: StreamTimeouts;
   private cachedModels: LMStudioModel[] = [];
 
   constructor(options: LMStudioAdapterOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.streamTimeouts = options.streamTimeouts ?? DEFAULT_STREAM_TIMEOUTS;
   }
 
   async initialize(
@@ -176,7 +183,7 @@ export class LMStudioAdapter implements ILlmProvider {
       yield* streamLMStudioCompletion({
         config,
         request,
-        timeoutMs: this.timeoutMs,
+        timeouts: this.streamTimeouts,
       });
     } catch (error) {
       if (error instanceof LlmProviderError) {

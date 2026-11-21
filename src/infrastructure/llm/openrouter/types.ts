@@ -1,6 +1,18 @@
+import type { StreamTimeouts } from '../shared/stream-timeouts';
+
 export const DEFAULT_OPENROUTER_ENDPOINT =
   'https://openrouter.ai/api/v1/chat/completions';
+/** A whole non-streaming completion. */
 export const DEFAULT_TIMEOUT_MS = 45000;
+/**
+ * A stream: 45 s for the first bytes, then 45 s of silence between chunks.
+ * OpenRouter sends SSE comments while a model is still thinking, and they
+ * count as activity, so a reasoning model's quiet stretch isn't cut off.
+ */
+export const DEFAULT_STREAM_TIMEOUTS: StreamTimeouts = {
+  firstByteMs: 45_000,
+  idleMs: 45_000,
+};
 
 export type OpenRouterConfig = {
   readonly apiKey: string;
