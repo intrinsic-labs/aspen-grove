@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { stripMarkdown } from '@application/services/text/strip-markdown';
 import type {
   IAgentRepository,
   IEdgeRepository,
@@ -45,7 +46,7 @@ const toContinuationPreview = (input: {
     modelLabel,
     previewText:
       node.content.type === 'text'
-        ? node.content.text
+        ? stripMarkdown(node.content.text)
         : `[${node.content.type}]`,
     isOnActivePath: activeIndex !== undefined,
     onBranchCount: Math.max(1, onBranchCount),

@@ -14,7 +14,7 @@
    "rootNodeIds": [
     "m-0"
    ],
-   "currentNodeId": "m-1",
+   "currentNodeId": "m-3",
    "createdAt": "2026-01-01T00:00:00.000Z",
    "updatedAt": "2026-01-01T00:00:10.000Z",
    "nodes": {
@@ -44,6 +44,47 @@
       "name": "anthropic/claude-haiku-5.5"
      },
      "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    "m-1b": {
+     "id": "m-1b",
+     "content": [
+      {
+       "type": "text",
+       "text": "## Aspen at a glance\n\nA **quaking aspen** grove is often *one* plant.\n\n| Trait | Value |\n| --- | --- |\n| Root system | `shared` |\n| Age | thousands of years |"
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "anthropic/claude-haiku-5.5"
+     },
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    },
+    "m-2": {
+     "id": "m-2",
+     "content": [
+      {
+       "type": "text",
+       "text": "And inline styles mid-sentence?"
+      }
+     ],
+     "author": {
+      "role": "human"
+     },
+     "createdAt": "2026-01-01T00:00:03.000Z"
+    },
+    "m-3": {
+     "id": "m-3",
+     "content": [
+      {
+       "type": "text",
+       "text": "Quaking aspen spreads by suckering. The clonal **root system shared underground** can survive fire, drought and *centuries of hard mountain winters*, so a single grove can be one organism, and `loom.branch(3)` draws three continuations in one call.\n\n- **Connected roots:** every stem in the grove draws water from one shared network of roots.\n\n| Call | Returns |\n| --- | --- |\n| `loom.branch(3)` | `void`, not the *original* node |\n\nA wide command:\n\n```sh\nnode scripts/seed-perf-tree/cli.ts --seed 1 --model anthropic/claude-haiku-4.5 --price-in 1 --price-out 5 --yes  # END-OF-LINE\n```"
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "anthropic/claude-haiku-5.5"
+     },
+     "createdAt": "2026-01-01T00:00:04.000Z"
     }
    },
    "edges": [
@@ -58,6 +99,42 @@
      ],
      "targetNodeId": "m-1",
      "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    {
+     "id": "e-1b",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "m-0",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "m-1b",
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    },
+    {
+     "id": "e-2",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "m-1",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "m-2",
+     "createdAt": "2026-01-01T00:00:03.000Z"
+    },
+    {
+     "id": "e-3",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "m-2",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "m-3",
+     "createdAt": "2026-01-01T00:00:04.000Z"
     }
    ]
   }

@@ -7,7 +7,10 @@ import {
   parseMarkdownUncached,
   sharedMarkdownIt,
 } from './markdown/markdown-parse';
-import { markdownRules } from './markdown/markdown-rules';
+import {
+  markdownRules,
+  selectableMarkdownRules,
+} from './markdown/markdown-rules';
 import { createMarkdownStyles } from './markdown/markdown-styles';
 
 type MarkdownTextProps = {
@@ -15,6 +18,8 @@ type MarkdownTextProps = {
   readonly baseStyle?: TextStyle;
   /** Text still being written (streaming): parsed without caching. */
   readonly transient?: boolean;
+  /** The reader can select and copy each block's text. */
+  readonly selectable?: boolean;
 };
 
 /**
@@ -24,7 +29,12 @@ type MarkdownTextProps = {
  * and the component only re-renders when the text or style changes.
  */
 export const MarkdownText = memo(
-  ({ children, baseStyle, transient = false }: MarkdownTextProps) => {
+  ({
+    children,
+    baseStyle,
+    transient = false,
+    selectable = false,
+  }: MarkdownTextProps) => {
     const { colors } = useAspenGroveTheme();
 
     const styles = useMemo(
@@ -39,7 +49,7 @@ export const MarkdownText = memo(
     return (
       <Markdown
         style={styles}
-        rules={markdownRules}
+        rules={selectable ? selectableMarkdownRules : markdownRules}
         mergeStyle
         markdownit={sharedMarkdownIt}
       >

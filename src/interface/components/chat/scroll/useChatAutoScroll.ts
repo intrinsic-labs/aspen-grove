@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import type { ChatRow } from '../types';
+import { type ListTail, shouldFollowEnd } from './follow-end';
 import { isNearBottom } from './scroll-position';
 
 type UseChatAutoScrollInput = {
@@ -12,8 +13,8 @@ type UseChatAutoScrollInput = {
 };
 
 /**
- * Keeps the message list pinned to its end while new content arrives,
- * unless the user scrolls up during a send. Actions that should bring the
+ * Keeps the message list pinned to its end while new content arrives at
+ * the end, unless the user scrolls up during a send. Actions that should bring the
  * list back to the end set `shouldAutoScrollRef.current = true`.
  */
 export const useChatAutoScroll = ({
@@ -29,12 +30,22 @@ export const useChatAutoScroll = ({
   // through a long path only delays the last message.
   const jumpOnNextRowsRef = useRef(true);
 
+  // Rows rebuilt with the same path (a parallel run settling) don't move it.
+  const lastTailRef = useRef<ListTail | null>(null);
+
   useEffect(() => {
+    const tail: ListTail = {
+      lastRowId: rows.at(-1)?.id ?? null,
+      loading,
+      sending,
+    };
+    const follow = shouldFollowEnd(lastTailRef.current, tail);
+    lastTailRef.current = tail;
     if (loading) {
       jumpOnNextRowsRef.current = true;
       return;
     }
-    if (!shouldAutoScrollRef.current) {
+    if (!follow || !shouldAutoScrollRef.current) {
       return;
     }
     const animated = !jumpOnNextRowsRef.current;

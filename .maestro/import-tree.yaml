@@ -1,4 +1,5 @@
-# Import ${TREE_FILE} from Files ("On My iPhone"), starting on Home.
+# Import ${TREE_FILE}, starting on Home: on iOS from Files ("On My iPhone"),
+# on Android from the device (push it first, e.g. to /sdcard/Download).
 # Prints `PERF import_ms`, from picking the file to the "Import complete"
 # alert. Ends on Home, with the tree in its list.
 appId: com.intrinsiclabs.aspengrove
@@ -6,20 +7,49 @@ appId: com.intrinsiclabs.aspengrove
 - runFlow: open-home-menu.yaml
 - tapOn: Import OpenLoom Tree
 - waitForAnimationToEnd
-# The picker is another process, and on iOS 26 Maestro sees its contents
+# iOS: the picker is another process, and on iOS 26 Maestro sees its contents
 # only now and then, so nothing in it can be matched by text or id. Search
 # it for the file instead: one result, always in the same place. The picker
 # opens on "On My iPhone" (where it was last left), its search field at the
 # top; the search covers every location, so the file's folder doesn't matter.
-- tapOn:
-    point: 50%,19%
-- inputText: ${TREE_FILE}
-- pressKey: Enter
-- waitForAnimationToEnd
-- evalScript: ${output.t0 = Date.now()}
-# The single result's cell, under the "Name Contains" suggestion.
-- tapOn:
-    point: 18%,43%
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 50%,19%
+      - inputText: ${TREE_FILE}
+      - pressKey: Enter
+      - waitForAnimationToEnd
+      - evalScript: ${output.t0 = Date.now()}
+      # The single result's cell, under the "Name Contains" suggestion.
+      - tapOn:
+          point: 18%,43%
+# Android: the system picker (DocumentsUI) is visible to Maestro. Search
+# it (it covers every location) and tap the result's title.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: Search
+      - inputText: ${TREE_FILE}
+      - pressKey: Enter
+      - waitForAnimationToEnd
+      - evalScript: ${output.t0 = Date.now()}
+      - tapOn:
+          id: android:id/title
+          text: ${TREE_FILE}
+      - waitForAnimationToEnd
+      # The first tap can go to closing the search's keyboard.
+      - runFlow:
+          when:
+            visible:
+              id: android:id/title
+              text: ${TREE_FILE}
+          commands:
+            - tapOn:
+                id: android:id/title
+                text: ${TREE_FILE}
 - extendedWaitUntil:
     visible: 'Import complete'
     timeout: 180000

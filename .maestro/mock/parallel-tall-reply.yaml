@@ -1,0 +1,56 @@
+# A parallel run on a turn whose reply is taller than the screen: when the
+# run settles and the rows reload, the list stays on the rail instead of
+# jumping to the end of the reply (the rows' last node is unchanged).
+# Needs Metro and the mock server, with long replies:
+#   node scripts/mock-llm-server/cli.ts --port 1235 --pace 20 --words 400
+#   maestro test .maestro/mock/parallel-tall-reply.yaml --test-output-dir "$SHOTS/parallel-tall-reply"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me about aspen groves.
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 120000
+- waitForAnimationToEnd
+- runFlow: ../dismiss-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: chat-message-row-.*
+      index: 0
+    direction: UP
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn: 'Tell me about aspen groves.'
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-generate-button
+    timeout: 15000
+- waitForAnimationToEnd
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          id: chat-continuation-count-increase
+- takeScreenshot: rr-01-before-generate
+- tapOn:
+    id: chat-continuation-generate-button
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-stop-all
+    timeout: 10000
+- takeScreenshot: rr-02-streaming
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 120000
+- waitForAnimationToEnd
+- takeScreenshot: rr-03-done-settled
+- assertVisible:
+    id: chat-continuation-rail
+- assertVisible:
+    id: chat-continuation-generate-button
+- assertVisible: 'Tell me about aspen groves.'

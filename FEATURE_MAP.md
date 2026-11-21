@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 1727fedfe58cc1b66d4249b90bb1bf4afdd9e435
+revision: 94ce67396efe2a699bccca28297177706bf55e26
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -393,14 +393,15 @@ stays until the user makes one.
 - **ID:** `search.nodes`
 - **Purpose:** Full-text search across every tree's nodes, grouped by tree. Tap a result to
   open its tree on that node's Node Info sheet (`node.sheet`), or tap a tree header to open
-  the tree.
+  the tree. A result's snippet is plain text, its markdown marks stripped (`stripMarkdown`).
+  Latent Spaces has no search.
 - **Where:** Route `search`, pushed from Home's menu, with the native back button. The
   search bar is at the top.
 - **Reach:** Cold start → `home-menu-button` → "Search" → type at least two
   characters into `search-input`.
 - **Requires:** Nodes to search. When empty it prompts "Type at least two characters".
 - **Selector:** working — `search-screen`, `search-input`, `search-clear-button`, `search-done-button`, `search-results-list`, tree headers `search-results-tree-<treeId>`, rows `search-results-row-<nodeId>`
-- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`
+- **Code:** `src/interface/components/SearchView.tsx#openResult`, `src/app/search.tsx`, `src/interface/components/chat/node-sheet/useRouteNodeSheet.ts`, `src/application/services/text/strip-markdown.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#searchByContent` (limit 100);
   `loom_trees` for titles
 - **Status:** live
@@ -421,7 +422,7 @@ stays until the user makes one.
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
@@ -430,7 +431,9 @@ stays until the user makes one.
   scroll-edge effect fades them out under the title; Android has none, so
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
   Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
-  A reply's markdown (nested lists, a code block between paragraphs):
+  A reply's markdown (bold, italic and inline code wrapping mid-sentence as one run of text in
+  a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
+  a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
@@ -459,8 +462,10 @@ stays until the user makes one.
   **Thinking indicator:** while a single send or regenerate is in flight (the same state
   that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
   the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
-  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on, and
-  is not shown for parallel continuation cards.
+  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on.
+  It also shows there while a parallel run has any card still running (an AG adaptation:
+  Latent Spaces has no parallel run); the cards themselves have no thinking state, as
+  Latent Spaces' rail cards have no loading state.
   **System messages:** a node with `authorType` `system` (an Open Loom node with
   `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
   `trees.import`; the app has no control that writes one yet) renders centered in the
@@ -644,7 +649,10 @@ stays until the user makes one.
 - **Purpose:** Shows a node's continuations (its child branches) inline, as Latent Spaces
   does (ChildNodesView): the hint "Tap to expand. Double tap to make current node. Long press
   for more options.", then a horizontal row of tan cards, each captioned with its model ("User" or "System" for a person's or
-  system node; a green check on the one the active path runs through) and `[n]`, then a divider. A tap opens
+  system node; a green check on the one the active path runs through) and `[n]`, then a divider. A card
+  previews its node's text in up to 7 lines, as plain text with the markdown marks stripped
+  (`stripMarkdown`; Latent Spaces' cards are plain `Text`, though they show the source; flow:
+  `.maestro/markdown.yaml`). A tap opens
   the card's "Continuation Node" sheet (`node.sheet`), a double-tap makes it current, and a
   long-press gives Make Current Node and Retrace Branch, a divider, then Copy Text and
   Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
@@ -660,7 +668,7 @@ stays until the user makes one.
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/useFollowNewRun.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/useFollowNewRun.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
@@ -687,7 +695,10 @@ stays until the user makes one.
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
   `chat-continuation-card-<nodeId>`. Driven end to end, failure and relaunch included, by
   `.maestro/mock/parallel-continuations.yaml`, and with LM Studio down (each card naming the
-  saved address) by `.maestro/mock/parallel-lmstudio-down.yaml` (VERIFY.md).
+  saved address) by `.maestro/mock/parallel-lmstudio-down.yaml` (VERIFY.md). When a run
+  settles and the rows reload, the list stays where it is (it follows its end only for a new
+  last row, a load or a single send): `.maestro/mock/parallel-tall-reply.yaml`, above a reply
+  taller than the screen.
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
@@ -777,7 +788,7 @@ stays until the user makes one.
 - **ID:** `chat.bookmarks`
 - **Purpose:** Latent Spaces' bookmarks (ToolbarMenu.swift:64-77, BookmarkSheet.swift): the
   tree menu's "Bookmarks" submenu lists this tree's bookmarked nodes, oldest first, each by
-  its label or else its text, with `sparkles` for a model node and `person.fill` for the
+  its label or else its text (markdown marks stripped), with `sparkles` for a model node and `person.fill` for the
   user's. Choosing one opens its sheet: the label (or "Bookmarked Node") over a bookmark
   symbol and the node's model, the node's text, and a `···` menu with Rename Bookmark, then
   Make Current Node and Retrace Branch, then Copy Text and Bookmarked. Rename Bookmark asks
@@ -1071,7 +1082,9 @@ stays until the user makes one.
   the tree menu's Bookmarks (`chat.bookmarks`: its label, a bookmark symbol, no `[n]`). The toolbar has a glass back
   button, the title over the node's model (a green check on a continuation the active path
   runs through) and `[n]`, and a glass `···` menu. The body is the node's whole text in the
-  message font, selectable, and under it Aspen Grove's metadata (local id, author, created
+  message font, drawn as its message is in the tree (a model's reply as rendered markdown, a
+  human or system message as typed, as Latent Spaces' sheets reuse its message view),
+  selectable, and under it Aspen Grove's metadata (local id, author, created
   time, edited-from, flags, content hash) and, for model nodes, generation info (provider,
   model, request id, latency, tokens) and provenance (`node.provenance`).
 - **Where:** A page sheet over the Dialogue screen.
@@ -1080,7 +1093,7 @@ stays until the user makes one.
   (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
 - **Selector:** working — `node-sheet`, `node-sheet-back`, `node-sheet-title`, `node-sheet-subtitle`, `node-sheet-check`, `node-sheet-bookmark`, `node-sheet-content`, `node-sheet-text`, `node-sheet-details`, `node-sheet-generation`, `node-sheet-loading`, `node-sheet-error`
-- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/node-sheet-target.ts`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`
+- **Code:** `src/interface/components/chat/node-sheet/NodeSheet.tsx`, `src/interface/components/chat/node-sheet/NodeSheetText.tsx`, `src/interface/components/chat/node-sheet/NodeSheetHeader.tsx`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/node-sheet-target.ts`, `src/interface/components/chat/node-sheet/NodeSheetDetails.tsx`, `src/interface/components/chat/node-sheet/useNodeSheetData.ts`, `src/interface/components/chat/node-sheet/useNodeSheet.ts`, `src/interface/components/chat/node-sheet/node-branch-position.ts`, `src/interface/ui/components/GlassIconButton.tsx`, `src/interface/ui/components/sheet/PageSheet.tsx`
 - **Backend:** WatermelonDB `nodes`, `edges`, `raw_api_responses`, `agents` via the Watermelon repositories
 - **Status:** live
 - **Notes:** `[n]` counts the node and those after it on the active path, or 1 off it, as the

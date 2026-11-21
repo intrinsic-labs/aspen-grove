@@ -3,9 +3,10 @@
 # perf tree), so what is left is Maestro and the app's fixed cost.
 appId: com.intrinsiclabs.aspengrove
 env:
-  TREE_FILE: perf-tiny.openloom
-  RAIL_ROW_TEXT: 'Light the lantern.*'
-  SWITCH_TEXT: '.*The other lantern stays dark.*'
+  TREE_FILE: ${TREE_FILE || 'perf-tiny.openloom'}
+  RAIL_ROW_TEXT: ${RAIL_ROW_TEXT || 'Light the lantern.*'}
+  SWITCH_TEXT: ${SWITCH_TEXT || '.*The other lantern stays dark.*'}
+  SEARCH_TERM: ${SEARCH_TERM || 'lantern'}
 ---
 - runFlow:
     file: setup-import.yaml
@@ -23,4 +24,7 @@ env:
 - runFlow: open-rail-timed.yaml
 - runFlow: switch-branch-timed.yaml
 - runFlow: ../go-home.yaml
-- runFlow: search-timed.yaml
+- runFlow:
+    file: search-timed.yaml
+    env:
+      SEARCH_TERM: ${SEARCH_TERM}

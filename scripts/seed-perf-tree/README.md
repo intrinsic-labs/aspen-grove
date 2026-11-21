@@ -26,7 +26,21 @@ Output goes to `scripts/seed-perf-tree/out/` (gitignored):
 Options: `--seed` (1), `--nodes` (520), `--depth` main-path depth (40),
 `--concurrency` (4), `--model` (`anthropic/claude-haiku-5.5`),
 `--price-in` / `--price-out` USD per million tokens used for the estimate
-(0.10 / 0.50), `--out` file path.
+(0.10 / 0.50), `--reasoning-headroom` tokens added to each call's `max_tokens`
+(1024), `--reasoning-expected` reasoning tokens a call is estimated to spend
+(100), `--out` file path.
+
+**Reasoning models.** Haiku 5.5 thinks before it answers, and OpenRouter counts
+those hidden tokens against `max_tokens`: sized for the reply alone, replies came
+back cut short or empty. Claude's reasoning can't be switched off through
+chat-completions, so each call gets `--reasoning-headroom` on top of the reply's
+budget (a cap; only what the model spends is billed), and the estimate counts
+`--reasoning-expected` per call as output, plus a ceiling if every call used its
+whole headroom. A reply that comes back empty or cut short is asked for again,
+up to three times; a cut-short one is then kept with a warning, an empty one
+stops the run (the cache keeps what is done). The run ends by printing the
+output and reasoning tokens OpenRouter reported. Replies cached before this
+change by a haiku-5.5 run may be truncated: delete that cache file to redo them.
 
 Real runs are resumable: every reply is appended to
 `out/cache-<seed>-<model>.jsonl` as it arrives, keyed by the node's recipe and

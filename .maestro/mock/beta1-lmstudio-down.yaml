@@ -29,8 +29,7 @@ env:
     timeout: 60000
 # The address sits on a line of its own.
 - assertVisible: "(?s)LM Studio isn't answering at this address:\\n${MOCK_URL}\\n.*"
-- hideKeyboard
-- waitForAnimationToEnd
+- runFlow: ../dismiss-keyboard.yaml
 - takeScreenshot: es-08-chat-lmstudio-unreachable
 - tapOn:
     id: chat-error-action

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { INodeRepository } from '@application/repositories';
 import type { ULID } from '@domain/value-objects';
+import { stripMarkdown } from '@application/services/text/strip-markdown';
 import { contentToDisplayText } from '../node-text';
 import type { TreeMenuBookmark } from '../tree-menu/tree-menu';
 
@@ -45,7 +46,7 @@ export const useTreeBookmarks = ({
               nodeId: node.id,
               title: (
                 node.metadata.bookmarkLabel ??
-                contentToDisplayText(node.content)
+                stripMarkdown(contentToDisplayText(node.content))
               ).slice(0, MAX_TITLE_LENGTH),
               authorType: node.authorType,
             }))

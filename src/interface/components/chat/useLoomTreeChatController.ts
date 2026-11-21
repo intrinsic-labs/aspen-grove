@@ -274,6 +274,8 @@ export const useLoomTreeChatController = () => {
   return {
     loading,
     sending,
+    /** A single reply or a parallel run is generating. */
+    thinking: generating,
     error,
     errorAction: providerError.errorAction,
     errorDetail: providerError.errorDetail,

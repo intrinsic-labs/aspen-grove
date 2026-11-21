@@ -40,6 +40,11 @@ import type { ChatDisplayPreferences, ChatRow } from './types';
 type ChatMessageListProps = {
   readonly loading: boolean;
   readonly sending: boolean;
+  /**
+   * A model is generating: a single reply or any card of a parallel run.
+   * Shows the thinking indicator.
+   */
+  readonly thinking: boolean;
   readonly rows: readonly ChatRow[];
   readonly streamingAssistantText: string;
   readonly composerHeight: number;
@@ -76,6 +81,7 @@ export const ChatMessageList = memo(
   ({
     loading,
     sending,
+    thinking,
     rows,
     streamingAssistantText,
     composerHeight,
@@ -201,8 +207,9 @@ export const ChatMessageList = memo(
         ) : null}
 
         {/* Latent Spaces: shown from the request's start until the stream ends
-            (LoomTreeContentView.swift:62-70), below any streamed text. */}
-        {sending ? <ThinkingIndicator /> : null}
+            (LoomTreeContentView.swift:62-70), below any streamed text. Latent
+            Spaces has no parallel run; AG shows it until every card settles. */}
+        {thinking ? <ThinkingIndicator /> : null}
       </KeyboardAwareScrollView>
     );
   }
