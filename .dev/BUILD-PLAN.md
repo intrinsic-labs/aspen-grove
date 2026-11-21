@@ -118,13 +118,13 @@ Also shipped in this pass (user-requested):
 **Goal**: approvable builds, honest first-run experience.
 
 - [x] Hide or replace the Documents placeholder tab (a visibly dead tab is a review-quality smell) — replaced with the Search tab in Milestone C
-- [ ] First-run onboarding-lite: what a loom is (3 screens max), connect OpenRouter or LM Studio, create first tree. A static "what is this" screen is enough (the Field Guide is cut)
-- [ ] Empty states (no API key, no trees, LM Studio unreachable) with actionable guidance
-- [ ] Error-handling audit: every provider/DB failure has a user-visible, non-technical surface
-- [ ] App icons, splash, store listings, screenshots
-- [ ] Privacy policy + data disclosure (keys in Keychain/Keystore, all data local, gzip'd raw API responses on device)
-- [ ] EAS build profiles, TestFlight + Play internal track submission
-- [ ] Performance sanity pass on a large tree (500+ nodes): list virtualization, path-switch latency
+- [x] First-run onboarding-lite: what a loom is (3 screens max), connect OpenRouter or LM Studio, create first tree. A static "what is this" screen is enough (the Field Guide is cut) — done as Latent Spaces' six intro pages rather than three, then connect a model and Begin Weaving into a first tree: FEATURE_MAP `onboarding.first-run` / `onboarding.connect` (`src/interface/components/onboarding/`, `src/application/services/onboarding/first-run.ts`); flows `.maestro/walk-onboarding.yaml`, `.maestro/mock/setup.yaml`
+- [x] Empty states (no API key, no trees, LM Studio unreachable) with actionable guidance — Home's setup hint (`home-setup-hint` / `home-setup-action`, `GetSetupStatusUseCase`, FEATURE_MAP "Setup hints"), "Open Connections" on a failed send (`chat-error-action`); flows `.maestro/mock/beta1-empty-states.yaml`, `.maestro/mock/beta1-lmstudio-down.yaml`
+- [ ] Error-handling audit: every provider/DB failure has a user-visible, non-technical surface — surfaces exist (`describe-provider-error.ts`, `provider-error-copy.ts`, failed parallel cards, the database setup error in `setup-error.ts`; flows `mock/verbose-error-details.yaml`, `mock/parallel-lmstudio-down.yaml`), but no audit run is recorded: still needs one
+- [ ] App icons, splash, store listings, screenshots — icon, adaptive icon and splash are set in `app.json` (`assets/`); store listings and screenshots still to make, and the icon still needs a check on a release build
+- [ ] Privacy policy + data disclosure (keys in Keychain/Keystore, all data local, gzip'd raw API responses on device) — not written yet
+- [ ] EAS build profiles, TestFlight + Play internal track submission — profiles and the iOS release path exist (`eas.json`, `scripts/eas-ios-release.sh`, `docs/shipping.md`); no TestFlight submission evidence yet, and no Android submit profile or Play track
+- [x] Performance sanity pass on a large tree (500+ nodes): list virtualization, path-switch latency — Release build on a 520-node tree, no step stalls, path switch ~57 ms in-app (`.dev/voices-plan.md` §3, `.maestro/perf/`; measured 2026-11-16 in #41, before #42-#50); iOS Simulator only, and the chat list stays unvirtualized until paths run to several hundred rows
 
 **Beta 1 definition of done**: create tree → pick/configure agent → converse with branching → browse siblings inline → edit-as-branch → bookmark → view provenance → export → survives restart. On both platforms, against both OpenRouter and LM Studio.
 
