@@ -695,7 +695,10 @@ stays until the user makes one.
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
   `chat-continuation-card-<nodeId>`. Driven end to end, failure and relaunch included, by
   `.maestro/mock/parallel-continuations.yaml`, and with LM Studio down (each card naming the
-  saved address) by `.maestro/mock/parallel-lmstudio-down.yaml` (VERIFY.md).
+  saved address) by `.maestro/mock/parallel-lmstudio-down.yaml` (VERIFY.md). When a run
+  settles and the rows reload, the list stays where it is (it follows its end only for a new
+  last row, a load or a single send): `.maestro/mock/parallel-tall-reply.yaml`, above a reply
+  taller than the screen.
 - **Requires:** A model agent with a reachable provider (an OpenRouter key, or an LM Studio
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.

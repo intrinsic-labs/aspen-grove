@@ -209,6 +209,9 @@ continuation rail opens on the current path's card: the last of two, the second 
 of native menu (the tree menu, Voice Mode checked, a message's long-press menu, the Bookmarks
 submenu, a node sheet's menu, the Provider and LM Studio model pickers) for their dividers
 and the check on the selected item; run it on both platforms and compare.
+[.maestro/mock/parallel-tall-reply.yaml](.maestro/mock/parallel-tall-reply.yaml) runs three
+continuations on a turn above a reply taller than the screen and checks the rail is still on
+screen once they settle; start the mock with `--pace 20 --words 400` for it.
 [.maestro/mock/parallel-continuations.yaml](.maestro/mock/parallel-continuations.yaml) draws
 several continuations at once: a turn, its rail, N picked (4, then 3), Generate 3, the cards
 streaming side by side while one fails on its own and the other two finish, one expanded (its
