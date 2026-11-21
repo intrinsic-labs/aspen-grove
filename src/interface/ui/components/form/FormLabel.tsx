@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'react';
+import { SymbolIcon } from '../SymbolIcon';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text, View } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
@@ -16,10 +18,10 @@ export type FormIconName = keyof typeof Ionicons.glyphMap;
 type FormLabelProps = {
   readonly title: string;
   /**
-   * SwiftUI `Label`'s icon. Latent Spaces uses SF Symbols; the closest
-   * Ionicons glyph stands in until the build has an SF Symbols module.
+   * Icon, also used as the Android/web fallback when systemIcon is supplied.
    */
   readonly icon?: FormIconName;
+  readonly systemIcon?: ComponentProps<typeof SymbolIcon>['name'];
   /** `accent` for a button or link row (the Form's tint), red to destroy. */
   readonly tone?: 'primary' | 'accent' | 'destructive';
   readonly numberOfLines?: number;
@@ -35,6 +37,7 @@ type FormLabelProps = {
 export const FormLabel = ({
   title,
   icon,
+  systemIcon,
   tone = 'primary',
   numberOfLines,
   hug = false,
@@ -42,11 +45,20 @@ export const FormLabel = ({
   <View style={[styles.label, hug ? styles.hug : null]}>
     {icon ? (
       <View style={styles.iconColumn}>
-        <Ionicons
-          name={icon}
-          size={form.labelIconSize}
-          color={loomUiTokens.colors.accentColor}
-        />
+        {systemIcon ? (
+          <SymbolIcon
+            name={systemIcon}
+            fallback={icon}
+            size={form.labelIconSize}
+            color={loomUiTokens.colors.accentColor}
+          />
+        ) : (
+          <Ionicons
+            name={icon}
+            size={form.labelIconSize}
+            color={loomUiTokens.colors.accentColor}
+          />
+        )}
       </View>
     ) : null}
     <Text

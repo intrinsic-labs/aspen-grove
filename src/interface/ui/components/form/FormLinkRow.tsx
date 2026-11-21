@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text } from 'react-native';
 import { loomUiTokens } from '../../value-objects/loom-ui-tokens';
@@ -10,6 +11,7 @@ const form = loomUiTokens.settingsForm;
 type FormLinkRowProps = {
   readonly title: string;
   readonly icon?: FormIconName;
+  readonly systemIcon?: ComponentProps<typeof FormLabel>['systemIcon'];
   /** Shown in secondary text before the chevron. */
   readonly value?: string;
   readonly onPress: () => void;
@@ -20,12 +22,13 @@ type FormLinkRowProps = {
 export const FormLinkRow = ({
   title,
   icon,
+  systemIcon,
   value,
   onPress,
   testID,
 }: FormLinkRowProps) => (
   <FormRow testID={testID} onPress={onPress} accessibilityLabel={title}>
-    <FormLabel title={title} icon={icon} />
+    <FormLabel title={title} icon={icon} systemIcon={systemIcon} />
     {value ? (
       <Text numberOfLines={1} style={[formText.value, styles.value]}>
         {value}
