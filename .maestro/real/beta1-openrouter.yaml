@@ -1,0 +1,513 @@
+# The Beta 1 definition of done on a real OpenRouter model, end to end, from a
+# cleared install: onboarding connects OpenRouter, the first tree is set to a
+# cheap model, a few turns, a branch by regenerating, the siblings browsed
+# inline, an edit as a branch, a bookmark, provenance, export, a relaunch;
+# then Generate 3 in parallel on a turn, one made current, and a second
+# relaunch that keeps it.
+#
+# The key comes from Metro's environment, never from this flow (Maestro logs
+# typed text): start Metro with EXPO_PUBLIC_OPENROUTER_API_KEY set and build
+# without it (VERIFY.md, step 4), so onboarding reads "A key is stored on
+# this device." Prompts ask for one short plain sentence, so every row fits on
+# screen (iOS lists only on-screen elements) and a run costs about a cent on
+# the default model:
+#   maestro test .maestro/real/beta1-openrouter.yaml --test-output-dir "$SHOTS/beta1-openrouter"
+# Another model: -e MODEL=<openrouter id> (it must be in OpenRouter's catalog).
+appId: com.intrinsiclabs.aspengrove
+env:
+  MODEL: ${MODEL || 'anthropic/claude-haiku-4.5'}
+---
+# Onboarding: OpenRouter (the default provider) with the stored key, the
+# Haiku template, Begin Weaving.
+- runFlow: ../open-app.yaml
+- runFlow: ../walk-onboarding.yaml
+- assertVisible:
+    id: onboarding-openrouter
+- assertVisible: 'A key is stored on this device.'
+# The Model rows run on under Begin Weaving, which is pinned over the page's
+# bottom: Maestro counts a row there as visible and its tap lands on the
+# button. Drag the page up until the row sits above the button, then tap it.
+- scrollUntilVisible:
+    element:
+      id: onboarding-template-claude-haiku-fast
+    timeout: 10000
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: onboarding-template-claude-haiku-fast
+        above:
+          id: onboarding-begin
+    commands:
+      - swipe:
+          from:
+            id: onboarding-step-setup
+          direction: UP
+          duration: 800
+      - waitForAnimationToEnd
+- tapOn:
+    id: onboarding-template-claude-haiku-fast
+    above:
+      id: onboarding-begin
+- waitForAnimationToEnd
+- assertVisible:
+    id: onboarding-begin
+- takeScreenshot: or-01-onboarding-openrouter
+- tapOn:
+    id: onboarding-begin
+- extendedWaitUntil:
+    visible:
+      id: tree-onboarding-begin
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: or-02-first-tree
+- runFlow: ../dismiss-tree-onboarding.yaml
+
+# The first tree's model: ${MODEL}, through Model Settings and the browser.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 30000
+- waitForAnimationToEnd
+- tapOn: 'Search models'
+- inputText: ${MODEL}
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-${MODEL}
+    timeout: 10000
+- tapOn:
+    id: tree-model-option-${MODEL}
+- extendedWaitUntil:
+    visible:
+      id: model-detail-use
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-footer-id
+      text: ${MODEL}
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: or-03-model-settings
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-screen
+    commands:
+      - waitForAnimationToEnd
+      - runFlow: ../go-back.yaml
+
+# First turn.
+- tapOn:
+    id: chat-composer-input
+- inputText: Answer each question in one short plain sentence. What is an aspen grove?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- runFlow: ../dismiss-keyboard.yaml
+# Room for Auto-Title's call to land in the header.
+- extendedWaitUntil:
+    notVisible: 'In one short plain\.\.\.'
+    timeout: 20000
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: or-04-first-reply
+
+# Branch: regenerate the reply, which grows a sibling.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# Browse the siblings inline: the human turn's rail shows both replies.
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 2'
+- takeScreenshot: or-05-siblings-inline
+- swipe:
+    from:
+      id: chat-continuation-rail-list
+    direction: LEFT
+- waitForAnimationToEnd
+- takeScreenshot: or-05b-siblings-swiped
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# A second turn.
+- tapOn:
+    id: chat-composer-input
+- inputText: How old can they get?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# Edit as a branch: the edit becomes a new human node beside the original.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 2
+- tapOn: 'Edit'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-edit-banner
+    timeout: 10000
+# The composer takes focus a moment after the banner shows; typing before
+# that is dropped (the edit would go out unchanged).
+- waitForAnimationToEnd
+# Edit is meant to focus the composer, but with the keyboard down it doesn't
+# (2026-11-21), and a tap on the field puts the caret where it lands (the
+# simulator shows no Select All). The turn is one short line, so a tap right
+# of its text, left of the send button, puts the caret at its end.
+- tapOn:
+    point: '78%,92%'
+- waitForAnimationToEnd
+- eraseText: 120
+- inputText: How big can one grove get?
+- assertVisible: '.*[Hh]ow big can one grove get\?'
+- takeScreenshot: or-06-editing
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible: '.*[Hh]ow big can one grove get\?'
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../dismiss-keyboard.yaml
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-continuation-rail
+    commands:
+      - tapOn:
+          id: chat-message-row-.*
+          index: 1
+      - extendedWaitUntil:
+          visible:
+            id: chat-continuation-rail
+          timeout: 5000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 2'
+- takeScreenshot: or-07-edited-branch
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# A reply on the new branch (an edit doesn't send one by itself).
+- longPressOn:
+    id: chat-message-row-.*
+    index: 2
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Bookmark the edited turn's reply.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 3
+- tapOn: 'Bookmark'
+- waitForAnimationToEnd
+
+# Provenance: the reply's Node Info verifies its hash chain.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 3
+- assertVisible: 'Remove Bookmark'
+- tapOn: 'Node Info'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: or-08-node-info
+- scrollUntilVisible:
+    element: 'Verified.*'
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: or-09-provenance
+- tapOn:
+    id: node-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Export: the Open Loom sheet, then the system share sheet with the file.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Export to OpenLoom Format'
+- extendedWaitUntil:
+    visible:
+      id: export-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: or-10-export-sheet
+- tapOn:
+    id: export-sheet-share
+- extendedWaitUntil:
+    notVisible:
+      id: export-sheet
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: ActivityListView
+          timeout: 15000
+      - assertVisible: 'Save to Files'
+      - assertNotVisible:
+          id: chat-error
+      - waitForAnimationToEnd
+      - takeScreenshot: or-11-export-share
+      - repeat:
+          times: 3
+          while:
+            visible:
+              id: ActivityListView
+          commands:
+            - tapOn:
+                id: PopoverDismissRegion
+                optional: true
+            - waitForAnimationToEnd
+            - tapOn:
+                text: 'Close'
+                optional: true
+            - waitForAnimationToEnd
+      - assertNotVisible:
+          id: ActivityListView
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: com.android.intentresolver:id/chooser_container
+          timeout: 15000
+      - takeScreenshot: or-11-export-share
+      - back
+- assertVisible:
+    id: chat-screen
+- assertNotVisible:
+    id: chat-error
+
+# Kill and relaunch: the edited branch is current, its reply bookmarked, the
+# original turn kept beside the edit.
+- runFlow: ../relaunch-app.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: '.*[Hh]ow big can one grove get\?'
+- assertNotVisible: '.*[Hh]ow old can they get\?'
+- takeScreenshot: or-12-after-restart
+- longPressOn:
+    id: chat-message-row-.*
+    index: 3
+- assertVisible: 'Remove Bookmark'
+- takeScreenshot: or-13-after-restart-bookmarked
+- tapOn:
+    point: '50%,12%'
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-rail
+    timeout: 30000
+- waitForAnimationToEnd
+- assertVisible:
+    id: chat-continuation-card-check
+- swipe:
+    from:
+      id: chat-continuation-rail-list
+    direction: RIGHT
+- waitForAnimationToEnd
+- assertVisible: '.*[Hh]ow old can they get\?'
+- takeScreenshot: or-14-after-restart-original-kept
+- tapOn:
+    id: chat-message-row-.*
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Parallel: Generate 3 on the edited turn, all streaming at once.
+- tapOn:
+    id: chat-message-row-.*
+    index: 2
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-generate-button
+    timeout: 15000
+- waitForAnimationToEnd
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          id: chat-continuation-count-increase
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '3'
+- tapOn:
+    id: chat-continuation-generate-button
+# A fast model can finish all three before Maestro looks, so the streaming
+# state is caught when it can be.
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-stop-all
+    timeout: 3000
+    optional: true
+- takeScreenshot: or-15-parallel-streaming
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 120000
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: 'chat-continuation-slot-error-.*'
+- takeScreenshot: or-16-parallel-done
+- swipe:
+    from:
+      id: chat-continuation-rail-list
+    direction: LEFT
+- waitForAnimationToEnd
+- takeScreenshot: or-17-parallel-rail-end
+
+# Pick one: expand it (provenance verified), then make it current.
+- copyTextFrom:
+    id: 'chat-continuation-card-.*'
+- runScript: remember-reply-words.js
+- tapOn:
+    id: 'chat-continuation-card-.*'
+- extendedWaitUntil:
+    visible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: 'Verified.*'
+    timeout: 15000
+- takeScreenshot: or-18-parallel-card-provenance
+- tapOn:
+    id: node-sheet-back
+- extendedWaitUntil:
+    notVisible:
+      id: node-sheet
+    timeout: 10000
+- waitForAnimationToEnd
+- longPressOn:
+    id: 'chat-continuation-card-.*'
+- tapOn: 'Make Current Node'
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: '${output.chosen}'
+- takeScreenshot: or-19-parallel-chosen-current
+
+# Relaunch: the chosen reply is still current and the rail holds all four.
+- runFlow: ../relaunch-app.yaml
+- tapOn:
+    id: home-trees-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: '${output.chosen}'
+- takeScreenshot: or-20-after-relaunch-chosen
+- tapOn:
+    id: chat-message-row-.*
+    index: 2
+- extendedWaitUntil:
+    visible:
+      id: 'chat-continuation-card-.*'
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: 'Continuations: 4'
+- takeScreenshot: or-21-after-relaunch-rail
