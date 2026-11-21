@@ -1,0 +1,100 @@
+# Edit from a message's menu with the keyboard down, against the mock
+# server (no key). The composer must take focus once the menu has closed,
+# with the caret after the text: a typed character lands at the end. The
+# message wraps to two lines, so the screenshots also show the edit field
+# holding both lines, before and after it takes focus. (beta1-loop edits
+# with the keyboard already up, which hid both bugs.) A hardware-keyboard
+# simulator draws no keyboard, and Maestro doesn't report a TextInput's
+# focus on iOS (and its inputText types into a field that lost focus), so
+# the flow checks the field's focus stroke (`chat-composer-input-focus-stroke`,
+# drawn only while focused), then types without a tap: the character
+# follows the last word only if the caret is at the end.
+# Needs the mock server and Metro up (see VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/edit-keyboard-down.yaml --test-output-dir "$SHOTS/edit-keyboard-down"
+# Mock on another port? Add -e MOCK_URL=http://localhost:<port>.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Which trees share one root system?
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+# A turn typed in the tree's own composer: the field has held text the user
+# typed, then been cleared by the send, as in real use.
+- tapOn:
+    id: chat-composer-input
+- inputText: In one short plain sentence, how old can the oldest aspen groves get?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- runFlow: ../dismiss-keyboard.yaml
+- assertNotVisible:
+    id: chat-composer-input-focus-stroke
+- takeScreenshot: edit-01-keyboard-down
+
+# The second user message, by role and text rather than row index: Android
+# leaves rows scrolled off-screen out of the hierarchy, so a row index can
+# land on a reply there. iOS exposes the row as one element labelled with its
+# text; Android exposes the text as a child of the row.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - longPressOn:
+          id: chat-message-row-human-.*
+          text: '.*oldest aspen groves get\?'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - longPressOn:
+          id: chat-message-row-human-.*
+          containsDescendants:
+            - text: '.*oldest aspen groves get\?'
+- tapOn: 'Edit'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-edit-banner
+    timeout: 10000
+- waitForAnimationToEnd
+# Still focused once the menu has gone (a focus taken while it closed was
+# dropped at the end of its dismissal).
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-input-focus-stroke
+    timeout: 5000
+- waitForAnimationToEnd
+- assertVisible:
+    id: chat-composer-input-focus-stroke
+- takeScreenshot: edit-02-focused-two-lines
+# Focused, caret at the end: a character typed without a tap follows the
+# last word.
+- inputText: '!'
+- assertVisible:
+    id: chat-composer-input
+    text: '.*groves get\?!'
+- takeScreenshot: edit-03-typed-at-end
+
+# Cancel, and the composer is empty again.
+- tapOn:
+    id: chat-composer-edit-cancel
+- assertNotVisible:
+    id: chat-composer-edit-banner

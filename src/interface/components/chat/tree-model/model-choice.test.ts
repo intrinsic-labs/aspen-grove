@@ -19,6 +19,7 @@ describe('modelChoiceChanges', () => {
 
     expect(changes).toEqual({
       modelRef: 'openrouter:small',
+      modelName: 'Small',
       maxTokens: 2048,
     });
     // What is saved is what the form shows for the new model.
@@ -36,7 +37,7 @@ describe('modelChoiceChanges', () => {
         maxTokens: 8192,
         useMaxTokens: false,
       })
-    ).toEqual({ modelRef: 'openrouter:large' });
+    ).toEqual({ modelRef: 'openrouter:large', modelName: 'Large' });
   });
 
   it("takes the new model's own limit with Always use maximum allowed on", () => {
@@ -45,13 +46,21 @@ describe('modelChoiceChanges', () => {
         maxTokens: 2048,
         useMaxTokens: true,
       })
-    ).toEqual({ modelRef: 'lmstudio:large', maxTokens: 32768 });
+    ).toEqual({
+      modelRef: 'lmstudio:large',
+      modelName: 'Large',
+      maxTokens: 32768,
+    });
     expect(
       modelChoiceChanges('openrouter', small.id, small, {
         maxTokens: 32768,
         useMaxTokens: true,
       })
-    ).toEqual({ modelRef: 'openrouter:small', maxTokens: 2048 });
+    ).toEqual({
+      modelRef: 'openrouter:small',
+      modelName: 'Small',
+      maxTokens: 2048,
+    });
   });
 
   it('leaves an agent that sets no Maximum Output Tokens with none', () => {
@@ -59,9 +68,18 @@ describe('modelChoiceChanges', () => {
     // sending one the reader never set.
     expect(modelChoiceChanges('lmstudio', large.id, large, {})).toEqual({
       modelRef: 'lmstudio:large',
+      modelName: 'Large',
     });
     expect(
       modelChoiceChanges('openrouter', small.id, small, { useMaxTokens: false })
-    ).toEqual({ modelRef: 'openrouter:small' });
+    ).toEqual({ modelRef: 'openrouter:small', modelName: 'Small' });
+  });
+});
+
+describe('modelChoiceChanges naming', () => {
+  it('leaves the name to the use case when the model is not listed', () => {
+    expect(
+      modelChoiceChanges('openrouter', 'gone/model', undefined, {})
+    ).toEqual({ modelRef: 'openrouter:gone/model' });
   });
 });

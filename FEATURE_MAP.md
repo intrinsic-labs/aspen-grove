@@ -207,7 +207,7 @@ stays until the user makes one.
   it, unsent, into the first tree's composer and Home's composer is clear. Leaving that tree
   unsent discards it and puts the draft back on Home if Home's composer is empty
   (`chat/session/return-draft-to-home.ts`). Generating the reply needs a key or server, as `chat.composer`.
-- **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`
+- **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`, `home-composer-input-focus-stroke` (drawn only while focused)
 - **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
   and `user_preferences.default_model_agent_id`; then as `chat.composer`
@@ -422,7 +422,7 @@ stays until the user makes one.
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<role>-<nodeId>` (role is `human`, `model` or `system`), `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
@@ -472,7 +472,7 @@ stays until the user makes one.
   `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
   `trees.import`; the app has no control that writes one yet) renders centered in the
   message font at 0.6 opacity with no background, and its row is the same
-  `chat-message-row-<nodeId>`. It goes to the model in place on the path with the `system`
+  `chat-message-row-<role>-<nodeId>`. It goes to the model in place on the path with the `system`
   role; the agent prompt and tree context still go first, once
   (`src/application/services/context/assemble-dialogue-context.ts`). Editing one saves an
   edited system message. Export writes it back as `author.role: "system"`.
@@ -489,14 +489,16 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
-- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`, `chat-composer-input-focus-stroke` (the green stroke, drawn only while the input is focused)
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/useRemeasureOnSetText.ts`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
-- **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
+- **Notes:** The field grows with its text up to five lines, text set from code included
+  (an edit loading its message): `useRemeasureOnSetText` makes Fabric measure the input
+  again after such a set, which it otherwise skips until the user types. The placeholder reads "Reply to <agent name>". The send button is hidden
   while the input is empty and shows a checkmark while editing (label "Save"). **Stop:**
   while a reply (or a regenerate) streams, the button is a stop circle,
   `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request
@@ -545,9 +547,9 @@ stays until the user makes one.
   room the menu needs under it: a message taller than that band shows its top at full size,
   cropped to the band with a short fade at the cut, and one reaching above the header moves down below it (the patched
   `previewTopInset` / `previewBottomInset` of react-native-context-menu-view).
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>`.
 - **Requires:** At least one message on the path.
-- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
+- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
@@ -562,9 +564,9 @@ stays until the user makes one.
   are kept as branches). On a human or system message, draws a reply under it, which is how a
   send that failed gets its reply.
 - **Where:** "Regenerate Response" in any message's long-press menu.
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Regenerate Response".
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>` → "Regenerate Response".
 - **Requires:** A message, plus a reachable provider.
-- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
+- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
@@ -580,18 +582,23 @@ stays until the user makes one.
 - **Where:** The "Edit" item in a message's long-press menu, or in the Node Info sheet's `···`
   menu.
   An "Editing <localId>" banner appears above the composer.
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Edit" → change text
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>` → "Edit" → change text
   in `chat-composer-input` → `chat-composer-send` (Save). Cancel with
   `chat-composer-edit-cancel`.
 - **Requires:** At least one message.
-- **Selector:** working — `chat-composer-edit-banner`, `chat-composer-edit-cancel`, `chat-composer-input`, `chat-composer-send`; menu item none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
+- **Selector:** working — `chat-composer-edit-banner`, `chat-composer-edit-cancel`, `chat-composer-input`, `chat-composer-send`; menu item none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
+- **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/composer/useComposerFocus.ts#focusComposerAtEnd`, `src/interface/ui/components/native-menu-dismissal.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
 - **Backend:** WatermelonDB `nodes` (new node with `edited_from`, authored by the user; an
   edited system message stays `system`), `edges`, `path_nodes`, `path_states`. No provider
   call: saving an edit generates nothing (use `chat.regenerate` for a reply).
 - **Status:** live
 - **Notes:** Edit from the Node Info sheet closes the sheet, then starts the same flow once
-  it has gone on iOS, straight away on Android (`useNodeSheet`).
+  it has gone on iOS, straight away on Android (`useNodeSheet`). The composer takes focus,
+  caret after the text, only once the menu Edit came from has finished closing (a focus
+  taken while it closes is lost when the keyboard was down): the message and Node Info
+  menus report `onMenuShow` / `onMenuDismiss` (added by
+  `patches/react-native-context-menu-view+1.21.0.patch`) to `native-menu-dismissal.ts`.
+  Checked with the keyboard down by `.maestro/mock/edit-keyboard-down.yaml`.
 
 ### Read a message aloud (Voice Mode)
 - **ID:** `chat.read-aloud`
@@ -603,11 +610,11 @@ stays until the user makes one.
   tree branch." The tree menu's "Voice Mode" item (checked when on) toggles Voice Mode app-wide.
 - **Where:** Message rows on the Dialogue screen; "Voice Mode" in the tree menu (`chat.tree-menu`).
 - **Reach:** P2 → `chat-menu-button` → "Voice Mode" (or `settings.voice`) → send once → wait
-  for the reply to finish (it is read aloud) → double-tap `chat-message-row-<nodeId>` to hear
+  for the reply to finish (it is read aloud) → double-tap `chat-message-row-<role>-<nodeId>` to hear
   it again → tap any row to stop.
 - **Requires:** Voice Mode on, and at least one message. Sound needs the device's media volume
   up; it plays with the iOS silent switch on, as in Latent Spaces.
-- **Selector:** working — `chat-message-row-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
+- **Selector:** working — `chat-message-row-<role>-<nodeId>` (double-tap, tap); menu item none — native context menu item; reach via a tap on `chat-menu-button`
 - **Code:** `src/interface/components/chat/read-aloud/useChatReadAloud.ts`, `src/interface/components/chat/read-aloud/useReadAloudTaps.ts`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/voice/VoiceModeProvider.tsx`, `src/interface/components/voice/useReadAloudPlayback.ts`, `src/application/services/speech/ReadAloudService.ts`, `src/application/services/speech/prepare-speech-text.ts`, `src/application/services/speech/resolve-system-voice.ts`, `src/infrastructure/speech/ExpoSpeechSynthesizer.ts`, `src/application/services/speech/rank-persona-voices.ts`, `src/infrastructure/speech/android/SpeechAudioFocus.ts`, `modules/android-speech/android/src/main/java/expo/modules/androidspeech/AndroidSpeechModule.kt`
 - **Backend:** none — on-device text-to-speech (`expo-speech`, audio session via `expo-audio`; AVSpeechSynthesizer on iOS,
   TextToSpeech on Android). Reads `nodes` for the finished response.
@@ -635,10 +642,10 @@ stays until the user makes one.
 - **Where:** "Rewind To Node" in the message menu or the Node Info sheet's menu. Also "Make
   Current Node" or "Retrace Branch" on a continuation card or in its sheet's menu (or a
   bookmark's sheet's menu), or a double-tap on a continuation card.
-- **Reach:** P2 → send twice → long-press an earlier `chat-message-row-<nodeId>` →
+- **Reach:** P2 → send twice → long-press an earlier `chat-message-row-<role>-<nodeId>` →
   "Rewind To Node".
 - **Requires:** More than one node.
-- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
+- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/node-actions/useRewindToNode.ts`, `src/interface/components/chat/node-actions/useRetraceBranch.ts`, `src/application/services/resolve-branch-leaf.ts`, `src/application/use-cases/SwitchDialoguePathUseCase.ts`, `src/application/services/resolve-continuation-path.ts`
 - **Backend:** WatermelonDB `path_states`, `path_nodes`, `path_selections` via `WatermelonPathRepository` and `WatermelonPathStateRepository`
 - **Status:** live
@@ -666,7 +673,7 @@ stays until the user makes one.
   every opening, so a rail reopened after a branch switch shows the new current card. A run
   started from the open rail scrolls the row to its new cards and keeps it at its end while
   they lay out, until the reader drags the row or the run ends.
-- **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
+- **Reach:** P2 → send once → tap `chat-message-row-<role>-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
@@ -691,7 +698,7 @@ stays until the user makes one.
   own raw response and hash chain, and a double-tap on it makes it current like any sibling.
 - **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green, with the `cpu` symbol the tree menu's Model uses). While that node's cards stream it becomes "Stop all". Cards stream in
   the rail's card row.
-- **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
+- **Reach:** P2 → send once → tap a message row `chat-message-row-<role>-<nodeId>` (the rail opens) →
   `chat-continuation-count-increase` / `chat-continuation-count-decrease` →
   `chat-continuation-generate-button`. Stop one card with `chat-continuation-slot-stop-<slot>`,
   all with `chat-continuation-stop-all`. Choose a finished card by double-tapping its
@@ -781,9 +788,9 @@ stays until the user makes one.
 - **Where:** "Bookmark" / "Remove Bookmark" in the message menu; "Bookmark" / "Bookmarked" on
   a continuation card's menu or in a node sheet's menu. A bookmark's own sheet removes it
   with "Bookmarked" (`chat.bookmarks`).
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Bookmark".
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>` → "Bookmark".
 - **Requires:** A node.
-- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
+- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/node-actions/useNodeActions.ts#toggleBookmark`, `src/interface/components/chat/useNodeContinuations.ts#toggleBookmark`
 - **Backend:** WatermelonDB `nodes` metadata (`bookmarked`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
@@ -819,9 +826,9 @@ stays until the user makes one.
 - **Purpose:** Marks a node as pruned, which dims it and captions it "Pruned", or restores it.
 - **Where:** "Prune" (destructive) / "Restore" in the message menu or the Node Info sheet's
   menu.
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Prune".
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>` → "Prune".
 - **Requires:** A node.
-- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
+- **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/node-actions/useNodeActions.ts#togglePrune`
 - **Backend:** WatermelonDB `nodes` metadata (`pruned`) via `WatermelonNodeRepository#updateMetadata`
 - **Status:** live
@@ -908,7 +915,7 @@ stays until the user makes one.
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
 - **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/app/tree/*/model/index.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/application/services/model-agent-name.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -917,9 +924,13 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** Per-tree settings on Aspen Grove's agents (`UpdateTreeModelSettingsUseCase`):
   the tree's own agent (owned by it, used by no other tree) is edited in place; a shared one
-  (a library agent, or one another tree also uses) is copied first as a tree-owned agent
-  named "<agent> (<tree title>)", the tree is pointed at the copy and the copy is edited;
-  a tree with no agent gets a new tree-owned one once a model is chosen. Tree-owned agents
+  (a library agent, or one another tree also uses) is copied first as a tree-owned agent,
+  the tree is pointed at the copy and the copy is edited;
+  a tree with no agent gets a new tree-owned one once a model is chosen. A copy keeps its
+  source's name; choosing a different model names the tree's agent after the model (its
+  OpenRouter or LM Studio display name, else the id's last segment: `model-agent-name.ts`),
+  so the composer reads "Reply to <model>" as Latent Spaces' does. The tree's title is never
+  part of an agent's name. Tree-owned agents
   don't show in Settings → Agents. A new provider switches to a model on it: the default
   agent's model when it is on that provider, else onboarding's first template for
   OpenRouter, else a loaded LM Studio model (never one listed but not loaded); an LM
@@ -1092,7 +1103,7 @@ stays until the user makes one.
   time, edited-from, flags, content hash) and, for model nodes, generation info (provider,
   model, request id, latency, tokens) and provenance (`node.provenance`).
 - **Where:** A page sheet over the Dialogue screen.
-- **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Node Info". Or tap a
+- **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>` → "Node Info". Or tap a
   continuation card `chat-continuation-card-<nodeId>` (Continuation Node), a search result
   (`search-results-row-<nodeId>`), or a bookmark in the tree menu's "Bookmarks".
 - **Requires:** A node.
@@ -1129,7 +1140,7 @@ stays until the user makes one.
   response and shows Verified or the failure reason, plus chain details (parent count, raw
   response id and hash, expected hash on a mismatch).
 - **Where:** The PROVENANCE block at the bottom of a node sheet.
-- **Reach:** P2 → send once → long-press the model `chat-message-row-<nodeId>` →
+- **Reach:** P2 → send once → long-press the model `chat-message-row-<role>-<nodeId>` →
   "Node Info" → scroll `node-sheet-content`.
 - **Requires:** A model-authored node. The block is absent for human nodes.
 - **Selector:** working — `node-sheet-provenance`, `node-sheet-provenance-status`
