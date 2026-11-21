@@ -1,4 +1,5 @@
 import {
+  menuControlGroup,
   menuItem,
   menuSection,
   submenu as menuSubmenu,
@@ -24,7 +25,7 @@ type MenuTag = { readonly id: ULID; readonly name: string };
 
 /**
  * Home's `···` menu: Latent Spaces' items first, in its order
- * (HomeScreenView.swift:124-155): Import OpenLoom Tree in its own group,
+ * (HomeScreenView.swift:124-155): Import OpenLoom Tree as a ControlGroup tile,
  * then OpenLoom Docs, Info & Tutorials and Show Onboarding. Aspen Grove's
  * own Search and tag filter, which have no place in Latent Spaces, follow
  * in a last group. The tag filter is a submenu, shown once a tag exists.
@@ -33,7 +34,7 @@ export const buildHomeMenu = (
   tags: readonly MenuTag[],
   activeTagId: ULID | null
 ): readonly HomeMenuNode[] => [
-  inlineSection([leaf('Import OpenLoom Tree', 'tree', { type: 'import' })]),
+  menuControlGroup([leaf('Import OpenLoom Tree', 'tree', { type: 'import' })]),
   leaf('OpenLoom Docs', 'book', { type: 'docs' }),
   leaf('Info & Tutorials', 'info.circle', { type: 'info' }),
   leaf('Show Onboarding', 'questionmark.circle', { type: 'onboarding' }),

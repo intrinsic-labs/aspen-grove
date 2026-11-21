@@ -168,7 +168,7 @@ stays until the user makes one.
 ### Home toolbar menu
 - **ID:** `home.menu`
 - **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
-  Grove's Search and tag filter: Import OpenLoom Tree (its own group), OpenLoom Docs, Info &
+  Grove's Search and tag filter: Import OpenLoom Tree (a ControlGroup tile, icon over title), OpenLoom Docs, Info &
   Tutorials, Show Onboarding, then Search and Filter by Tag.
 - **Where:** Home, top left (`···`, the plain `ellipsis` in the toolbar's glass circle), a native pull-down menu.
 - **Reach:** Cold start → `home-menu-button`, then the item by its title.
@@ -1056,7 +1056,7 @@ stays until the user makes one.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
-- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero
+- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero (SF `tree` in the green circle; a Material tree on Android)
   ("Generate OpenLoom Tree", "Changes made here will not affect your saved loom tree."), the
   file's Title and Description, Include System Message and Include Bookmarks, and a link to
   the Open Loom docs. The share button closes the sheet and exports the whole tree as an

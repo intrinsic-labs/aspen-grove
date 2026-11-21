@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { SymbolView } from 'expo-symbols';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 const hero = loomUiTokens.exportSheet;
@@ -12,11 +13,18 @@ const hero = loomUiTokens.exportSheet;
 export const ExportSheetHero = () => (
   <View style={styles.hero}>
     <View style={styles.circle}>
-      {/* SF Symbol `tree`; no SF Symbols module in the build. */}
-      <MaterialCommunityIcons
-        name="tree-outline"
-        size={hero.iconSize}
-        color={hero.iconColor}
+      {/* SF Symbol `tree`, as Latent Spaces draws it; Android has no SF Symbols. */}
+      <SymbolView
+        name="tree"
+        tintColor={hero.iconColor}
+        style={{ width: hero.iconSize, height: hero.iconSize }}
+        fallback={
+          <MaterialCommunityIcons
+            name="tree-outline"
+            size={hero.iconSize}
+            color={hero.iconColor}
+          />
+        }
       />
     </View>
     <Text style={styles.title}>Generate OpenLoom Tree</Text>

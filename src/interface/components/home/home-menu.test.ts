@@ -21,6 +21,14 @@ describe('home menu', () => {
     ]);
   });
 
+  it('draws Import as a ControlGroup tile, as Latent Spaces does', () => {
+    const [importGroup] = toContextMenuActions(buildHomeMenu([], null));
+    expect(importGroup).toMatchObject({
+      inlineChildren: true,
+      preferredElementSize: 'medium',
+    });
+  });
+
   it('resolves a pressed item by its index path', () => {
     const menu = buildHomeMenu(
       [
