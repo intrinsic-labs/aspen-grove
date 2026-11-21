@@ -53,74 +53,51 @@ const renderMenu = async () => {
   return { menu: mockMenu, onCommand };
 };
 
-/** How many submenu levels a set of actions has. */
-const depth = (actions: readonly ContextMenuAction[] | undefined): number =>
-  actions && actions.length > 0
-    ? 1 + Math.max(...actions.map((action) => depth(action.actions)))
-    : 0;
-
 const press = (
   menu: CapturedMenu,
   nativeEvent: { index: number; indexPath?: number[] }
 ) => menu.onPress({ nativeEvent: { ...nativeEvent, name: '' } });
 
-describe('TreeToolbarMenu on Android', () => {
+const sectionTitles = (actions: readonly ContextMenuAction[]) =>
+  actions.map((action) =>
+    action.inlineChildren
+      ? (action.actions ?? []).map((child) => child.title)
+      : action.title
+  );
+
+describe('TreeToolbarMenu', () => {
   afterEach(() => {
     mockMenu = null;
     jest.restoreAllMocks();
   });
 
-  const onAndroid = () => jest.replaceProperty(Platform, 'OS', 'android');
+  it.each(['ios', 'android'])(
+    'draws the same sections and Bookmarks submenu on %s',
+    async (os) => {
+      jest.replaceProperty(Platform, 'OS', os as typeof Platform.OS);
+      const { menu, onCommand } = await renderMenu();
 
-  it('runs a top-level item, which Android reports without an indexPath', async () => {
-    onAndroid();
-    const { menu, onCommand } = await renderMenu();
+      expect(menu.actions[0]?.preferredElementSize).toBe('medium');
+      expect(sectionTitles(menu.actions)).toEqual([
+        ['Model', 'Voice Mode'],
+        ['Edit Title', 'Edit Description'],
+        ['Bookmarks'],
+        ['Export to OpenLoom Format'],
+        ['Show Onboarding'],
+        ['Tags', 'Export Path (Markdown)'],
+      ]);
+      expect(
+        menu.actions[2]?.actions?.[0]?.actions?.map((action) => action.title)
+      ).toEqual(['Tools v1', 'A question']);
 
-    expect(menu.actions[0]?.title).toBe('Model');
-    press(menu, { index: 0 });
-
-    expect(onCommand).toHaveBeenCalledWith({ type: 'model' });
-  });
-
-  it('draws Bookmarks as one submenu Android can show, with no empty sections', async () => {
-    onAndroid();
-    const { menu, onCommand } = await renderMenu();
-
-    expect(depth(menu.actions)).toBeLessThanOrEqual(2);
-    expect(menu.actions.map((action) => action.title)).toEqual([
-      'Model',
-      'Voice Mode',
-      'Edit Title',
-      'Edit Description',
-      'Bookmarks',
-      'Export to OpenLoom Format',
-      'Show Onboarding',
-      'Tags',
-      'Export Path (Markdown)',
-    ]);
-    const bookmarksIndex = 4;
-    expect(
-      menu.actions[bookmarksIndex]?.actions?.map((action) => action.title)
-    ).toEqual(['Tools v1', 'A question']);
-
-    // Android reports a submenu item as [parent, item].
-    press(menu, { index: 1, indexPath: [bookmarksIndex, 1] });
-    expect(onCommand).toHaveBeenCalledWith({
-      type: 'openBookmark',
-      nodeId: 'n2',
-    });
-  });
-
-  it('keeps the nested iOS menu and its index paths on iOS', async () => {
-    jest.replaceProperty(Platform, 'OS', 'ios');
-    const { menu, onCommand } = await renderMenu();
-
-    expect(menu.actions[0]?.preferredElementSize).toBe('medium');
-    expect(menu.actions[2]?.actions?.[0]?.title).toBe('Bookmarks');
-    press(menu, { index: 1, indexPath: [2, 0, 1] });
-    expect(onCommand).toHaveBeenCalledWith({
-      type: 'openBookmark',
-      nodeId: 'n2',
-    });
-  });
+      // Both platforms report the full index path.
+      press(menu, { index: 1, indexPath: [2, 0, 1] });
+      expect(onCommand).toHaveBeenCalledWith({
+        type: 'openBookmark',
+        nodeId: 'n2',
+      });
+      press(menu, { index: 0, indexPath: [0, 0] });
+      expect(onCommand).toHaveBeenLastCalledWith({ type: 'model' });
+    }
+  );
 });

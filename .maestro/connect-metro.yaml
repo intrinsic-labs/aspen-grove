@@ -14,7 +14,7 @@ env:
 # URL only when none is listed. (Optional waits and taps, so a build that
 # skips the launcher still passes.)
 - extendedWaitUntil:
-    visible: 'Enter URL manually|${METRO_ROW}'
+    visible: 'Enter URL manually|Fetch development servers|${METRO_ROW}'
     timeout: 30000
     optional: true
 - runFlow:
@@ -28,6 +28,20 @@ env:
       notVisible: '${METRO_ROW}'
     commands:
       - tapOn: 'Enter URL manually'
+      - tapOn:
+          text: 'http://'
+      - inputText: ${METRO_URL || 'http://localhost:' + METRO_PORT}
+      - tapOn: 'Connect'
+# Android's launcher shows its URL field at once, with no "Enter URL
+# manually". When it finds no server (its network discovery can come up
+# empty), type the URL there: localhost reaches Metro through
+# `adb reverse tcp:<port> tcp:<port>` (VERIFY.md section 9).
+- runFlow:
+    when:
+      platform: Android
+      visible: 'Fetch development servers'
+      notVisible: '${METRO_ROW}'
+    commands:
       - tapOn:
           text: 'http://'
       - inputText: ${METRO_URL || 'http://localhost:' + METRO_PORT}
