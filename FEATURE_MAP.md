@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 75923a2fec9752c4ea083ebf7ab04c2251b1b559
+revision: 89a4ae938a19da62fff7f0ac9bbf444455917659
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -356,7 +356,7 @@ stays until the user makes one.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
   `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
 - **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`, `connections-openrouter-key-sheet`
-- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/application/services/model-agent-name.ts#readableModelName`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
   (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
   `user_preferences` (`default_model_agent_id`, `onboarding_completed_at`) and the tree
@@ -779,7 +779,9 @@ stays until the user makes one.
   press reports its full index path, as iOS does, so one menu tree serves both platforms.
   Android still has no side-by-side pair: Model and Voice Mode are two rows in their own
   section. Flows: `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`),
-  `.maestro/mock/menu-sections.yaml` (dividers and checks on every menu kind).
+  `.maestro/mock/menu-sections.yaml` (dividers and checks on every menu kind). The patch also
+  reports `onMenuShow` and `onMenuDismiss` on both platforms, which `native-menu-dismissal.ts`
+  uses to hold focus work until a menu has closed.
 
 ### Bookmark a node
 - **ID:** `chat.bookmark`
