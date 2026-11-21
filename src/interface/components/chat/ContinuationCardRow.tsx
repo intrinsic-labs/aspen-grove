@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { ScrollView, StyleSheet, type TextStyle } from 'react-native';
 import type { ULID } from '@domain/value-objects';
 import { loomUiTokens } from '../../ui/value-objects/loom-ui-tokens';
@@ -10,6 +10,7 @@ import {
 } from './parallel/rail-cards';
 import { StreamingContinuationCard } from './parallel/StreamingContinuationCard';
 import { SavedContinuationCard } from './SavedContinuationCard';
+import { useFollowNewRun } from './useFollowNewRun';
 import { useOpenOnCurrentCard } from './useOpenOnCurrentCard';
 
 const rail = loomUiTokens.continuationRail;
@@ -38,22 +39,16 @@ export const ContinuationCardRow = ({
 }: ContinuationCardRowProps) => {
   const listRef = useRef<ScrollView>(null);
   const liveSlotCount = countLiveSlots(cards);
-  const shownLiveSlotCountRef = useRef(0);
-  const { onLayout, onContentSizeChange } = useOpenOnCurrentCard(
+  const openOnCurrent = useOpenOnCurrentCard(
     listRef,
     cards,
     liveSlotCount > 0
   );
-
-  // New streaming cards join the end of the row: bring them into view
-  // whenever a run starts, including a second run whose finished cards
-  // are still showing (the slot count alone doesn't change then).
-  useEffect(() => {
-    if (liveSlotCount > shownLiveSlotCountRef.current) {
-      listRef.current?.scrollToEnd({ animated: true });
-    }
-    shownLiveSlotCountRef.current = liveSlotCount;
-  }, [liveSlotCount]);
+  const followRun = useFollowNewRun(listRef, liveSlotCount);
+  const onContentSizeChange = (width: number) => {
+    openOnCurrent.onContentSizeChange(width);
+    followRun.onContentSizeChange();
+  };
 
   return (
     <ScrollView
@@ -63,7 +58,8 @@ export const ContinuationCardRow = ({
       showsHorizontalScrollIndicator
       style={styles.list}
       contentContainerStyle={styles.content}
-      onLayout={onLayout}
+      onLayout={openOnCurrent.onLayout}
+      onScrollBeginDrag={followRun.onScrollBeginDrag}
       onContentSizeChange={onContentSizeChange}
     >
       {cards.map((card) =>
