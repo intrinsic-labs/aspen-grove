@@ -109,32 +109,32 @@ describe('emphasisSlant', () => {
   });
 });
 
-it.each(['System', undefined])(
-  'renders resolved System (%s) with native emphasis',
-  (fontFamily) => {
-    const styles = createMarkdownStyles({ ...base, fontFamily }, colors);
-    expect(styles.body.fontFamily).toBeUndefined();
-    expect(styles.strong).toMatchObject({
+it('renders System by name, with emphasis synthesized natively', () => {
+  const styles = createMarkdownStyles(
+    { ...base, fontFamily: 'System' },
+    colors
+  );
+  expect(styles.body.fontFamily).toBe('System');
+  expect(styles.strong).toMatchObject({
+    fontFamily: undefined,
+    fontWeight: 'bold',
+  });
+  expect(styles.em).toMatchObject({
+    fontFamily: undefined,
+    fontStyle: 'italic',
+  });
+  for (const level of [1, 2, 3, 4, 5, 6] as const) {
+    expect(styles[`heading${level}`]).toMatchObject({
       fontFamily: undefined,
       fontWeight: 'bold',
     });
-    expect(styles.em).toMatchObject({
-      fontFamily: undefined,
-      fontStyle: 'italic',
-    });
-    for (const level of [1, 2, 3, 4, 5, 6] as const) {
-      expect(styles[`heading${level}`]).toMatchObject({
-        fontFamily: undefined,
-        fontWeight: 'bold',
-      });
-    }
-    expect(styles.th).toMatchObject({
-      fontFamily: undefined,
-      fontWeight: 'bold',
-    });
-    expect(styles.td.fontFamily).toBeUndefined();
   }
-);
+  expect(styles.th).toMatchObject({
+    fontFamily: undefined,
+    fontWeight: 'bold',
+  });
+  expect(styles.td.fontFamily).toBe('System');
+});
 
 it.each(['ios', 'android'])('synthesizes System italics on %s', (os) => {
   expect(emphasisSlant(os, { regular: undefined, italic: undefined })).toBe(

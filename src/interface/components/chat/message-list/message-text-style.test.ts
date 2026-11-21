@@ -13,8 +13,7 @@ it.each([undefined, fonts.system, fonts.mono])(
       userNodeViewStyle: 'filled' as const,
       userNodeCornerRadius: 8,
     };
-    const expected =
-      family === fonts.system ? undefined : (family ?? fonts.cardoRegular);
+    const expected = family ?? fonts.cardoRegular;
     const message = toMessageTextStyle(preferences);
     expect(message.fontFamily).toBe(expected);
     expect(composerFieldMetrics(preferences).textStyle.fontFamily).toBe(

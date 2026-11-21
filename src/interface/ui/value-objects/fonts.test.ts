@@ -20,9 +20,9 @@ describe('stored message font preferences', () => {
     expect(toChatFontFace('OpenSans-Regular')).toBe(fonts.system);
   });
 
-  it('resolves System without a family and keeps Cardo as the default', () => {
-    expect(messageFontFamily(fonts.system)).toBeUndefined();
-    expect(messageFontFamily('OpenSans-Regular')).toBeUndefined();
+  it('passes System by name and keeps Cardo as the default', () => {
+    expect(messageFontFamily(fonts.system)).toBe('System');
+    expect(messageFontFamily('OpenSans-Regular')).toBe('System');
     expect(messageFontFamily()).toBe(fonts.cardoRegular);
   });
 
