@@ -297,8 +297,10 @@ machine and simulator, three runs or more, by median, and confirm a gap with in-
 before calling it a stall. No key needed. Last results: [.dev/voices-plan.md](.dev/voices-plan.md) section 3.
 
 [markdown.yaml](.maestro/markdown.yaml) imports `.maestro/fixtures/markdown-sample.openloom`
-(copy it into Files as for the perf flows) and screenshots a reply's markdown: a numbered list
-under a bullet, a bullet under a number, and a code block between paragraphs. No key needed.
+(copy it into Files as for the perf flows) and screenshots a reply's markdown: bold, italic and
+inline code mid-sentence wrapping with the words around them (a paragraph, a list item, a
+table cell), a wide code block before and after a sideways swipe, a numbered list under a
+bullet, a bullet under a number, and a code block between paragraphs. No key needed.
 
 [needs-agent.yaml](.maestro/needs-agent.yaml) clears state and imports
 `perf-tiny.openloom` before any agent exists: the tree opens with its messages and the

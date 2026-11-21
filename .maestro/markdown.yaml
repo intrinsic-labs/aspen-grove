@@ -1,8 +1,11 @@
-# A model reply's markdown: a numbered list nested under a bullet keeps its
-# numbers (and a bullet under a number its bullet), and a code block sits
-# close to the text around it. Copy
-# .maestro/fixtures/markdown-sample.openloom into the simulator's Files
-# ("On My iPhone") first, as for the perf flows. iOS; no key needed.
+# A model reply's markdown. Bold, italic and inline code mid-sentence wrap
+# with the words around them, as one run of text (in a paragraph, a list
+# item and a table cell); a wide code block, before and after a sideways
+# swipe; a numbered list nested under a bullet keeps its numbers (and a
+# bullet under a number its bullet), and a code block sits close to the
+# text around it.
+# Copy .maestro/fixtures/markdown-sample.openloom into the simulator's
+# Files ("On My iPhone") first, as for the perf flows. No key needed.
 #   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS/markdown"
 appId: com.intrinsiclabs.aspengrove
 ---
@@ -20,5 +23,36 @@ appId: com.intrinsiclabs.aspengrove
     timeout: 30000
 - runFlow: dismiss-tree-onboarding.yaml
 - waitForAnimationToEnd
-- assertVisible: '.*Draw three continuations.*'
+
+# The paragraph is one accessibility element only when its styled runs are
+# spans of one Text; as sibling Texts each run would be an element of its own.
+- scrollUntilVisible:
+    element:
+      text: '.*clonal root system shared underground can survive fire, drought and centuries of hard mountain winters, so a single grove.*'
+    direction: DOWN
+    timeout: 15000
+- assertVisible: '.*Connected roots: every stem in the grove draws water.*'
+- assertVisible: '.*void, not the original node.*'
+- takeScreenshot: md-02-inline-runs-wrap
+
+# The wide command scrolls sideways to its end.
+- scrollUntilVisible:
+    element:
+      text: '.*seed-perf-tree/cli.ts.*'
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: md-03-code-block-start
+- swipe:
+    from:
+      text: '.*seed-perf-tree/cli.ts.*'
+    direction: LEFT
+- waitForAnimationToEnd
+- takeScreenshot: md-04-code-block-scrolled
+
+- scrollUntilVisible:
+    element:
+      text: '.*Draw three continuations.*'
+    direction: UP
+    timeout: 15000
+- waitForAnimationToEnd
 - takeScreenshot: md-01-nested-lists-and-code

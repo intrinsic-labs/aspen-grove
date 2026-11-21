@@ -430,7 +430,8 @@ stays until the user makes one.
   scroll-edge effect fades them out under the title; Android has none, so
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
   Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
-  A reply's markdown (nested lists, a code block between paragraphs):
+  A reply's markdown (bold, italic and inline code wrapping mid-sentence as one run of text in
+  a paragraph, a list item and a table cell; nested lists; a code block between paragraphs):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
