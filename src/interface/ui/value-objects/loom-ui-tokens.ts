@@ -7,6 +7,12 @@
  * capture of the reference build (iPhone 17 Pro, iOS 26) where the value is a
  * system default rather than a number in the source.
  *
+ * The sections live by concern in `./tokens/` and are composed here, so
+ * `loomUiTokens` stays the one entry point. Every colour the interface
+ * draws comes from here or the theme palette beside it
+ * (`tokens/theme-colors.ts`); lint fails on a colour literal anywhere else
+ * (`config/eslint-colour-literals.mjs`).
+ *
  * The tree chat (Dialogue) screen, its continuation row and node sheets are
  * ported against these. The expanded composer tokens are still Aspen
  * Grove's provisional values until that screen is ported.

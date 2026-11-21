@@ -114,6 +114,7 @@ Dependencies point inward. `eslint-plugin-boundaries` (see `eslint.config.mjs`) 
 - Application defines interfaces (repositories, `ILlmProvider`, `ICredentialStore`); infrastructure implements them; `AppServicesProvider` injects them. Use cases never import infrastructure.
 - Domain has no framework dependencies: no React, no WatermelonDB, no Expo.
 - Keep files short and single-purpose. A new concern gets its own file in the layer it belongs to; route files in `src/app/` stay thin.
+- Colours come from the token files in `src/interface/ui/value-objects/` (`loomUiTokens`, composed from `tokens/`, and the theme palette beside it), each named for its use with its Latent Spaces source where it has one. `npm run lint` fails on a hex, `rgb()`/`hsl()` or named colour literal anywhere else in `src/interface` or `src/app` (`config/eslint-colour-literals.mjs`); `'transparent'` is fine.
 
 See [ADR-003](./docs/architecture/adr/003-layer-boundaries.md).
 

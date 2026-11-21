@@ -1,6 +1,7 @@
 import boundaries from 'eslint-plugin-boundaries';
 import typescriptParser from '@typescript-eslint/parser';
 import typescriptEslintPlugin from '@typescript-eslint/eslint-plugin';
+import { colourLiteralsConfig } from './config/eslint-colour-literals.mjs';
 
 /** @type {import('eslint-plugin-boundaries').Config} */
 export default [
@@ -127,4 +128,6 @@ export default [
       'boundaries/no-private': 'off',
     },
   },
+  // Colours come from the token files only.
+  colourLiteralsConfig,
 ];
