@@ -331,7 +331,8 @@ live in `open-app.yaml`, `skip-onboarding.yaml` (a cleared install opens onboard
 that set up through Settings or an import swipe it away), `walk-onboarding.yaml` (Next
 through the six intro pages), `dismiss-tree-onboarding.yaml` (the first tree's Getting
 Started sheet), `create-agent.yaml` and
-`import-tree.yaml`.
+`import-tree.yaml` (iOS: from Files, "On My iPhone"; Android: from the device, so push the
+file first, e.g. `adb -s emulator-5554 push <file> /sdcard/Download/`).
 
 For a one-off screenshot or deep link without Maestro:
 
