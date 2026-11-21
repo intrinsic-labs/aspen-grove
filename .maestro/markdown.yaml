@@ -6,7 +6,9 @@
 # text around it. Then a reply's continuation rail: its cards preview plain
 # text, markdown stripped, and a card's sheet renders the markdown.
 # Copy .maestro/fixtures/markdown-sample.openloom into the simulator's
-# Files ("On My iPhone") first, as for the perf flows. No key needed.
+# Files ("On My iPhone") first, as for the perf flows; on Android push it:
+#   adb -s emulator-5554 push .maestro/fixtures/markdown-sample.openloom /sdcard/Download/
+# No key needed.
 #   maestro test .maestro/markdown.yaml --test-output-dir "$SHOTS/markdown"
 appId: com.intrinsiclabs.aspengrove
 ---
