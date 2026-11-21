@@ -540,8 +540,7 @@ stays until the user makes one.
   Restore after one more divider. Regenerate Response is on every node; Continuations is
   disabled on a node without children and Rewind To Node on the current (last) node.
 - **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
-  horizontal ControlGroup; here it is an inline section (only the tree menu uses the patched
-  `preferredElementSize`). On Android each group is a menu group with a divider between
+  horizontal ControlGroup, icon above title, using the patched `preferredElementSize`. On Android each group is a menu group with a divider between
   groups (`patches/react-native-context-menu-view+1.21.0.patch`, API 28+).
   On iOS the message lifts as the menu's preview, kept between the tree's header and the
   room the menu needs under it: a message taller than that band shows its top at full size,
@@ -550,7 +549,7 @@ stays until the user makes one.
 - **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenu`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live

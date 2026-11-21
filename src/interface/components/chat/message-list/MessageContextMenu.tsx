@@ -2,15 +2,13 @@ import type { ReactNode } from 'react';
 import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import {
-  findNativeMenuItem,
-  toNativeMenuActions,
-} from '@/interface/ui/components/native-menu';
+  commandAt,
+  toContextMenuActions,
+} from '@/interface/ui/components/native-menu-tree';
+import { pressedIndexPath } from '@/interface/ui/components/native-menu-platform';
 import { nativeMenuDismissalProps } from '@/interface/ui/components/native-menu-dismissal';
 import type { ChatRow } from '../types';
-import {
-  buildMessageMenuSections,
-  type ChatMessageMenuAction,
-} from './message-menu';
+import { buildMessageMenu, type ChatMessageMenuAction } from './message-menu';
 import { messagePreviewBounds } from './message-preview-bounds';
 import { usePreviewArea } from './preview-area-context';
 
@@ -38,7 +36,7 @@ export const MessageContextMenu = ({
   readonly previewBorderRadius: number;
   readonly style: StyleProp<ViewStyle>;
 }) => {
-  const sections = buildMessageMenuSections({
+  const menu = buildMessageMenu({
     bookmarked: row.bookmarked,
     pruned: row.pruned,
     continuationCount: row.continuationCount,
@@ -47,12 +45,15 @@ export const MessageContextMenu = ({
   const previewArea = usePreviewArea();
   const bounds =
     Platform.OS === 'ios' && previewArea
-      ? messagePreviewBounds({ ...previewArea, sections })
+      ? messagePreviewBounds({
+          ...previewArea,
+          sections: menu.map((group) => group.children ?? []),
+        })
       : null;
 
   return (
     <ContextMenu
-      actions={toNativeMenuActions(sections)}
+      actions={toContextMenuActions(menu)}
       borderRadius={previewBorderRadius}
       previewBackgroundColor="transparent"
       previewTopInset={bounds?.top}
@@ -60,9 +61,9 @@ export const MessageContextMenu = ({
       style={style}
       {...nativeMenuDismissalProps}
       onPress={(event) => {
-        const menuItem = findNativeMenuItem(sections, event.nativeEvent);
-        if (menuItem) {
-          onMessageAction(row.id, menuItem.action);
+        const command = commandAt(menu, pressedIndexPath(event.nativeEvent));
+        if (command !== undefined) {
+          onMessageAction(row.id, command);
         }
       }}
     >

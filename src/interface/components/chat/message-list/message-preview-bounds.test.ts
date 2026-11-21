@@ -1,18 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
-import { buildMessageMenuSections } from './message-menu';
+import { buildMessageMenu } from './message-menu';
 import {
   estimatedMenuHeight,
   messagePreviewBounds,
 } from './message-preview-bounds';
 
 const menu = loomUiTokens.contextMenu;
-const sections = buildMessageMenuSections({
+const sections = buildMessageMenu({
   bookmarked: false,
   pruned: false,
   continuationCount: 0,
   isCurrent: true,
-});
+}).map((group) => group.children ?? []);
 
 describe('estimatedMenuHeight', () => {
   it('counts every row, and a gap between sections', () => {
