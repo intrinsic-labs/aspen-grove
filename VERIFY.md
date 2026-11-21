@@ -182,6 +182,13 @@ context menu in a tree (the human bubble, the reply, a continuation card), scree
 lifted preview with its menu, dismisses one and uses another (Bookmark, Regenerate, Copy
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
 again on recycled native views.
+[.maestro/mock/tall-reply-menu.yaml](.maestro/mock/tall-reply-menu.yaml) long-presses a reply
+taller than the screen: on iOS its lifted preview shows the reply's top at full size,
+cropped below the tree's header and faded at the cut, with the whole menu under it. Start the mock with long replies for it
+(`--pace 200 --words 600`).
+[.maestro/mock/rail-current-card.yaml](.maestro/mock/rail-current-card.yaml) checks that the
+continuation rail opens on the current path's card: the last of two, the second of four
+(centered), and a new current card after a branch switch.
 [.maestro/mock/menu-sections.yaml](.maestro/mock/menu-sections.yaml) screenshots every kind
 of native menu (the tree menu, Voice Mode checked, a message's long-press menu, the Bookmarks
 submenu, a node sheet's menu, the Provider and LM Studio model pickers) for their dividers
@@ -230,8 +237,8 @@ each area the change touched:
 |--------------|-----|
 | Home, the tree list | `mock/home-trees` |
 | Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
-| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/menu-sections`, `mock/sheet-swipe`, `mock/header-scroll` |
-| Continuation rail, parallel cards | `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
+| Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/tall-reply-menu` (mock with `--words 600`), `mock/menu-sections`, `mock/sheet-swipe`, `mock/header-scroll` |
+| Continuation rail, parallel cards | `mock/rail-current-card`, `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
 | Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
 | Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |
 | Markdown, import | `markdown`, `needs-agent` |
@@ -464,9 +471,17 @@ What differs on Android, and how the shared flows handle it:
   also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
   away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
 - iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
-  mock/lmstudio-connection and the end of mock/tree-model (from its System Message step) are
-  iOS-only for now; mock/setup passes (its "Select All" step is
-  optional).
+  mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
+  optional). mock/tree-model taps the keyboard's Done (`keyboard-done`) only on iOS and
+  closes the keyboard with the back key on Android.
+- Native context menus have no lifted preview on Android, so mock/tall-reply-menu checks
+  only that the menu opens there.
+- Start the mock for mock/parallel-continuations with `--pace 1.5` on Android (not 3):
+  Maestro's steps there wait out streaming text, and a 20 s stream ends before the flow
+  swipes back along the rail. (Keep streams under 60 s: the app gives up on an LM Studio
+  stream after that.) Which card fails also varies there, since the three requests can
+  reach the mock in any order; the flow finds cards by state
+  ([rail-find.yaml](.maestro/rail-find.yaml)), not by slot.
 
 **Stop and clean up.** `adb -s emulator-5554 reverse --remove-all`,
 `adb -s emulator-5554 uninstall com.intrinsiclabs.aspengrove`, then

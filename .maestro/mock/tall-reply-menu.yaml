@@ -1,0 +1,38 @@
+# A long-press on a reply taller than the screen: the lifted preview is
+# cropped at full size below the tree's header, its top showing and its cut
+# fading out, with the whole menu under it (iOS).
+# Needs Metro and the mock server started with long replies:
+#   node scripts/mock-llm-server/cli.ts --port 1235 --pace 200 --words 600
+#   maestro test .maestro/mock/tall-reply-menu.yaml --test-output-dir "$SHOTS/tall-reply-menu"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Tell me everything about aspen clones.
+# The reply fills the screen (the question scrolls out of view), so wait for
+# its title rather than its row.
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: tall-01-reply
+
+# The menu's first and last items both show, under the cropped preview. The
+# row's own center is off screen; the screen's middle is the reply's text.
+- longPressOn:
+    point: '50%,50%'
+- assertVisible: 'Regenerate Response'
+- assertVisible: 'Prune'
+- takeScreenshot: tall-02-reply-menu
+- tapOn:
+    point: '50%,12%'
+- waitForAnimationToEnd
+- assertNotVisible: 'Regenerate Response'
+- takeScreenshot: tall-03-dismissed

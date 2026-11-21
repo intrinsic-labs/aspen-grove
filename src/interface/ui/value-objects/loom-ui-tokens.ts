@@ -596,6 +596,16 @@ export const loomUiTokens = {
     // The first line starts 17 pt under the toolbar (measured).
     textTopGap: 17,
   },
+  // A long-press menu as UIKit draws it on iPhone, measured on iOS 27: what
+  // a lifted preview leaves room for, so it can be kept clear of the menu.
+  contextMenu: {
+    // 42 pt a row, rounded up for a title that wraps to two lines.
+    rowHeight: 44,
+    sectionGap: 20,
+    verticalPadding: 16,
+    // Between the lifted preview and the menu, and the preview and the header.
+    previewGap: 16,
+  },
   // The keyboard toolbar's "Done" (`ToolbarItem(placement: .keyboard)`), a
   // glass capsule over the keyboard, measured.
   keyboardDoneBar: {

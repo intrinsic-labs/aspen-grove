@@ -14,7 +14,7 @@ export interface Agent {
   /**
    * When set, this agent is private to the referenced LoomTree ("tree-owned").
    * Tree-owned agents are filtered out of the shared agent library, are created
-   * implicitly when a user customizes dialogue settings inside a chat, and are
+   * implicitly when a user changes a tree's Model Settings, and are
    * hard-deleted along with their owning tree.
    *
    * `undefined` (null in storage) = shared / library agent.

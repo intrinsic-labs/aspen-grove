@@ -32,6 +32,8 @@ type ContinuationCardShellProps = {
   readonly children: ReactNode;
 };
 
+const ignoreLongPress = () => {};
+
 /**
  * A continuation as Latent Spaces draws it (ChildNodeView): a caption over
  * a tan card. A card with a saved node takes the gestures: tap to expand it
@@ -71,6 +73,9 @@ export const ContinuationCardShell = ({
           <Pressable
             testID={`chat-continuation-card-${nodeId}`}
             onPress={() => onSelect(nodeId)}
+            // The long press is the menu's. Without a handler, Android's
+            // Pressable also fires onPress on release and opens the sheet.
+            onLongPress={ignoreLongPress}
             style={style}
           >
             {children}
