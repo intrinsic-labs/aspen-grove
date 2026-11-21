@@ -8,7 +8,7 @@ export const formText = StyleSheet.create({
   body: {
     fontSize: form.rowTextSize,
     lineHeight: form.rowTextLineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   value: {
     fontSize: form.rowTextSize,
@@ -23,8 +23,7 @@ export const formText = StyleSheet.create({
   destructive: {
     fontSize: form.rowTextSize,
     lineHeight: form.rowTextLineHeight,
-    // systemRed, dark
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
   header: {
     fontSize: form.headerTextSize,

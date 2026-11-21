@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   },
   done: {
     fontSize: bar.textSize,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
 });

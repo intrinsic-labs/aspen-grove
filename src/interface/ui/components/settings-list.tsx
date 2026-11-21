@@ -4,6 +4,7 @@ import Slider from '@react-native-community/slider';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppSwitch } from './AppSwitch';
 import { AppText } from './primitives';
+import { loomUiTokens } from '../value-objects/loom-ui-tokens';
 
 type SettingsListProps = {
   readonly children: ReactNode;
@@ -43,7 +44,7 @@ export const SettingsSection = ({
   testID,
 }: SettingsSectionProps) => {
   const items = Children.toArray(children).filter(Boolean);
-  const dividerColor = 'rgba(255, 255, 255, 0.12)';
+  const dividerColor = loomUiTokens.settingsForm.colors.flatSectionDivider;
 
   return (
     <View testID={testID} style={[styles.section, style]}>
