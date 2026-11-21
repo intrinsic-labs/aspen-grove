@@ -657,7 +657,9 @@ stays until the user makes one.
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
   half a second before asserting on `node-sheet`. A double-tap needs two taps less than
   300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
-  a tap on a message row waits the same 320 ms before the rail opens.
+  a tap on a message row waits the same 320 ms before the rail opens. A card's long press
+  only opens its menu (the pressable takes an empty `onLongPress`; without one, Android also
+  fired the tap and opened the card's sheet over a menu choice).
 
 ### Generate several continuations at once
 - **ID:** `chat.parallel-continuations`
