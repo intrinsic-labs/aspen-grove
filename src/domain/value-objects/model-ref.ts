@@ -11,8 +11,10 @@ type Brand<T, B> = T & { readonly [__brand]: B };
 export type ModelRef = Brand<string, 'ModelRef'>;
 
 // Keep in sync with the `Provider` type in `entities/provider.ts`.
-// Missing entries here cause `parseModelRef` to reject otherwise-valid
-// modelRefs, which silently breaks agent creation for that provider.
+// Agents are read back through `parseModelRef`, so a provider missing here
+// makes reading any stored agent that names it throw (Open Loom imports
+// store `custom:imported`). See `provider.ts` for why the list isn't
+// narrowed.
 const VALID_PROVIDERS: Provider[] = [
   'openrouter',
   'lmstudio',

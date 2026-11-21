@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 94ce67396efe2a699bccca28297177706bf55e26
+revision: 1f4bea4869d3d9a10255fb2a47a8711ce1243244
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -423,7 +423,7 @@ stays until the user makes one.
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -488,7 +488,7 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -563,7 +563,7 @@ stays until the user makes one.
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>` → "Regenerate Response".
 - **Requires:** A message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/create-verified-model-continuation-node.ts`
+- **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/create-verified-model-continuation-node.ts`
 - **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
@@ -703,7 +703,7 @@ stays until the user makes one.
   server). Generate is disabled while a single send or regenerate runs; send and regenerate
   wait while several stream.
 - **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>` (the plain line), `chat-continuation-slot-error-toggle-<slot>` (the failed card's pressable), `chat-continuation-slot-error-detail-<slot>` (shown once tapped); once saved, the card's pressable is `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/interface/components/chat/parallel/FailedCardBody.tsx`, `src/interface/components/chat/parallel/continuation-rail-view.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
+- **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/parallel/FailedCardBody.tsx`, `src/interface/components/chat/parallel/continuation-rail-view.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
   or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
   `edge_sources` and `raw_api_responses` per saved card and touches
@@ -717,7 +717,9 @@ stays until the user makes one.
   no text yet), `streaming`, `stopping`, `done`, `stopped`, `interrupted
   (reason)` and `failed` (a plain line in the card's usual text, dimmed, with "Tap for
   details."; a tap shows the raw `[provider:code] message` under it, another hides it; with
-  Verbose Error Alerts on it starts shown). Scrolled to its end, the rail shows the last card
+  Verbose Error Alerts on it starts shown). A card's text, while it streams and once it
+  settles, is plain text with its markdown marks stripped (`stripMarkdown`), as a saved card's
+  preview is. Scrolled to its end, the rail shows the last card
   whole, with the same 16 pt margin after it as before the first (`.padding()` around
   `HStack(spacing: 22)`, ChildNodesView.swift:21-27); like Latent Spaces' it doesn't snap, so
   mid-scroll a card can rest partly off screen. Saving follows the single-generation
@@ -754,7 +756,7 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button`.
 - **Requires:** A tree.
 - **Selector:** working — `chat-menu-button`; items none — native context menu item; reach via a tap on `chat-menu-button`
-- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/components/chat/tree-menu/useChatMenus.ts`, `src/interface/ui/components/NativeTreeMenu.tsx`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`, `patches/react-native-context-menu-view+1.21.0.patch`
+- **Code:** `src/interface/components/chat/tree-menu/tree-menu.ts#buildTreeMenu`, `src/interface/components/chat/tree-menu/TreeToolbarMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeHeaderMenu.tsx`, `src/interface/components/chat/tree-menu/useTreeMenuSheets.ts`, `src/interface/components/chat/tree-menu/useChatMenus.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/ui/components/NativeTreeMenu.tsx`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`, `patches/react-native-context-menu-view+1.21.0.patch`
 - **Backend:** none (each item's own entry)
 - **Status:** live
 - **Notes:** The side-by-side pair needs `preferredElementSize`, which
@@ -800,7 +802,7 @@ stays until the user makes one.
   "Bookmarks" → the bookmark by its title → `node-sheet-menu-button` → "Rename Bookmark".
 - **Requires:** A bookmarked node; the submenu is absent until there is one.
 - **Selector:** working — `node-sheet`, `node-sheet-title`, `node-sheet-bookmark` (the symbol), `node-sheet-menu-button`, `node-sheet-back`; submenu and menu items none — native context menu item; reach via a tap on `chat-menu-button` ("Bookmarks") or `node-sheet-menu-button`; the rename alert is native (`text-prompt-*` on Android)
-- **Code:** `src/interface/components/chat/bookmarks/useTreeBookmarks.ts`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/chat/node-sheet/bookmark-menu.ts`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/useNodeSheet.ts#onBookmarkAction`, `src/interface/components/chat/node-actions/useNodeActions.ts#renameBookmark`, `src/interface/components/chat/tree-menu/useBookmarksRefreshKey.ts`
+- **Code:** `src/interface/components/chat/bookmarks/useTreeBookmarks.ts`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/tree-menu/tree-menu.ts`, `src/interface/components/chat/node-sheet/bookmark-menu.ts`, `src/interface/components/chat/node-sheet/NodeSheetKindHeader.tsx`, `src/interface/components/chat/node-sheet/useNodeSheet.ts#onBookmarkAction`, `src/interface/components/chat/node-actions/useNodeActions.ts#renameBookmark`, `src/interface/components/chat/tree-menu/useBookmarksRefreshKey.ts`
 - **Backend:** WatermelonDB `nodes` via `WatermelonNodeRepository#findBookmarked` (the list)
   and `#updateMetadata` (`bookmarked`, `bookmark_label`); Make Current and Retrace use
   `SwitchDialoguePathUseCase` (`path_states`)
@@ -830,7 +832,7 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Edit Title" → type → "Save".
 - **Requires:** A tree.
 - **Selector:** none — native context menu item; reach via a tap on `chat-menu-button`; the alert is native (buttons "Save", "Cancel"; `text-prompt-*` on Android)
-- **Code:** `src/interface/components/chat/header-actions/useTreeTitle.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/useTextPrompt.ts`, `src/interface/ui/components/text-prompt/TextPromptDialog.tsx`
+- **Code:** `src/interface/components/chat/header-actions/useTreeTitle.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/header-actions/tree-name-prompt.ts`, `src/interface/ui/components/text-prompt/useTextPrompt.ts`, `src/interface/ui/components/text-prompt/TextPromptDialog.tsx`
 - **Backend:** WatermelonDB `loom_trees.title` via `WatermelonLoomTreeRepository`
 - **Status:** live
 - **Notes:** iOS's `Alert.prompt` has no placeholder, so the empty field doesn't read
