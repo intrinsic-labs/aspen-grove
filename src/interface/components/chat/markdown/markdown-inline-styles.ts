@@ -18,12 +18,16 @@ export const markdownInlineStyles = (
     marginBottom: 0,
   } as ViewStyle,
 
-  // Emphasis
+  // Emphasis. The face is already bold or italic: the library's default
+  // fontWeight 'bold' / fontStyle 'italic' (merged in) would make Android
+  // look for a bold "Cardo-Bold" and fall back to the system sans.
   strong: {
     fontFamily: 'Cardo-Bold',
+    fontWeight: 'normal',
   } as TextStyle,
   em: {
     fontFamily: 'Cardo-Italic',
+    fontStyle: 'normal',
   } as TextStyle,
   s: {
     textDecorationLine: 'line-through',

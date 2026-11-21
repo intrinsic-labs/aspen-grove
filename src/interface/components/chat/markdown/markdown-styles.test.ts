@@ -51,6 +51,20 @@ describe('createMarkdownStyles', () => {
     expect(styles.body.color).toBe('white');
   });
 
+  it('sets bold and italic by face, without a synthetic weight or slant', () => {
+    // Merged over the library's fontWeight 'bold' / fontStyle 'italic',
+    // which on Android would swap Cardo for the system sans.
+    const { strong, em } = createMarkdownStyles(base, colors);
+    expect(strong).toMatchObject({
+      fontFamily: 'Cardo-Bold',
+      fontWeight: 'normal',
+    });
+    expect(em).toMatchObject({
+      fontFamily: 'Cardo-Italic',
+      fontStyle: 'normal',
+    });
+  });
+
   it('keeps list icons as separate objects', () => {
     const styles = createMarkdownStyles(base, colors);
     expect(styles.bullet_list_icon).toEqual(styles.ordered_list_icon);
