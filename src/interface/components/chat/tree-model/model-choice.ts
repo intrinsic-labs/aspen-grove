@@ -25,6 +25,7 @@ export const modelChoiceChanges = (
   );
   return {
     modelRef: parseModelRef(`${provider}:${modelId}`),
+    ...(option?.label ? { modelName: option.label } : {}),
     ...(maxTokens !== null && maxTokens !== configuration.maxTokens
       ? { maxTokens }
       : {}),

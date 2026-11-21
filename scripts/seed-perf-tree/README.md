@@ -62,7 +62,7 @@ The imported tree opens on its deepest path (about 45 messages).
    until `chat-message-list` has rows.
 2. **Scroll to the bottom:** fling `chat-message-list` up and down end to end;
    watch for dropped frames with long markdown and code messages.
-3. **Switch branch:** tap a message row `chat-message-row-<nodeId>` that has
+3. **Switch branch:** tap a message row `chat-message-row-<role>-<nodeId>` that has
    siblings to open its continuation rail, then double-tap a card
    `chat-continuation-card-<nodeId>` (or long-press > "Make Current Node").
    The path should re-point and the list re-render.

@@ -1,5 +1,18 @@
+diff --git a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuManager.java b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuManager.java
+index 14b4ac5..d74f036 100644
+--- a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuManager.java
++++ b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuManager.java
+@@ -61,6 +61,8 @@ public class ContextMenuManager extends ViewGroupManager<ContextMenuView> {
+         return MapBuilder.<String, Object>builder()
+                 .put("onPress", MapBuilder.of("registrationName", "onPress"))
+                 .put("onCancel", MapBuilder.of("registrationName", "onCancel"))
++                .put("onMenuShow", MapBuilder.of("registrationName", "onMenuShow"))
++                .put("onMenuDismiss", MapBuilder.of("registrationName", "onMenuDismiss"))
+                 .build();
+     }
+ }
 diff --git a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
-index c6f5b9a..93b3771 100644
+index c6f5b9a..3fe3e2b 100644
 --- a/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
 +++ b/node_modules/react-native-context-menu-view/android/src/main/java/com/mpiannucci/reactnativecontextmenu/ContextMenuView.java
 @@ -17,6 +17,7 @@ import android.view.GestureDetector;
@@ -10,8 +23,44 @@ index c6f5b9a..93b3771 100644
  import android.view.View;
  import android.view.ContextMenu;
  
-@@ -160,21 +161,51 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+@@ -42,6 +43,9 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+ 
+     boolean cancelled = true;
+ 
++    // A menu is open: its popup holds window focus until it closes.
++    private boolean menuShowing = false;
++
+     int[] longPressStartLocation = new int[2];
+ 
+     protected boolean dropdownMenuMode = false;
+@@ -150,6 +154,21 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+         return super.onInterceptTouchEvent(ev);
+     }
+ 
++    /**
++     * The menu's popup is a focusable window: the activity's window gets
++     * focus back once it has closed, chosen action or not. That is the
++     * earliest moment another view can take focus and show the keyboard.
++     */
++    @Override
++    public void onWindowFocusChanged(boolean hasWindowFocus) {
++        super.onWindowFocusChanged(hasWindowFocus);
++        if (hasWindowFocus && menuShowing) {
++            menuShowing = false;
++            ReactContext reactContext = (ReactContext) getContext();
++            reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(getId(), "onMenuDismiss", Arguments.createMap());
++        }
++    }
++
+     @Override
+     public boolean onTouchEvent(MotionEvent ev) {
+         gestureDetector.onTouchEvent(ev);
+@@ -158,23 +177,55 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+ 
+     @Override
      public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
++        menuShowing = true;
++        ((ReactContext) getContext()).getJSModule(RCTEventEmitter.class).receiveEvent(getId(), "onMenuShow", Arguments.createMap());
          contextMenu.clear();
          setMenuIconDisplay(contextMenu, true);
 +        // A divider between items of different groups, as UIMenu draws one
@@ -70,7 +119,7 @@ index c6f5b9a..93b3771 100644
      public void setActions(@Nullable ReadableArray actions) {
          this.actions = actions;
      }
-@@ -206,7 +237,7 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+@@ -206,7 +257,7 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
          return null;
      }
  
@@ -79,7 +128,7 @@ index c6f5b9a..93b3771 100644
          String title = action.getString("title");
  
          // Apply custom font to submenu title
-@@ -216,21 +247,21 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+@@ -216,21 +267,21 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
              spannableTitle.setSpan(new CustomTypefaceSpan("", customFont), 0, title.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
          }
  
@@ -110,7 +159,7 @@ index c6f5b9a..93b3771 100644
  
          // Create spannable string with custom font
          SpannableString spannableTitle = new SpannableString(title);
-@@ -239,8 +270,14 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+@@ -239,8 +290,14 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
              spannableTitle.setSpan(new CustomTypefaceSpan("", customFont), 0, title.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
          }
  
@@ -126,7 +175,7 @@ index c6f5b9a..93b3771 100644
  
          if (action.hasKey("iconColor") && icon != null) {
              int color = Color.parseColor(action.getString("iconColor"));
-@@ -256,21 +293,20 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
+@@ -256,21 +313,20 @@ public class ContextMenuView extends ReactViewGroup implements View.OnCreateCont
              item.setTitle(redTitle);
          }
  
@@ -155,7 +204,7 @@ index c6f5b9a..93b3771 100644
                  return false;
              }
 diff --git a/node_modules/react-native-context-menu-view/index.d.ts b/node_modules/react-native-context-menu-view/index.d.ts
-index 25c92fd..cce8ec7 100644
+index 25c92fd..ec746bf 100644
 --- a/node_modules/react-native-context-menu-view/index.d.ts
 +++ b/node_modules/react-native-context-menu-view/index.d.ts
 @@ -36,7 +36,7 @@ export interface ContextMenuAction {
@@ -183,7 +232,22 @@ index 25c92fd..cce8ec7 100644
    /**
     * Child actions. When child actions are supplied, the child's callback will contain its name but the same index as the topmost parent menu/action index
     */
-@@ -124,6 +129,13 @@ export interface ContextMenuProps extends ViewProps {
+@@ -80,6 +85,14 @@ export interface ContextMenuProps extends ViewProps {
+    * Handle when the menu is cancelled and closed
+    */
+   onCancel?: () => void;
++  /**
++   * Handle when the menu appears
++   */
++  onMenuShow?: () => void;
++  /**
++   * Handle when the menu has finished dismissing, whether an action was chosen or not
++   */
++  onMenuDismiss?: () => void;
+   /**
+    * The background color of the preview. This is displayed underneath your view. Set this to transparent (or another color) if the default causes issues.
+    */
+@@ -124,6 +137,13 @@ export interface ContextMenuProps extends ViewProps {
     * Disable shadow in preview
     */
    disableShadow?: boolean;
@@ -198,10 +262,19 @@ index 25c92fd..cce8ec7 100644
     * Custom font name to use for menu items (Android only). The font must be available in your app's font resources.
     */
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenu.m b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
-index f1b3603..5cc80fe 100644
+index f1b3603..e4dbded 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenu.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenu.m
-@@ -25,6 +25,8 @@ - (UIView *) view {
+@@ -14,6 +14,8 @@ - (UIView *) view {
+ RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
+ RCT_EXPORT_VIEW_PROPERTY(onPreviewPress, RCTBubblingEventBlock)
+ RCT_EXPORT_VIEW_PROPERTY(onCancel, RCTBubblingEventBlock)
++RCT_EXPORT_VIEW_PROPERTY(onMenuShow, RCTBubblingEventBlock)
++RCT_EXPORT_VIEW_PROPERTY(onMenuDismiss, RCTBubblingEventBlock)
+ RCT_EXPORT_VIEW_PROPERTY(actions, NSArray<ContextMenuAction>)
+ RCT_EXPORT_VIEW_PROPERTY(disabled, BOOL)
+ RCT_CUSTOM_VIEW_PROPERTY(previewBackgroundColor, UIColor, ContextMenuView) {
+@@ -25,6 +27,8 @@ - (UIView *) view {
  RCT_EXPORT_VIEW_PROPERTY(borderBottomRightRadius, CGFloat)
  RCT_EXPORT_VIEW_PROPERTY(borderBottomLeftRadius, CGFloat)
  RCT_EXPORT_VIEW_PROPERTY(disableShadow, BOOL)
@@ -223,10 +296,22 @@ index 13fdaba..7e73799 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
-index 63964b2..28e2572 100644
+index 63964b2..c5d9bc4 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.h
-@@ -25,5 +25,9 @@
+@@ -16,6 +16,11 @@
+ @property (nullable, nonatomic, copy) RCTBubblingEventBlock onPress;
+ @property (nullable, nonatomic, copy) RCTBubblingEventBlock onPreviewPress;
+ @property (nullable, nonatomic, copy) RCTBubblingEventBlock onCancel;
++// Sent as the menu appears.
++@property (nullable, nonatomic, copy) RCTBubblingEventBlock onMenuShow;
++// Sent once the menu has finished dismissing, whether an action was chosen
++// or not: the earliest moment UIKit lets another view take first responder.
++@property (nullable, nonatomic, copy) RCTBubblingEventBlock onMenuDismiss;
+ @property (nullable, nonatomic, copy) NSArray<ContextMenuAction*>* actions;
+ @property (nullable, nonatomic, copy) UIColor* previewBackgroundColor;
+ @property (nonatomic, assign) BOOL disabled;
+@@ -25,5 +30,9 @@
  @property (nonatomic, assign) CGFloat borderBottomRightRadius;
  @property (nonatomic, assign) CGFloat borderBottomLeftRadius;
  @property (nonatomic, assign) BOOL disableShadow;
@@ -237,7 +322,7 @@ index 63964b2..28e2572 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..fe136d3 100644
+index e10a830..dbe7728 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 @@ -18,6 +18,13 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
@@ -315,7 +400,17 @@ index e10a830..fe136d3 100644
      return nil;
    }
  
-@@ -100,12 +137,13 @@ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willPerfo
+@@ -91,6 +128,9 @@ - (nullable UIContextMenuConfiguration *)contextMenuInteraction:(nonnull UIConte
+ 
+ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willDisplayMenuForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator API_AVAILABLE(ios(13.0)) {
+   _cancelled = true;
++  if (self.onMenuShow) {
++    self.onMenuShow(@{});
++  }
+ }
+ 
+ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willPerformPreviewActionForMenuWithConfiguration:(nonnull UIContextMenuConfiguration *)configuration animator:(nonnull id<UIContextMenuInteractionCommitAnimating>)animator API_AVAILABLE(ios(13.0)) {
+@@ -100,12 +140,26 @@ - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willPerfo
  }
  
  - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willEndForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator API_AVAILABLE(ios(13.0)) {
@@ -323,6 +418,19 @@ index e10a830..fe136d3 100644
    if (_cancelled && self.onCancel) {
      self.onCancel(@{});
    }
++  // The menu is still on screen here; it is gone when the animator completes.
++  __weak ContextMenuView *weakSelf = self;
++  void (^dismissed)(void) = ^{
++    ContextMenuView *strongSelf = weakSelf;
++    if (strongSelf.onMenuDismiss) {
++      strongSelf.onMenuDismiss(@{});
++    }
++  };
++  if (animator) {
++    [animator addCompletion:dismissed];
++  } else {
++    dismissed();
++  }
  }
  
 -- (UIPreviewParameters *)getPreviewParams {
@@ -330,7 +438,7 @@ index e10a830..fe136d3 100644
      UIPreviewParameters* previewParams = [[UIPreviewParameters alloc] init];
      
      if (_previewBackgroundColor != nil) {
-@@ -125,7 +163,7 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -125,7 +179,7 @@ - (UIPreviewParameters *)getPreviewParams {
          CGFloat bottomLeftRadius = self.borderBottomLeftRadius > -1 ? self.borderBottomLeftRadius : radius;
          
          UIBezierPath *path = [UIBezierPath bezierPath];
@@ -339,7 +447,7 @@ index e10a830..fe136d3 100644
          
          [path moveToPoint: CGPointMake(CGRectGetMinX(bounds) + topLeftRadius, CGRectGetMinY(bounds))];
  
-@@ -158,28 +196,147 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -158,28 +212,147 @@ - (UIPreviewParameters *)getPreviewParams {
      return previewParams;
  }
  
@@ -354,7 +462,7 @@ index e10a830..fe136d3 100644
 +    }
 +    return view != nil && [_hostedInteractions objectForKey:view] == interaction;
 +}
-+
+ 
 +// The view the menu lifts: the hosted subview that was pressed, else the
 +// first one this view really contains. Under Fabric's interop layer
 +// `reactSubviews` can be empty or out of step with the real subviews.
@@ -375,6 +483,9 @@ index e10a830..fe136d3 100644
 +    return nil;
 +}
      
+-    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
 +// The band, in window coordinates, a lifted preview must fit in, or
 +// CGRectNull when previewTopInset / previewBottomInset aren't set.
 +- (CGRect)previewBandInWindow:(UIWindow *)window {
@@ -387,11 +498,10 @@ index e10a830..fe136d3 100644
 +      return CGRectNull;
 +    }
 +    return CGRectMake(0, top, CGRectGetWidth(window.bounds), bottom - top);
-+}
+ }
      
--    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
--                                        parameters:[self getPreviewParams]
--                                            target:previewTarget];
+-- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
+-    UIView *hostView = self.reactSubviews.firstObject;
 +// The bottom edge of a cropped preview fades out over this height, so the
 +// cut reads as the message going on rather than as a glitch.
 +static const CGFloat kCroppedPreviewFadeHeight = 32.0;
@@ -421,18 +531,13 @@ index e10a830..fe136d3 100644
 +    UIImageView *snapshot = [[UIImageView alloc] initWithImage:image];
 +    snapshot.frame = CGRectMake(0, 0, size.width, size.height);
 +    return snapshot;
- }
- 
--- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForDismissingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
--    UIView *hostView = self.reactSubviews.firstObject;
++}
++
 +- (void)showHiddenPreviewSource {
 +    _hiddenPreviewSource.alpha = 1.0;
 +    _hiddenPreviewSource = nil;
 +}
-     
--    if (!hostView.window) {
--        // The view is no longer available; it was unmounted.
--        return nil;
++    
 +// The preview that lifts the hosted view. With previewTopInset /
 +// previewBottomInset set it is kept in the band between them, as a system
 +// context menu keeps its preview clear of the navigation bar: a view taller
@@ -449,9 +554,11 @@ index e10a830..fe136d3 100644
 +    UIView *container = hostView.superview;
 +    if (hostView == nil || container == nil || hostView.window == nil || container.window == nil) {
 +      return nil;
-     }
++    }
      
--    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
+-    if (!hostView.window) {
+-        // The view is no longer available; it was unmounted.
+-        return nil;
 +    CGRect band = clamped ? [self previewBandInWindow:hostView.window] : CGRectNull;
 +    CGRect frame = [container convertRect:hostView.frame toView:nil];
 +    if (CGRectIsNull(band) || CGRectGetHeight(frame) <= 0) {
@@ -459,11 +566,9 @@ index e10a830..fe136d3 100644
 +      return [[UITargetedPreview alloc] initWithView:hostView
 +                                          parameters:[self getPreviewParamsForView:hostView]
 +                                              target:target];
-+    }
+     }
      
--    return [[UITargetedPreview alloc] initWithView:hostView
--                                        parameters:[self getPreviewParams]
--                                            target:previewTarget];
+-    UIPreviewTarget* previewTarget = [[UIPreviewTarget alloc] initWithContainer:self center:hostView.center];
 +    BOOL cropped = CGRectGetHeight(frame) > CGRectGetHeight(band);
 +    CGFloat height = MIN(CGRectGetHeight(frame), CGRectGetHeight(band));
 +    CGFloat centerY = MAX(CGRectGetMidY(frame), CGRectGetMinY(band) + height / 2.0);
@@ -490,7 +595,10 @@ index e10a830..fe136d3 100644
 +                                        parameters:parameters
 +                                            target:target];
 +}
-+
+ 
+-    return [[UITargetedPreview alloc] initWithView:hostView
+-                                        parameters:[self getPreviewParams]
+-                                            target:previewTarget];
 +- (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction previewForHighlightingMenuWithConfiguration:(UIContextMenuConfiguration *)configuration API_AVAILABLE(ios(13.0)) {
 +    return [self targetedPreviewForInteraction:interaction clamped:YES];
 +}
@@ -501,7 +609,7 @@ index e10a830..fe136d3 100644
  }
  
  - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atIndexPath:(NSArray<NSNumber *> *)indexPath {
-@@ -245,6 +402,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -245,6 +418,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
          actionMenu.subtitle = action.subtitle;
        }
  

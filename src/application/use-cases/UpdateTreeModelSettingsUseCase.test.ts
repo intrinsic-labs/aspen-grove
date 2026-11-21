@@ -72,6 +72,7 @@ const build = (input: {
         }
         const updated: Agent = {
           ...existing,
+          name: changes.name ?? existing.name,
           modelRef: changes.modelRef ?? existing.modelRef,
           configuration: changes.configuration ?? existing.configuration,
         };
@@ -109,7 +110,7 @@ describe('UpdateTreeModelSettingsUseCase', () => {
 
     expect(result.forked).toBe(true);
     expect(created).toHaveLength(1);
-    expect(result.agent.name).toBe('Mock (Ancient Trees)');
+    expect(result.agent.name).toBe('Mock');
     expect(result.agent.ownerTreeId).toBe(treeId);
     expect(result.agent.configuration).toEqual({
       systemPrompt: 'Be brief.',
@@ -243,8 +244,102 @@ describe('UpdateTreeModelSettingsUseCase', () => {
       treeId,
       changes: { modelRef: mockRef },
     });
-    expect(result.agent.name).toBe('mock-model (Ancient Trees)');
+    expect(result.agent.name).toBe('mock-model');
     expect(result.agent.ownerTreeId).toBe(treeId);
     expect(trees.get(treeId)?.defaultModelAgentId).toBe(result.agent.id);
+  });
+
+  describe('naming', () => {
+    const placeholderTree = (defaultModelAgentId?: ULID): LoomTree => ({
+      ...makeTree(treeId, defaultModelAgentId),
+      title: 'Loom Tree 2026-11-21T15:13:27.863Z',
+    });
+    const haiku = parseModelRef('openrouter:anthropic/claude-haiku-4.5');
+
+    it("keeps the source's name on a copy when the model stays", async () => {
+      const { useCase } = build({
+        agents: [{ ...makeAgent(sharedId), name: 'Claude Haiku (Fast)' }],
+        trees: [placeholderTree(sharedId)],
+      });
+
+      const result = await useCase.execute({
+        treeId,
+        changes: { temperature: 0.4 },
+      });
+
+      expect(result.forked).toBe(true);
+      expect(result.agent.name).toBe('Claude Haiku (Fast)');
+    });
+
+    it('names a copy after its new model, never the placeholder title', async () => {
+      const { useCase, agents } = build({
+        agents: [{ ...makeAgent(sharedId), name: 'Claude Haiku (Fast)' }],
+        trees: [placeholderTree(sharedId)],
+      });
+
+      const result = await useCase.execute({
+        treeId,
+        changes: { modelRef: haiku, modelName: 'Anthropic: Claude Haiku 4.5' },
+      });
+
+      expect(result.forked).toBe(true);
+      expect(result.agent.name).toBe('Anthropic: Claude Haiku 4.5');
+      expect(result.agent.name).not.toContain('Loom Tree');
+      expect(agents.get(sharedId)?.name).toBe('Claude Haiku (Fast)');
+    });
+
+    it('falls back to a readable model id without a display name', async () => {
+      const { useCase } = build({
+        agents: [makeAgent(sharedId)],
+        trees: [placeholderTree(sharedId)],
+      });
+
+      const result = await useCase.execute({
+        treeId,
+        changes: { modelRef: haiku },
+      });
+
+      expect(result.agent.name).toBe('claude-haiku-4.5');
+    });
+
+    it('names a new agent after its model', async () => {
+      const { useCase } = build({ agents: [], trees: [placeholderTree()] });
+
+      const result = await useCase.execute({
+        treeId,
+        changes: { modelRef: haiku, modelName: 'Anthropic: Claude Haiku 4.5' },
+      });
+
+      expect(result.agent.name).toBe('Anthropic: Claude Haiku 4.5');
+    });
+
+    it("renames the tree's own agent when its model changes, and only then", async () => {
+      const { useCase } = build({
+        agents: [
+          { ...makeAgent(ownedId, treeId), name: 'Claude Haiku (Fast)' },
+        ],
+        trees: [placeholderTree(ownedId)],
+      });
+
+      const tuned = await useCase.execute({
+        treeId,
+        changes: { temperature: 0.1 },
+      });
+      expect(tuned.agent.name).toBe('Claude Haiku (Fast)');
+
+      const sameModel = await useCase.execute({
+        treeId,
+        changes: { modelRef: mockRef, modelName: 'Mock Model' },
+      });
+      expect(sameModel.agent.name).toBe('Claude Haiku (Fast)');
+
+      const switched = await useCase.execute({
+        treeId,
+        changes: { modelRef: haiku, modelName: 'Anthropic: Claude Haiku 4.5' },
+      });
+      expect(switched.forked).toBe(false);
+      expect(switched.agent.id).toBe(ownedId);
+      expect(switched.agent.name).toBe('Anthropic: Claude Haiku 4.5');
+    });
   });
 });

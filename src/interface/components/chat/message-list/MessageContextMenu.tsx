@@ -5,6 +5,7 @@ import {
   findNativeMenuItem,
   toNativeMenuActions,
 } from '@/interface/ui/components/native-menu';
+import { nativeMenuDismissalProps } from '@/interface/ui/components/native-menu-dismissal';
 import type { ChatRow } from '../types';
 import {
   buildMessageMenuSections,
@@ -57,6 +58,7 @@ export const MessageContextMenu = ({
       previewTopInset={bounds?.top}
       previewBottomInset={bounds?.bottom}
       style={style}
+      {...nativeMenuDismissalProps}
       onPress={(event) => {
         const menuItem = findNativeMenuItem(sections, event.nativeEvent);
         if (menuItem) {
