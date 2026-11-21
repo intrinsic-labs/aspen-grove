@@ -1,5 +1,6 @@
 import { fonts } from '@interface/ui/value-objects/fonts';
 import { createMarkdownStyles } from './markdown-styles';
+import { emphasisSlant } from './markdown-inline-styles';
 
 const colors = {
   textColor: 'white',
@@ -64,10 +65,7 @@ describe('createMarkdownStyles', () => {
       fontFamily: bold,
       fontWeight: 'normal',
     });
-    expect(styles.em).toMatchObject({
-      fontFamily: italic,
-      fontStyle: 'normal',
-    });
+    expect(styles.em.fontFamily).toBe(italic);
     for (const level of [1, 2, 3, 4, 5, 6] as const) {
       expect(styles[`heading${level}`]).toMatchObject({
         fontFamily: bold,
@@ -85,5 +83,19 @@ describe('createMarkdownStyles', () => {
     const styles = createMarkdownStyles(base, colors);
     expect(styles.bullet_list_icon).toEqual(styles.ordered_list_icon);
     expect(styles.bullet_list_icon).not.toBe(styles.ordered_list_icon);
+  });
+});
+
+describe('emphasisSlant', () => {
+  const cardo = { regular: 'Cardo-Regular', italic: 'Cardo-Italic' };
+  const vt220 = { regular: fonts.vt220, italic: fonts.vt220 };
+  it('asks iOS for italic so RCTFont keeps the italic face', () => {
+    expect(emphasisSlant('ios', cardo)).toBe('italic');
+  });
+  it('keeps Android normal, so it does not look for an italic of the italic face', () => {
+    expect(emphasisSlant('android', cardo)).toBe('normal');
+  });
+  it('leaves a face with no italic upright on iOS', () => {
+    expect(emphasisSlant('ios', vt220)).toBe('normal');
   });
 });
