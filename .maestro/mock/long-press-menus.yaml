@@ -74,9 +74,10 @@ appId: com.intrinsiclabs.aspengrove
       id: 'chat-continuation-card-.*'
     timeout: 30000
 - waitForAnimationToEnd
+# The rail opens on the current reply, the second card.
 - longPressOn:
     id: 'chat-continuation-card-.*'
-    index: 0
+    index: 1
 - assertVisible: 'Make Current Node'
 - takeScreenshot: lp-05-card-menu
 - tapOn:

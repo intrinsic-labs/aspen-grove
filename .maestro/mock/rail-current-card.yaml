@@ -1,0 +1,141 @@
+# The continuation rail opens on the current path's card, not the first: on
+# the last of two replies; centered on it once two more
+# continuations follow it; and on a new current card after a branch switch.
+# Against the mock server (no key). Needs the mock server and Metro up (see
+# VERIFY.md, "No key?"):
+#   maestro test .maestro/mock/rail-current-card.yaml --test-output-dir "$SHOTS/rail-current-card"
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Where do the oldest aspens grow?
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- extendedWaitUntil:
+    visible: 'Mock title #\d+'
+    timeout: 30000
+- waitForAnimationToEnd
+
+# A second reply, which becomes the current one.
+- longPressOn:
+    id: chat-message-row-.*
+    index: 1
+- tapOn: 'Regenerate Response'
+- extendedWaitUntil:
+    visible:
+      id: chat-streaming-message
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- waitForAnimationToEnd
+
+# The human turn's rail opens on the second card, the one with the check.
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-card-check
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: rail-01-opens-on-current-last
+
+# Two more continuations after it, which don't change the path.
+- tapOn:
+    id: chat-continuation-count-increase
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '2'
+- tapOn:
+    id: chat-continuation-generate-button
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-stop-all
+    timeout: 10000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 60000
+- waitForAnimationToEnd
+
+# Closed and opened again, the rail is centered on the current card, now
+# second of four. The run scrolled the question under the header: pull the
+# list down to it first.
+- swipe:
+    start: 50%, 35%
+    end: 50%, 75%
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-card-check
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: rail-02-centered-on-current-second-of-four
+
+# Switch branch: one more continuation (the rail scrolls to it at the end),
+# made current from its menu, which closes the rail.
+- tapOn:
+    id: chat-continuation-count-decrease
+- assertVisible:
+    id: chat-continuation-count-value
+    text: '1'
+- tapOn:
+    id: chat-continuation-generate-button
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-stop-all
+    timeout: 10000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-stop-all
+    timeout: 60000
+- waitForAnimationToEnd
+# On screen: a sliver of the fourth card and the new fifth one, whole.
+- longPressOn:
+    id: 'chat-continuation-card-.*'
+    index: 1
+- tapOn: 'Make Current Node'
+- extendedWaitUntil:
+    notVisible:
+      id: chat-continuation-rail
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Opened fresh, the rail is on the new current card, the last of five.
+- swipe:
+    start: 50%, 35%
+    end: 50%, 75%
+    duration: 600
+- waitForAnimationToEnd
+- tapOn:
+    id: chat-message-row-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: chat-continuation-card-check
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: rail-03-after-switch-opens-on-new-current

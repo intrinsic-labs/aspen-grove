@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import {
   findNativeMenuItem,
@@ -10,10 +10,14 @@ import {
   buildMessageMenuSections,
   type ChatMessageMenuAction,
 } from './message-menu';
+import { messagePreviewBounds } from './message-preview-bounds';
+import { usePreviewArea } from './preview-area-context';
 
 /**
  * The message row's native long-press menu around its content. Untitled,
- * as in Latent Spaces (NodeView.swift `.contextMenu`).
+ * as in Latent Spaces (NodeView.swift `.contextMenu`). On iOS the lifted
+ * preview stays below the tree's header with room for the menu under it,
+ * showing the message's top, cropped, when it is taller than that.
  */
 export const MessageContextMenu = ({
   row,
@@ -39,12 +43,19 @@ export const MessageContextMenu = ({
     continuationCount: row.continuationCount,
     isCurrent,
   });
+  const previewArea = usePreviewArea();
+  const bounds =
+    Platform.OS === 'ios' && previewArea
+      ? messagePreviewBounds({ ...previewArea, sections })
+      : null;
 
   return (
     <ContextMenu
       actions={toNativeMenuActions(sections)}
       borderRadius={previewBorderRadius}
       previewBackgroundColor="transparent"
+      previewTopInset={bounds?.top}
+      previewBottomInset={bounds?.bottom}
       style={style}
       onPress={(event) => {
         const menuItem = findNativeMenuItem(sections, event.nativeEvent);

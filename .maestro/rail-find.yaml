@@ -1,0 +1,31 @@
+# Swipes an open continuation rail until an element is on screen: back to
+# the row's start first, then along it. Android lists only what is on
+# screen, and its row shows about a card and a half, so a flow that wants a
+# card in a given state (failed, streaming, done) finds it this way rather
+# than by its slot. Pass the element's id (a regex) as TARGET.
+appId: com.intrinsiclabs.aspengrove
+---
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: ${TARGET}
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: RIGHT
+      - waitForAnimationToEnd
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: ${TARGET}
+    commands:
+      - swipe:
+          from:
+            id: chat-continuation-rail-list
+          direction: LEFT
+      - waitForAnimationToEnd
+- assertVisible:
+    id: ${TARGET}

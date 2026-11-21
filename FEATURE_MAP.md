@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: d9fbcb491a0ed77aeacdb211bfbee670c55a74d1
+revision: e5a4b1068df31e0a1dfa6325a729734671b7adbf
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -531,13 +531,20 @@ stays until the user makes one.
   horizontal ControlGroup; here it is an inline section (only the tree menu uses the patched
   `preferredElementSize`). On Android each group is a menu group with a divider between
   groups (`patches/react-native-context-menu-view+1.21.0.patch`, API 28+).
+  On iOS the message lifts as the menu's preview, kept between the tree's header and the
+  room the menu needs under it: a message taller than that band shows its top at full size,
+  cropped to the band with a short fade at the cut, and one reaching above the header moves down below it (the patched
+  `previewTopInset` / `previewBottomInset` of react-native-context-menu-view).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
+- **Notes:** Flows: `.maestro/mock/long-press-menus.yaml`, and
+  `.maestro/mock/tall-reply-menu.yaml` for a reply taller than the screen (mock started with
+  `--words 600`).
 
 ### Regenerate a response
 - **ID:** `chat.regenerate`
@@ -640,18 +647,27 @@ stays until the user makes one.
   Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
   hint.
 - **Where:** Directly under the tapped message, inside the message list. It scales in and out
-  (0.3 s) and the list scrolls to center it when it opens.
+  (0.3 s) and the list scrolls to center it when it opens. Its card row opens centered on
+  the card the active path runs through (the one with the check; at the row's start or end
+  when that card is first or last), or at the first card when none is, and does so on
+  every opening, so a rail reopened after a branch switch shows the new current card. A run
+  started from the open rail scrolls the row to its new cards and keeps it at its end while
+  they lay out, until the reader drags the row or the run ends.
 - **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/useFollowNewRun.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
   half a second before asserting on `node-sheet`. A double-tap needs two taps less than
   300 ms apart (`src/interface/components/chat/node-actions/double-tap.ts`). With Voice Mode on,
-  a tap on a message row waits the same 320 ms before the rail opens.
+  a tap on a message row waits the same 320 ms before the rail opens. A card's long press
+  only opens its menu (the pressable takes an empty `onLongPress`; without one, Android also
+  fired the tap and opened the card's sheet over a menu choice).
+  Flow: `.maestro/mock/rail-current-card.yaml` (the rail on the last of two cards, on the
+  second of four, and on a new current card after a branch switch).
 
 ### Generate several continuations at once
 - **ID:** `chat.parallel-continuations`

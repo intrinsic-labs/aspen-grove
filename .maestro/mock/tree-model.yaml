@@ -80,10 +80,16 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 - inputText: Answer like a lighthouse keeper.
 - takeScreenshot: tree-44-system-message
-- tapOn:
-    id: keyboard-done
+# Put the keyboard away: the toolbar's Done on iOS. Android has no keyboard
+# toolbar; there the first back below closes the keyboard, the next leaves.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: keyboard-done
 - repeat:
-    times: 3
+    times: 4
     while:
       notVisible:
         id: tree-model-screen
@@ -129,10 +135,14 @@ appId: com.intrinsiclabs.aspengrove
 - extendedWaitUntil:
     visible: 'Answer like a lighthouse keeper.'
     timeout: 10000
-- tapOn:
-    id: keyboard-done
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: keyboard-done
 - repeat:
-    times: 4
+    times: 5
     while:
       notVisible:
         id: home-welcome
