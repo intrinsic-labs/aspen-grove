@@ -326,7 +326,7 @@ stays until the user makes one.
   agent (both open `/onboarding?start=setup`, on page 7).
 - **Requires:** none
 - **Selector:** working — `onboarding-screen`, `onboarding-wordmark`, `onboarding-pager`, `onboarding-page-<n>` (1-7), `onboarding-next`, `onboarding-begin`, links `onboarding-link-openloom`, `onboarding-link-project`, `onboarding-link-issues`
-- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
+- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/useOpenOnPage.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
 - **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set by Begin Weaving)
 - **Status:** live
 - **Notes:** To skip, swipe the sheet down (`.maestro/skip-onboarding.yaml`). As in Latent
