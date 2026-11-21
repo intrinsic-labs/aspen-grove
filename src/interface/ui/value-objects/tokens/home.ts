@@ -1,3 +1,5 @@
+import { systemColors } from './colors';
+
 /**
  * Home: greeting, tree list, swipe actions and header.
  * Part of `loomUiTokens` (see `../loom-ui-tokens.ts` for sources and
@@ -63,7 +65,7 @@ export const homeTokens = {
       separatorInset: 16,
       separatorColor: '#38383A',
       // A pressed row's highlight (systemGray4, dark).
-      pressedBackground: '#3A3A3C',
+      pressedBackground: systemColors.gray4,
       // A clear 40 pt section under the rows (HomeScreenView.swift:100-104).
       footerHeight: 40,
     },
@@ -72,7 +74,7 @@ export const homeTokens = {
       // system's red Delete (`.onDelete`), as iOS 26 draws them: a rounded
       // button beside the row (measured from `04-home-swipe-edit.png`).
       renameTint: '#FF9F0A',
-      deleteTint: '#FF453A',
+      deleteTint: systemColors.red,
       // The button is 86 × 64 pt, 10 pt in from the card's edge, with
       // 11 pt to the row it uncovers; the row then rounds its own corners.
       actionWidth: 86,
@@ -89,6 +91,10 @@ export const homeTokens = {
       // `header.ellipsisSize`.
       settingsCircleSize: 28,
       settingsIconSize: 20,
+      // The symbol's filled disc and the figure cut out of it, as the
+      // toolbar draws them (HomeScreenView.swift:160, measured).
+      settingsDiscFill: systemColors.white,
+      settingsGlyph: systemColors.black,
     },
   },
 } as const;

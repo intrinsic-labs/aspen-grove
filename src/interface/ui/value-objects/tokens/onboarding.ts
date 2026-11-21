@@ -1,3 +1,5 @@
+import { systemColors } from './colors';
+
 /**
  * Onboarding: the intro sheet, setup page and a first tree's Getting
  * Started sheet.
@@ -34,6 +36,9 @@ export const onboardingTokens = {
     setupFade: {
       top: 16,
       bottom: 40,
+      // The sheet's #1C1C1E at zero alpha: the fades run to clear in the
+      // sheet's own colour, not to transparent black.
+      clear: 'rgba(28, 28, 30, 0)',
     },
     page: {
       // `.frame(width: 180).clipShape(Circle())`, `VStack(spacing: 20)`,
@@ -74,6 +79,9 @@ export const onboardingTokens = {
       // `.bordered`: tertiary fill (measured #39393D); `.borderedProminent`:
       // the accent.
       borderedFill: '#39393D',
+      // `.borderedProminent`'s label on the accent (LoomOnboarding.swift:136,
+      // LoomTreeOnboarding.swift:55), white.
+      prominentLabel: systemColors.white,
     },
     tree: {
       // "Loom Trees": Cardo 40 with `.padding(.bottom)`; "Getting Started":

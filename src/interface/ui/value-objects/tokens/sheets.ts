@@ -1,3 +1,5 @@
+import { systemColors } from './colors';
+
 /**
  * Shared sheet chrome: sheet headers, the export and text editor sheets,
  * long-press menus and the keyboard's Done bar.
@@ -25,6 +27,9 @@ export const sheetTokens = {
     // draws smaller in its box: 85 matches the symbol's 63 pt height
     // (measured).
     iconSize: 85,
+    // `.foregroundColor(.white)` on the green circle
+    // (OpenLoomExportSheet.swift:39).
+    iconColor: systemColors.white,
     // The hero VStack's `.padding()`.
     heroPadding: 16,
     // The circle's top sits 59 pt under the toolbar (measured).
@@ -52,6 +57,10 @@ export const sheetTokens = {
     keyboardBottomOffset: 70,
   },
   // `FullScreenTextEditor` in a sheet (FullScreenTextEditor.swift).
+  // TextPromptDialog (AG): a text field in a dialog over a dimmed screen.
+  textPrompt: {
+    backdrop: 'rgba(0, 0, 0, 0.5)',
+  },
   textEditorSheet: {
     // `.padding(.horizontal)` plus the TextEditor's 5 pt line fragment
     // padding, which React Native's TextInput doesn't add.

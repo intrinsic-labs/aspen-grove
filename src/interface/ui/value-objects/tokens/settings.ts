@@ -1,3 +1,5 @@
+import { systemColors } from './colors';
+
 /**
  * Settings: the inset-grouped Form, the appearance preview, the voice
  * chooser and the API keys hero.
@@ -32,6 +34,19 @@ export const settingsTokens = {
       // #1C1C1E row (measured, shot 42); the switch draws a disabled track
       // at half opacity, so this is the colour that lands there.
       toggleDisabledOnTrack: '#A4A4A6',
+      // A pressed row: UITableViewCell's selected background, dark
+      // (systemGray4 on a page's rows, systemGray3 on a sheet's).
+      rowPressed: systemColors.gray4,
+      sheetRowPressed: systemColors.gray3,
+      // LM Studio's connection status dot (AG): systemGreen / systemRed, dark.
+      statusConnected: systemColors.green,
+      statusDisconnected: systemColors.red,
+      // AppSwitch (AG): an off track visible against black and clearly
+      // dimmer than the on state, and a white thumb.
+      switchOffTrack: 'rgba(255, 255, 255, 0.22)',
+      switchThumb: systemColors.white,
+      // Hairlines between rows of the flat SettingsSection (AG).
+      flatSectionDivider: 'rgba(255, 255, 255, 0.12)',
     },
     // Card inset from the screen edge (measured 16).
     sectionInset: 16,
@@ -113,9 +128,17 @@ export const settingsTokens = {
     dotGap: 10,
     dotsBottomGap: 41,
     inactiveDot: 'rgba(255, 255, 255, 0.5)',
+    currentDot: systemColors.white,
+    // The portrait's symbol: `.foregroundColor(.white)`
+    // (LoomVoiceChooser.swift:80).
+    portraitIcon: systemColors.white,
     // Select capsule: headline bold in `.padding()`, white on dark
     // (LoomVoiceChooser.swift:51-60); 52 pt tall (measured).
     selectHeight: 52,
+    // `.background(colorScheme == .dark ? .white : .black)` behind
+    // `.tint(AppColors.oppositePrimary)` text (LoomVoiceChooser.swift:52,57).
+    selectFill: systemColors.white,
+    selectText: systemColors.black,
   },
   apiKeysHero: {
     // `lock.shield.fill` in a 100 pt frame with `.padding(.top)`

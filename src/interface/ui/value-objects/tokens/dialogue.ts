@@ -1,3 +1,5 @@
+import { systemColors } from './colors';
+
 /**
  * The tree chat (Dialogue) screen: message list, composer, header,
  * continuation rail and node sheets.
@@ -113,6 +115,7 @@ export const dialogueTokens = {
     // shadow color is black at 0.33.
     shadowRadius: 15,
     shadowOpacity: 0.33,
+    shadowColor: systemColors.black,
     // Grows to five lines, then scrolls and offers the expanded composer (AG).
     inputCollapsedMaxLines: 5,
     sectionGap: 12,
@@ -195,6 +198,12 @@ export const dialogueTokens = {
   },
   // A node's sheet: "Node Info" (NodeSheetView.swift) and "Continuation
   // Node" (ChildNodeView.swift:53-96).
+  // Markdown in a message (AG: Latent Spaces shows Markdown as plain text).
+  markdown: {
+    // A fenced code block's fill, AG's black. Latent Spaces fills code
+    // snippets with `.secondary.opacity(0.08)` (CodeBlockView.swift:104).
+    codeBlockBackground: systemColors.black,
+  },
   nodeSheet: {
     // The sheet background (systemBackground, elevated, dark), measured.
     background: '#1C1C1E',
