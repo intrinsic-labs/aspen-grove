@@ -465,9 +465,9 @@ What differs on Android, and how the shared flows handle it:
   also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
   away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
 - iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
-  mock/lmstudio-connection and the end of mock/tree-model (from its System Message step) are
-  iOS-only for now; mock/setup passes (its "Select All" step is
-  optional).
+  mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
+  optional). mock/tree-model taps the keyboard's Done (`keyboard-done`) only on iOS and
+  closes the keyboard with the back key on Android.
 - Native context menus have no lifted preview on Android, so mock/tall-reply-menu checks
   only that the menu opens there.
 
