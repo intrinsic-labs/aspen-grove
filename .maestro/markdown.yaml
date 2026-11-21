@@ -37,16 +37,24 @@ appId: com.intrinsiclabs.aspengrove
 - takeScreenshot: md-02-inline-runs-wrap
 
 # The wide command scrolls sideways to its end.
+# By id and part-visible: the command runs past the screen's edge, so its
+# text is never 100% on screen.
 - scrollUntilVisible:
     element:
-      text: '.*seed-perf-tree/cli.ts.*'
+      id: markdown-code-block-sh
     direction: DOWN
+    visibilityPercentage: 60
+    centerElement: true
     timeout: 15000
+- waitForAnimationToEnd
 - takeScreenshot: md-03-code-block-start
+# Dragged from the block itself (by text, Maestro would find the whole
+# reply, whose label holds every word).
 - swipe:
     from:
-      text: '.*seed-perf-tree/cli.ts.*'
+      id: markdown-code-block-sh
     direction: LEFT
+    duration: 1500
 - waitForAnimationToEnd
 - takeScreenshot: md-04-code-block-scrolled
 
@@ -58,8 +66,14 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 - takeScreenshot: md-01-nested-lists-and-code
 
-# The first reply's rail: its sibling's card shows the words, not the marks.
-- tapOn: 'Here is how to weave a branch.*'
+# The first turn's rail: the first reply's sibling shows the words, not the
+# marks.
+- scrollUntilVisible:
+    element:
+      text: 'Show me some markdown.'
+    direction: UP
+    timeout: 15000
+- tapOn: 'Show me some markdown.'
 - extendedWaitUntil:
     visible:
       id: chat-continuation-rail

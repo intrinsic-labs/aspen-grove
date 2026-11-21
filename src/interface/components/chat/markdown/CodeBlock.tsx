@@ -24,7 +24,10 @@ export const CodeBlock = ({ code, language }: CodeBlockProps) => {
   const estimatedHeight = codeBlockHeight(shown);
 
   return (
-    <View style={[styles.container, { height: estimatedHeight }]}>
+    <View
+      testID={`markdown-code-block-${language}`}
+      style={[styles.container, { height: estimatedHeight }]}
+    >
       <CodeHighlighter
         hljsStyle={codepenEmbed}
         language={language}

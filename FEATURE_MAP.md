@@ -422,7 +422,7 @@ stays until the user makes one.
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
-- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
+- **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<nodeId>`, `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
@@ -432,7 +432,8 @@ stays until the user makes one.
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
   Flow: `.maestro/mock/header-scroll.yaml` (messages under the header, then Home's).
   A reply's markdown (bold, italic and inline code wrapping mid-sentence as one run of text in
-  a paragraph, a list item and a table cell; nested lists; a code block between paragraphs):
+  a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
+  a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
