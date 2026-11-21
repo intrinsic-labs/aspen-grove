@@ -1,3 +1,4 @@
+import { messageFontFamily } from '@interface/ui/value-objects/fonts';
 import { useEffect, useRef } from 'react';
 import {
   Pressable,
@@ -13,10 +14,7 @@ import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { useAppServices } from '@/interface/composition';
 import { AppScreen, AppText } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
-import {
-  setDialogueDraft,
-  useDialogueDraft,
-} from './dialogue-draft-store';
+import { setDialogueDraft, useDialogueDraft } from './dialogue-draft-store';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 
@@ -101,9 +99,9 @@ export const ExpandedDialogueComposerView = () => {
               fontSize: displayPreferences.messageFontSize,
               lineHeight: displayPreferences.messageLineHeight,
               paddingBottom: insets.bottom + 20,
-              ...(displayPreferences.messageFontFamily
-                ? { fontFamily: displayPreferences.messageFontFamily }
-                : {}),
+              fontFamily: messageFontFamily(
+                displayPreferences.messageFontFamily
+              ),
             },
           ]}
         />

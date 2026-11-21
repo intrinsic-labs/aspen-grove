@@ -74,7 +74,7 @@ export const markdownBlockStyles = (
     thead: { backgroundColor: colors.codeBackground } as ViewStyle,
     th: {
       fontFamily: faces.bold,
-      fontWeight: 'normal',
+      fontWeight: faces.bold === undefined ? 'bold' : 'normal',
       padding: 8,
       borderBottomWidth: 1,
       borderColor: colors.secondary,

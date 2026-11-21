@@ -18,7 +18,7 @@ export type MarkdownColors = {
 
 /** The message's face, size, line height and color every block scales from. */
 export type MarkdownTypography = {
-  readonly fontFamily: string;
+  readonly fontFamily: string | undefined;
   readonly faces: ReturnType<typeof emphasisFaces>;
   readonly fontSize: number;
   readonly lineHeight: number;
@@ -29,10 +29,18 @@ export type MarkdownTypography = {
 export const toMarkdownTypography = (
   baseStyle: TextStyle | undefined,
   colors: MarkdownColors
-): MarkdownTypography => ({
-  fontFamily: baseStyle?.fontFamily ?? fonts.cardoRegular,
-  faces: emphasisFaces(baseStyle?.fontFamily),
-  fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
-  lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
-  textColor: baseStyle?.color ?? colors.textColor,
-});
+): MarkdownTypography => {
+  // An explicit undefined fontFamily is System after resolving the preference.
+  // An absent style/family retains the default Cardo face.
+  const family =
+    baseStyle && Object.prototype.hasOwnProperty.call(baseStyle, 'fontFamily')
+      ? (baseStyle.fontFamily ?? fonts.system)
+      : fonts.cardoRegular;
+  return {
+    fontFamily: family === fonts.system ? undefined : family,
+    faces: emphasisFaces(family),
+    fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
+    lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
+    textColor: baseStyle?.color ?? colors.textColor,
+  };
+};

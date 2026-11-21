@@ -2,6 +2,7 @@ import {
   emphasisFaces,
   fonts,
   messageFontFamilies,
+  messageFontFamily,
   normalizeMessageFontFamily,
   toChatFontFace,
 } from './fonts';
@@ -12,6 +13,17 @@ describe('stored message font preferences', () => {
     expect(normalizeMessageFontFamily(stored)).toBe(fonts.mono);
     expect(toChatFontFace(stored)).toBe(fonts.mono);
     expect(normalizeMessageFontFamily(` ${stored} `)).toBe(fonts.mono);
+  });
+
+  it('maps saved Open Sans to System in both preference read paths', () => {
+    expect(normalizeMessageFontFamily(' OpenSans-Regular ')).toBe(fonts.system);
+    expect(toChatFontFace('OpenSans-Regular')).toBe(fonts.system);
+  });
+
+  it('resolves System without a family and keeps Cardo as the default', () => {
+    expect(messageFontFamily(fonts.system)).toBeUndefined();
+    expect(messageFontFamily('OpenSans-Regular')).toBeUndefined();
+    expect(messageFontFamily()).toBe(fonts.cardoRegular);
   });
 
   it.each(messageFontFamilies)('preserves the supported face %s', (face) => {
@@ -66,5 +78,14 @@ describe('message emphasis faces', () => {
       italic: fonts.vt220,
       boldItalic: fonts.vt220,
     });
+  });
+});
+
+it('lets the native System font synthesize emphasis', () => {
+  expect(emphasisFaces(fonts.system)).toEqual({
+    regular: undefined,
+    bold: undefined,
+    italic: undefined,
+    boldItalic: undefined,
   });
 });

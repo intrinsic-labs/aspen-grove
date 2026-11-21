@@ -7,12 +7,12 @@ export type InterfaceOption<T> = {
   readonly label: string;
 };
 
-/** Latent Spaces' order; JetBrains Mono and Open Sans replace Calling Code and System. */
+/** Latent Spaces' order; JetBrains Mono replaces Calling Code. */
 export const FONT_OPTIONS: readonly InterfaceOption<ChatFontFace>[] = [
   { value: fonts.mono, label: 'JetBrains Mono' },
   { value: fonts.vt220, label: 'VT220' },
   { value: fonts.cardoRegular, label: 'Cardo' },
-  { value: fonts.openSans, label: 'Open Sans' },
+  { value: fonts.system, label: 'System' },
 ];
 
 export const MESSAGE_STYLE_OPTIONS: readonly InterfaceOption<NodeViewStyle>[] =

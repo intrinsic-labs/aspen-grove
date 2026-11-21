@@ -435,8 +435,8 @@ stays until the user makes one.
   a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
   a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
-  Emphasis, headings and table headers use the chosen message font's bundled faces;
-  VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
+  Emphasis, headings and table headers use the chosen message font's bundled faces,
+  or native bold and italic for System; VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
@@ -1331,7 +1331,7 @@ stays until the user makes one.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or Open Sans), the font size, the
+- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or System), the font size, the
   user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
   sample messages.
 - **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
@@ -1350,7 +1350,8 @@ stays until the user makes one.
   steps of 2. The former per-option ids (`settings-typography-font-<face>`,
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
   (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
-  leading. Saved selections of the retired mono face resolve to JetBrains Mono.
+  leading. Saved selections of the retired mono face resolve to JetBrains Mono; Open Sans resolves
+  to System. Cardo remains the default. System uses the platform font with native bold and italic.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

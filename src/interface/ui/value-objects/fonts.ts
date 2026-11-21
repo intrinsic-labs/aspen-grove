@@ -1,10 +1,12 @@
 /**
  * Native PostScript names; bundled TTF filenames match for Android.
+ * System is a preference sentinel, resolved to no fontFamily when styling.
  * JetBrains Mono stands in for Latent Spaces' Calling Code (paid). Its
  * advance is IBM Plex Mono's (600/1000 em), so sizes width-matched for Plex
  * still hold.
  */
 export const fonts = {
+  system: 'System',
   cardoRegular: 'Cardo-Regular',
   cardoBold: 'Cardo-Bold',
   cardoItalic: 'Cardo-Italic',
@@ -23,7 +25,7 @@ export const messageFontFamilies = [
   fonts.cardoRegular,
   fonts.mono,
   fonts.vt220,
-  fonts.openSans,
+  fonts.system,
 ] as const;
 
 export type MessageFontFamily = (typeof messageFontFamilies)[number];
@@ -35,6 +37,7 @@ export const normalizeMessageFontFamily = (
   value?: string
 ): MessageFontFamily | undefined => {
   const normalized = value?.trim();
+  if (normalized === fonts.openSans) return fonts.system;
   if (normalized === legacyMono) return fonts.mono;
   return messageFontFamilies.find((family) => family === normalized);
 };
@@ -42,9 +45,22 @@ export const normalizeMessageFontFamily = (
 export const toChatFontFace = (value?: string): MessageFontFamily =>
   normalizeMessageFontFamily(value) ?? fonts.cardoRegular;
 
+/** Resolve a stored selection only at the style boundary; undefined defaults to Cardo. */
+export const messageFontFamily = (value?: string): string | undefined => {
+  const face = toChatFontFace(value);
+  return face === fonts.system ? undefined : face;
+};
+
 /** Bundled emphasis faces for a message font; VT220 has no variant faces. */
 export const emphasisFaces = (family?: string) => {
   switch (family) {
+    case fonts.system:
+      return {
+        regular: undefined,
+        bold: undefined,
+        italic: undefined,
+        boldItalic: undefined,
+      };
     case fonts.mono:
       return {
         regular: fonts.mono,
