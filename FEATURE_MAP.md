@@ -488,13 +488,15 @@ stays until the user makes one.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/useRemeasureOnSetText.ts`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
-- **Notes:** The placeholder reads "Reply to <agent name>". The send button is hidden
+- **Notes:** The field grows with its text up to five lines, text set from code included
+  (an edit loading its message): `useRemeasureOnSetText` makes Fabric measure the input
+  again after such a set, which it otherwise skips until the user types. The placeholder reads "Reply to <agent name>". The send button is hidden
   while the input is empty and shows a checkmark while editing (label "Save"). **Stop:**
   while a reply (or a regenerate) streams, the button is a stop circle,
   `chat-composer-stop` (Latent Spaces' `stop.circle.fill`); a tap cancels the request

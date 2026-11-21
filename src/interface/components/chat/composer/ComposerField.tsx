@@ -11,6 +11,7 @@ import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { MaterialView } from '@/interface/ui/components/MaterialView';
 import { AppInput } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
+import { useRemeasureOnSetText } from './useRemeasureOnSetText';
 
 type ComposerFieldProps = {
   readonly testID: string;
@@ -55,6 +56,7 @@ export const ComposerField = ({
 }: ComposerFieldProps) => {
   const { colors } = useAspenGroveTheme();
   const [isFocused, setIsFocused] = useState(false);
+  const { noteTyped, minHeightNudge } = useRemeasureOnSetText(value);
 
   return (
     <View style={styles.fieldShadow}>
@@ -69,7 +71,10 @@ export const ComposerField = ({
           testID={testID}
           ref={inputRef}
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={(text) => {
+            noteTyped(text);
+            onChangeText(text);
+          }}
           placeholder={placeholder}
           placeholderTextColor={loomUiTokens.colors.composerPlaceholder}
           multiline
@@ -83,7 +88,11 @@ export const ComposerField = ({
             onFocus?.();
           }}
           onBlur={() => setIsFocused(false)}
-          style={[styles.input, textStyle, { minHeight, maxHeight }]}
+          style={[
+            styles.input,
+            textStyle,
+            { minHeight: minHeight + minHeightNudge, maxHeight },
+          ]}
         />
         {children}
       </MaterialView>
