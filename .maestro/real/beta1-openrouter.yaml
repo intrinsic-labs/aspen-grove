@@ -24,13 +24,34 @@ env:
 - assertVisible:
     id: onboarding-openrouter
 - assertVisible: 'A key is stored on this device.'
+# The Model rows run on under Begin Weaving, which is pinned over the page's
+# bottom: Maestro counts a row there as visible and its tap lands on the
+# button. Drag the page up until the row sits above the button, then tap it.
 - scrollUntilVisible:
     element:
       id: onboarding-template-claude-haiku-fast
     timeout: 10000
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: onboarding-template-claude-haiku-fast
+        above:
+          id: onboarding-begin
+    commands:
+      - swipe:
+          from:
+            id: onboarding-step-setup
+          direction: UP
+          duration: 800
+      - waitForAnimationToEnd
 - tapOn:
     id: onboarding-template-claude-haiku-fast
+    above:
+      id: onboarding-begin
 - waitForAnimationToEnd
+- assertVisible:
+    id: onboarding-begin
 - takeScreenshot: or-01-onboarding-openrouter
 - tapOn:
     id: onboarding-begin
@@ -91,7 +112,7 @@ env:
 # First turn.
 - tapOn:
     id: chat-composer-input
-- inputText: In one short plain sentence, what is an aspen grove?
+- inputText: Answer each question in one short plain sentence. What is an aspen grove?
 - tapOn:
     id: chat-composer-send
 - extendedWaitUntil:
@@ -157,7 +178,7 @@ env:
 # A second turn.
 - tapOn:
     id: chat-composer-input
-- inputText: In one short plain sentence, how old can they get?
+- inputText: How old can they get?
 - tapOn:
     id: chat-composer-send
 - extendedWaitUntil:
@@ -180,13 +201,24 @@ env:
     visible:
       id: chat-composer-edit-banner
     timeout: 10000
-- eraseText: 80
-- inputText: In one short plain sentence, how big can one grove get?
+# The composer takes focus a moment after the banner shows; typing before
+# that is dropped (the edit would go out unchanged).
+- waitForAnimationToEnd
+# Edit is meant to focus the composer, but with the keyboard down it doesn't
+# (2026-11-21), and a tap on the field puts the caret where it lands (the
+# simulator shows no Select All). The turn is one short line, so a tap right
+# of its text, left of the send button, puts the caret at its end.
+- tapOn:
+    point: '78%,92%'
+- waitForAnimationToEnd
+- eraseText: 120
+- inputText: How big can one grove get?
+- assertVisible: '.*[Hh]ow big can one grove get\?'
 - takeScreenshot: or-06-editing
 - tapOn:
     id: chat-composer-send
 - extendedWaitUntil:
-    visible: '.*how big can one grove get\?'
+    visible: '.*[Hh]ow big can one grove get\?'
     timeout: 15000
 - extendedWaitUntil:
     visible:
@@ -332,8 +364,8 @@ env:
       index: 3
     timeout: 15000
 - waitForAnimationToEnd
-- assertVisible: '.*how big can one grove get\?'
-- assertNotVisible: '.*how old can they get\?'
+- assertVisible: '.*[Hh]ow big can one grove get\?'
+- assertNotVisible: '.*[Hh]ow old can they get\?'
 - takeScreenshot: or-12-after-restart
 - longPressOn:
     id: chat-message-row-.*
@@ -358,7 +390,7 @@ env:
       id: chat-continuation-rail-list
     direction: RIGHT
 - waitForAnimationToEnd
-- assertVisible: '.*how old can they get\?'
+- assertVisible: '.*[Hh]ow old can they get\?'
 - takeScreenshot: or-14-after-restart-original-kept
 - tapOn:
     id: chat-message-row-.*
