@@ -31,7 +31,7 @@ export const VoiceCard = ({
         <Ionicons
           name={appearance.icon}
           size={chooser.portraitIconSize}
-          color="#fff"
+          color={chooser.portraitIcon}
         />
       </Pressable>
       <Text style={styles.name}>{voice.name}</Text>
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: 'Cardo-Regular',
     fontSize: chooser.nameSize,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     marginBottom: chooser.nameBottomGap,
   },
   description: {

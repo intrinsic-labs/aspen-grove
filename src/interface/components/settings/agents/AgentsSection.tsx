@@ -7,6 +7,7 @@ import {
 } from '@/interface/ui/components/form';
 import { AgentRow } from './AgentRow';
 import { useAgentsLibraryController } from './useAgentsLibraryController';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 /**
  * Settings → Agents library, in Form rows. Shared agents are the reusable
@@ -27,7 +28,10 @@ export const AgentsSection = () => {
             {controller.error ? (
               <Text
                 testID="settings-agents-error"
-                style={[formText.footer, { color: '#FF453A' }]}
+                style={[
+                  formText.footer,
+                  { color: loomUiTokens.colors.destructive },
+                ]}
               >
                 {controller.error}
               </Text>

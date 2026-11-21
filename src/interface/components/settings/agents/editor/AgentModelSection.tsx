@@ -7,6 +7,7 @@ import { providerDefaultModel } from '../../../models/provider-default-model';
 import { ProviderModelSection } from '../../../models/ProviderModelSection';
 import type { AgentDraft } from '../agent-editor-types';
 import type { AgentModelSelection } from './useAgentModelSelection';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 type AgentModelSectionProps = {
   readonly draft: AgentDraft;
@@ -88,7 +89,6 @@ export const AgentModelSection = ({
 
 const styles = StyleSheet.create({
   error: {
-    // systemRed, dark
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
 });

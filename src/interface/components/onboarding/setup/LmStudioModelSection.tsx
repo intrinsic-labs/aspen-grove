@@ -75,6 +75,6 @@ export const LmStudioModelSection = ({
 
 const styles = StyleSheet.create({
   error: {
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
 });

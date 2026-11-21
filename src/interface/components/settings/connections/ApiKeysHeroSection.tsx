@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Cardo-Regular',
     fontSize: hero.titleSize,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     textAlign: 'center',
     paddingVertical: hero.titleVerticalPadding,
   },

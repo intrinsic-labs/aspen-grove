@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     padding: preview.bubblePadding,
   },
   text: {
-    color: '#FFFFFF',
+    color: colors.primary,
     opacity: messageList.messageTextOpacity,
   },
 });

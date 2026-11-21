@@ -125,6 +125,6 @@ const styles = StyleSheet.create({
   },
   destructive: {
     fontSize: 15,
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
 });

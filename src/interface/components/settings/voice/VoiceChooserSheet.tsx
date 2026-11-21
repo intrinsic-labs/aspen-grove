@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     borderRadius: chooser.dotSize / 2,
   },
   currentDot: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: chooser.currentDot,
   },
   otherDot: {
     backgroundColor: chooser.inactiveDot,
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     height: chooser.selectHeight,
     borderRadius: chooser.selectHeight / 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: chooser.selectFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#000000',
+    color: chooser.selectText,
   },
 });
