@@ -17,7 +17,7 @@ import { usePreviewArea } from './preview-area-context';
  * The message row's native long-press menu around its content. Untitled,
  * as in Latent Spaces (NodeView.swift `.contextMenu`). On iOS the lifted
  * preview stays below the tree's header with room for the menu under it,
- * scaled down when the message is taller than that.
+ * showing the message's top, cropped, when it is taller than that.
  */
 export const MessageContextMenu = ({
   row,

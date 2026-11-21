@@ -30,7 +30,8 @@ export const estimatedMenuHeight = <Action extends string>(
 /**
  * The band a lifted message preview must fit in, as iOS keeps a context
  * menu's preview clear of the navigation bar: below the header, and above
- * the menu that opens under it. A taller message is scaled down to fit.
+ * the menu that opens under it. A taller message shows its top at full
+ * size, cropped to the band with a fade at the cut.
  */
 export const messagePreviewBounds = <Action extends string>({
   headerHeight,

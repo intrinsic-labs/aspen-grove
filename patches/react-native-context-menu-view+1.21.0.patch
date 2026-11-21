@@ -237,7 +237,7 @@ index 63964b2..28e2572 100644
  
  @end
 diff --git a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
-index e10a830..6448ab5 100644
+index e10a830..fe136d3 100644
 --- a/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 +++ b/node_modules/react-native-context-menu-view/ios/ContextMenuView.m
 @@ -18,6 +18,13 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
@@ -339,7 +339,7 @@ index e10a830..6448ab5 100644
          
          [path moveToPoint: CGPointMake(CGRectGetMinX(bounds) + topLeftRadius, CGRectGetMinY(bounds))];
  
-@@ -158,28 +196,133 @@ - (UIPreviewParameters *)getPreviewParams {
+@@ -158,28 +196,147 @@ - (UIPreviewParameters *)getPreviewParams {
      return previewParams;
  }
  
@@ -375,9 +375,6 @@ index e10a830..6448ab5 100644
 +    return nil;
 +}
      
-+// A preview that lifts the hosted view in place, or nil (UIKit's default
-+// preview) when it or its container isn't in a window: UIPreviewTarget and
-+// UITargetedPreview both assert that they are.
 +// The band, in window coordinates, a lifted preview must fit in, or
 +// CGRectNull when previewTopInset / previewBottomInset aren't set.
 +- (CGRect)previewBandInWindow:(UIWindow *)window {
@@ -395,14 +392,31 @@ index e10a830..6448ab5 100644
 -    return [[UITargetedPreview alloc] initWithView:self.reactSubviews.firstObject
 -                                        parameters:[self getPreviewParams]
 -                                            target:previewTarget];
-+// A still of the view drawn at `scale`, standing in for it as a preview that
-+// has to shrink: a scale transform on the view itself would leave its hit
-+// area full size, so taps around the shrunken preview wouldn't close the menu.
-+- (UIView *)scaledSnapshotOfView:(UIView *)view scale:(CGFloat)scale {
-+    CGSize size = CGSizeMake(CGRectGetWidth(view.bounds) * scale, CGRectGetHeight(view.bounds) * scale);
++// The bottom edge of a cropped preview fades out over this height, so the
++// cut reads as the message going on rather than as a glitch.
++static const CGFloat kCroppedPreviewFadeHeight = 32.0;
++
++// A still of the view's top `height` points at full size, standing in for
++// a view too tall for the band, as a system context menu crops a tall
++// preview rather than shrinking it. Its bottom edge fades to clear, which
++// shows the preview's background. (Cropping the view itself, with a
++// visiblePath, would leave its hit area full height: taps below the
++// preview wouldn't close the menu.)
++- (UIView *)croppedSnapshotOfView:(UIView *)view height:(CGFloat)height {
++    CGFloat width = CGRectGetWidth(view.bounds);
++    CGSize size = CGSizeMake(width, height);
 +    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:size];
 +    UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
-+      [view drawViewHierarchyInRect:CGRectMake(0, 0, size.width, size.height) afterScreenUpdates:NO];
++      [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
++      CGFloat fade = MIN(kCroppedPreviewFadeHeight, height / 2.0);
++      CGColorSpaceRef space = CGColorSpaceCreateDeviceGray();
++      CGFloat components[] = {0.0, 0.0, 0.0, 1.0};
++      CGGradientRef gradient = CGGradientCreateWithColorComponents(space, components, NULL, 2);
++      CGContextRef cg = context.CGContext;
++      CGContextSetBlendMode(cg, kCGBlendModeDestinationOut);
++      CGContextDrawLinearGradient(cg, gradient, CGPointMake(0, height - fade), CGPointMake(0, height), 0);
++      CGGradientRelease(gradient);
++      CGColorSpaceRelease(space);
 +    }];
 +    UIImageView *snapshot = [[UIImageView alloc] initWithImage:image];
 +    snapshot.frame = CGRectMake(0, 0, size.width, size.height);
@@ -422,8 +436,8 @@ index e10a830..6448ab5 100644
 +// The preview that lifts the hosted view. With previewTopInset /
 +// previewBottomInset set it is kept in the band between them, as a system
 +// context menu keeps its preview clear of the navigation bar: a view taller
-+// than the band is shown scaled down to fit it, and one reaching above the
-+// band moves down into it. Otherwise (and for the dismissal, which returns
++// than the band shows its top, cropped to the band at full size, and one
++// reaching above the band moves down into it. Otherwise (and for the dismissal, which returns
 +// the view to its place) it lifts where it is. Nil (UIKit's default
 +// preview) when the view or its container isn't in a window:
 +// UIPreviewTarget and UITargetedPreview both assert that they are.
@@ -450,25 +464,25 @@ index e10a830..6448ab5 100644
 -    return [[UITargetedPreview alloc] initWithView:hostView
 -                                        parameters:[self getPreviewParams]
 -                                            target:previewTarget];
-+    CGFloat scale = MIN(1.0, CGRectGetHeight(band) / CGRectGetHeight(frame));
-+    CGFloat height = CGRectGetHeight(frame) * scale;
++    BOOL cropped = CGRectGetHeight(frame) > CGRectGetHeight(band);
++    CGFloat height = MIN(CGRectGetHeight(frame), CGRectGetHeight(band));
 +    CGFloat centerY = MAX(CGRectGetMidY(frame), CGRectGetMinY(band) + height / 2.0);
-+    if (scale < 1.0) {
++    if (cropped) {
 +      centerY = CGRectGetMinY(band) + height / 2.0;
 +    }
 +    CGPoint center = [container convertPoint:CGPointMake(CGRectGetMidX(frame), centerY) fromView:nil];
 +    UIPreviewTarget *target = [[UIPreviewTarget alloc] initWithContainer:container center:center];
 +
 +    UIView *previewView = hostView;
-+    if (scale < 1.0) {
-+      previewView = [self scaledSnapshotOfView:hostView scale:scale];
++    if (cropped) {
++      previewView = [self croppedSnapshotOfView:hostView height:height];
 +      hostView.alpha = 0.0;
 +      _hiddenPreviewSource = hostView;
 +    }
 +    // Moved off its place, a see-through preview would sit over other
 +    // content: give it the screen's background.
 +    UIPreviewParameters *parameters = [self getPreviewParamsForView:previewView];
-+    BOOL moved = scale < 1.0 || fabs(centerY - CGRectGetMidY(frame)) > 0.5;
++    BOOL moved = cropped || fabs(centerY - CGRectGetMidY(frame)) > 0.5;
 +    if (moved && (_previewBackgroundColor == nil || CGColorGetAlpha(_previewBackgroundColor.CGColor) == 0)) {
 +      parameters.backgroundColor = [[UIColor systemBackgroundColor] resolvedColorWithTraitCollection:hostView.traitCollection];
 +    }
@@ -487,7 +501,7 @@ index e10a830..6448ab5 100644
  }
  
  - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atIndexPath:(NSArray<NSNumber *> *)indexPath {
-@@ -245,6 +388,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
+@@ -245,6 +402,17 @@ - (UIMenuElement*) createMenuElementForAction:(ContextMenuAction *)action atInde
          actionMenu.subtitle = action.subtitle;
        }
  

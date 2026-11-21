@@ -532,8 +532,8 @@ stays until the user makes one.
   `preferredElementSize`). On Android each group is a menu group with a divider between
   groups (`patches/react-native-context-menu-view+1.21.0.patch`, API 28+).
   On iOS the message lifts as the menu's preview, kept between the tree's header and the
-  room the menu needs under it: a message taller than that band is scaled down to fit it,
-  and one reaching above the header moves down below it (the patched
+  room the menu needs under it: a message taller than that band shows its top at full size,
+  cropped to the band with a short fade at the cut, and one reaching above the header moves down below it (the patched
   `previewTopInset` / `previewBottomInset` of react-native-context-menu-view).
 - **Reach:** P2 → send once → long-press `chat-message-row-<nodeId>`.
 - **Requires:** At least one message on the path.

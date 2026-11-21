@@ -44,13 +44,21 @@ describe('messagePreviewBounds', () => {
     );
   });
 
-  it('leaves a usable band on a phone', () => {
+  it('leaves room on a phone for a cropped reply to read at full size', () => {
     const bounds = messagePreviewBounds({
       headerHeight: 116,
       bottomInset: 34,
       sections,
     });
+    // A reply taller than the band is cropped to it, not scaled: past the
+    // 32 pt fade at the cut (ContextMenuView.m), several lines of message
+    // text at its normal size still show in full.
     const band = 874 - bounds.top - bounds.bottom;
-    expect(band).toBeGreaterThan(200);
+    const fade = 32;
+    const lineHeight =
+      (loomUiTokens.typography.defaultMessageFontSize +
+        loomUiTokens.typography.cardoSizeOffset) *
+      loomUiTokens.typography.messageLineHeightRatio;
+    expect(Math.floor((band - fade) / lineHeight)).toBeGreaterThanOrEqual(5);
   });
 });

@@ -183,8 +183,8 @@ lifted preview with its menu, dismisses one and uses another (Bookmark, Regenera
 Text), then leaves, starts a second tree and reopens the first, so the menus are checked
 again on recycled native views.
 [.maestro/mock/tall-reply-menu.yaml](.maestro/mock/tall-reply-menu.yaml) long-presses a reply
-taller than the screen: on iOS its lifted preview is scaled to fit below the tree's header
-with the whole menu under it. Start the mock with long replies for it
+taller than the screen: on iOS its lifted preview shows the reply's top at full size,
+cropped below the tree's header and faded at the cut, with the whole menu under it. Start the mock with long replies for it
 (`--pace 200 --words 600`).
 [.maestro/mock/rail-current-card.yaml](.maestro/mock/rail-current-card.yaml) checks that the
 continuation rail opens on the current path's card: the last of two, the second of four
