@@ -462,8 +462,10 @@ stays until the user makes one.
   **Thinking indicator:** while a single send or regenerate is in flight (the same state
   that shows `chat-composer-stop`), `chat-thinking-indicator` sits leading-aligned under
   the last row and any streamed text: a 0 bouncing along five dots, stepping every 100 ms
-  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on, and
-  is not shown for parallel continuation cards.
+  (Latent Spaces' `ThinkingIndicator`). It is static `•••••` when Reduce Motion is on.
+  It also shows there while a parallel run has any card still running (an AG adaptation:
+  Latent Spaces has no parallel run); the cards themselves have no thinking state, as
+  Latent Spaces' rail cards have no loading state.
   **System messages:** a node with `authorType` `system` (an Open Loom node with
   `author.role: "system"`, or a Latent Spaces v1 `system` author, brought in by
   `trees.import`; the app has no control that writes one yet) renders centered in the

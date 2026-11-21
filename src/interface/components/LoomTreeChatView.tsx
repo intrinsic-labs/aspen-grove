@@ -67,6 +67,7 @@ const LoomTreeChatView = () => {
             <ChatMessageList
               loading={controller.loading}
               sending={controller.sending}
+              thinking={controller.thinking}
               rows={controller.rows}
               streamingAssistantText={controller.streamingAssistantText}
               composerHeight={composerHeight}
