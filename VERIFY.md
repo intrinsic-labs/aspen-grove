@@ -186,6 +186,9 @@ again on recycled native views.
 taller than the screen: on iOS its lifted preview is scaled to fit below the tree's header
 with the whole menu under it. Start the mock with long replies for it
 (`--pace 200 --words 600`).
+[.maestro/mock/rail-current-card.yaml](.maestro/mock/rail-current-card.yaml) checks that the
+continuation rail opens on the current path's card: the last of two, the second of four
+(centered), and a new current card after a branch switch.
 [.maestro/mock/parallel-continuations.yaml](.maestro/mock/parallel-continuations.yaml) draws
 several continuations at once: a turn, its rail, N picked (4, then 3), Generate 3, the cards
 streaming side by side while one fails on its own and the other two finish, one expanded (its
@@ -231,7 +234,7 @@ each area the change touched:
 | Home, the tree list | `mock/home-trees` |
 | Onboarding, setup, no-agent and error states | `mock/beta1-lmstudio-down` (mock stopped), `needs-agent` |
 | Tree screen: menus, sheets, header | `mock/tree-menu`, `mock/long-press-menus`, `mock/tall-reply-menu` (mock with `--words 600`), `mock/sheet-swipe`, `mock/header-scroll` |
-| Continuation rail, parallel cards | `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
+| Continuation rail, parallel cards | `mock/rail-current-card`, `mock/parallel-continuations`, then `mock/parallel-lmstudio-down` (mock stopped) |
 | Models and agents | `mock/tree-model`, `mock/agent-max-tokens`, `mock/tree-model-browser`, `model-browser` (the last three need the network) |
 | Settings: Connections, errors, voices | `mock/lmstudio-connection`, `mock/verbose-error-details`, `mock/voice-mode` |
 | Markdown, import | `markdown`, `needs-agent` |

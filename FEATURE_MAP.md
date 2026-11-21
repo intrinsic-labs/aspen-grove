@@ -646,12 +646,16 @@ stays until the user makes one.
   Bookmark / Bookmarked. The generate control (`chat.parallel-continuations`) sits under the
   hint.
 - **Where:** Directly under the tapped message, inside the message list. It scales in and out
-  (0.3 s) and the list scrolls to center it when it opens.
+  (0.3 s) and the list scrolls to center it when it opens. Its card row opens centered on
+  the card the active path runs through (the one with the check; at the row's start or end
+  when that card is first or last), or at the first card when none is, and does so on
+  every opening, so a rail reopened after a branch switch shows the new current card. A run
+  started from the open rail still scrolls the row to its new cards.
 - **Reach:** P2 → send once → tap `chat-message-row-<nodeId>`, or long-press it and choose
   "Continuations". Tap the same row again to close the rail.
 - **Requires:** A node. It shows "No continuations yet." until the node has children.
 - **Selector:** working — `chat-continuation-rail`, `chat-continuation-rail-hint`, `chat-continuation-rail-list`, cards `chat-continuation-card-<nodeId>`, `chat-continuation-card-check`, `chat-continuation-rail-loading`, `chat-continuation-rail-empty`, `chat-continuation-rail-error`; card menu items none — native context menu item; reach via long-press on `chat-continuation-card-<nodeId>`
-- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
+- **Code:** `src/interface/components/chat/ContinuationRail.tsx`, `src/interface/components/chat/ContinuationCardRow.tsx`, `src/interface/components/chat/useOpenOnCurrentCard.ts`, `src/interface/components/chat/rail-card-centering.ts`, `src/interface/components/chat/ContinuationCardShell.tsx`, `src/interface/components/chat/ContinuationCardCaption.tsx`, `src/interface/components/chat/SavedContinuationCard.tsx`, `src/interface/components/chat/continuation-menu.ts`, `src/interface/components/chat/useNodeContinuations.ts`, `src/interface/components/chat/node-actions/useContinuationGestures.ts#onContinuationSelect`, `src/interface/components/chat/message-list/rail-centering.ts`, `src/interface/components/chat/message-list/useContinuationRailReveal.ts`, `src/application/services/resolve-node-model-labels.ts`
 - **Backend:** WatermelonDB `edges` and `nodes` via `WatermelonEdgeRepository` and `WatermelonNodeRepository`; the caption's model from `raw_api_responses` (`WatermelonRawApiResponseRepository#findModelIdentifiersByNodeIds`, no payload read), else the author agent's name
 - **Status:** live
 - **Notes:** A single tap waits 320 ms to rule out a double-tap, so a driver should wait about
@@ -660,6 +664,8 @@ stays until the user makes one.
   a tap on a message row waits the same 320 ms before the rail opens. A card's long press
   only opens its menu (the pressable takes an empty `onLongPress`; without one, Android also
   fired the tap and opened the card's sheet over a menu choice).
+  Flow: `.maestro/mock/rail-current-card.yaml` (the rail on the last of two cards, on the
+  second of four, and on a new current card after a branch switch).
 
 ### Generate several continuations at once
 - **ID:** `chat.parallel-continuations`

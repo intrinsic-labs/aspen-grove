@@ -272,8 +272,8 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 - assertNotVisible: 'Remove Bookmark'
 # The original turn is kept beside the edit: the rail under the reply above
-# them holds the original (no longer on the path, so only the rail shows it)
-# and, swiped along, the edit with the check of the active path.
+# them opens on the edit, with the check of the active path, and, swiped
+# back, holds the original (no longer on the path, so only the rail shows it).
 - tapOn:
     id: chat-message-row-.*
     index: 1
@@ -282,13 +282,13 @@ appId: com.intrinsiclabs.aspengrove
       id: chat-continuation-rail
     timeout: 30000
 - waitForAnimationToEnd
-- assertVisible: 'How old can they get\?'
-- takeScreenshot: dod-11-after-restart-original-kept
+- assertVisible:
+    id: chat-continuation-card-check
+- takeScreenshot: dod-11-after-restart-edit-current
 - swipe:
     from:
       id: chat-continuation-rail-list
-    direction: LEFT
+    direction: RIGHT
 - waitForAnimationToEnd
-- assertVisible:
-    id: chat-continuation-card-check
-- takeScreenshot: dod-12-after-restart-edit-current
+- assertVisible: 'How old can they get\?'
+- takeScreenshot: dod-12-after-restart-original-kept

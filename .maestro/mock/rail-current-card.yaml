@@ -69,7 +69,13 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 
 # Closed and opened again, the rail is centered on the current card, now
-# second of four.
+# second of four. The run scrolled the question under the header: pull the
+# list down to it first.
+- swipe:
+    start: 50%, 35%
+    end: 50%, 75%
+    duration: 600
+- waitForAnimationToEnd
 - tapOn:
     id: chat-message-row-.*
     index: 0
@@ -89,7 +95,7 @@ appId: com.intrinsiclabs.aspengrove
 - takeScreenshot: rail-02-centered-on-current-second-of-four
 
 # Switch branch: one more continuation (the rail scrolls to it at the end),
-# made current with a double tap, which closes the rail.
+# made current from its menu, which closes the rail.
 - tapOn:
     id: chat-continuation-count-decrease
 - assertVisible:
@@ -107,9 +113,11 @@ appId: com.intrinsiclabs.aspengrove
       id: chat-continuation-stop-all
     timeout: 60000
 - waitForAnimationToEnd
-- doubleTapOn:
+# On screen: a sliver of the fourth card and the new fifth one, whole.
+- longPressOn:
     id: 'chat-continuation-card-.*'
-    index: 4
+    index: 1
+- tapOn: 'Make Current Node'
 - extendedWaitUntil:
     notVisible:
       id: chat-continuation-rail
@@ -117,6 +125,11 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 
 # Opened fresh, the rail is on the new current card, the last of five.
+- swipe:
+    start: 50%, 35%
+    end: 50%, 75%
+    duration: 600
+- waitForAnimationToEnd
 - tapOn:
     id: chat-message-row-.*
     index: 0
