@@ -16,7 +16,7 @@ export const ExportSheetHero = () => (
       <MaterialCommunityIcons
         name="tree-outline"
         size={hero.iconSize}
-        color="#FFFFFF"
+        color={hero.iconColor}
       />
     </View>
     <Text style={styles.title}>Generate OpenLoom Tree</Text>
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cardo-Regular',
     fontSize: hero.titleSize,
     lineHeight: hero.titleLineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     textAlign: 'center',
     marginTop: hero.titleTopGap,
     marginBottom: hero.titleBottomGap,

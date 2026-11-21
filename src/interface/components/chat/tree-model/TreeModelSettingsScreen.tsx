@@ -11,6 +11,7 @@ import { ParameterSections } from './ParameterSections';
 import { ProviderOptionsSection } from './ProviderOptionsSection';
 import { treeModelRoutes } from './tree-model-routes';
 import { useTreeModelSettings } from './useTreeModelSettings';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 /**
  * Latent Spaces' tree Model Settings (TreeModelSettingsView.swift), pushed
@@ -58,7 +59,7 @@ export default TreeModelSettingsScreen;
 
 const styles = StyleSheet.create({
   error: {
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
     marginTop: 12,
     paddingHorizontal: 16,
   },

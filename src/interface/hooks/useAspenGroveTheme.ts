@@ -1,5 +1,6 @@
 import { blurVariants } from '../ui/value-objects/blur';
 import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
+import { themeColors } from '../ui/value-objects/tokens/theme-colors';
 
 /**
  * The app theme hook — the single access pattern for colors, tokens, and
@@ -11,34 +12,11 @@ import { loomUiTokens } from '../ui/value-objects/loom-ui-tokens';
  * keyboard) is forced dark too, by `userInterfaceStyle: "dark"` in app.json.
  * A light palette lives in git history;
  * reintroduce it via `useColorScheme` post-beta if wanted.
+ *
+ * The palette itself is a token file (`themeColors`), beside `loomUiTokens`.
  */
-export const useAspenGroveTheme = () => {
-  const colors = {
-    // Universal accents
-    green: '#6CBA78',
-    accentColor: '#C7B686',
-    lightOrange: '#beae7f',
-
-    // Dark palette
-    primary: '#fff',
-    textColor: 'rgba(255, 255, 255, 0.9)',
-    systemMessage: 'rgba(255, 255, 255, 0.6)',
-    oppositePrimary: '#000',
-    continuationCardText: 'rgba(0, 0, 0, 0.8)',
-    secondary: '#999999',
-    secondaryVariant: 'rgba(153, 153, 153, 0.8)',
-    codeBackground: 'rgba(153, 153, 155, 0.08)',
-    line: 'rgba(255, 255, 255, 0.2)',
-    surface: 'rgba(255, 255, 255, 0.15)',
-    backgroundMuted: 'rgba(255, 255, 255, 0.05)',
-    tertiary: 'rgba(255, 255, 255, 0.4)',
-    red: '#FF3B30',
-    onSurface: 'rgba(255, 255, 255, 0.9)',
-  };
-
-  return {
-    colors,
-    tokens: loomUiTokens,
-    blur: blurVariants,
-  };
-};
+export const useAspenGroveTheme = () => ({
+  colors: themeColors,
+  tokens: loomUiTokens,
+  blur: blurVariants,
+});

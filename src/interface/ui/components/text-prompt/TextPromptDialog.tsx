@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: loomUiTokens.textPrompt.backdrop,
   },
   dialog: {
     borderRadius: 28,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   message: {
     fontSize: 14,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: form.rowTextSize,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: loomUiTokens.colors.accentColor,

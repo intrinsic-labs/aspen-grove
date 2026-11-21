@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     fontFamily: browser.titleFontFamily,
     fontSize: browser.titleSize,
     lineHeight: browser.titleLineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   id: {
     fontFamily: browser.metaFontFamily,

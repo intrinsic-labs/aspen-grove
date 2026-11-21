@@ -9,7 +9,7 @@ export const onboardingText = StyleSheet.create({
     fontFamily: 'Cardo-Regular',
     fontSize: page.fontSize,
     lineHeight: page.lineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   link: {
     fontFamily: 'Cardo-Regular',

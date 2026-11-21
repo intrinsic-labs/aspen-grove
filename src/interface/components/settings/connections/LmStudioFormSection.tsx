@@ -27,10 +27,9 @@ const STATUS_TEXT: Record<LmStudioConnectionStatus, string> = {
   idle: 'Untested',
 };
 
-// systemGreen / systemRed, dark
 const STATUS_COLOR: Record<LmStudioConnectionStatus, string> = {
-  connected: '#30D158',
-  disconnected: '#FF453A',
+  connected: form.colors.statusConnected,
+  disconnected: form.colors.statusDisconnected,
   checking: form.colors.tertiaryLabel,
   idle: form.colors.tertiaryLabel,
 };

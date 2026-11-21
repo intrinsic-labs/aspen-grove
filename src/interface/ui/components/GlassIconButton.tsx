@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { GlassView } from 'expo-glass-effect';
+import { loomUiTokens } from '../value-objects/loom-ui-tokens';
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -43,7 +44,11 @@ export const GlassIconButton = ({
         { width: size, height: size, borderRadius: size / 2 },
       ]}
     >
-      <Ionicons name={icon} size={iconSize} color="#FFFFFF" />
+      <Ionicons
+        name={icon}
+        size={iconSize}
+        color={loomUiTokens.colors.primary}
+      />
     </GlassView>
   </Pressable>
 );

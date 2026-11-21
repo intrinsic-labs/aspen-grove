@@ -18,6 +18,7 @@ import { TemplateSection } from './TemplateSection';
 import { useAgentModelSelection } from './useAgentModelSelection';
 import { useHoldMaxTokensToModel } from './useHoldMaxTokensToModel';
 import { SheetScrollView } from '@/interface/ui/components/keyboard/SheetScrollView';
+import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 
 /**
  * The agent editor's Form, the sheet's first page, as Latent Spaces
@@ -138,7 +139,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   errorText: {
-    // systemRed, dark
-    color: '#FF453A',
+    color: loomUiTokens.colors.destructive,
   },
 });

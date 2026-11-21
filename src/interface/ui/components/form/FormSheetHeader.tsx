@@ -54,7 +54,7 @@ const GlassButton = ({ button }: { readonly button: SheetButton }) => (
       style={styles.glass}
     >
       {button.busy ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <ActivityIndicator color={loomUiTokens.colors.primary} />
       ) : (
         <Text
           style={[styles.buttonText, button.disabled ? styles.disabled : null]}
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: header.textSize,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
   },
   disabled: {
     opacity: 0.4,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: header.textSize,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     textAlign: 'center',
     flexShrink: 1,
   },

@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cardo-Regular',
     fontSize: tree.titleSize,
     lineHeight: tree.titleLineHeight,
-    color: '#FFFFFF',
+    color: loomUiTokens.colors.primary,
     paddingBottom: tree.titleBottomPadding,
   },
   subtitle: {
