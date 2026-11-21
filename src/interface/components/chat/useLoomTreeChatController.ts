@@ -7,9 +7,7 @@ import { toComposerView } from './composer/composer-view';
 import { useComposerDraft } from './composer/useComposerDraft';
 import { useComposerFocus } from './composer/useComposerFocus';
 import { useEditNode } from './composer/useEditNode';
-import { useTreeAutoTitles } from './header-actions/useTreeAutoTitles';
-import { useTreeExports } from './header-actions/useTreeExports';
-import { useTreeTitle } from './header-actions/useTreeTitle';
+import { useTreeHeaderActions } from './header-actions/useTreeHeaderActions';
 import { useChatNodeInteractions } from './node-actions/useChatNodeInteractions';
 import { useNodeActions } from './node-actions/useNodeActions';
 import { useRetraceBranch } from './node-actions/useRetraceBranch';
@@ -22,14 +20,11 @@ import { useChatSessionLoader } from './session/useChatSessionLoader';
 import { useChatSessionState } from './session/useChatSessionState';
 import { returnTreeDraftToHome } from './session/return-draft-to-home';
 import { useEphemeralTreeState } from './session/useEphemeralTreeState';
-import { useRegenerateFromNode } from './turns/useRegenerateFromNode';
+import { useChatTurns } from './turns/useChatTurns';
 import { useVerboseErrorAlerts } from '../error-details';
 import { useProviderErrorNotice } from './turns/useProviderErrorNotice';
 import { useSendFirstMessage } from './turns/useSendFirstMessage';
-import { useSendTurn } from './turns/useSendTurn';
 import { useStopGeneration } from './turns/useStopGeneration';
-import { useBookmarksRefreshKey } from './tree-menu/useBookmarksRefreshKey';
-import { useChatMenus } from './tree-menu/useChatMenus';
 import { useDialogueDisplayPreferences } from './useDialogueDisplayPreferences';
 import { useDialogueRouteParams } from './useDialogueRouteParams';
 import { useNodeContinuations } from './useNodeContinuations';
@@ -43,7 +38,8 @@ import { useStreamingAssistantRow } from './useStreamingAssistantRow';
  * Hook order is load-bearing: React runs effects in declaration order, and
  * this order matches the original single-file controller (draft sync,
  * ephemeral guard, session load, focus reload, auto-scroll, autofocus,
- * route-driven node sheet, tap-timer cleanup).
+ * route-driven node sheet, tap-timer cleanup). The header's only effect,
+ * the tree menu's bookmarks load, runs ahead of them; nothing waits on it.
  */
 export const useLoomTreeChatController = () => {
   const router = useRouter();
@@ -65,18 +61,22 @@ export const useLoomTreeChatController = () => {
     repositories.userPreferencesRepo
   );
   const textPrompt = useTextPrompt();
-  const title = useTreeTitle({
+  const header = useTreeHeaderActions({
     navigation,
-    treeRepo: repositories.treeRepo,
-    sessionTreeId: session?.treeId,
+    router,
+    session,
     activeTreeIdRef,
+    rows,
     prompt: textPrompt.prompt,
     setError,
+    treeRepo: repositories.treeRepo,
+    nodeRepo: repositories.nodeRepo,
+    credentialStore: adapters.credentialStore,
+    useCases,
   });
 
   const streaming = useStreamingAssistantRow();
   const stopGeneration = useStopGeneration();
-  const bookmarks = useBookmarksRefreshKey(rows);
   const continuations = useNodeContinuations({
     edgeRepo: repositories.edgeRepo,
     nodeRepo: repositories.nodeRepo,
@@ -84,7 +84,7 @@ export const useLoomTreeChatController = () => {
     rawApiResponseRepo: repositories.rawApiResponseRepo,
     agentRepo: repositories.agentRepo,
     pathId: session?.pathId,
-    onBookmarkChanged: bookmarks.bookmarksChanged,
+    onBookmarkChanged: header.bookmarksChanged,
   });
   const { preferences: displayPreferences, loaded: displayPreferencesLoaded } =
     useDialogueDisplayPreferences({
@@ -120,23 +120,7 @@ export const useLoomTreeChatController = () => {
     continuationSourceNodeId: continuations.sourceNodeId,
     showContinuationsForNode: continuations.showForNode,
     resetEphemeralState,
-    applyTreeTitle: title.applyTreeTitle,
-  });
-
-  const { maybeGenerateTreeTitle, titleFromFirstMessage } = useTreeAutoTitles({
-    session,
-    nodeRepo: repositories.nodeRepo,
-    credentialStore: adapters.credentialStore,
-    generateTreeTitleUseCase: useCases.generateTreeTitleUseCase,
-    titleTreeFromFirstMessageUseCase: useCases.titleTreeFromFirstMessageUseCase,
-    applyTreeTitle: title.applyTreeTitle,
-  });
-  const exports = useTreeExports({
-    session,
-    activeTreeIdRef,
-    exportLoomTreeUseCase: useCases.exportLoomTreeUseCase,
-    exportPathMarkdownUseCase: useCases.exportPathMarkdownUseCase,
-    setError,
+    applyTreeTitle: header.applyTreeTitle,
   });
 
   const scroll = useChatAutoScroll({
@@ -200,8 +184,7 @@ export const useLoomTreeChatController = () => {
     focusComposerAtEnd,
   });
 
-  // What a send and a regenerate share.
-  const turnBase = {
+  const { regenerateFromNode, onSend, sendPrompt } = useChatTurns({
     session,
     sending: generating,
     setSending,
@@ -210,32 +193,23 @@ export const useLoomTreeChatController = () => {
     shouldAutoScrollRef: scroll.shouldAutoScrollRef,
     streaming,
     stopGeneration: stopGeneration.run,
+    refreshRows,
     refreshRowsAndContinuations,
     credentialStore: adapters.credentialStore,
     onModelNodeCompleted: readAloud.readGeneratedNodeAloud,
-  };
-  const regenerateFromNode = useRegenerateFromNode({
-    ...turnBase,
     rows,
     setRows: state.setRows,
     getRowById: nodeActions.getRowById,
     continuations,
-    refreshRows,
     edgeRepo: repositories.edgeRepo,
-    generateDialogueContinuationUseCase:
-      useCases.generateDialogueContinuationUseCase,
-  });
-  const { onSend, sendPrompt } = useSendTurn({
-    ...turnBase,
     input,
     setInput,
     editTarget,
     setEditTarget,
     markAsNonEphemeral,
-    maybeGenerateTreeTitle,
-    titleFromFirstMessage,
-    editDialogueNodeUseCase: useCases.editDialogueNodeUseCase,
-    sendDialogueTurnUseCase: useCases.sendDialogueTurnUseCase,
+    maybeGenerateTreeTitle: header.maybeGenerateTreeTitle,
+    titleFromFirstMessage: header.titleFromFirstMessage,
+    useCases,
   });
 
   const interactions = useChatNodeInteractions({
@@ -252,15 +226,6 @@ export const useLoomTreeChatController = () => {
     ready: !loading && session !== null,
   });
 
-  const menus = useChatMenus({
-    treeId: session?.treeId ?? activeTreeIdRef.current,
-    router,
-    treeRepo: repositories.treeRepo,
-    nodeRepo: repositories.nodeRepo,
-    exportTree: exports.exportTree,
-    setError,
-    refreshKey: bookmarks.refreshKey,
-  });
   // Loaded, but the tree has no agent to generate with.
   const needsAgent = !loading && session !== null && session.model === null;
   useSendFirstMessage({
@@ -300,20 +265,13 @@ export const useLoomTreeChatController = () => {
       onSelect: interactions.onContinuationSelect,
       onMenuAction: interactions.onContinuationMenuAction,
     }),
-    bookmarks: menus.bookmarks,
+    ...header.menu,
     openBookmark: interactions.openBookmark,
     nodeSheet: interactions.nodeSheetView,
-    openModelSettings: menus.openModelSettings,
-    editTitle: () => void title.editTreeTitle(),
     // Android's stand-in for the alerts with a text field.
     textPrompt: textPrompt.pending,
-    description: menus.description,
-    exportSheet: menus.exportSheet,
-    exportPath: exports.exportPathMarkdown,
-    tags: menus.tags,
     scrollRef: scroll.scrollRef,
     inputRef,
-    onChooseAgent: menus.openModelSettings,
     ...toComposerView({
       editTarget,
       agentName: session?.model?.agentName,
