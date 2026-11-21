@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 94ce67396efe2a699bccca28297177706bf55e26
+revision: 1f4bea4869d3d9a10255fb2a47a8711ce1243244
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -687,6 +687,8 @@ stays until the user makes one.
   siblings. A card can be stopped on its own; one failing or being stopped doesn't stop the
   others. Each finished (or stopped-with-text) card is saved as a sibling model node with its
   own raw response and hash chain, and a double-tap on it makes it current like any sibling.
+  A streaming card shows its text as plain text, markdown marks stripped (`stripMarkdown`), as
+  a finished card's preview does.
 - **Where:** The control row under the rail's hint: `−` count `+` and "Generate N" (green, with the `cpu` symbol the tree menu's Model uses). While that node's cards stream it becomes "Stop all". Cards stream in
   the rail's card row.
 - **Reach:** P2 → send once → tap a message row `chat-message-row-<nodeId>` (the rail opens) →
