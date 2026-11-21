@@ -114,7 +114,7 @@ const ChatMessageRowView = ({
           style={layout.menuHost}
         >
           <Pressable
-            testID={`chat-message-row-${row.id}`}
+            testID={`chat-message-row-${row.authorType}-${row.id}`}
             onPress={() => onPress(row.id)}
             onLongPress={() => onLongPress(row.id)}
             style={layout.target}

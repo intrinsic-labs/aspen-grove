@@ -50,9 +50,12 @@ appId: com.intrinsiclabs.aspengrove
     id: chat-composer-input-focus-stroke
 - takeScreenshot: edit-01-keyboard-down
 
+# The second user message, by role and text rather than row index: Android
+# unmounts rows scrolled off-screen, so a row index can land on a reply.
 - longPressOn:
-    id: chat-message-row-.*
-    index: 2
+    id: chat-message-row-human-.*
+    containsDescendants:
+      - text: '.*oldest aspen groves get\?'
 - tapOn: 'Edit'
 - extendedWaitUntil:
     visible:
