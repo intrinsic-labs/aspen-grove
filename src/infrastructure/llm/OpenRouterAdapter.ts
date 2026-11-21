@@ -11,8 +11,10 @@ import {
 import { requestOpenRouterCompletion } from './openrouter/completion';
 import { toJsonString } from './openrouter/helpers';
 import { streamOpenRouterCompletion } from './openrouter/streaming';
+import type { StreamTimeouts } from './shared/stream-timeouts';
 import {
   DEFAULT_OPENROUTER_ENDPOINT,
+  DEFAULT_STREAM_TIMEOUTS,
   DEFAULT_TIMEOUT_MS,
   type OpenRouterConfig,
 } from './openrouter/types';
@@ -22,9 +24,18 @@ export class OpenRouterAdapter implements ILlmProvider {
   readonly provider = 'openrouter' as const;
   private config: OpenRouterConfig | null = null;
   private readonly timeoutMs: number;
+  private readonly streamTimeouts: StreamTimeouts;
 
-  constructor(timeoutMs: number = DEFAULT_TIMEOUT_MS) {
+  /**
+   * `timeoutMs` bounds a whole non-streaming completion; `streamTimeouts`
+   * a stream's wait for its first bytes, then between chunks.
+   */
+  constructor(
+    timeoutMs: number = DEFAULT_TIMEOUT_MS,
+    streamTimeouts: StreamTimeouts = DEFAULT_STREAM_TIMEOUTS
+  ) {
     this.timeoutMs = timeoutMs;
+    this.streamTimeouts = streamTimeouts;
   }
 
   async initialize(
@@ -83,7 +94,7 @@ export class OpenRouterAdapter implements ILlmProvider {
       yield* streamOpenRouterCompletion({
         config,
         request,
-        timeoutMs: this.timeoutMs,
+        timeouts: this.streamTimeouts,
       });
     } catch (error) {
       if (error instanceof LlmProviderError) {

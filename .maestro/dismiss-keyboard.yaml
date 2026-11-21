@@ -1,0 +1,22 @@
+# Puts the keyboard away in a tree without leaving it. On iOS, Maestro's
+# hideKeyboard. On Android, hideKeyboard is the back key, which leaves the
+# tree whenever the keyboard is already down; instead, a short upward drag
+# on the message list, which dismisses the keyboard there
+# (`keyboardDismissMode` "on-drag") and at the list's end scrolls nothing.
+# It is slow, so it leaves no fling behind to swallow the next tap.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: 50%, 40%
+          end: 50%, 30%
+          duration: 1500
+- waitForAnimationToEnd

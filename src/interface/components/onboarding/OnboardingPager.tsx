@@ -17,6 +17,10 @@ type OnboardingPagerProps = {
   readonly onPageSettled: (
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => void;
+  /** Opening on a later page: see `useOpenOnPage`. */
+  readonly onContentSizeChange: (width: number) => void;
+  readonly onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  readonly onScrollBeginDrag: () => void;
   /** One child per page, each as large as the pager. */
   readonly children: ReactNode;
 };
@@ -36,6 +40,9 @@ export const OnboardingPager = ({
   pageHeight,
   onLayout,
   onPageSettled,
+  onContentSizeChange,
+  onScroll,
+  onScrollBeginDrag,
   children,
 }: OnboardingPagerProps) => (
   <ScrollView
@@ -47,6 +54,10 @@ export const OnboardingPager = ({
     keyboardShouldPersistTaps="handled"
     onLayout={onLayout}
     onMomentumScrollEnd={onPageSettled}
+    onContentSizeChange={onContentSizeChange}
+    onScroll={onScroll}
+    onScrollBeginDrag={onScrollBeginDrag}
+    scrollEventThrottle={16}
     style={styles.pager}
   >
     {pageWidth > 0

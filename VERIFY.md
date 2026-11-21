@@ -184,7 +184,9 @@ Text), then leaves, starts a second tree and reopens the first, so the menus are
 again on recycled native views.
 [.maestro/mock/tall-reply-menu.yaml](.maestro/mock/tall-reply-menu.yaml) long-presses a reply
 taller than the screen: on iOS its lifted preview shows the reply's top at full size,
-cropped below the tree's header and faded at the cut, with the whole menu under it. Start the mock with long replies for it
+cropped below the tree's header and faded at the cut, with the whole menu under it; then,
+with the reply running on under the composer, it screenshots the composer's bottom with the
+keyboard down and up (no text may show below the composer's field). Start the mock with long replies for it
 (`--pace 200 --words 600`).
 [.maestro/mock/rail-current-card.yaml](.maestro/mock/rail-current-card.yaml) checks that the
 continuation rail opens on the current path's card: the last of two, the second of four
@@ -406,7 +408,8 @@ didn't record.
 ## 9. Android emulator
 
 The same tree and the same Maestro flows run on an Android emulator. Verified with smoke,
-mock/first-turn, mock/header-scroll and mock/voice-mode on a Pixel 10 AVD (API 37, arm64).
+mock/first-turn, mock/header-scroll, mock/voice-mode, mock/beta1-loop and
+mock/beta1-empty-states on a Pixel 10 AVD (API 37, arm64).
 
 **Prerequisites.** Android Studio with the SDK at `~/Library/Android/sdk` and the project's AVD,
 `Pixel_10` (API 37.1, arm64; other AVDs belong to other work). Missing from `emulator
@@ -468,8 +471,12 @@ What differs on Android, and how the shared flows handle it:
   the composers and scroll views itself. Don't set it to `pan`: Android then also pans the
   whole window, pushing Home's header and greeting under the status bar.
 - Back is the back key ([go-back.yaml](.maestro/go-back.yaml)). Maestro's `hideKeyboard` is
-  also the back key, so on a pushed screen it can leave the screen instead; put the keyboard
-  away by scrolling, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
+  also the back key, so on a pushed screen it can leave the screen instead; in a tree, use
+  [dismiss-keyboard.yaml](.maestro/dismiss-keyboard.yaml) (`hideKeyboard` on iOS, a slow drag
+  on the message list on Android), or scroll, as [header-scroll.yaml](.maestro/mock/header-scroll.yaml) does.
+- The share sheet is Android's Sharesheet (`com.android.intentresolver:id/chooser_container`,
+  the file name in `…:id/content_preview_filename`), closed with back;
+  [beta1-loop.yaml](.maestro/mock/beta1-loop.yaml) checks it per platform.
 - iOS-only selectors (`keyboard.toolbar.done`, the iOS "Select All" menu) mean
   mock/lmstudio-connection is iOS-only for now; mock/setup passes (its "Select All" step is
   optional). mock/tree-model taps the keyboard's Done (`keyboard-done`) only on iOS and
@@ -478,8 +485,9 @@ What differs on Android, and how the shared flows handle it:
   only that the menu opens there.
 - Start the mock for mock/parallel-continuations with `--pace 1.5` on Android (not 3):
   Maestro's steps there wait out streaming text, and a 20 s stream ends before the flow
-  swipes back along the rail. (Keep streams under 60 s: the app gives up on an LM Studio
-  stream after that.) Which card fails also varies there, since the three requests can
+  swipes back along the rail. (A stream's length doesn't matter: the app gives up on an LM
+  Studio stream only after 2 minutes with no first bytes, or 60 s with none between
+  chunks.) Which card fails also varies there, since the three requests can
   reach the mock in any order; the flow finds cards by state
   ([rail-find.yaml](.maestro/rail-find.yaml)), not by slot.
 

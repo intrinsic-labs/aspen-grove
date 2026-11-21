@@ -115,11 +115,24 @@ appId: com.intrinsiclabs.aspengrove
     visible: 'How big can one grove get\?'
     timeout: 15000
 - waitForAnimationToEnd
-- hideKeyboard
+- runFlow: ../dismiss-keyboard.yaml
 # The reply above it now has two continuations: the original and the edit.
-- tapOn:
-    id: chat-message-row-.*
-    index: 1
+# The first tap can land while the list settles from the keyboard going
+# away, and be dropped (Android): tap until the rail opens.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-continuation-rail
+    commands:
+      - tapOn:
+          id: chat-message-row-.*
+          index: 1
+      - extendedWaitUntil:
+          visible:
+            id: chat-continuation-rail
+          timeout: 5000
+          optional: true
 - extendedWaitUntil:
     visible:
       id: 'chat-continuation-card-.*'
@@ -208,35 +221,65 @@ appId: com.intrinsiclabs.aspengrove
     notVisible:
       id: export-sheet
     timeout: 10000
-- extendedWaitUntil:
-    visible:
-      id: ActivityListView
-    timeout: 15000
-- assertVisible: '.*\.openloom, .*'
-- assertVisible: 'Save to Files'
-- assertNotVisible:
-    id: chat-error
-- waitForAnimationToEnd
-- takeScreenshot: dod-08-export-share
-# Close the share sheet. On iOS 26 it is a popover with no Close button:
-# tap outside it (the dismiss region's center is above the sheet). Older
-# share sheets have a Close button. Either way it must be gone after.
-- repeat:
-    times: 3
-    while:
-      visible:
-        id: ActivityListView
+- runFlow:
+    when:
+      platform: iOS
     commands:
-      - tapOn:
-          id: PopoverDismissRegion
-          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: ActivityListView
+          timeout: 15000
+      # The file's row: "<name>.openloom, <size>", or, on newer share
+      # sheets, the name without its extension over the size.
+      - extendedWaitUntil:
+          visible: '.*\.openloom, .*|mock-title-\d+'
+          timeout: 10000
+      - assertVisible: 'Save to Files'
+      - assertNotVisible:
+          id: chat-error
       - waitForAnimationToEnd
-      - tapOn:
-          text: 'Close'
-          optional: true
+      - takeScreenshot: dod-08-export-share
+      # Close the share sheet. On iOS 26 it is a popover with no Close
+      # button: tap outside it (the dismiss region's center is above the
+      # sheet). Older share sheets have a Close button. Either way it must
+      # be gone after.
+      - repeat:
+          times: 3
+          while:
+            visible:
+              id: ActivityListView
+          commands:
+            - tapOn:
+                id: PopoverDismissRegion
+                optional: true
+            - waitForAnimationToEnd
+            - tapOn:
+                text: 'Close'
+                optional: true
+            - waitForAnimationToEnd
+      - assertNotVisible:
+          id: ActivityListView
+# Android: the system Sharesheet, naming the .openloom file; back closes it.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: com.android.intentresolver:id/chooser_container
+          timeout: 15000
+      - assertVisible:
+          id: com.android.intentresolver:id/content_preview_filename
+          text: '.*\.openloom'
+      - assertNotVisible:
+          id: chat-error
       - waitForAnimationToEnd
-- assertNotVisible:
-    id: ActivityListView
+      - takeScreenshot: dod-08-export-share
+      - back
+      - extendedWaitUntil:
+          notVisible:
+            id: com.android.intentresolver:id/chooser_container
+          timeout: 10000
 - assertVisible:
     id: chat-screen
 - assertNotVisible:

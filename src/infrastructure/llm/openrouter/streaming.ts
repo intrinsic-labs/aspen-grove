@@ -7,6 +7,10 @@ import {
   toInterruptedReason,
 } from '../shared/interruption';
 import { createRequestAbort } from '../shared/request-abort';
+import {
+  type StreamTimeouts,
+  toStreamAbortTimeouts,
+} from '../shared/stream-timeouts';
 import { toLlmProviderError } from './errors';
 import {
   headersToString,
@@ -21,14 +25,19 @@ import type { OpenRouterConfig, OpenRouterStreamingPayload } from './types';
 export const streamOpenRouterCompletion = async function* (input: {
   readonly config: OpenRouterConfig;
   readonly request: CompletionRequest;
-  readonly timeoutMs: number;
+  readonly timeouts: StreamTimeouts;
 }): AsyncIterable<StreamChunk> {
-  const { config, request, timeoutMs } = input;
+  const { config, request, timeouts } = input;
 
   const requestTimestamp = new Date();
   // Each request owns its abort wiring, so concurrent streams on one
-  // adapter instance never cancel or time out each other.
-  const abort = createRequestAbort({ timeoutMs, external: request.signal });
+  // adapter instance never cancel or time out each other. The clock waits
+  // for the first bytes, then restarts on every chunk: only silence times
+  // a stream out, never its length.
+  const abort = createRequestAbort({
+    ...toStreamAbortTimeouts(timeouts),
+    external: request.signal,
+  });
   const rawBodyChunks: string[] = [];
   let responseHeaders = '';
   let requestId: string | undefined;
@@ -171,6 +180,8 @@ export const streamOpenRouterCompletion = async function* (input: {
       if (done) {
         break;
       }
+      // Any bytes count, keep-alive comments included, not only text.
+      abort.markActivity();
 
       const chunk = decoder.decode(value, { stream: true });
       rawBodyChunks.push(chunk);

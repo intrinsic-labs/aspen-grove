@@ -43,6 +43,9 @@ const OnboardingView = () => {
         pageHeight={pager.pageHeight}
         onLayout={pager.onLayout}
         onPageSettled={pager.onPageSettled}
+        onContentSizeChange={pager.onContentSizeChange}
+        onScroll={pager.onScroll}
+        onScrollBeginDrag={pager.onScrollBeginDrag}
       >
         {ONBOARDING_INTRO_PAGES.map((page, index) => (
           <OnboardingIntroFrame key={index}>

@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: e5a4b1068df31e0a1dfa6325a729734671b7adbf
+revision: 1727fedfe58cc1b66d4249b90bb1bf4afdd9e435
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -326,7 +326,7 @@ stays until the user makes one.
   agent (both open `/onboarding?start=setup`, on page 7).
 - **Requires:** none
 - **Selector:** working — `onboarding-screen`, `onboarding-wordmark`, `onboarding-pager`, `onboarding-page-<n>` (1-7), `onboarding-next`, `onboarding-begin`, links `onboarding-link-openloom`, `onboarding-link-project`, `onboarding-link-issues`
-- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
+- **Code:** `src/interface/components/onboarding/OnboardingView.tsx`, `src/interface/components/onboarding/OnboardingPager.tsx`, `src/interface/components/onboarding/useOnboardingPager.ts`, `src/interface/components/onboarding/useOpenOnPage.ts`, `src/interface/components/onboarding/OnboardingButton.tsx`, `src/interface/components/onboarding/onboarding-routes.ts`, `src/interface/components/onboarding/intro/`, `src/application/services/onboarding/first-run.ts`, `src/app/onboarding.tsx`, `assets/images/onboarding/`
 - **Backend:** WatermelonDB `user_preferences.onboarding_completed_at` (set by Begin Weaving)
 - **Status:** live
 - **Notes:** To skip, swipe the sheet down (`.maestro/skip-onboarding.yaml`). As in Latent
@@ -475,12 +475,15 @@ stays until the user makes one.
 - **Purpose:** Types a message and sends it. The model's reply streams in under it, and both
   are saved as nodes on the active path.
 - **Where:** A sticky composer at the bottom of the Dialogue screen. The send button sits at
-  the right of the input.
+  the right of the input. Messages scroll on under the composer (its field's material blurs
+  them), but an opaque band (`chat-composer-bottom-band`) fills everything below the field,
+  down past the screen's edge and moving with the keyboard, so no message text shows under
+  the field, keyboard up or down.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
   server at the configured endpoint.
-- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`
-- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
+- **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`
+- **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
@@ -720,8 +723,9 @@ stays until the user makes one.
   wording as a failed send (missing or rejected key, LM Studio not answering, otherwise one
   line by error code such as "LM Studio returned an error."). LM Studio gets N concurrent
   requests; a server that runs one prediction at a time queues them, so cards sit in
-  `pending` and stream in turn. LM Studio's 60 s request timeout covers queueing too, so a
-  late card in a long queue can end `interrupted (timeout)` or `failed`. To provoke a failure,
+  `pending` and stream in turn. A stream waits up to 2 minutes for its first bytes (queueing
+  included), then up to 60 s between chunks, however long it runs; a late card in a long
+  queue can still end `failed` (timeout). To provoke a failure,
   point the tree's agent at a model id that doesn't exist (type it into the model browser's
   search and tap `agent-editor-model-custom` or `tree-model-custom`).
   Parallel continuations are not read aloud.
