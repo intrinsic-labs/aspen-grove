@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 7318fa5546cd7e492b3595847152492150724494
+revision: 8e8b78d7883564a4266b23f24aef356d84964cf3
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map

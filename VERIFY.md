@@ -324,7 +324,11 @@ with `-configuration Release`, no Metro) and pass `-e RELEASE_BUILD=1`, which sk
 launcher. The numbers are Maestro wall clock, and Maestro's cost grows with what is on
 screen (a long tree's hierarchy snapshot takes about twice the floor's): compare runs on one
 machine and simulator, three runs or more, by median, and confirm a gap with in-app timing
-before calling it a stall. No key needed. Last results: [.dev/voices-plan.md](.dev/voices-plan.md) section 3.
+before calling it a stall. For in-app timing, add a temporary probe (tap to the first
+frame after the change draws, via `requestAnimationFrame`) and don't commit it. A Release build
+doesn't send `console.log` to the simulator log, so have the probe `fetch` each result to a small
+local HTTP listener on a free port and stop the listener when you're done. On a 520-node tree the
+app's own rail open is about 40 ms and switch branch about 50 ms (2026-11-22). No key needed. Last results: [.dev/voices-plan.md](.dev/voices-plan.md) section 3.
 
 [markdown.yaml](.maestro/markdown.yaml) imports `.maestro/fixtures/markdown-sample.openloom`
 (copy it into Files as for the perf flows) and screenshots a reply's markdown: bold, italic and
