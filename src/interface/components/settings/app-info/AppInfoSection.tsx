@@ -1,8 +1,8 @@
 import * as Application from 'expo-application';
 import { Linking } from 'react-native';
 import {
+  FormButtonRow,
   FormLabel,
-  FormLinkRow,
   FormRow,
   FormSection,
 } from '@/interface/ui/components/form';
@@ -30,7 +30,7 @@ export const AppInfoSection = () => (
       />
     </FormRow>
     {APP_INFO_LINKS.map((link) => (
-      <FormLinkRow
+      <FormButtonRow
         key={link.slug}
         testID={`settings-app-info-${link.slug}`}
         title={link.title}
