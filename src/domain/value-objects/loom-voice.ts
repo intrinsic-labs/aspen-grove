@@ -91,8 +91,17 @@ export const LOOM_VOICES: readonly LoomVoice[] = [
   EVE_VOICE,
 ];
 
-export const DEFAULT_LOOM_VOICE: LoomVoice = JEFFERSON_VOICE;
+/** The voice a new user starts with, as Latent Spaces sets on first launch. */
+export const DEFAULT_LOOM_VOICE: LoomVoice = LILY_VOICE;
 
-/** The persona with this name, or the default (Jefferson) for anything else. */
-export const findLoomVoice = (name: string | null | undefined): LoomVoice =>
-  LOOM_VOICES.find((voice) => voice.name === name) ?? DEFAULT_LOOM_VOICE;
+/** What an unrecognized saved name falls back to, as in Latent Spaces. */
+const UNKNOWN_NAME_VOICE: LoomVoice = JEFFERSON_VOICE;
+
+/**
+ * The persona with this name. Nothing saved yet means a new user, who gets
+ * the default (Lily); a saved name that matches no persona gets Jefferson.
+ */
+export const findLoomVoice = (name: string | null | undefined): LoomVoice => {
+  if (name === null || name === undefined || name === '') return DEFAULT_LOOM_VOICE;
+  return LOOM_VOICES.find((voice) => voice.name === name) ?? UNKNOWN_NAME_VOICE;
+};

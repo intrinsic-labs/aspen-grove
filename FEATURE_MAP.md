@@ -1405,7 +1405,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** Saves on each change (no debounce). The same on/off state drives the Dialogue
   `···` menu's "Voice Mode" item. Turning Voice Mode off stops any message being read at once.
-  The default voice is Jefferson.
+  A new user starts on Lily, as in Latent Spaces; a saved name that matches no voice falls
+  back to Jefferson.
 
 ### Voice chooser
 - **ID:** `settings.voice.chooser`
