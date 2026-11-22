@@ -13,6 +13,8 @@ import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 type CodeBlockProps = {
   readonly code: string;
   readonly language: string;
+  /** The message's code face (`codeFace`); JetBrains Mono when unset. */
+  readonly fontFamily?: string;
 };
 
 /**
@@ -21,7 +23,7 @@ type CodeBlockProps = {
  * from the line count up front, so the message doesn't jump when the
  * highlighter lays out. The space around it is the body rule's.
  */
-export const CodeBlock = ({ code, language }: CodeBlockProps) => {
+export const CodeBlock = ({ code, language, fontFamily }: CodeBlockProps) => {
   const shown = withoutTrailingNewline(code);
   const estimatedHeight = codeBlockHeight(shown);
 
@@ -34,7 +36,7 @@ export const CodeBlock = ({ code, language }: CodeBlockProps) => {
         hljsStyle={codepenEmbed}
         language={language}
         scrollViewProps={scrollViewProps}
-        textStyle={styles.text}
+        textStyle={fontFamily === fonts.vt220 ? vt220Text : styles.text}
       >
         {shown}
       </CodeHighlighter>
@@ -64,6 +66,13 @@ const styles = StyleSheet.create({
     lineHeight: CODE_LINE_HEIGHT,
   },
 });
+
+// VT220 draws two points up, as in messages; the line height (and so the
+// up-front height estimate) stays the same.
+const vt220Text = StyleSheet.flatten([
+  styles.text,
+  { fontFamily: fonts.vt220, fontSize: styles.text.fontSize + 2 },
+]);
 
 const scrollViewProps = {
   style: styles.scrollView,

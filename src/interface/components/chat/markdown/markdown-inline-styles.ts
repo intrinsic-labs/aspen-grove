@@ -17,7 +17,14 @@ export const emphasisSlant = (
 
 /** Body text, paragraphs, emphasis, inline code and links. */
 export const markdownInlineStyles = (
-  { fontFamily, faces, fontSize, lineHeight, textColor }: MarkdownTypography,
+  {
+    fontFamily,
+    faces,
+    code,
+    fontSize,
+    lineHeight,
+    textColor,
+  }: MarkdownTypography,
   colors: MarkdownColors
 ) => ({
   // The space between blocks is the body rule's (`blockSpacing`).
@@ -52,8 +59,8 @@ export const markdownInlineStyles = (
   } as TextStyle,
 
   code_inline: {
-    fontFamily: fonts.mono,
-    fontSize: fontSize * 0.88,
+    fontFamily: code.family,
+    fontSize: fontSize * code.scale,
     backgroundColor: colors.codeBackground,
     paddingHorizontal: 5,
     paddingVertical: 2,

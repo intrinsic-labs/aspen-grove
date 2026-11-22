@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 772a27dee936f28f498357a733ecf9dc65df280e
+revision: 8a977d537d7387b7fa797233905abf7d11f5ce64
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -168,7 +168,7 @@ stays until the user makes one.
 ### Home toolbar menu
 - **ID:** `home.menu`
 - **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
-  Grove's Search and tag filter: Import OpenLoom Tree (its own group), OpenLoom Docs, Info &
+  Grove's Search and tag filter: Import OpenLoom Tree (a ControlGroup tile, icon over title), OpenLoom Docs, Info &
   Tutorials, Show Onboarding, then Search and Filter by Tag.
 - **Where:** Home, top left (`···`, the plain `ellipsis` in the toolbar's glass circle), a native pull-down menu.
 - **Reach:** Cold start → `home-menu-button`, then the item by its title.
@@ -1056,7 +1056,7 @@ stays until the user makes one.
 
 ### Export tree (Open Loom)
 - **ID:** `chat.export-tree`
-- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero
+- **Purpose:** Latent Spaces' Export Loom Tree sheet (OpenLoomExportSheet.swift): the hero (SF `tree` in the green circle; a Material tree on Android)
   ("Generate OpenLoom Tree", "Changes made here will not affect your saved loom tree."), the
   file's Title and Description, Include System Message and Include Bookmarks, and a link to
   the Open Loom docs. The share button closes the sheet and exports the whole tree as an
@@ -1357,7 +1357,7 @@ stays until the user makes one.
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
   (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
   leading. Saved selections of the retired mono face resolve to JetBrains Mono; Open Sans resolves
-  to System. Cardo remains the default. System uses the platform font with native bold and italic.
+  to System. Cardo remains the default. System uses the platform font with native bold and italic. Code (inline and blocks) is set in JetBrains Mono, or in VT220 when VT220 is the message font.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

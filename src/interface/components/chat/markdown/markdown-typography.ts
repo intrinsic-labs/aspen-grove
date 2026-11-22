@@ -1,4 +1,8 @@
-import { emphasisFaces, fonts } from '@interface/ui/value-objects/fonts';
+import {
+  codeFace,
+  emphasisFaces,
+  fonts,
+} from '@interface/ui/value-objects/fonts';
 import type { ColorValue, TextStyle } from 'react-native';
 import { loomUiTokens } from '../../../ui/value-objects/loom-ui-tokens';
 import { toMessageType } from '../message-type';
@@ -20,6 +24,7 @@ export type MarkdownColors = {
 export type MarkdownTypography = {
   readonly fontFamily: string;
   readonly faces: ReturnType<typeof emphasisFaces>;
+  readonly code: ReturnType<typeof codeFace>;
   readonly fontSize: number;
   readonly lineHeight: number;
   readonly textColor: ColorValue;
@@ -34,6 +39,7 @@ export const toMarkdownTypography = (
   return {
     fontFamily: family,
     faces: emphasisFaces(family),
+    code: codeFace(family),
     fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
     lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
     textColor: baseStyle?.color ?? colors.textColor,

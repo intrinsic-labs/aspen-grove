@@ -54,6 +54,17 @@ export const toChatFontFace = (value?: string): MessageFontFamily =>
 export const messageFontFamily = (value?: string): MessageFontFamily =>
   toChatFontFace(value);
 
+/**
+ * The face code is set in. VT220 is already monospace, so code stays in it at
+ * the message size; other fonts set code in JetBrains Mono, a little smaller.
+ */
+export const codeFace = (
+  family?: string
+): { readonly family: string; readonly scale: number } =>
+  family === fonts.vt220
+    ? { family: fonts.vt220, scale: 1 }
+    : { family: fonts.mono, scale: 0.88 };
+
 /** Bundled emphasis faces for a message font; VT220 has no variant faces. */
 export const emphasisFaces = (family?: string) => {
   switch (family) {

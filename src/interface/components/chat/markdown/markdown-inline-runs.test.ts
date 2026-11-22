@@ -96,24 +96,23 @@ describe('inline markdown in a block', () => {
   it.each([
     [fonts.cardoRegular, 'Cardo-Bold', 'Cardo-Italic'],
     [fonts.mono, fonts.monoBold, fonts.monoItalic],
-  ])('keeps %s emphasis and code nested in one Text', (family, bold, italic) => {
-    const tree = render(SENTENCE, family);
+  ])(
+    'keeps %s emphasis and code nested in one Text',
+    (family, bold, italic) => {
+      const tree = render(SENTENCE, family);
 
-    expect(viewsWithSiblingTexts(tree)).toEqual([]);
-    const [paragraph] = textBlocks(tree);
-    expect(textBlocks(tree)).toHaveLength(1);
-    expect(textOf(paragraph)).toBe(
-      'The clonal root system can survive fire, drought and centuries, so one grove is one organism.'
-    );
-    const renderedFonts = all(paragraph, Text).map(fontOf);
-    expect(renderedFonts).toEqual(
-      expect.arrayContaining([
-        bold,
-        italic,
-        fonts.mono,
-      ])
-    );
-  });
+      expect(viewsWithSiblingTexts(tree)).toEqual([]);
+      const [paragraph] = textBlocks(tree);
+      expect(textBlocks(tree)).toHaveLength(1);
+      expect(textOf(paragraph)).toBe(
+        'The clonal root system can survive fire, drought and centuries, so one grove is one organism.'
+      );
+      const renderedFonts = all(paragraph, Text).map(fontOf);
+      expect(renderedFonts).toEqual(
+        expect.arrayContaining([bold, italic, fonts.mono])
+      );
+    }
+  );
 
   it('keeps a list item’s bold lead-in on the line with its text', () => {
     const tree = render(
