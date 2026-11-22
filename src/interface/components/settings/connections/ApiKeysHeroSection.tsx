@@ -1,10 +1,10 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
   FormSection,
   formText,
   useFormColors,
 } from '@/interface/ui/components/form';
+import { SymbolIcon } from '@/interface/ui/components/SymbolIcon';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { keyStorageCopy } from './key-storage-copy';
 
@@ -19,13 +19,14 @@ export const ApiKeysHeroSection = () => {
   return (
     <FormSection testID="connections-hero">
       <View style={styles.hero}>
-        {/* lock.shield.fill */}
-        <Ionicons
-          name="shield-checkmark"
-          size={hero.iconSize}
-          color={loomUiTokens.colors.accentColor}
-          style={styles.icon}
-        />
+        <View style={styles.icon}>
+          <SymbolIcon
+            name="lock.shield.fill"
+            fallback="shield-checkmark"
+            size={hero.iconSize}
+            color={loomUiTokens.colors.accentColor}
+          />
+        </View>
         <Text style={styles.title}>
           Aspen Grove keeps your API keys on your device.
         </Text>
