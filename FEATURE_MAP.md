@@ -1397,9 +1397,9 @@ stays until the user makes one.
   socketteer/clooi. No Discord row.
 - **Where:** Settings, the last section, below Voice Mode.
 - **Reach:** Cold start → `home-settings-button` → `settings-app-info` (scroll to the bottom).
-- **Requires:** none. Each link opens the system browser (needs a network).
+- **Requires:** none. Each link is an accent link row with no chevron, as Latent Spaces' `Link` rows, and opens the system browser (needs a network).
 - **Selector:** working — `settings-app-info`, `settings-app-info-version` ("Aspen Grove v<version> (<build>)", not tappable), `settings-app-info-intrinsic-labs`, `settings-app-info-open-loom`, `settings-app-info-github`, `settings-app-info-clooi`
-- **Code:** `src/interface/components/settings/app-info/AppInfoSection.tsx`, `src/interface/components/settings/app-info/app-info-links.ts`, `src/interface/components/settings/app-info/app-version-label.ts`, `src/interface/components/home/home-links.ts`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/ui/components/form/FormLinkRow.tsx`
+- **Code:** `src/interface/components/settings/app-info/AppInfoSection.tsx`, `src/interface/components/settings/app-info/app-info-links.ts`, `src/interface/components/settings/app-info/app-version-label.ts`, `src/interface/components/home/home-links.ts`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/ui/components/form/FormButtonRow.tsx`
 - **Backend:** none — client-only. Version and build are read natively (`expo-application`:
   `CFBundleShortVersionString` / `CFBundleVersion` on iOS, version name / code on Android).
 - **Status:** live
