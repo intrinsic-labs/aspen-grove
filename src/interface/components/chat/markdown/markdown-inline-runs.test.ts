@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { describe, expect, it, jest } from '@jest/globals';
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { StyleSheet, Text, type TextStyle, View } from 'react-native';
@@ -19,10 +20,10 @@ const colors = {
 };
 
 /** The element tree a message's markdown renders to, with our rules. */
-const render = (source: string): Element => {
+const render = (source: string, fontFamily?: string): Element => {
   const renderer = new AstRenderer(
     { ...renderRules, ...markdownRules },
-    createMarkdownStyles(undefined, colors)
+    createMarkdownStyles({ fontFamily }, colors)
   );
   return renderer.render(
     parseMarkdownUncached(source) as never
@@ -92,8 +93,11 @@ const SENTENCE =
   'The clonal **root system** can survive `fire`, drought and *centuries*, so one grove is one organism.';
 
 describe('inline markdown in a block', () => {
-  it('sets a paragraph as one Text with its bold, code and italic nested', () => {
-    const tree = render(SENTENCE);
+  it.each([
+    [fonts.cardoRegular, 'Cardo-Bold', 'Cardo-Italic'],
+    [fonts.mono, fonts.monoBold, fonts.monoItalic],
+  ])('keeps %s emphasis and code nested in one Text', (family, bold, italic) => {
+    const tree = render(SENTENCE, family);
 
     expect(viewsWithSiblingTexts(tree)).toEqual([]);
     const [paragraph] = textBlocks(tree);
@@ -101,12 +105,12 @@ describe('inline markdown in a block', () => {
     expect(textOf(paragraph)).toBe(
       'The clonal root system can survive fire, drought and centuries, so one grove is one organism.'
     );
-    const fonts = all(paragraph, Text).map(fontOf);
-    expect(fonts).toEqual(
+    const renderedFonts = all(paragraph, Text).map(fontOf);
+    expect(renderedFonts).toEqual(
       expect.arrayContaining([
-        'Cardo-Bold',
-        'Cardo-Italic',
-        'IBMPlexMono-Regular',
+        bold,
+        italic,
+        fonts.mono,
       ])
     );
   });

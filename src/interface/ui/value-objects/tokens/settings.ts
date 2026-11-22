@@ -104,10 +104,6 @@ export const settingsTokens = {
     userLeadingInset: 73,
     // `.padding(8)` inside the bubble (SampleNodeView.swift:38)
     bubblePadding: 8,
-    // Latent Spaces asks for Cardo at size + 1.2 (LoomFont.swift:39), but
-    // SwiftUI sets it about 1% narrower than React Native; + 1.0 gives the
-    // same line breaks (measured, same Cardo-Regular.ttf in both apps).
-    cardoSizeOffset: 1.0,
   },
   voiceChooser: {
     // Circle 150, symbol 65 (LoomVoiceChooser.swift:75,81)

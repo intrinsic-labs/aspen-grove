@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { systemColors } from './colors';
 
 /**
@@ -42,10 +43,10 @@ export const sheetTokens = {
     // the title and note where Latent Spaces has them are larger (measured).
     titleTopGap: 26,
     titleBottomGap: 9,
-    // Calling Code 16, secondary (OpenLoomExportSheet.swift:48-55). IBM Plex
+    // Calling Code 16, secondary (OpenLoomExportSheet.swift:48-55). JetBrains
     // Mono stands in at the size that gives the same line width; lines sit
     // 20 pt apart (measured).
-    noteFontFamily: 'IBMPlexMono-Regular',
+    noteFontFamily: fonts.mono,
     noteSize: 14.8,
     noteLineHeight: 20,
     // The "Title" header after the hero row (measured).

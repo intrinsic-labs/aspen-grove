@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { systemColors } from './colors';
 
 /**
@@ -86,12 +87,12 @@ export const onboardingTokens = {
     tree: {
       // "Loom Trees": Cardo 40 with `.padding(.bottom)`; "Getting Started":
       // Calling Code 22, secondary, `VStack(spacing: 10)`
-      // (LoomTreeOnboarding.swift:20-31). IBM Plex Mono stands in at the
-      // width-matched size (Plex is 8% wider per glyph).
+      // (LoomTreeOnboarding.swift:20-31). JetBrains Mono stands in at the
+      // width-matched size (8% wider per glyph).
       titleSize: 40,
       titleLineHeight: 54,
       titleBottomPadding: 16,
-      subtitleFontFamily: 'IBMPlexMono-Regular',
+      subtitleFontFamily: fonts.mono,
       subtitleSize: 20.2,
       subtitleLineHeight: 28,
       subtitleGap: 10,

@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 /**
  * Aspen Grove's OpenRouter model browser.
  * Part of `loomUiTokens` (see `../loom-ui-tokens.ts` for sources and
@@ -8,7 +9,7 @@ export const modelBrowserTokens = {
   // the list's rows and a model's page, in the settings Form's language,
   // with Cardo for the model's name on its page and mono for figures.
   modelBrowser: {
-    metaFontFamily: 'IBMPlexMono-Regular',
+    metaFontFamily: fonts.mono,
     // Row: name 17 (Form body), author 13 (footnote), figures mono 12.
     authorSize: 13,
     authorLineHeight: 17,

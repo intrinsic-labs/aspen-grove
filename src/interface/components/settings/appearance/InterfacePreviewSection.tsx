@@ -3,6 +3,7 @@ import type { NodeViewStyle } from '@domain/entities';
 import { FormSection } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import type { ChatFontFace } from '../types';
+import { toMessageType } from '../../chat/message-type';
 import { SampleNode } from './SampleNode';
 
 const preview = loomUiTokens.settingsPreview;
@@ -39,14 +40,9 @@ export const InterfacePreviewSection = ({
   nodeViewStyle,
   cornerRadius,
 }: InterfacePreviewSectionProps) => {
-  // Cardo is drawn a little larger (LoomFont.swift:39); the line keeps the
-  // font's natural leading, as SwiftUI does.
   const textStyle: TextStyle = {
     fontFamily: fontFace,
-    fontSize:
-      fontFace === 'Cardo-Regular'
-        ? fontSize + preview.cardoSizeOffset
-        : fontSize,
+    ...toMessageType(fontSize, fontFace),
   };
 
   return (

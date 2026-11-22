@@ -85,3 +85,7 @@ Contributors and coding agents should start with [AGENTS.md](./AGENTS.md); [FEAT
 ## License
 
 [Apache 2.0](./LICENSE)
+
+Bundled fonts have their own licenses. [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304)
+(static TTFs) uses the [SIL Open Font License 1.1](./assets/fonts/JetBrains_Mono/OFL.txt);
+Glass TTY VT220 is public domain and is offered as the VT220 message font.

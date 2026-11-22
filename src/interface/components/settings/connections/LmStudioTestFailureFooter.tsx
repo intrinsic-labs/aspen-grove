@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { StyleSheet, Text } from 'react-native';
 import { formText } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
     color: loomUiTokens.colors.destructive,
   },
   detail: {
-    fontFamily: 'IBMPlexMono-Regular',
+    fontFamily: fonts.mono,
     marginTop: 4,
   },
   toggle: {

@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { Children, Fragment, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Slider from '@react-native-community/slider';
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionFooter: {
-    fontFamily: 'IBMPlexMono-Regular',
+    fontFamily: fonts.mono,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0.25,

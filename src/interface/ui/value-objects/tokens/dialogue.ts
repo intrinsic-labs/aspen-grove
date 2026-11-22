@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { systemColors } from './colors';
 
 /**
@@ -21,6 +22,10 @@ export const dialogueTokens = {
     // size. Size + 1.0 here matches its line widths, and so its line breaks,
     // exactly (measured, same Cardo-Regular.ttf in both apps).
     cardoSizeOffset: 1.0,
+    // LoomFont.swift:38: VT220 uses size + 2 and .leading(.loose).
+    vt220SizeOffset: 2,
+    // A loose line box; native SwiftUI leading has no React Native equivalent.
+    vt220LineHeightRatio: 1.5,
     // SwiftUI keeps the font's natural leading: lines sit 24.33 pt apart at
     // the default size (measured), 1.352 × the 18 pt used here.
     messageLineHeightRatio: 1.352,
@@ -90,8 +95,8 @@ export const dialogueTokens = {
     // Shown instead of the animation when the OS asks for reduced motion (AG).
     reducedMotionText: '•••••',
     // Calling Code Regular 16 (ThinkingIndicator.swift). Calling Code isn't
-    // bundled; IBM Plex Mono stands in for it, as elsewhere in AG.
-    fontFamily: 'IBMPlexMono-Regular',
+    // bundled; JetBrains Mono stands in for it, as elsewhere in AG.
+    fontFamily: fonts.mono,
     fontSize: 16,
     lineHeight: 22,
     // `.padding([.bottom, .horizontal])` (LoomTreeContentView.swift:62-70):
@@ -154,8 +159,8 @@ export const dialogueTokens = {
   // (ChildNodeView.swift).
   continuationRail: {
     // The hint: Calling Code 14, gray, centered, `.padding([.top,
-    // .horizontal])` (ChildNodesView.swift:16-20). IBM Plex Mono stands in.
-    hintFontFamily: 'IBMPlexMono-Regular',
+    // .horizontal])` (ChildNodesView.swift:16-20). JetBrains Mono stands in.
+    hintFontFamily: fonts.mono,
     hintTextSize: 14,
     hintLineHeight: 18,
     hintPadding: 16,

@@ -1,4 +1,6 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { createMarkdownStyles } from './markdown-styles';
+import { emphasisSlant } from './markdown-inline-styles';
 
 const colors = {
   textColor: 'white',
@@ -51,23 +53,49 @@ describe('createMarkdownStyles', () => {
     expect(styles.body.color).toBe('white');
   });
 
-  it('sets bold and italic by face, without a synthetic weight or slant', () => {
-    // Merged over the library's fontWeight 'bold' / fontStyle 'italic',
-    // which on Android would swap Cardo for the system sans.
-    const { strong, em } = createMarkdownStyles(base, colors);
-    expect(strong).toMatchObject({
-      fontFamily: 'Cardo-Bold',
+  it.each([
+    [fonts.cardoRegular, 'Cardo-Bold', 'Cardo-Italic'],
+    [fonts.mono, fonts.monoBold, fonts.monoItalic],
+    [fonts.openSans, fonts.openSansBold, fonts.openSansItalic],
+    [fonts.vt220, fonts.vt220, fonts.vt220],
+  ])('uses %s faces without synthetic weight or slant', (family, bold, italic) => {
+    const styles = createMarkdownStyles({ ...base, fontFamily: family }, colors);
+    expect(styles.body.fontFamily).toBe(family);
+    expect(styles.strong).toMatchObject({
+      fontFamily: bold,
       fontWeight: 'normal',
     });
-    expect(em).toMatchObject({
-      fontFamily: 'Cardo-Italic',
-      fontStyle: 'normal',
-    });
+    expect(styles.em.fontFamily).toBe(italic);
+    for (const level of [1, 2, 3, 4, 5, 6] as const) {
+      expect(styles[`heading${level}`]).toMatchObject({
+        fontFamily: bold,
+        fontWeight: 'normal',
+      });
+    }
+    expect(styles.th).toMatchObject({ fontFamily: bold, fontWeight: 'normal' });
+    expect(styles.td.fontFamily).toBe(family);
+    expect(styles.code_inline.fontFamily).toBe(fonts.mono);
+    expect(styles.code_block.fontFamily).toBe(fonts.mono);
+    expect(styles.fence.fontFamily).toBe(fonts.mono);
   });
 
   it('keeps list icons as separate objects', () => {
     const styles = createMarkdownStyles(base, colors);
     expect(styles.bullet_list_icon).toEqual(styles.ordered_list_icon);
     expect(styles.bullet_list_icon).not.toBe(styles.ordered_list_icon);
+  });
+});
+
+describe('emphasisSlant', () => {
+  const cardo = { regular: 'Cardo-Regular', italic: 'Cardo-Italic' };
+  const vt220 = { regular: fonts.vt220, italic: fonts.vt220 };
+  it('asks iOS for italic so RCTFont keeps the italic face', () => {
+    expect(emphasisSlant('ios', cardo)).toBe('italic');
+  });
+  it('keeps Android normal, so it does not look for an italic of the italic face', () => {
+    expect(emphasisSlant('android', cardo)).toBe('normal');
+  });
+  it('leaves a face with no italic upright on iOS', () => {
+    expect(emphasisSlant('ios', vt220)).toBe('normal');
   });
 });

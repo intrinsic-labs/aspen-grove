@@ -1,4 +1,1 @@
-export type ChatFontFace =
-  | 'Cardo-Regular'
-  | 'IBMPlexMono-Regular'
-  | 'OpenSans-Regular';
+export type { MessageFontFamily as ChatFontFace } from '@interface/ui/value-objects/fonts';

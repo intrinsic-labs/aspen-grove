@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { StyleSheet, View } from 'react-native';
 import CodeHighlighter from 'react-native-code-highlighter';
 import { codepenEmbed } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     paddingRight: 24, // extra padding so code doesn't touch edge when scrolled
   },
   text: {
-    fontFamily: 'IBMPlexMono-Regular',
+    fontFamily: fonts.mono,
     fontSize: 14,
     lineHeight: CODE_LINE_HEIGHT,
   },

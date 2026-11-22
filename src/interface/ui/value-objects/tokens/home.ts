@@ -1,3 +1,4 @@
+import { fonts } from '@interface/ui/value-objects/fonts';
 import { systemColors } from './colors';
 
 /**
@@ -26,9 +27,9 @@ export const homeTokens = {
     },
     dateLine: {
       // Calling Code Regular 18, secondary (DateHeaderView.swift:25-26).
-      // Calling Code isn't bundled; IBM Plex Mono stands in, at the size
-      // that gives the same line width (Plex is 8% wider per glyph).
-      fontFamily: 'IBMPlexMono-Regular',
+      // Calling Code isn't bundled; JetBrains Mono stands in, at the size
+      // that gives the same line width (8% wider per glyph).
+      fontFamily: fonts.mono,
       fontSize: 16.5,
       lineHeight: 22,
       // `.font(.subheadline)` symbol with `.padding(.horizontal, 4)`, then
@@ -50,9 +51,9 @@ export const homeTokens = {
       rowPaddingHorizontal: 16,
       rowPaddingVertical: 13,
       titleDateGap: 6,
-      // Calling Code 18, one line (HomeScreenView.swift:70-72); IBM Plex
+      // Calling Code 18, one line (HomeScreenView.swift:70-72); JetBrains
       // Mono stands in at the width-matched size.
-      titleFontFamily: 'IBMPlexMono-Regular',
+      titleFontFamily: fonts.mono,
       titleFontSize: 17,
       titleLineHeight: 24,
       // `.font(.caption)`, `.secondary` (HomeScreenView.swift:73-74)

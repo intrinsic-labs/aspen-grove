@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 75923a2fec9752c4ea083ebf7ab04c2251b1b559
+revision: 89a4ae938a19da62fff7f0ac9bbf444455917659
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -233,7 +233,7 @@ stays until the user makes one.
 - **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
 - **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
-- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (IBM Plex
+- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (JetBrains
   Mono standing in for Calling Code), the date is `Date.formatted()`'s "3/4/2025, 2:01 PM".
 
 ### Rename or delete a tree (swipe)
@@ -356,7 +356,7 @@ stays until the user makes one.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
   `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
 - **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`, `connections-openrouter-key-sheet`
-- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/application/services/model-agent-name.ts#readableModelName`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
   (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
   `user_preferences` (`default_model_agent_id`, `onboarding_completed_at`) and the tree
@@ -435,6 +435,8 @@ stays until the user makes one.
   a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
   a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
+  Emphasis, headings and table headers use the chosen message font's bundled faces;
+  VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
@@ -777,7 +779,9 @@ stays until the user makes one.
   press reports its full index path, as iOS does, so one menu tree serves both platforms.
   Android still has no side-by-side pair: Model and Voice Mode are two rows in their own
   section. Flows: `.maestro/mock/tree-menu.yaml` (helper `.maestro/open-tree-menu.yaml`),
-  `.maestro/mock/menu-sections.yaml` (dividers and checks on every menu kind).
+  `.maestro/mock/menu-sections.yaml` (dividers and checks on every menu kind). The patch also
+  reports `onMenuShow` and `onMenuDismiss` on both platforms, which `native-menu-dismissal.ts`
+  uses to hold focus work until a menu has closed.
 
 ### Bookmark a node
 - **ID:** `chat.bookmark`
@@ -1328,7 +1332,7 @@ stays until the user makes one.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (IBM Plex Mono, Cardo or Open Sans), the font size, the
+- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or Open Sans), the font size, the
   user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
   sample messages.
 - **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
@@ -1336,7 +1340,7 @@ stays until the user makes one.
   `settings-typography-font` (scroll down).
 - **Requires:** none
 - **Selector:** working — `settings-typography-section`, `settings-typography-font`, `settings-typography-font-size`, `settings-typography-message-style`, `settings-typography-corner-radius`, `settings-typography-preview`
-- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`
+- **Code:** `src/interface/components/settings/appearance/UserInterfaceSection.tsx`, `src/interface/components/settings/appearance/interface-options.ts`, `src/interface/components/settings/appearance/InterfacePreviewSection.tsx`, `src/interface/components/settings/appearance/SampleNode.tsx`, `src/interface/components/settings/appearance/useAppearanceController.ts`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/chat/useDialogueDisplayPreferences.ts`, `src/interface/components/chat/message-type.ts`, `src/interface/ui/value-objects/fonts.ts`
 - **Backend:** WatermelonDB `user_preferences` (`font_face`, `font_size`, `node_view_style`,
   `node_view_corner_radius`) via `WatermelonUserPreferencesRepository`
 - **Status:** live
@@ -1346,7 +1350,8 @@ stays until the user makes one.
   "Outlined", "20 (material design plebeian)"). Font size offers 12–26, corner radius 0–20 in
   steps of 2. The former per-option ids (`settings-typography-font-<face>`,
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
-  (Cardo) renders 1 pt above the chosen size.
+  (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
+  leading. Saved selections of the retired mono face resolve to JetBrains Mono.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`
