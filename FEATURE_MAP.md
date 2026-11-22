@@ -1357,7 +1357,7 @@ stays until the user makes one.
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
   (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
   leading. Saved selections of the retired mono face resolve to JetBrains Mono; Open Sans resolves
-  to System. Cardo remains the default. System uses the platform font with native bold and italic.
+  to System. Cardo remains the default. System uses the platform font with native bold and italic. Code (inline and blocks) is set in JetBrains Mono, or in VT220 when VT220 is the message font.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

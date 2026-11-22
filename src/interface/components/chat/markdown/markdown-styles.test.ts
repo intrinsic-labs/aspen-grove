@@ -82,9 +82,6 @@ describe('createMarkdownStyles', () => {
         fontWeight: 'normal',
       });
       expect(styles.td.fontFamily).toBe(family);
-      expect(styles.code_inline.fontFamily).toBe(fonts.mono);
-      expect(styles.code_block.fontFamily).toBe(fonts.mono);
-      expect(styles.fence.fontFamily).toBe(fonts.mono);
     }
   );
 
@@ -140,4 +137,25 @@ it.each(['ios', 'android'])('synthesizes System italics on %s', (os) => {
   expect(emphasisSlant(os, { regular: undefined, italic: undefined })).toBe(
     'italic'
   );
+});
+
+it('sets code in VT220 at the message size when VT220 is the message font', () => {
+  const styles = createMarkdownStyles(
+    { ...base, fontFamily: fonts.vt220 },
+    colors
+  );
+  expect(styles.code_inline).toMatchObject({
+    fontFamily: fonts.vt220,
+    fontSize: base.fontSize,
+  });
+  expect(styles.fence.fontFamily).toBe(fonts.vt220);
+  expect(styles.code_block.fontFamily).toBe(fonts.vt220);
+});
+
+it('sets code in JetBrains Mono for every other message font', () => {
+  for (const fontFamily of [fonts.cardoRegular, fonts.mono, fonts.system]) {
+    const styles = createMarkdownStyles({ ...base, fontFamily }, colors);
+    expect(styles.code_inline.fontFamily).toBe(fonts.mono);
+    expect(styles.fence.fontFamily).toBe(fonts.mono);
+  }
 });

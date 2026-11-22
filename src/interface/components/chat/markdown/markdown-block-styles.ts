@@ -7,11 +7,12 @@ import type { MarkdownColors, MarkdownTypography } from './markdown-typography';
  * with `CodeBlock`, so these only reach the library's own fallbacks.
  */
 const codeBlockStyle = ({
+  code,
   fontSize,
   lineHeight,
   textColor,
 }: MarkdownTypography): TextStyle => ({
-  fontFamily: fonts.mono,
+  fontFamily: code.family,
   fontSize: fontSize * 0.85,
   lineHeight: lineHeight * 0.9,
   backgroundColor: 'transparent',

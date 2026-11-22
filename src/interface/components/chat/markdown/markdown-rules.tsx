@@ -20,10 +20,11 @@ export const markdownRules: RenderRules = {
 
   // Fenced code blocks, highlighted in the info string's language
   // (```javascript). sourceInfo exists at runtime but isn't in the types.
-  fence: (node) => (
+  fence: (node, _children, _parent, styles) => (
     <CodeBlock
       key={node.key}
       code={node.content || ''}
+      fontFamily={styles.fence?.fontFamily}
       language={
         (node as unknown as { sourceInfo?: string }).sourceInfo || 'text'
       }
@@ -31,8 +32,13 @@ export const markdownRules: RenderRules = {
   ),
 
   // Indented code blocks (no language specified)
-  code_block: (node) => (
-    <CodeBlock key={node.key} code={node.content || ''} language="text" />
+  code_block: (node, _children, _parent, styles) => (
+    <CodeBlock
+      key={node.key}
+      code={node.content || ''}
+      language="text"
+      fontFamily={styles.code_block?.fontFamily}
+    />
   ),
 };
 
