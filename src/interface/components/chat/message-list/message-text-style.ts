@@ -1,3 +1,4 @@
+import { messageFontFamily } from '@interface/ui/value-objects/fonts';
 import type { TextStyle } from 'react-native';
 import type { ChatDisplayPreferences } from '../types';
 
@@ -13,7 +14,5 @@ export const toMessageTextStyle = (
 ): TextStyle => ({
   fontSize: preferences.messageFontSize,
   lineHeight: preferences.messageLineHeight,
-  ...(preferences.messageFontFamily
-    ? { fontFamily: preferences.messageFontFamily }
-    : {}),
+  fontFamily: messageFontFamily(preferences.messageFontFamily),
 });

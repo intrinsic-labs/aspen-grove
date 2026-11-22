@@ -24,8 +24,10 @@ if echo "$out" | grep -q 'code changed since'; then
   echo "::warning title=Feature map drift::Entries above touch code changed since the map's revision. Re-read them and update the entries in this change."
 fi
 
-# Code that landed on main since `revision:`. Base: the PR's target branch in CI, else main.
-base="origin/${GITHUB_BASE_REF:-main}"
+# Code that landed on main since `revision:`. Always main, even for a pull request stacked
+# on another branch: that branch's own commits (and any merge of main into it) haven't
+# landed, and a merge commit's diff would show all of main's changes as unreconciled.
+base="origin/main"
 git rev-parse --verify --quiet "$base^{commit}" >/dev/null || base=main
 if git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
   python3 scripts/check-feature-map-landed.py FEATURE_MAP.md "$base"

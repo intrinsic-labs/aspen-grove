@@ -37,3 +37,7 @@ it('offers VT220 immediately after Mono', () => {
     { value: fonts.vt220, label: 'VT220' },
   ]);
 });
+
+it('offers System in place of Open Sans', () => {
+  expect(FONT_OPTIONS[3]).toEqual({ value: 'System', label: 'System' });
+});

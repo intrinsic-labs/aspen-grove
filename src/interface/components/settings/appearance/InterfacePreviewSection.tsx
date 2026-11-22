@@ -1,3 +1,4 @@
+import { messageFontFamily } from '@interface/ui/value-objects/fonts';
 import { StyleSheet, View, type TextStyle } from 'react-native';
 import type { NodeViewStyle } from '@domain/entities';
 import { FormSection } from '@/interface/ui/components/form';
@@ -41,7 +42,7 @@ export const InterfacePreviewSection = ({
   cornerRadius,
 }: InterfacePreviewSectionProps) => {
   const textStyle: TextStyle = {
-    fontFamily: fontFace,
+    fontFamily: messageFontFamily(fontFace),
     ...toMessageType(fontSize, fontFace),
   };
 

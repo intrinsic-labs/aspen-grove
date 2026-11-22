@@ -1,5 +1,9 @@
+import {
+  commandAt,
+  toContextMenuActions,
+} from '@/interface/ui/components/native-menu-tree';
 import { describe, expect, it } from '@jest/globals';
-import { buildMessageMenuSections } from './message-menu';
+import { buildMessageMenu } from './message-menu';
 
 const base = {
   bookmarked: false,
@@ -9,8 +13,8 @@ const base = {
 };
 
 const titles = (state: typeof base) =>
-  buildMessageMenuSections(state).map((section) =>
-    section.map((item) => item.title)
+  buildMessageMenu(state).map((section) =>
+    section.children?.map((item) => item.action.title)
   );
 
 describe('message menu', () => {
@@ -24,22 +28,25 @@ describe('message menu', () => {
   });
 
   it('offers Regenerate Response on every node, so a failed send can get its reply', () => {
-    const [first] = buildMessageMenuSections({ ...base, isCurrent: true });
-    expect(first[0]).toMatchObject({ action: 'regenerate' });
-    expect(first[0].disabled).toBeUndefined();
+    const [first] = buildMessageMenu({ ...base, isCurrent: true });
+    expect(first.children?.[0]).toMatchObject({ command: 'regenerate' });
+    expect(first.children?.[0].action.disabled).toBeUndefined();
   });
 
   it('disables Continuations without children and Rewind on the current node', () => {
-    const sections = buildMessageMenuSections({
+    const sections = buildMessageMenu({
       ...base,
       continuationCount: 0,
       isCurrent: true,
     });
-    expect(sections[0][1]).toMatchObject({
-      action: 'continuations',
-      disabled: true,
+    expect(sections[0].children?.[1]).toMatchObject({
+      command: 'continuations',
+      action: { disabled: true },
     });
-    expect(sections[1][0]).toMatchObject({ action: 'rewind', disabled: true });
+    expect(sections[1].children?.[0]).toMatchObject({
+      command: 'rewind',
+      action: { disabled: true },
+    });
   });
 
   it('flips Bookmark and Prune once set', () => {
@@ -50,4 +57,40 @@ describe('message menu', () => {
       ['Edit', 'Restore'],
     ]);
   });
+});
+
+it('makes the first group a side-by-side ControlGroup', () => {
+  expect(buildMessageMenu(base)[0].action).toEqual({
+    title: '',
+    inlineChildren: true,
+    preferredElementSize: 'medium',
+  });
+});
+
+it('dispatches the pressed item in every group without changing icons', () => {
+  const menu = buildMessageMenu(base);
+  expect(
+    toContextMenuActions(menu).map((group) =>
+      group.actions?.map((item) => item.systemIcon)
+    )
+  ).toEqual([
+    ['repeat', 'text.append'],
+    ['backward', 'doc.on.doc'],
+    ['magnifyingglass', 'bookmark'],
+    ['pencil', 'scissors'],
+  ]);
+  expect(
+    menu.flatMap(
+      (group, i) => group.children?.map((_, j) => commandAt(menu, [i, j])) ?? []
+    )
+  ).toEqual([
+    'regenerate',
+    'continuations',
+    'rewind',
+    'copy',
+    'info',
+    'bookmark',
+    'edit',
+    'prune',
+  ]);
 });

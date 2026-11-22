@@ -68,6 +68,8 @@ describe('useDialogueDisplayPreferences', () => {
 it.each([
   ['IBM\u0050lexMono-Regular', fonts.mono, 16, 21.632],
   [fonts.vt220, fonts.vt220, 18, 27],
+  ['OpenSans-Regular', fonts.system, 16, 21.632],
+  [fonts.system, fonts.system, 16, 21.632],
 ])(
   'loads stored font %s with its message metrics',
   async (storedFace, family, size, lineHeight) => {

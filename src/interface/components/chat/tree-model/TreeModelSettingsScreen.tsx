@@ -41,6 +41,7 @@ const TreeModelSettingsScreen = () => {
           testID="tree-model-system-message"
           title="System Message"
           icon="document-text-outline"
+          systemIcon="scroll"
           onPress={() =>
             treeId && router.push(treeModelRoutes.systemMessage(treeId))
           }

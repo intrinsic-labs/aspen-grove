@@ -29,10 +29,13 @@ export type MarkdownTypography = {
 export const toMarkdownTypography = (
   baseStyle: TextStyle | undefined,
   colors: MarkdownColors
-): MarkdownTypography => ({
-  fontFamily: baseStyle?.fontFamily ?? fonts.cardoRegular,
-  faces: emphasisFaces(baseStyle?.fontFamily),
-  fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
-  lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
-  textColor: baseStyle?.color ?? colors.textColor,
-});
+): MarkdownTypography => {
+  const family = baseStyle?.fontFamily ?? fonts.cardoRegular;
+  return {
+    fontFamily: family,
+    faces: emphasisFaces(family),
+    fontSize: baseStyle?.fontSize ?? DEFAULT_TYPE.fontSize,
+    lineHeight: baseStyle?.lineHeight ?? DEFAULT_TYPE.lineHeight,
+    textColor: baseStyle?.color ?? colors.textColor,
+  };
+};

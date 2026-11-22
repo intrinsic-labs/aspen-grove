@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 89a4ae938a19da62fff7f0ac9bbf444455917659
+revision: 772a27dee936f28f498357a733ecf9dc65df280e
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -435,8 +435,8 @@ stays until the user makes one.
   a paragraph, a list item and a table cell; nested lists; a code block between paragraphs;
   a line wider than the screen scrolls sideways, as Latent Spaces' `CodeSnippetView` does):
   `.maestro/markdown.yaml`, on the imported `.maestro/fixtures/markdown-sample.openloom`.
-  Emphasis, headings and table headers use the chosen message font's bundled faces;
-  VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
+  Emphasis, headings and table headers use the chosen message font's bundled faces,
+  or native bold and italic for System; VT220 has no emphasis variants. Inline code and code blocks use JetBrains Mono.
   Tapping a message row opens that node's continuation rail
   (`chat.continuation-rail`). A long-press opens the message menu (`chat.message-menu`).
   With Voice Mode on, a double-tap reads the row aloud instead (`chat.read-aloud`).
@@ -540,8 +540,7 @@ stays until the user makes one.
   Restore after one more divider. Regenerate Response is on every node; Continuations is
   disabled on a node without children and Rewind To Node on the current (last) node.
 - **Where:** A native context menu over the message bubble. Latent Spaces' first pair is a
-  horizontal ControlGroup; here it is an inline section (only the tree menu uses the patched
-  `preferredElementSize`). On Android each group is a menu group with a divider between
+  horizontal ControlGroup, icon above title, using the patched `preferredElementSize`. On Android each group is a menu group with a divider between
   groups (`patches/react-native-context-menu-view+1.21.0.patch`, API 28+).
   On iOS the message lifts as the menu's preview, kept between the tree's header and the
   room the menu needs under it: a message taller than that band shows its top at full size,
@@ -550,7 +549,7 @@ stays until the user makes one.
 - **Reach:** P2 → send once → long-press `chat-message-row-<role>-<nodeId>`.
 - **Requires:** At least one message on the path.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
-- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenuSections`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
+- **Code:** `src/interface/components/chat/message-list/message-menu.ts#buildMessageMenu`, `src/interface/components/chat/message-list/MessageContextMenu.tsx`, `src/interface/components/chat/message-list/message-preview-bounds.ts`, `src/interface/components/chat/message-list/preview-area-context.ts`, `patches/react-native-context-menu-view+1.21.0.patch`, `src/interface/ui/components/native-menu-tree.ts`, `src/interface/ui/components/native-menu-platform.ts`, `src/interface/components/chat/node-actions/useMessageActions.ts#onMessageAction`, `src/interface/components/chat/node-actions/useChatNodeInteractions.ts`
 - **Backend:** Copy Text: none — client-only (`expo-clipboard`). Node Info opens the node's
   sheet (`node.sheet`). The other items have their own entries below.
 - **Status:** live
@@ -848,6 +847,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** iOS's `Alert.prompt` has no placeholder, so the empty field doesn't read
   "Name" there; Android's dialog does. An untitled tree opens the alert empty.
+  The native iOS prompt focuses its field automatically; Android focuses from the dialog's
+  `onShow`, after presentation.
 
 ### Edit tree description
 - **ID:** `chat.description-edit`
@@ -866,8 +867,9 @@ stays until the user makes one.
 - **Code:** `src/interface/components/chat/tree-description/useTreeDescription.ts`, `src/interface/ui/components/text-editor/TextEditorSheet.tsx`, `src/interface/ui/components/text-editor/text-editor-menu.ts`, `src/interface/ui/components/KeyboardDoneBar.tsx`, `src/interface/ui/components/sheet/`
 - **Backend:** WatermelonDB `loom_trees.description` via `WatermelonLoomTreeRepository`
 - **Status:** live
-- **Notes:** The description shows nowhere else in the app yet; it pre-fills the export
-  sheet, goes out with an Open Loom export and heads a Markdown export. Flow: `.maestro/mock/sheet-swipe.yaml`.
+- **Notes:** `TextEditorSheet` focuses its input from `PageSheet.onShow`, after the slide-in
+  animation, each time the sheet opens. The description shows nowhere else in the app yet;
+  it pre-fills the export sheet, goes out with an Open Loom export and heads a Markdown export. Flow: `.maestro/mock/sheet-swipe.yaml`.
 
 ### Auto-title after the first reply
 - **ID:** `chat.auto-title`
@@ -917,7 +919,7 @@ stays until the user makes one.
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
 - **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/application/services/model-agent-name.ts`, `src/app/tree/*/model/index.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/ui/components/form/FormLinkRow.tsx`, `src/interface/ui/components/form/FormLabel.tsx`, `src/interface/ui/components/SymbolIcon.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/application/services/model-agent-name.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
@@ -947,6 +949,8 @@ stays until the user makes one.
   and system message. The Provider and LM Studio model menus (`FormPickerRow`) check the
   selected item on both platforms (a checked box on Android, through the patched context
   menu). Flows: `.maestro/mock/tree-model.yaml`, `.maestro/mock/menu-sections.yaml`.
+
+  The System Message row uses LS's `scroll` SF Symbol on iOS, with a document icon fallback on Android.
 
 ### OpenRouter model browser (tree)
 - **ID:** `chat.model-settings.openrouter-models`
@@ -1009,7 +1013,8 @@ stays until the user makes one.
 - **Status:** live
 - **Notes:** This is the tree's system context: the text the export sheet's "Include System
   Message" writes out, sent to the model after the agent's own system prompt. Editing it
-  never forks the agent.
+  never forks the agent. The input mounts with `autoFocus` once the saved text has loaded,
+  so opening the editor requests the keyboard.
 
 ### Tree without an agent
 - **ID:** `chat.needs-agent`
@@ -1332,7 +1337,7 @@ stays until the user makes one.
 
 ### Message typography
 - **ID:** `settings.typography`
-- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or Open Sans), the font size, the
+- **Purpose:** Sets the dialogue font (JetBrains Mono, VT220, Cardo or System), the font size, the
   user-bubble style (Filled or Outlined) and the corner radius, with a live preview of four
   sample messages.
 - **Where:** Settings, the "User Interface Settings" and "User Interface Preview" sections.
@@ -1351,7 +1356,8 @@ stays until the user makes one.
   steps of 2. The former per-option ids (`settings-typography-font-<face>`,
   `settings-typography-message-style-filled` / `-outlined`) are gone. A new install starts at size 17, as Latent Spaces does; Serif
   (Cardo) renders 1 pt above the chosen size; VT220 renders 2 pt above it with loose
-  leading. Saved selections of the retired mono face resolve to JetBrains Mono.
+  leading. Saved selections of the retired mono face resolve to JetBrains Mono; Open Sans resolves
+  to System. Cardo remains the default. System uses the platform font with native bold and italic.
 
 ### Auto-title setting
 - **ID:** `settings.behavior.auto-title`

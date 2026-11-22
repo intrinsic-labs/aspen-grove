@@ -58,26 +58,35 @@ describe('createMarkdownStyles', () => {
     [fonts.mono, fonts.monoBold, fonts.monoItalic],
     [fonts.openSans, fonts.openSansBold, fonts.openSansItalic],
     [fonts.vt220, fonts.vt220, fonts.vt220],
-  ])('uses %s faces without synthetic weight or slant', (family, bold, italic) => {
-    const styles = createMarkdownStyles({ ...base, fontFamily: family }, colors);
-    expect(styles.body.fontFamily).toBe(family);
-    expect(styles.strong).toMatchObject({
-      fontFamily: bold,
-      fontWeight: 'normal',
-    });
-    expect(styles.em.fontFamily).toBe(italic);
-    for (const level of [1, 2, 3, 4, 5, 6] as const) {
-      expect(styles[`heading${level}`]).toMatchObject({
+  ])(
+    'uses %s faces without synthetic weight or slant',
+    (family, bold, italic) => {
+      const styles = createMarkdownStyles(
+        { ...base, fontFamily: family },
+        colors
+      );
+      expect(styles.body.fontFamily).toBe(family);
+      expect(styles.strong).toMatchObject({
         fontFamily: bold,
         fontWeight: 'normal',
       });
+      expect(styles.em.fontFamily).toBe(italic);
+      for (const level of [1, 2, 3, 4, 5, 6] as const) {
+        expect(styles[`heading${level}`]).toMatchObject({
+          fontFamily: bold,
+          fontWeight: 'normal',
+        });
+      }
+      expect(styles.th).toMatchObject({
+        fontFamily: bold,
+        fontWeight: 'normal',
+      });
+      expect(styles.td.fontFamily).toBe(family);
+      expect(styles.code_inline.fontFamily).toBe(fonts.mono);
+      expect(styles.code_block.fontFamily).toBe(fonts.mono);
+      expect(styles.fence.fontFamily).toBe(fonts.mono);
     }
-    expect(styles.th).toMatchObject({ fontFamily: bold, fontWeight: 'normal' });
-    expect(styles.td.fontFamily).toBe(family);
-    expect(styles.code_inline.fontFamily).toBe(fonts.mono);
-    expect(styles.code_block.fontFamily).toBe(fonts.mono);
-    expect(styles.fence.fontFamily).toBe(fonts.mono);
-  });
+  );
 
   it('keeps list icons as separate objects', () => {
     const styles = createMarkdownStyles(base, colors);
@@ -98,4 +107,37 @@ describe('emphasisSlant', () => {
   it('leaves a face with no italic upright on iOS', () => {
     expect(emphasisSlant('ios', vt220)).toBe('normal');
   });
+});
+
+it('renders System by name, with emphasis synthesized natively', () => {
+  const styles = createMarkdownStyles(
+    { ...base, fontFamily: 'System' },
+    colors
+  );
+  expect(styles.body.fontFamily).toBe('System');
+  expect(styles.strong).toMatchObject({
+    fontFamily: undefined,
+    fontWeight: 'bold',
+  });
+  expect(styles.em).toMatchObject({
+    fontFamily: undefined,
+    fontStyle: 'italic',
+  });
+  for (const level of [1, 2, 3, 4, 5, 6] as const) {
+    expect(styles[`heading${level}`]).toMatchObject({
+      fontFamily: undefined,
+      fontWeight: 'bold',
+    });
+  }
+  expect(styles.th).toMatchObject({
+    fontFamily: undefined,
+    fontWeight: 'bold',
+  });
+  expect(styles.td.fontFamily).toBe('System');
+});
+
+it.each(['ios', 'android'])('synthesizes System italics on %s', (os) => {
+  expect(emphasisSlant(os, { regular: undefined, italic: undefined })).toBe(
+    'italic'
+  );
 });

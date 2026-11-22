@@ -1,3 +1,4 @@
+import { messageFontFamily } from '@interface/ui/value-objects/fonts';
 import type { TextStyle } from 'react-native';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 import type { ChatDisplayPreferences } from '../types';
@@ -24,9 +25,7 @@ export const composerFieldMetrics = (
     textStyle: {
       fontSize: preferences.messageFontSize,
       lineHeight,
-      ...(preferences.messageFontFamily
-        ? { fontFamily: preferences.messageFontFamily }
-        : {}),
+      fontFamily: messageFontFamily(preferences.messageFontFamily),
     },
     minHeight: lineHeight + verticalPadding,
     maxHeight:

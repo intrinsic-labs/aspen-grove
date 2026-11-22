@@ -1,4 +1,3 @@
-import type { NativeMenuSections } from '@/interface/ui/components/native-menu';
 import { loomUiTokens } from '@interface/ui/value-objects/loom-ui-tokens';
 
 const menu = loomUiTokens.contextMenu;
@@ -12,8 +11,8 @@ export type PreviewBounds = {
 };
 
 /** The menu's height as UIKit draws it: rows, plus a gap between sections. */
-export const estimatedMenuHeight = <Action extends string>(
-  sections: NativeMenuSections<Action>
+export const estimatedMenuHeight = (
+  sections: readonly (readonly unknown[])[]
 ): number => {
   const groups = sections.filter((section) => section.length > 0);
   const rows = groups.reduce((count, section) => count + section.length, 0);
@@ -33,14 +32,14 @@ export const estimatedMenuHeight = <Action extends string>(
  * the menu that opens under it. A taller message shows its top at full
  * size, cropped to the band with a fade at the cut.
  */
-export const messagePreviewBounds = <Action extends string>({
+export const messagePreviewBounds = ({
   headerHeight,
   bottomInset,
   sections,
 }: {
   readonly headerHeight: number;
   readonly bottomInset: number;
-  readonly sections: NativeMenuSections<Action>;
+  readonly sections: readonly (readonly unknown[])[];
 }): PreviewBounds => ({
   top: headerHeight + menu.previewGap,
   bottom: bottomInset + estimatedMenuHeight(sections) + menu.previewGap * 2,

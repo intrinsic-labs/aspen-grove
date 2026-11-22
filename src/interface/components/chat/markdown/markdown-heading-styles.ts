@@ -32,7 +32,7 @@ export const markdownHeadingStyles = ({
       `heading${index + 1}`,
       {
         fontFamily: faces.bold,
-        fontWeight: 'normal',
+        fontWeight: faces.bold === undefined ? 'bold' : 'normal',
         fontSize: fontSize * scale.fontScale,
         lineHeight: lineHeight * scale.lineScale,
         marginTop: scale.marginTop,
