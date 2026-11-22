@@ -7,6 +7,7 @@ import {
   ApiSettingsSection,
   NewTreeSettingsSection,
 } from './home/SettingsLinkSections';
+import { AppInfoSection } from './app-info/AppInfoSection';
 import { SettingsScreenScaffold } from './SettingsScreenScaffold';
 import { SettingsStatus } from './SettingsStatus';
 import { VoiceChooserSheet } from './voice/VoiceChooserSheet';
@@ -72,6 +73,7 @@ const SettingsHomeView = () => {
         voiceName={voiceMode.voice.name}
         onChooseVoice={() => setChooserVisible(true)}
       />
+      <AppInfoSection />
       <SettingsStatus
         saving={appearance.saving || voiceMode.saving}
         notice={null}

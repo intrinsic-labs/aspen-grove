@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 8e8b78d7883564a4266b23f24aef356d84964cf3
+revision: f29cfc4469e4019891d3c11f97ebc4f0425263d9
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -1163,7 +1163,8 @@ stays until the user makes one.
 - **ID:** `settings.home`
 - **Purpose:** Latent Spaces' one settings Form (`LoomSettingsView.swift`): links to
   Connections ("API Settings") and Agents ("New loom tree Settings"), then the User Interface
-  settings, their live preview and Voice Mode, all edited in place.
+  settings, their live preview and Voice Mode, all edited in place, and last App Info
+  (`settings.app-info`).
 - **Where:** Route `settings`, pushed from Home, with the native back button. A 34 pt
   "Settings" large title scrolls away and becomes the inline header title.
 - **Reach:** Cold start → `home-settings-button`.
@@ -1279,7 +1280,7 @@ stays until the user makes one.
   section footer says whether a key is stored. The top card's bullets and the key sheet's
   footer say where the key is kept, per platform (`key-storage-copy.ts`): the iOS Keychain,
   or encrypted with the Android Keystore and left out of Android backups. Neither Settings nor onboarding has a show/hide
-  button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open the system browser (Safari on iOS).
+  button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open the system browser (Safari on iOS). The top card's icon is the SF Symbol `lock.shield.fill` on iOS (Ionicons `shield-checkmark` on Android), via `SymbolIcon`.
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
 - **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
@@ -1388,6 +1389,22 @@ stays until the user makes one.
   the toggle still hides them. Read on each focus (`useVerboseErrorAlerts`), so a change
   holds once you go back to the Dialogue or to Connections. The Dialogue passes it down by
   context (`ErrorDetailsDefaultProvider`). Flow: `.maestro/mock/verbose-error-details.yaml`.
+
+### App Info
+- **ID:** `settings.app-info`
+- **Purpose:** Latent Spaces' "App Info" section: the app's version and build, then links to
+  Intrinsic Labs, the Open Loom specification, the Aspen Grove repository and
+  socketteer/clooi. No Discord row.
+- **Where:** Settings, the last section, below Voice Mode.
+- **Reach:** Cold start → `home-settings-button` → `settings-app-info` (scroll to the bottom).
+- **Requires:** none. Each link is an accent link row with no chevron, as Latent Spaces' `Link` rows, and opens the system browser (needs a network).
+- **Selector:** working — `settings-app-info`, `settings-app-info-version` ("Aspen Grove v<version> (<build>)", not tappable), `settings-app-info-intrinsic-labs`, `settings-app-info-open-loom`, `settings-app-info-github`, `settings-app-info-clooi`
+- **Code:** `src/interface/components/settings/app-info/AppInfoSection.tsx`, `src/interface/components/settings/app-info/app-info-links.ts`, `src/interface/components/settings/app-info/app-version-label.ts`, `src/interface/components/home/home-links.ts`, `src/interface/components/settings/SettingsHomeView.tsx`, `src/interface/ui/components/form/FormButtonRow.tsx`
+- **Backend:** none — client-only. Version and build are read natively (`expo-application`:
+  `CFBundleShortVersionString` / `CFBundleVersion` on iOS, version name / code on Android).
+- **Status:** live
+- **Notes:** Links open with `Linking.openURL`. The Open Loom row uses `HOME_LINKS.openLoomDocs`.
+  The build is left off when the platform gives none.
 
 ### Voice Mode setting
 - **ID:** `settings.voice`
