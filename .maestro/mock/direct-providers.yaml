@@ -91,7 +91,9 @@ env:
     timeout: 10000
 - tapOn:
     id: connections-openai-key-input
-- inputText: sk-openai-mock-key
+# (No 'p' or 'i' in a mock key: typed over adb on Android, the dev client reads
+# them as its perf-monitor and inspector shortcuts.)
+- inputText: sk-oa-mock-key
 - tapOn:
     id: connections-openai-key-save
 - extendedWaitUntil:
