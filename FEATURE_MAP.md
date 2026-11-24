@@ -1134,6 +1134,45 @@ dialogue.
   Home lists buffer trees only in the preview. The dialogue chat adopts a default model agent
   on open, so `TreeModeScreen` never gives it a buffer tree.
 
+### Buffer editor
+- **ID:** `buffer.editor`
+- **Purpose:** The writing surface of a buffer: one document in the reading face, human text in
+  the usual foreground and model text in a muted blue, with text typed into a model passage
+  reading as the human's. In the developer preview the text lives in memory only.
+- **Where:** Route `tree/[treeId]` for a buffer-mode tree (`TreeModeScreen`), under the
+  transparent header titled with the tree's title. A natively scrolling multiline input fills
+  the screen; a slim bar under it, above the keyboard and safe area, holds the sibling control
+  (`buffer.siblings`) or, on an empty buffer, "Load sample".
+- **Reach:** Preview build → `buffer.create` → tap `buffer-document` to type; `buffer-load-sample`
+  fills the review sample (a human opening, two model endings, a human word inside model text).
+- **Requires:** The buffer preview switch. No model, no key.
+- **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample` (only while the document is empty)
+- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
+- **Backend:** none yet — in-memory review fixture; nothing typed is written to WatermelonDB
+- **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Notes:** The input's value is its children (colored `<Text>` runs); each native change is
+  reported as a `{start, end, inserted}` replacement against the last accepted string, using the
+  observed selection to place repeated text and common ends for an autocorrect. iOS delivers the
+  first character into an empty input twice, so a change equal to the last handled native text
+  is ignored. Visual decisions: `docs/architecture/specs/buffer-mode.md`. Flow:
+  `.maestro/buffer-editor-preview.yaml`.
+
+### Branch control
+- **ID:** `buffer.siblings`
+- **Purpose:** Switches between alternative endings at the buffer's branch point: previous and
+  next, a mono "Branch 1 of 2" label, a swipe on the label, and increment/decrement for
+  screen readers. Switching replaces the ending and keeps the shared opening.
+- **Where:** Buffer screen, the bar under the document, shown once the document has two or more
+  endings (the preview sample has two).
+- **Reach:** Preview build → `buffer.create` → `buffer-load-sample` → `buffer-branch-next`.
+- **Requires:** The buffer preview switch; a buffer with siblings (the sample).
+- **Selector:** working — `buffer-branch-control`, `buffer-branch-prev`, `buffer-branch-next`, `buffer-branch-value` (the label text)
+- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview.ts`
+- **Backend:** none yet — fixture siblings in memory
+- **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Notes:** The control is one adjustable accessibility element; its prev/next buttons are
+  hidden from accessibility.
+
 ## Node sheet
 
 ### Node sheet (Node Info, Continuation Node)

@@ -1,0 +1,78 @@
+# The buffer editor's developer preview, no key and no mock server: Home's
+# menu → New Buffer → type → the review sample → a word typed into model text
+# → the second sibling → back out and reopen from Recents.
+# Needs a build whose Metro bundle was made with EXPO_PUBLIC_BUFFER_PREVIEW=1:
+#   EXPO_PUBLIC_BUFFER_PREVIEW=1 npx expo start --dev-client --port 8081
+#   maestro --device "$DEVICE" test .maestro/buffer-editor-preview.yaml --test-output-dir "$SHOTS"
+# Screenshots 01-04 and 06 are named for what they show.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
+
+# Home's menu offers New Buffer.
+- runFlow: open-home-menu.yaml
+- assertVisible: 'New Buffer'
+- takeScreenshot: 01-home-menu
+- tapOn: 'New Buffer'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+
+# An empty buffer takes typing, keyboard up.
+- tapOn:
+    id: buffer-document
+- inputText: 'The kettle was already warm when I came down.'
+- waitForAnimationToEnd
+- takeScreenshot: 02-empty-buffer
+
+# Clear it and load the review sample.
+- tapOn:
+    id: buffer-document
+- repeat:
+    times: 2
+    commands:
+      - eraseText: 30
+- assertVisible:
+    id: buffer-load-sample
+- tapOn:
+    id: buffer-load-sample
+- assertVisible:
+    id: buffer-branch-value
+- assertVisible: 'Branch 1 of 2'
+- waitForAnimationToEnd
+- takeScreenshot: 03-sample
+
+# Type a word into the model's text: it reads as the human's.
+- tapOn:
+    id: buffer-document
+    point: '50%,30%'
+- inputText: 'softly '
+- waitForAnimationToEnd
+- takeScreenshot: 03b-typed-into-model-text
+
+# The second sibling has a different ending.
+- tapOn:
+    id: buffer-branch-next
+- assertVisible: 'Branch 2 of 2'
+- waitForAnimationToEnd
+- takeScreenshot: 04-branch-2
+
+# Back out and reopen the buffer from Recents.
+# The keyboard is up, so hideKeyboard only closes it (on Android it is the back key).
+- hideKeyboard
+- waitForAnimationToEnd
+- runFlow: go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 10000
+- assertVisible: 'Untitled Buffer.*'
+- tapOn: 'Untitled Buffer.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 06-reopen
