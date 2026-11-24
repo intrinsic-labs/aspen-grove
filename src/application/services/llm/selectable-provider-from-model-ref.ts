@@ -1,37 +1,20 @@
 import {
-  SELECTABLE_PROVIDERS,
-  isSelectableProvider,
-  type SelectableProvider,
+  ROUTABLE_PROVIDERS,
+  isRoutableProvider,
+  type RoutableProvider,
 } from '@domain/entities';
 import type { ModelRef } from '@domain/value-objects';
 
-/**
- * Map an `Agent.modelRef` to the `SelectableProvider` that should handle it.
- *
- * A `ModelRef` is formatted `{provider}:{identifier}` (e.g.,
- * `openrouter:anthropic/claude-sonnet-4`). The provider prefix tells us which
- * adapter in the registry can fulfill requests for this model.
- *
- * Throws if the prefix is unknown or not currently supported by the registry.
- * The domain's broader `Provider` set (anthropic, openai, google, etc.) is a
- * superset of what the app can actually route — only providers in
- * `SELECTABLE_PROVIDERS` are reachable today.
- */
-/**
- * True when some adapter can route `modelRef` (its prefix is a
- * `SelectableProvider`). A legacy agent can still name a provider the app has
- * no adapter for, such as `anthropic:`: it is kept, but can't generate.
- */
+/** True when a modelRef names an implemented backend adapter. */
 export const isRoutableModelRef = (modelRef: ModelRef | string): boolean => {
   const colonIndex = modelRef.indexOf(':');
-  return (
-    colonIndex !== -1 && isSelectableProvider(modelRef.slice(0, colonIndex))
-  );
+  return colonIndex !== -1 && isRoutableProvider(modelRef.slice(0, colonIndex));
 };
 
+/** Historical name: resolves any routable backend provider, including those without picker UI. */
 export const selectableProviderFromModelRef = (
   modelRef: ModelRef
-): SelectableProvider => {
+): RoutableProvider => {
   const colonIndex = modelRef.indexOf(':');
   if (colonIndex === -1) {
     // parseModelRef should have caught this, but guard defensively.
@@ -41,10 +24,10 @@ export const selectableProviderFromModelRef = (
   }
 
   const prefix = modelRef.slice(0, colonIndex);
-  if (!isSelectableProvider(prefix)) {
+  if (!isRoutableProvider(prefix)) {
     throw new Error(
       `Provider "${prefix}" is not currently routable. ` +
-        `Supported providers: ${SELECTABLE_PROVIDERS.join(', ')}.`
+        `Supported providers: ${ROUTABLE_PROVIDERS.join(', ')}.`
     );
   }
 

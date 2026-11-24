@@ -1,21 +1,23 @@
 import { MissingProviderKeyError } from '@application/services/llm';
 import type { ICredentialStore } from '@application/services/security';
-import type { SelectableProvider } from '@domain/entities';
+import type { RoutableProvider } from '@domain/entities';
 
-const ENV_KEY_MAP: Record<SelectableProvider, string> = {
+const ENV_KEY_MAP: Partial<Record<RoutableProvider, string>> = {
   openrouter: 'EXPO_PUBLIC_OPENROUTER_API_KEY',
   lmstudio: 'EXPO_PUBLIC_LMSTUDIO_API_TOKEN',
 };
 
 /** The build's env fallback key for a provider, or `null` without one. */
 export const buildProviderApiKey = (
-  provider: SelectableProvider
+  provider: RoutableProvider
 ): string | null => {
+  const envKey = ENV_KEY_MAP[provider];
+  if (!envKey) return null;
   const fromEnv = (
     globalThis as {
       process?: { env?: Record<string, string | undefined> };
     }
-  ).process?.env?.[ENV_KEY_MAP[provider]]?.trim();
+  ).process?.env?.[envKey]?.trim();
   return fromEnv ? fromEnv : null;
 };
 
@@ -25,7 +27,7 @@ export const buildProviderApiKey = (
  */
 export const findProviderApiKey = async (
   credentialStore: Pick<ICredentialStore, 'getProviderApiKey'>,
-  provider: SelectableProvider
+  provider: RoutableProvider
 ): Promise<string | null> => {
   const fromSecureStore = await credentialStore.getProviderApiKey(provider);
   if (fromSecureStore && fromSecureStore.trim().length > 0) {
@@ -36,12 +38,12 @@ export const findProviderApiKey = async (
 
 /**
  * Reads the API key for a provider. LM Studio's token is optional, so it
- * resolves to an empty string; a missing OpenRouter key throws
+ * resolves to an empty string; a missing hosted-provider key throws
  * `MissingProviderKeyError`, which the UI turns into "add your key".
  */
 export const getProviderApiKey = async (
   credentialStore: Pick<ICredentialStore, 'getProviderApiKey'>,
-  provider: SelectableProvider
+  provider: RoutableProvider
 ): Promise<string> => {
   const key = await findProviderApiKey(credentialStore, provider);
   if (key) {

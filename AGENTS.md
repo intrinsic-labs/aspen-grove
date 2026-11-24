@@ -11,7 +11,7 @@ It is for people curious about what models are like: the loom and cyborgism crow
 Standing decisions:
 
 - **Local-first, bring your own keys, open source.** Nothing depends on an Intrinsic Labs server.
-- **Models come through OpenRouter, plus LM Studio for local models.** No native Anthropic or OpenAI adapters.
+- **Models come through OpenRouter, direct Anthropic and OpenAI, plus LM Studio for local models.** Direct-provider connection and picker UI is separate work under `ag-more-providers`.
 - **A loom, not a harness:** no connectors, no web search, no MCP passthrough.
 - **Latent Spaces is the reference for look and behavior, not for its data model.** Latent Spaces is the SwiftUI prototype (`loom-swift`).
 - **Clean architecture** (Domain, Application, Infrastructure, Interface).
@@ -47,9 +47,9 @@ The Beta 1 milestones and v1 list live in [.dev/BUILD-PLAN.md](./.dev/BUILD-PLAN
 
 ### Cut
 
-Do not build or re-document these: sync, sharing and publishing; the Field Guide; the memory/stash system; the documents editor (and cross-tree Links); RFC 3161 timestamps, TLS Notary and other provenance extras; hosted-inference revenue; native provider adapters; provider tools, connectors, web search or MCP.
+Do not build or re-document these: sync, sharing and publishing; the Field Guide; the memory/stash system; the documents editor (and cross-tree Links); RFC 3161 timestamps, TLS Notary and other provenance extras; hosted-inference revenue; other native provider adapters; provider tools, connectors, web search or MCP.
 
-One leftover stays on purpose: the extra values in the `Provider` type (`hyperbolic`, `anthropic`, `openai`, `google`, `local`, `custom`). Stored data can carry them (agent `modelRef`s are parsed against that list, `raw_api_responses.provider`, secure-store key names), so dropping them could break an existing install. Don't build on them. Older installs may also hold a `useMcpTools` key in `user_preferences.lmstudio_settings`; it is ignored and dropped on the next save. Likewise, agents saved by older installs may hold `docRead` / `docWrite` in their `permissions` JSON (for the cut documents feature); they are ignored and dropped when the agent's permissions are next written.
+One leftover stays on purpose: the extra values in the `Provider` type (`hyperbolic`, `google`, `local`, `custom`). Stored data can carry them (agent `modelRef`s are parsed against that list, `raw_api_responses.provider`, secure-store key names), so dropping them could break an existing install. Don't build on them. Older installs may also hold a `useMcpTools` key in `user_preferences.lmstudio_settings`; it is ignored and dropped on the next save. Likewise, agents saved by older installs may hold `docRead` / `docWrite` in their `permissions` JSON (for the cut documents feature); they are ignored and dropped when the agent's permissions are next written.
 
 ## Stack
 
@@ -94,7 +94,7 @@ modules/
                           bound in src/infrastructure/speech/android/
 ```
 
-Implemented repositories: Agent, Edge, Grove, LoomTree, Node, Path, PathState, RawApiResponse, Tag, UserPreferences. Providers: OpenRouter and LM Studio only.
+Implemented repositories: Agent, Edge, Grove, LoomTree, Node, Path, PathState, RawApiResponse, Tag, UserPreferences. Providers: OpenRouter, LM Studio, Anthropic (Messages) and OpenAI (Responses).
 
 Imports use the aliases `@domain/*`, `@application/*`, `@infrastructure/*`, `@interface/*` and `@/*` (tsconfig).
 
@@ -125,7 +125,7 @@ Break one of these and the loom stops being trustworthy.
 - **Nodes are immutable.** Content never changes after creation; only metadata (bookmarked, pruned, excluded) does.
 - **Edits create nodes.** An edit makes a new human-authored node with `editedFrom` set to the original, attached as a sibling (a branch) in dialogue mode.
 - **Raw response bytes are hashed before parsing.** Adapters compute SHA-256 of the raw bytes on receipt (`rawBytesHash`); the model node's content hash chains its content, parent hashes, `createdAt`, author agent ID and that raw hash. Every model node gets a stored, gzipped `RawApiResponse` and is verified on creation (`createVerifiedModelContinuationNode`).
-- **Routing is per agent.** There is no global active provider. Each request resolves its adapter from the agent's `modelRef` (`openrouter:{id}` or `lmstudio:{id}`); a dialogue tree points at its model agent through `LoomTree.defaultModelAgentId`.
+- **Routing is per agent.** There is no global active provider. Each request resolves its adapter from the agent's `modelRef` (`openrouter:{id}`, `lmstudio:{id}`, `anthropic:{id}` or `openai:{id}`); a dialogue tree points at its model agent through `LoomTree.defaultModelAgentId`.
 - **Streamed deltas never hit the database.** Deltas update UI state only; the node is persisted once, on completion or interruption.
 - **Branches are not entities.** A branch point is just a node with several continuation edges; paths are computed.
 - **IDs are ULIDs;** `localId` is a short tree-unique prefix used in context.

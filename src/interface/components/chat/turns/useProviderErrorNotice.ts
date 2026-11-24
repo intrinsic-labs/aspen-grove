@@ -5,7 +5,7 @@ import {
   type ProviderErrorDescription,
 } from '@application/services/llm';
 import type { IUserPreferencesRepository } from '@application/repositories';
-import type { SelectableProvider } from '@domain/entities';
+import type { RoutableProvider } from '@domain/entities';
 import { useSavedLmStudioEndpoint } from '../useSavedLmStudioEndpoint';
 
 type UseProviderErrorNoticeInput = {
@@ -34,7 +34,7 @@ export const useProviderErrorNotice = ({
   );
 
   const showProviderError = useCallback(
-    (caught: unknown, provider?: SelectableProvider) => {
+    (caught: unknown, provider?: RoutableProvider) => {
       const description = describeProviderError(caught, {
         provider,
         lmstudioEndpoint: lmstudioEndpointRef.current,

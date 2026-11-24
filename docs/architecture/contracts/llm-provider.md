@@ -8,7 +8,7 @@
 
 The LLM provider abstraction enables:
 
-- Uniform interface across the two providers Aspen Grove supports: **OpenRouter** (hosted models) and **LM Studio** (local models)
+- Uniform interface across **OpenRouter**, **LM Studio**, **Anthropic Messages** and **OpenAI Responses**
 - Provider choice stays an adapter detail; application logic never changes per provider
 - Testability with mock implementations
 - Provider-specific features exposed through capability detection
@@ -162,6 +162,7 @@ Base error type for all provider errors.
 - **networkError** — connection failed
 - **timeout** — request took too long
 - **contentFiltered** — response blocked by safety filters
+- **cancelled** — the user stopped the request (never retry)
 - **unknown** — unexpected error
 
 ### Retry Strategy
@@ -177,7 +178,7 @@ Base error type for all provider errors.
 
 ## Provider Adapters
 
-Two adapters implement the interface (`src/infrastructure/llm/`). There are no native Anthropic, OpenAI or Google adapters, by decision: OpenRouter covers those models.
+Four adapters implement the interface (`src/infrastructure/llm/`). Direct-provider routing and catalogs are implemented; connection and model-picker screens are a separate UI task. `RoutableProvider` enumerates backend adapters; `SelectableProvider` still enumerates the existing picker choices.
 
 ### OpenRouterAdapter
 
@@ -185,6 +186,50 @@ Two adapters implement the interface (`src/infrastructure/llm/`). There are no n
 - Authentication: Bearer token (`Authorization: Bearer <key>`), the user's own key
 - Models: aggregates models from many providers (Claude, GPT, Llama, Gemini, etc.)
 - Optional headers: `HTTP-Referer` (app URL), `X-Title` (app name) for attribution
+
+### AnthropicAdapter
+
+- Endpoint: `https://api.anthropic.com/v1/messages`; authentication: `x-api-key`.
+  Workspace-scoped keys need no extra header. Other keys require `workspaceId` in
+  initialize options, sent as `anthropic-workspace-id` and preserved across request-time
+  reinitialization with the same key. Changing the key clears that workspace selection.
+- Uses the API version declared in `anthropic/request.ts`. The current version removes
+  sampling parameters, so `temperature` is omitted. `max_tokens` is required; the adapter
+  supplies a default when the agent has no limit. Agent limits must be positive integers.
+- The agent prompt and all system nodes are combined, in order, into top-level `system`;
+  Messages accepts only user and assistant roles. System nodes therefore apply to the
+  whole request, rather than retaining their position in history. For an assistant-ending
+  path (or one with only system nodes), the adapter appends a request-only user cue to
+  continue, because current Claude models reject assistant prefill. No extra node is saved.
+- Text deltas come from `content_block_delta`; cumulative usage comes from `message_start`
+  and `message_delta`. `message_stop` is terminal. Pings, thinking and unknown event types
+  are retained in raw capture but do not become visible text. Output/context limits map
+  to `length`; end-turn and stop-sequence reasons map to `stop`.
+
+### OpenAIAdapter
+
+- Endpoint: `https://api.openai.com/v1/responses`; authentication: bearer API key.
+- Responses is [OpenAI's recommended streaming API](https://developers.openai.com/api/docs/guides/streaming-responses).
+  Requests send full branch history as `input`, the agent prompt as `instructions`,
+  `max_output_tokens` when configured, and `store: false`. No server conversation or
+  previous-response ID is used.
+- Text/refusal deltas stream as text; completed and incomplete response events supply
+  final usage. An output-token limit maps to `length`; failed responses and error events
+  use the normal error path. Truncated streams cannot appear complete.
+- Responses has no stop-sequence parameter: a non-empty list is rejected locally with
+  a plain `invalidRequest` message. Sampling is sent only for the older GPT-4 text
+  families known to accept it; reasoning families use provider defaults.
+
+Both direct adapters support text only; image input is rejected explicitly. Each request
+owns its abort controller, so parallel continuations remain one independent request per
+slot. Stop after text yields the partial capture with `interruptedReason: cancelled`;
+Stop before text throws `cancelled`. Timeouts distinguish first-byte and idle waits,
+including activity from pings. All paths reuse `LlmProviderError` and the existing plain
+error copy, with Anthropic and OpenAI labels.
+
+Keys reuse `ICredentialStore` and `ExpoSecureCredentialStore` entries `anthropic_api_key`
+and `openai_api_key`. Request-time key lookup requires secure storage for these providers;
+there is no build-environment fallback for them. Provider IDs are `anthropic` and `openai`.
 
 ### LMStudioAdapter
 
@@ -201,28 +246,28 @@ The LLM provider layer is critical for provenance because it's the only place we
 
 ### Raw Response Capture
 
-Every completion request must capture the **raw HTTP response bytes** exactly as received from the wire:
+Every completion uses the same fetch-level capture convention as OpenRouter: headers exposed by fetch are sorted and serialized as `name: value` lines, followed by a blank line and the unmodified UTF-8 response body. This is a canonical application capture, not the original HTTP wire framing. It includes:
 
 - Full response body (raw bytes, not parsed JSON)
-- Response headers as raw text (especially request IDs, timestamps, rate limit state)
+- Response headers exposed by fetch (especially request IDs, timestamps, rate limit state)
 - Request timing (latency in milliseconds)
 - Model identifier from response (may differ from request)
 
-**Critical**: The raw bytes are used to compute a SHA-256 hash for model-generated Node provenance. This hash must be computed *before* any parsing, transformation, or domain object creation. The hash ties the Node's integrity to the actual provider response.
+**Critical**: The capture is hashed for model-node provenance. Non-streaming bodies are hashed before JSON parsing; streaming bodies are accumulated before event parsing and hashed when the stream ends or is interrupted, before creating a model node.
 
 ### Capture Flow
 
 1. Receive HTTP response from provider
-2. Immediately compute SHA-256 hash of raw bytes (headers + body as single blob)
+2. Compute SHA-256 of the canonical headers + body capture (after accumulating a stream)
 3. Store raw bytes (will be compressed later by repository)
-4. Parse response into domain objects
+4. Return the parsed text and capture together for domain-node creation
 5. Return both parsed response AND raw bytes + hash to caller
 
 ### Capture Points
 
 - **Non-streaming**: Capture complete response bytes before parsing
 - **Streaming**: Accumulate all chunks, capture final assembled response bytes after stream completes
-- **Errors**: Capture error response body (still valuable evidence)
+- **Errors**: Read the error body for classification; without generated text, throw an error and persist no model node. After streamed text, return the partial capture with an interruption reason.
 
 ### RawResponseCapture Object
 
@@ -266,9 +311,18 @@ Models are fetched, not persisted, so users get new models without app updates.
 
 - **OpenRouter** — `OpenRouterModelCatalog` fetches the public `GET /api/v1/models` catalog and caches it for 24 hours in WatermelonDB local storage, serving the stale copy if a refresh fails
 - **LM Studio** — models are discovered live from the server
+- **Anthropic / OpenAI** — initialize the registry's concrete adapter with the stored key,
+  then call `fetchModels()` (`GET /v1/models`); `getCachedModels()` reads its in-memory
+  result. Anthropic follows `after_id` pagination and normalizes names, dates and token
+  limits. OpenAI's list lacks capability metadata: a conservative family filter retains
+  Responses text models and removes audio, image, embedding, moderation, search and
+  Chat Completions-only variants, plus o1-pro/o3-pro which do not stream. New unknown families can still be addressed by ID.
+  Both return the existing `OpenRouterCatalogModel` shape with native IDs and text
+  modalities; absent prices or limits remain unknown. Changing the key or endpoint clears
+  the cache. The UI task must wire these methods into the model browser and connection tests.
 - Users can always type a model identifier by hand
 
-The agent editor's model picker (`useModelPickerData`) reads both.
+The existing agent editor's model picker (`useModelPickerData`) reads OpenRouter and LM Studio.
 
 ---
 
@@ -289,3 +343,22 @@ For unit and integration testing:
 - Error injection for error handling testing
 - Latency simulation for timeout testing
 - No actual API calls in automated tests
+## Direct API references
+
+Checked against official documentation for this implementation:
+
+- Anthropic: [Messages](https://platform.claude.com/docs/en/api/messages/create),
+  [streaming](https://platform.claude.com/docs/en/build-with-claude/streaming),
+  [models](https://platform.claude.com/docs/en/api/models/list),
+  [errors](https://platform.claude.com/docs/en/api/errors),
+  [API versioning](https://platform.claude.com/docs/en/api/versioning),
+  [version migration](https://platform.claude.com/docs/en/api/migration-2026-10-21),
+  [authentication](https://platform.claude.com/docs/en/manage-claude/authentication).
+- OpenAI: [Responses](https://developers.openai.com/api/reference/resources/responses/methods/create),
+  [streaming guidance](https://developers.openai.com/api/docs/guides/streaming-responses),
+  [events](https://developers.openai.com/api/reference/resources/responses/streaming-events),
+  [models](https://developers.openai.com/api/reference/resources/models/methods/list),
+  [errors](https://developers.openai.com/api/docs/guides/error-codes),
+  [current model parameter limits](https://developers.openai.com/api/docs/guides/latest-model),
+  [o1-pro](https://developers.openai.com/api/docs/models/o1-pro),
+  [o3-pro](https://developers.openai.com/api/docs/models/o3-pro).

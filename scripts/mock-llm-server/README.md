@@ -1,11 +1,13 @@
 # mock-llm-server
 
-A stand-in for LM Studio so the app can be driven end to end without a model
-or a key. It serves only what the app's LM Studio adapter
-(`src/infrastructure/llm/LMStudioAdapter.ts`, `lmstudio/*`) calls:
+A deterministic stand-in for LM Studio, Anthropic Messages and OpenAI Responses,
+so adapters can be checked without a model or a real key:
 
 | Endpoint | Used by |
 |----------|---------|
+| `GET /v1/models` | Anthropic (`x-api-key`) and OpenAI model discovery |
+| `POST /v1/messages` | Anthropic plain JSON or named SSE events |
+| `POST /v1/responses` | OpenAI plain JSON or Responses SSE events |
 | `GET /api/v1/models` | Connections' "Test connection" and the agent editor's model list |
 | `POST /v1/chat/completions` with `"stream": true` (SSE) | send, regenerate, parallel continuations |
 | `POST /v1/chat/completions` with `"stream": false` | auto titles, and the fallback after a streaming `invalidRequest` |
@@ -24,6 +26,14 @@ node scripts/mock-llm-server/cli.ts --port 1235 --fail-every 4 --fail-status 422
 node scripts/mock-llm-server/cli.ts --port 1235 --fail-every 3 --fail-mode drop
 node scripts/mock-llm-server/cli.ts --port 1235 --fail-in-burst 2 --fail-status 422  # one parallel card fails
 ```
+
+For direct-adapter tests, initialize with any non-empty test key and override the full
+completion endpoint to `http://localhost:1235/v1/messages` or `/v1/responses`.
+Discovery uses `/v1/models` on the same origin. Use `--model gpt-4.1` for OpenAI:
+the default `mock-model` is deliberately outside its text-model family filter.
+Direct-provider Settings screens are separate work. These endpoints use the same pacing,
+token caps (`max_tokens` or `max_output_tokens`), failure injection, titles and independent
+parallel requests as the chat mock. Keys are not validated by this local fixture.
 
 Then in the app: Settings → Connections → LM Studio endpoint
 `http://localhost:1235` → Test connection, and create an agent on the LM Studio

@@ -4,7 +4,7 @@ import type {
   EditDialogueNodeUseCase,
   SendDialogueTurnUseCase,
 } from '@application/use-cases';
-import type { SelectableProvider } from '@domain/entities';
+import type { RoutableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import type { EditTarget } from '../composer/composer-mode';
 import { getProviderApiKey } from '../provider-key';
@@ -26,7 +26,7 @@ type UseSendTurnInput = {
   /** Shows a failed generation, with the fix when there is one. */
   readonly showProviderError: (
     caught: unknown,
-    provider?: SelectableProvider
+    provider?: RoutableProvider
   ) => void;
   readonly input: string;
   readonly setInput: (text: string) => void;

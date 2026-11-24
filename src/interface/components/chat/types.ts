@@ -2,7 +2,7 @@ import type { DialogueTurnSession } from '@application/use-cases';
 import type {
   NodeAuthorType,
   NodeViewStyle,
-  SelectableProvider,
+  RoutableProvider,
 } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 
@@ -16,7 +16,7 @@ export type ChatSessionModel = {
   /** The agent's name, as the composer addresses it ("Reply to …"). */
   readonly agentName: string;
   readonly modelIdentifier: string;
-  readonly provider: SelectableProvider;
+  readonly provider: RoutableProvider;
 };
 
 /**
