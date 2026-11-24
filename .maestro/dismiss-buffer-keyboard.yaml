@@ -1,0 +1,9 @@
+# Puts the keyboard away in a buffer without leaving it: a tap on the empty
+# band beside the pill (`buffer-control-bar`), the same on both platforms.
+# Maestro's hideKeyboard is the back key on Android and would leave the screen.
+appId: com.intrinsiclabs.aspengrove
+---
+- tapOn:
+    id: buffer-control-bar
+    point: '6%,50%'
+- waitForAnimationToEnd

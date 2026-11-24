@@ -52,13 +52,13 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     id: buffer-load-sample
 - assertVisible:
-    id: buffer-branch-value
+    id: buffer-branch-control
 - assertVisible: 'Branch 1 of 2'
 - waitForAnimationToEnd
 
 # Keyboard down: the pill floats centered above the bottom safe area.
 - assertVisible:
-    id: buffer-branch-dots
+    id: buffer-branch-control
 - takeScreenshot: 01-sample-pill
 
 # The second sibling has a different ending.

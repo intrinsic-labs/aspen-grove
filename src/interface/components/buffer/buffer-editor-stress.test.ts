@@ -22,6 +22,9 @@ const editor = (initial: PreviewState) => {
     get state() {
       return state;
     },
+    set state(value: PreviewState) {
+      state = value;
+    },
     get text() {
       return previewText(state);
     },
@@ -338,6 +341,40 @@ describe('iOS double onChange', () => {
     e.render();
     e.native('Th', caret(1));
     expect(e.text).toBe('Th');
+  });
+});
+
+describe('typing faster than React renders', () => {
+  it('measures each change from the previous native string', () => {
+    const e = editor(emptyPreview());
+    let typed = '';
+    for (const ch of 'The kettle') {
+      typed += ch;
+      e.native(typed, caret(typed.length - 1), false);
+    }
+    e.render();
+    expect(e.text).toBe('The kettle');
+    expect(e.runs).toEqual([['human', 'The kettle']]);
+  });
+
+  it('keeps autocorrect and a late render apart', () => {
+    const e = editor(emptyPreview());
+    e.native('alr', caret(0), false);
+    e.native('already', caret(3), false);
+    e.native('already ', caret(7), false);
+    // The parent renders each state it was sent, in order.
+    e.render();
+    expect(e.text).toBe('already ');
+  });
+
+  it('adopts a change from outside once nothing is pending', () => {
+    const e = editor(emptyPreview());
+    e.native('a', caret(0));
+    // The parent switched sibling: a rendered string the tracker never saw.
+    e.state = applyPreviewEdit(e.state, { start: 0, end: 1, inserted: 'Z' });
+    e.render();
+    e.native('Zb', caret(1));
+    expect(e.text).toBe('Zb');
   });
 });
 

@@ -8,8 +8,6 @@ import {
   type TextStyle,
 } from 'react-native';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
-import { KeyboardDoneBar } from '@/interface/ui/components/KeyboardDoneBar';
-import { useKeyboardAccessoryId } from '@/interface/ui/components/useKeyboardAccessoryId';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import type { PreviewEdit, PreviewRun } from './buffer-preview';
 import type { BufferSelection } from './derive-replacement';
@@ -45,11 +43,6 @@ export const BufferTextInput = ({
   onSelectionChange,
 }: BufferTextInputProps) => {
   const selection = useRef<BufferSelection | null>(null);
-  // A multiline input has no `keyboardDismissMode` (that is a ScrollView prop),
-  // so the keyboard goes away through the app's Done bar, as in its other
-  // full-screen editor: iOS only, and only while the keyboard is up. Android
-  // closes it with the back key.
-  const accessoryId = useKeyboardAccessoryId('buffer-document-keyboard');
   const tracker = useRef(createChangeTracker(text));
   tracker.current.sync(text);
 
@@ -75,41 +68,37 @@ export const BufferTextInput = ({
   );
 
   return (
-    <>
-      <AppTextInput
-        testID="buffer-document"
-        multiline
-        scrollEnabled
-        editable={editable}
-        autoCorrect
-        textAlignVertical="top"
-        placeholder={placeholder}
-        placeholderTextColor={bufferTokens.colors.placeholder}
-        onChange={onChange}
-        onSelectionChange={onSelection}
-        inputAccessoryViewID={accessoryId}
-        style={[
-          styles.input,
-          textStyle,
-          { color: bufferTokens.colors.humanText, paddingTop: topInset },
-        ]}
-      >
-        {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
-        {runs.map((run, index) => (
-          <Text
-            key={index}
-            style={
-              run.author === 'model'
-                ? { color: bufferTokens.colors.modelText }
-                : undefined
-            }
-          >
-            {run.text}
-          </Text>
-        ))}
-      </AppTextInput>
-      <KeyboardDoneBar nativeID={accessoryId} />
-    </>
+    <AppTextInput
+      testID="buffer-document"
+      multiline
+      scrollEnabled
+      editable={editable}
+      autoCorrect
+      textAlignVertical="top"
+      placeholder={placeholder}
+      placeholderTextColor={bufferTokens.colors.placeholder}
+      onChange={onChange}
+      onSelectionChange={onSelection}
+      style={[
+        styles.input,
+        textStyle,
+        { color: bufferTokens.colors.humanText, paddingTop: topInset },
+      ]}
+    >
+      {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
+      {runs.map((run, index) => (
+        <Text
+          key={index}
+          style={
+            run.author === 'model'
+              ? { color: bufferTokens.colors.modelText }
+              : undefined
+          }
+        >
+          {run.text}
+        </Text>
+      ))}
+    </AppTextInput>
   );
 };
 

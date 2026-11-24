@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   KeyboardAvoidingView,
   useKeyboardState,
@@ -89,8 +89,14 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           placeholder="Start writing"
           onReplace={onReplace}
         />
-        <View
+        {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
+            an input accessory bar breaks double-tap word selection, so the
+            empty band around the pill puts the keyboard away on a tap, as
+            Home's greeting does. Android also has the back key. */}
+        <Pressable
           testID="buffer-control-bar"
+          onPress={Keyboard.dismiss}
+          accessible={false}
           style={[
             styles.bar,
             {
@@ -120,7 +126,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
               />
             </View>
           ) : null}
-        </View>
+        </Pressable>
       </KeyboardAvoidingView>
       <HeaderScrollEdge />
     </AppScreen>
@@ -132,7 +138,10 @@ const styles = StyleSheet.create({
   bar: {
     // The pill floats in this band, centered and never full width; the
     // document above ends where the band begins, so its last line clears it.
+    // Always as tall as the pill, so it is a tap target for putting the
+    // keyboard away and the document does not jump when the pill appears.
     alignItems: 'center',
+    minHeight: bar.topGap + control.height,
     paddingTop: bar.topGap,
   },
   fixtures: { flexDirection: 'row', gap: control.height / 2 },
