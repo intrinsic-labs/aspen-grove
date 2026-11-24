@@ -3,11 +3,11 @@ import {
   describeProviderError,
   lmStudioUnreachableCardMessage,
 } from '@application/services/llm';
-import type { SelectableProvider } from '@domain/entities';
+import type { RoutableProvider } from '@domain/entities';
 
 export type CardFailureContext = {
   /** The provider the run streams from. */
-  readonly provider: SelectableProvider;
+  readonly provider: RoutableProvider;
   /** The LM Studio address saved in Connections, to name when it isn't answering. */
   readonly lmstudioEndpoint?: string;
 };

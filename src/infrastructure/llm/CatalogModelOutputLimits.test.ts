@@ -32,3 +32,23 @@ describe('CatalogModelOutputLimits', () => {
     ).resolves.toBeUndefined();
   });
 });
+
+it('reads discovered direct-provider output limits without a network request', async () => {
+  const limits = new CatalogModelOutputLimits(catalog([]), {
+    anthropic: {
+      getCachedModels: () => [
+        {
+          id: 'claude-example',
+          displayName: 'Claude',
+          maxCompletionTokens: 8192,
+        },
+      ],
+    },
+  });
+  await expect(
+    limits.maxOutputTokens('anthropic', 'claude-example')
+  ).resolves.toBe(8192);
+  await expect(
+    limits.maxOutputTokens('openai', 'gpt-example')
+  ).resolves.toBeUndefined();
+});

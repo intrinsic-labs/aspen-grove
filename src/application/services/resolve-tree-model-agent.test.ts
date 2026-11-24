@@ -131,7 +131,7 @@ describe('resolveTreeModelAgent', () => {
 
   it("adopts the default when the tree's agent is on a provider the app can't route", async () => {
     const legacy = modelAgent('01KOLD00000000000000000000', {
-      modelRef: 'anthropic:claude-sonnet-4-20250514' as Agent['modelRef'],
+      modelRef: 'google:legacy-model' as Agent['modelRef'],
     });
     const fallback = modelAgent('01KDEF00000000000000000000');
     const { dependencies, updates } = setup({ agents: [legacy, fallback] });
@@ -147,7 +147,7 @@ describe('resolveTreeModelAgent', () => {
 
   it('opens without an agent when the only default is unroutable too', async () => {
     const legacy = modelAgent('01KOLD00000000000000000000', {
-      modelRef: 'openai:gpt-4o' as Agent['modelRef'],
+      modelRef: 'hyperbolic:legacy-model' as Agent['modelRef'],
     });
     const { dependencies, updates } = setup({ agents: [legacy] });
 
@@ -195,6 +195,18 @@ describe('isUsableTreeModelAgent', () => {
     ).toBe(true);
   });
 
+  it.each(['anthropic:claude-opus-5-5', 'openai:gpt-6.2-astra'])(
+    'accepts direct-provider model %s',
+    (ref) => {
+      expect(
+        isUsableTreeModelAgent(
+          modelAgent('01KDIRECT', { modelRef: ref as Agent['modelRef'] }),
+          treeId
+        )
+      ).toBe(true);
+    }
+  );
+
   it.each([
     ['nothing', null],
     ['an archived agent', modelAgent('01KC', { archivedAt: now })],
@@ -202,14 +214,16 @@ describe('isUsableTreeModelAgent', () => {
     ['a human agent', modelAgent('01KE', { type: 'human' })],
     ['another tree’s agent', modelAgent('01KF', { ownerTreeId: otherTreeId })],
     [
-      'an unroutable anthropic agent',
+      'an unroutable google agent',
       modelAgent('01KG', {
-        modelRef: 'anthropic:claude-sonnet-4-20250514' as Agent['modelRef'],
+        modelRef: 'google:legacy-model' as Agent['modelRef'],
       }),
     ],
     [
-      'an unroutable openai agent',
-      modelAgent('01KH', { modelRef: 'openai:gpt-4o' as Agent['modelRef'] }),
+      'an unroutable hyperbolic agent',
+      modelAgent('01KH', {
+        modelRef: 'hyperbolic:legacy-model' as Agent['modelRef'],
+      }),
     ],
   ])('rejects %s', (_label, agent) => {
     expect(isUsableTreeModelAgent(agent, treeId)).toBe(false);

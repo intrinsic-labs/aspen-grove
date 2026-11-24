@@ -2,7 +2,7 @@ import { useCallback, type MutableRefObject } from 'react';
 import type { IEdgeRepository } from '@application/repositories';
 import type { ICredentialStore } from '@application/services/security';
 import type { GenerateDialogueContinuationUseCase } from '@application/use-cases';
-import type { SelectableProvider } from '@domain/entities';
+import type { RoutableProvider } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { getProviderApiKey } from '../provider-key';
 import { NEEDS_AGENT_MESSAGE } from '../session/session-model';
@@ -28,7 +28,7 @@ type UseRegenerateFromNodeInput = {
   /** Shows a failed generation, with the fix when there is one. */
   readonly showProviderError: (
     caught: unknown,
-    provider?: SelectableProvider
+    provider?: RoutableProvider
   ) => void;
   readonly rows: readonly ChatRow[];
   readonly setRows: (

@@ -4,17 +4,21 @@ import {
   type IProviderRegistry,
 } from '@application/services/llm';
 import {
-  SELECTABLE_PROVIDERS,
+  ROUTABLE_PROVIDERS,
   type Agent,
-  type SelectableProvider,
+  type RoutableProvider,
 } from '@domain/entities';
 import type { ModelRef } from '@domain/value-objects';
 import type { LMStudioAdapter } from './LMStudioAdapter';
+import type { AnthropicAdapter } from './AnthropicAdapter';
+import type { OpenAIAdapter } from './OpenAIAdapter';
 import type { OpenRouterAdapter } from './OpenRouterAdapter';
 
 type ProviderAdapters = {
   readonly openrouter: OpenRouterAdapter;
   readonly lmstudio: LMStudioAdapter;
+  readonly anthropic: AnthropicAdapter;
+  readonly openai: OpenAIAdapter;
 };
 
 /**
@@ -31,7 +35,7 @@ export class ProviderRegistry implements IProviderRegistry {
     this.adapters = adapters;
   }
 
-  getProvider(provider: SelectableProvider): ILlmProvider {
+  getProvider(provider: RoutableProvider): ILlmProvider {
     const adapter = this.adapters[provider];
     if (!adapter) {
       throw new Error(`No adapter registered for provider: ${provider}`);
@@ -58,15 +62,20 @@ export class ProviderRegistry implements IProviderRegistry {
     return this.getProvider(providerName);
   }
 
-  getAvailableProviders(): readonly SelectableProvider[] {
-    return SELECTABLE_PROVIDERS;
+  getAvailableProviders(): readonly RoutableProvider[] {
+    return ROUTABLE_PROVIDERS;
   }
 
-  /**
-   * Get the OpenRouter adapter specifically. Used for OpenRouter-specific
-   * concerns (e.g., catalog discovery) where the generic interface isn't
-   * enough. Prefer `getProviderForAgent` for normal request routing.
-   */
+  /** Authenticated direct-provider catalog discovery. */
+  getAnthropicAdapter(): AnthropicAdapter {
+    return this.adapters.anthropic;
+  }
+
+  getOpenAIAdapter(): OpenAIAdapter {
+    return this.adapters.openai;
+  }
+
+  /** OpenRouter-specific catalog concerns. Prefer per-agent routing for generation. */
   getOpenRouterAdapter(): OpenRouterAdapter {
     return this.adapters.openrouter;
   }

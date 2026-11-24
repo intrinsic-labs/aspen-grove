@@ -1,3 +1,4 @@
+import { AnthropicAdapter, OpenAIAdapter } from '@infrastructure/llm';
 import {
   createContext,
   useContext,
@@ -152,11 +153,16 @@ const buildAppServices = (): AppServices => {
     providerRegistry: new ProviderRegistry({
       openrouter: openRouterAdapter,
       lmstudio: lmStudioAdapter,
+      anthropic: new AnthropicAdapter(),
+      openai: new OpenAIAdapter(),
     }),
     credentialStore: new ExpoSecureCredentialStore(),
     openRouterCatalog,
   } as const;
-  const modelOutputLimits = new CatalogModelOutputLimits(openRouterCatalog);
+  const modelOutputLimits = new CatalogModelOutputLimits(openRouterCatalog, {
+    anthropic: adapters.providerRegistry.getAnthropicAdapter(),
+    openai: adapters.providerRegistry.getOpenAIAdapter(),
+  });
 
   const useCases = {
     createDialogueLoomTreeUseCase: new CreateDialogueLoomTreeUseCase({

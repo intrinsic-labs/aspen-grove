@@ -75,10 +75,7 @@ export type CompletionResponse = {
 };
 
 export type StreamInterruptionReason =
-  | 'timeout'
-  | 'network'
-  | 'provider_error'
-  | 'cancelled';
+  'timeout' | 'network' | 'provider_error' | 'cancelled';
 
 export type StreamChunk = {
   readonly type: 'text' | 'done' | 'error';
@@ -98,6 +95,8 @@ export type LlmProviderInitializeOptions = {
   readonly endpoint?: string;
   readonly appName?: string;
   readonly appUrl?: string;
+  /** Anthropic keys not scoped to a workspace require an explicit workspace ID. */
+  readonly workspaceId?: string;
 };
 
 export type LlmProviderErrorCode =
@@ -136,7 +135,7 @@ export class LlmProviderError extends Error {
 }
 
 /**
- * App-layer contract for provider adapters (OpenRouter and LM Studio).
+ * App-layer contract for provider adapters.
  */
 export interface ILlmProvider {
   readonly provider: Provider;

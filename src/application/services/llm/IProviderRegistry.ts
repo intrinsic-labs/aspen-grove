@@ -1,4 +1,4 @@
-import type { Agent, SelectableProvider } from '@domain/entities';
+import type { Agent, RoutableProvider } from '@domain/entities';
 import type { ModelRef } from '@domain/value-objects';
 import type { ILlmProvider } from './ILlmProvider';
 
@@ -14,7 +14,7 @@ export interface IProviderRegistry {
   /**
    * Look up an adapter by provider name. Throws if no adapter is registered.
    */
-  getProvider(provider: SelectableProvider): ILlmProvider;
+  getProvider(provider: RoutableProvider): ILlmProvider;
 
   /**
    * Resolve the adapter responsible for a given Agent's model. The provider
@@ -34,5 +34,5 @@ export interface IProviderRegistry {
   /**
    * Enumerate the providers this registry can route to.
    */
-  getAvailableProviders(): readonly SelectableProvider[];
+  getAvailableProviders(): readonly RoutableProvider[];
 }

@@ -1,4 +1,13 @@
 import {
+  directCompletion,
+  directError,
+  normalizeBody,
+  streamStart,
+  streamDelta,
+  streamEnd,
+  type WireProtocol,
+} from './direct-wire.ts';
+import {
   createServer,
   type IncomingMessage,
   type Server,
@@ -6,14 +15,7 @@ import {
 } from 'node:http';
 import type { MockConfig } from './config.ts';
 import { planRequest, type RequestPlan } from './failure-plan.ts';
-import {
-  completionPayload,
-  errorPayload,
-  modelsPayload,
-  sseChunk,
-  SSE_DONE,
-  usageFor,
-} from './payloads.ts';
+import { errorPayload, modelsPayload, usageFor } from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
 import { requestSummary } from './request-summary.ts';
 import { isTitleRequest, titleText } from './title-request.ts';
@@ -50,9 +52,8 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * The subset of LM Studio's HTTP API the app's adapter calls:
- * `GET /api/v1/models` (model picker and Connections' test) and
- * `POST /v1/chat/completions`, streamed (SSE) or not (titles, fallback).
+ * Local protocol fixtures for LM Studio chat, Anthropic Messages and OpenAI Responses.
+ * All share deterministic replies, pacing and failure plans; direct-wire owns framing.
  */
 export const createMockServer = (config: MockConfig, log: Log): Server => {
   let requestCount = 0;
@@ -67,6 +68,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
 
   const streamReply = async (
     res: ServerResponse,
+    protocol: WireProtocol,
     meta: { id: string; model: string; tokens: string[]; capped: boolean },
     plan: RequestPlan,
     prompt: string,
@@ -78,6 +80,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
       Connection: 'keep-alive',
       'x-request-id': meta.id,
     });
+    res.write(streamStart(protocol, meta, usageFor(prompt, 0)));
     for (let i = 0; i < meta.tokens.length; i++) {
       await sleep(tokenMs);
       if (isClosed()) {
@@ -87,16 +90,9 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         res.socket?.destroy();
         return `dropped after ${i} tokens (injected)`;
       }
-      res.write(sseChunk({ ...meta, content: meta.tokens[i] }));
+      res.write(streamDelta(protocol, meta, meta.tokens[i]));
     }
-    res.write(
-      sseChunk({
-        ...meta,
-        finishReason: meta.capped ? 'length' : 'stop',
-        usage: usageFor(prompt, meta.tokens.length),
-      })
-    );
-    res.end(SSE_DONE);
+    res.end(streamEnd(protocol, meta, usageFor(prompt, meta.tokens.length)));
     return `done, ${meta.tokens.length} tokens`;
   };
 
@@ -104,6 +100,12 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     req: IncomingMessage,
     res: ServerResponse
   ): Promise<void> => {
+    const protocol: WireProtocol =
+      req.url?.split('?')[0] === '/v1/messages'
+        ? 'anthropic'
+        : req.url?.split('?')[0] === '/v1/responses'
+          ? 'openai'
+          : 'chat';
     const number = ++requestCount;
     const id = `mock-${number}`;
     burstSize = openCompletions === 0 ? 1 : burstSize + 1;
@@ -114,9 +116,16 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     });
     let body: ChatBody;
     try {
-      body = JSON.parse(await readBody(req)) as ChatBody;
+      body = normalizeBody(
+        JSON.parse(await readBody(req)) as Record<string, unknown>,
+        protocol
+      ) as ChatBody;
     } catch {
-      sendJson(res, 400, errorPayload('Request body is not JSON.'));
+      sendJson(
+        res,
+        400,
+        directError(protocol, 400, 'Request body is not JSON.')
+      );
       return;
     }
     const model = typeof body.model === 'string' ? body.model : '';
@@ -127,7 +136,9 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     const started = Date.now();
     active += 1;
     const burst = burstPosition ? ` burst=${burstPosition}` : '';
-    log(`#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active}${burst} ${requestSummary(body)}`);
+    log(
+      `#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active}${burst} ${requestSummary(body)}`
+    );
 
     let closed = false;
     res.on('close', () => {
@@ -136,14 +147,25 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
 
     let result: string;
     try {
-      if (plan.kind === 'missing-model' || (model && model !== config.modelId)) {
-        sendJson(res, 404, errorPayload(`Model "${model}" not found.`));
+      if (
+        plan.kind === 'missing-model' ||
+        (model && model !== config.modelId)
+      ) {
+        sendJson(
+          res,
+          404,
+          directError(protocol, 404, `Model "${model}" not found.`)
+        );
         result = '404 model not found';
       } else if (plan.kind === 'status') {
         sendJson(
           res,
           plan.status,
-          errorPayload(`Injected failure on request #${number}.`)
+          directError(
+            protocol,
+            plan.status,
+            `Injected failure on request #${number}.`
+          )
         );
         result = `${plan.status} (injected)`;
       } else if (isTitleRequest(body)) {
@@ -153,7 +175,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         sendJson(
           res,
           200,
-          completionPayload({
+          directCompletion(protocol, {
             id,
             model: config.modelId,
             text,
@@ -174,7 +196,14 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         const capped = count < config.words;
         const meta = { id, model: config.modelId, tokens, capped };
         if (stream) {
-          result = await streamReply(res, meta, plan, prompt, () => closed);
+          result = await streamReply(
+            res,
+            protocol,
+            meta,
+            plan,
+            prompt,
+            () => closed
+          );
         } else {
           await sleep(tokenMs * tokens.length);
           if (plan.kind === 'drop') {
@@ -184,7 +213,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
             sendJson(
               res,
               200,
-              completionPayload({
+              directCompletion(protocol, {
                 id,
                 model: config.modelId,
                 text: tokens.join(''),
@@ -200,17 +229,45 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     } finally {
       active -= 1;
     }
-    log(`#${number} end ${result} in ${Date.now() - started}ms active=${active}`);
+    log(
+      `#${number} end ${result} in ${Date.now() - started}ms active=${active}`
+    );
   };
 
   return createServer((req, res) => {
     const path = (req.url ?? '').split('?')[0];
     if (req.method === 'GET' && path === '/api/v1/models') {
       log('GET /api/v1/models');
-      sendJson(res, 200, modelsPayload([config.modelId], [config.missingModelId]));
+      sendJson(
+        res,
+        200,
+        modelsPayload([config.modelId], [config.missingModelId])
+      );
       return;
     }
-    if (req.method === 'POST' && path === '/v1/chat/completions') {
+    if (req.method === 'GET' && path === '/v1/models') {
+      const anthropic = Boolean(req.headers['x-api-key']);
+      sendJson(res, 200, {
+        data: [config.modelId, config.missingModelId].map((id) =>
+          anthropic
+            ? {
+                id,
+                type: 'model',
+                display_name: id,
+                created_at: '2026-01-01T00:00:00Z',
+                max_input_tokens: 8192,
+                max_tokens: 4096,
+              }
+            : { id, object: 'model', created: 1767225600, owned_by: 'mock' }
+        ),
+        has_more: false,
+      });
+      return;
+    }
+    if (
+      req.method === 'POST' &&
+      ['/v1/chat/completions', '/v1/messages', '/v1/responses'].includes(path)
+    ) {
       handleChat(req, res).catch((error: unknown) => {
         log(`chat handler error: ${String(error)}`);
         if (!res.headersSent) {

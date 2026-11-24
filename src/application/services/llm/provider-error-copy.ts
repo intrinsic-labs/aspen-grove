@@ -3,6 +3,8 @@ import { LlmProviderError, type LlmProviderErrorCode } from './ILlmProvider';
 
 const PROVIDER_LABELS: Partial<Record<Provider, string>> = {
   openrouter: 'OpenRouter',
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
   lmstudio: 'LM Studio',
 };
 

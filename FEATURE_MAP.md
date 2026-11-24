@@ -132,8 +132,9 @@ stays until the user makes one.
 - **Selector:** working — `app-bootstrap-loading` (spinner), `app-bootstrap-error` (failure text)
 - **Code:** `src/interface/composition/AppServicesProvider.tsx#AppBootstrapGate`, `src/infrastructure/bootstrap/run-startup-orchestrator.ts`, `src/application/use-cases/InitializeAppDefaultsUseCase.ts`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, through the Watermelon
-  repositories (schema v9 adds `user_preferences.onboarding_completed_at`, v10
-  `user_preferences.tree_onboarding_completed_at`)
+  repositories; the composition root also registers OpenRouter, LM Studio, Anthropic and OpenAI
+  adapters (direct-provider UI is separate work). Schema v9 adds `user_preferences.onboarding_completed_at`, v10
+  `user_preferences.tree_onboarding_completed_at`
 - **Status:** live
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
   The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
@@ -210,7 +211,8 @@ stays until the user makes one.
 - **Selector:** working — `home-composer`, `home-composer-input`, `home-composer-send`, `home-composer-input-focus-stroke` (drawn only while focused)
 - **Code:** `src/interface/components/home/HomeComposer.tsx`, `src/interface/components/home/home-draft-store.ts`, `src/interface/components/chat/session/return-draft-to-home.ts`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-field-metrics.ts`, `src/interface/hooks/useCreateLoomTree.ts`, `src/interface/components/chat/turns/first-message-store.ts`, `src/interface/components/chat/turns/useSendFirstMessage.ts`, `src/interface/components/chat/turns/useSendTurn.ts#sendPrompt`, `src/application/use-cases/CreateDialogueLoomTreeUseCase.ts`, `src/application/services/resolve-default-model-agent.ts`
 - **Backend:** WatermelonDB `loom_trees`, `nodes` (root), `paths`, `path_states`; reads `agents`
-  and `user_preferences.default_model_agent_id`; then as `chat.composer`
+  and `user_preferences.default_model_agent_id`; then per-agent routing and secure-key
+  lookup as `chat.composer` (OpenRouter, LM Studio, Anthropic or OpenAI)
 - **Status:** live
 - **Notes:** The field focuses itself once, when Home first appears after launch (not over
   onboarding), as Latent Spaces' does. The message waits in memory until the tree has loaded,
@@ -425,7 +427,8 @@ stays until the user makes one.
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<role>-<nodeId>` (role is `human`, `model` or `system`), `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
 - **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
-  via the Watermelon repositories
+  via the Watermelon repositories; per-agent routing accepts `openrouter:`, `lmstudio:`,
+  `anthropic:` and `openai:` modelRefs. Credential and failure helpers accept all four.
 - **Status:** live
 - **Notes:** Messages scroll under the transparent header. On iOS 26 the bar's automatic
   scroll-edge effect fades them out under the title; Android has none, so
@@ -488,11 +491,14 @@ stays until the user makes one.
   the field, keyboard up or down.
 - **Reach:** P2 → `chat-composer-input` → `chat-composer-send`.
 - **Requires:** A model agent whose provider is reachable: an OpenRouter key, or an LM Studio
-  server at the configured endpoint.
+  server at the configured endpoint; direct-provider agents require their key in secure storage.
 - **Selector:** working — `chat-composer` (container), `chat-composer-input`, `chat-composer-send`, `chat-composer-stop`, `chat-composer-bottom-band`, `chat-composer-input-focus-stroke` (the green stroke, drawn only while the input is focused)
 - **Code:** `src/interface/components/chat/ChatComposer.tsx`, `src/interface/components/chat/composer/ComposerField.tsx`, `src/interface/components/chat/composer/useRemeasureOnSetText.ts`, `src/interface/components/chat/composer/ComposerBottomBand.tsx`, `src/interface/ui/components/MaterialView.tsx`, `src/interface/ui/components/blur/`, `src/interface/components/chat/composer/ComposerSendButton.tsx`, `src/interface/components/chat/composer/composer-mode.ts`, `src/interface/components/chat/composer/composer-view.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/interface/components/chat/turns/stopped-generation.ts`, `src/interface/components/chat/composer/useComposerDraft.ts`, `src/interface/components/chat/useStreamingAssistantRow.ts`, `src/application/use-cases/SendDialogueTurnUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/context/`, `src/infrastructure/llm/`
 - **Backend:** OpenRouter `POST https://openrouter.ai/api/v1/chat/completions` (streaming) or
-  LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible). Writes WatermelonDB
+  LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible), Anthropic
+  `POST https://api.anthropic.com/v1/messages`, or OpenAI
+  `POST https://api.openai.com/v1/responses`. Direct providers use the same raw-capture
+  and Stop contract; their connection and picker UI is separate work. Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
@@ -507,7 +513,8 @@ stays until the user makes one.
   exactly as a stopped parallel card is, and no error shows; a stop before any text keeps the user's message
   and saves no reply. Leaving the screen stops it too. Saving an edit streams nothing and
   shows a non-actionable `···` instead. The provider key is read from SecureStore first, then from
-  `EXPO_PUBLIC_*` env vars (`src/interface/components/chat/provider-key.ts`). A missing
+  the existing OpenRouter/LM Studio `EXPO_PUBLIC_*` env fallbacks
+  (`src/interface/components/chat/provider-key.ts`). Direct-provider keys require secure storage. A missing
   OpenRouter key throws `MissingProviderKeyError`, shown as "Add your OpenRouter key in
   Connections to generate." with `chat-error-action`. The field is a thin material
   (`MaterialView`): on iOS the system thin material; on Android it blurs the screen's
@@ -567,7 +574,8 @@ stays until the user makes one.
 - **Requires:** A message, plus a reachable provider.
 - **Selector:** none — native context menu item; reach via long-press on `chat-message-row-<role>-<nodeId>`
 - **Code:** `src/interface/components/chat/turns/useRegenerateFromNode.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/turns/regenerate-plan.ts`, `src/interface/components/chat/turns/useStopGeneration.ts`, `src/application/use-cases/GenerateDialogueContinuationUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/create-verified-model-continuation-node.ts`
-- **Backend:** The same provider call as `chat.composer`. Writes `nodes`, `edges`,
+- **Backend:** The same per-agent provider call as `chat.composer` (including Anthropic Messages
+  and OpenAI Responses). Uses discovered output limits without fetching on send. Writes `nodes`, `edges`,
   `raw_api_responses` and `path_states`.
 - **Status:** live
 - **Notes:** While it streams, `chat-composer-stop` stops it as it stops a send: streamed
@@ -589,7 +597,7 @@ stays until the user makes one.
 - **Code:** `src/interface/components/chat/composer/useEditNode.ts#startEditForNode`, `src/interface/components/chat/composer/useComposerFocus.ts#focusComposerAtEnd`, `src/interface/ui/components/native-menu-dismissal.ts`, `src/interface/components/chat/turns/useSendTurn.ts`, `src/application/use-cases/EditDialogueNodeUseCase.ts`
 - **Backend:** WatermelonDB `nodes` (new node with `edited_from`, authored by the user; an
   edited system message stays `system`), `edges`, `path_nodes`, `path_states`. No provider
-  call: saving an edit generates nothing (use `chat.regenerate` for a reply).
+  call for any provider: saving an edit generates nothing (use `chat.regenerate` for a reply).
 - **Status:** live
 - **Notes:** Edit from the Node Info sheet closes the sheet, then starts the same flow once
   it has gone on iOS, straight away on Android (`useNodeSheet`). The composer takes focus,
@@ -712,8 +720,8 @@ stays until the user makes one.
   wait while several stream.
 - **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>` (the plain line), `chat-continuation-slot-error-toggle-<slot>` (the failed card's pressable), `chat-continuation-slot-error-detail-<slot>` (shown once tapped); once saved, the card's pressable is `chat-continuation-card-<nodeId>`
 - **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/parallel/FailedCardBody.tsx`, `src/interface/components/chat/parallel/continuation-rail-view.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
-- **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter
-  or LM Studio), one per card, not the provider's `n`. Writes WatermelonDB `nodes`, `edges`,
+- **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter,
+  LM Studio, Anthropic or OpenAI), one independent abort controller per card, not a provider `n`. Writes WatermelonDB `nodes`, `edges`,
   `edge_sources` and `raw_api_responses` per saved card and touches
   `loom_trees.last_message_at`; the active path changes only when a card is made current. The
   count is remembered app-wide in WatermelonDB local storage
@@ -1249,7 +1257,9 @@ stays until the user makes one.
 - **Selector:** working — `agent-editor-provider` and `agent-editor-model` (menu rows; LM Studio's model is a menu row too), `agent-editor-model-list-screen`, `agent-editor-model-list`, rows `agent-editor-model-option-<model id>`, `agent-editor-model-custom`, `agent-editor-model-error`; the search field is the native header search bar (tap its "Search models" placeholder); Provider and LM Studio model menu items none — native context menu item; reach via a tap on `agent-editor-provider` or `agent-editor-model`
 - **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` (cached for
-  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`
+  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`.
+  Backend adapters also expose authenticated Anthropic/OpenAI `GET /v1/models` through
+  `fetchModels()`, returning `OpenRouterCatalogModel[]`; picker integration is separate work.
 - **Status:** live
 - **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. The
   browser lists every model (no cap); search to narrow. A failed LM Studio discovery reads
