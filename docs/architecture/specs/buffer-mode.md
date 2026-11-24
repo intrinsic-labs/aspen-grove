@@ -73,6 +73,15 @@ For model-authored nodes that have been edited, we diff the original content aga
 
 This means a model response where the user tweaks a few words will show mostly blue with the edits in default color.
 
+### Visual Decisions (developer preview, Phase 1b)
+
+How the writing surface looks and behaves. Aspen Grove is dark only, so there is one palette. The values live in `src/interface/ui/value-objects/tokens/buffer.ts`.
+
+- **A quiet document, not a chat.** One natively scrolling multiline text input in the app's reading face (Cardo, at the size set in Settings), with generous margins (24 pt) and a line pitch of 1.6 × the font size. No bubbles, rules or boundary glyphs; selecting and copying never include a boundary.
+- **Authorship by color alone.** Human text uses the app's usual foreground; model text is a muted blue (`#7FA6E6`, 8.5:1 against black). Text typed or pasted into a model run is human, so a single sentence can read blue, then white, then blue again.
+- **Sibling control.** Branches at a position are switched with a compact bar docked under the document: a mono label ("Branch 1 of 2") between previous and next buttons. It also answers a horizontal swipe on the label and is one adjustable accessibility element (increment and decrement, value "Branch 1 of 2"). The bar sits in the column below the text, above the keyboard and the safe area, so it never covers text.
+- **Preview scope.** In the developer preview (`EXPO_PUBLIC_BUFFER_PREVIEW=1`) an empty buffer offers "Load sample": a human opening, two model endings and a human word inside model text, held in memory. Nothing typed is saved yet; switching a sample's ending keeps edits to the shared opening.
+
 ---
 
 ## The Two Operations
@@ -411,3 +420,4 @@ The model preserves the full Loom Tree semantics (immutable nodes, provenance, b
 ## Changelog
 
 - **v0.1** (Initial): Core spec based on design discussion — editing vs branching distinction, hypergraph support for versions, working buffer model
+- **v0.2** (Buffer editor preview): Visual decisions for the writing surface and sibling control (developer preview, Phase 1b).
