@@ -13,8 +13,10 @@ import { AppScreen, AppText } from '@/interface/ui/value-objects';
 import { messageFontFamily } from '@/interface/ui/value-objects/fonts';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
+import { BufferFixtureLink } from './BufferFixtureLink';
 import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferTextInput } from './BufferTextInput';
+import { stressPreview } from './buffer-preview-fixture';
 import {
   applyPreviewEdit,
   emptyPreview,
@@ -105,20 +107,18 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
               onSelect={onSelectSibling}
             />
           ) : text.length === 0 ? (
-            <Pressable
-              testID="buffer-load-sample"
-              onPress={() => setPreview(samplePreview())}
-              hitSlop={control.hitSlop}
-              style={styles.sample}
-            >
-              <AppText
-                variant="mono"
-                tone="secondary"
-                style={styles.sampleText}
-              >
-                Load sample
-              </AppText>
-            </Pressable>
+            <View style={styles.fixtures}>
+              <BufferFixtureLink
+                testID="buffer-load-sample"
+                label="Load sample"
+                onPress={() => setPreview(samplePreview())}
+              />
+              <BufferFixtureLink
+                testID="buffer-load-stress"
+                label="Load 30k"
+                onPress={() => setPreview(stressPreview())}
+              />
+            </View>
           ) : null}
         </View>
       </KeyboardAvoidingView>
@@ -135,10 +135,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: bar.topGap,
   },
-  sample: {
-    minHeight: control.height,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sampleText: { fontSize: control.labelSize },
+  fixtures: { flexDirection: 'row', gap: control.height / 2 },
 });
