@@ -19,7 +19,8 @@ import { type BufferSelection, deriveReplacement } from './derive-replacement';
  * equal to the baseline is no change.
  */
 export type ChangeTracker = {
-  readonly sync: (rendered: string) => void;
+  /** The text that was replaced when `rendered` is a change from outside, else null. */
+  readonly sync: (rendered: string) => string | null;
   readonly receive: (
     next: string,
     selection: BufferSelection | null
@@ -34,12 +35,15 @@ export const createChangeTracker = (initial: string): ChangeTracker => {
       const at = pending.indexOf(rendered);
       if (at >= 0) {
         pending = pending.slice(at + 1);
-        return;
+        return null;
       }
-      if (rendered !== baseline) {
-        baseline = rendered;
-        pending = [];
+      if (rendered === baseline) {
+        return null;
       }
+      const replaced = baseline;
+      baseline = rendered;
+      pending = [];
+      return replaced;
     },
     receive: (next, selection) => {
       if (next === baseline) {

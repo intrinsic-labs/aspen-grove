@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   type NativeSyntheticEvent,
   StyleSheet,
@@ -44,7 +44,14 @@ export const BufferTextInput = ({
 }: BufferTextInputProps) => {
   const selection = useRef<BufferSelection | null>(null);
   const tracker = useRef(createChangeTracker(text));
-  tracker.current.sync(text);
+  // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
+  // native input: Android otherwise keeps the end of the new text in view
+  // instead of its start.
+  const [generation, setGeneration] = useState(0);
+  const replaced = tracker.current.sync(text);
+  if (replaced !== null && startsNewDocument(replaced, text)) {
+    setGeneration(generation + 1);
+  }
 
   const onChange = useCallback(
     (event: NativeSyntheticEvent<TextInputChangeEventData>) => {
@@ -69,6 +76,7 @@ export const BufferTextInput = ({
 
   return (
     <AppTextInput
+      key={generation}
       testID="buffer-document"
       multiline
       scrollEnabled
@@ -101,6 +109,10 @@ export const BufferTextInput = ({
     </AppTextInput>
   );
 };
+
+/** A sibling switch keeps the shared opening; a fixture load shares nothing. */
+const startsNewDocument = (before: string, after: string) =>
+  after.length > 0 && before.charAt(0) !== after.charAt(0);
 
 const styles = StyleSheet.create({
   input: {

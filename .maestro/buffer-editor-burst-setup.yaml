@@ -1,0 +1,15 @@
+# Opens a buffer with the 30,000-character fixture loaded and stops, so a
+# profiler can attach before buffer-editor-burst.yaml types into it.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
+- runFlow: open-home-menu.yaml
+- tapOn: 'New Buffer'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- tapOn:
+    id: buffer-load-stress
+- waitForAnimationToEnd

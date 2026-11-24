@@ -148,50 +148,16 @@ appId: com.intrinsiclabs.aspengrove
     text: '.*@@TOP@@.*@@TOP@@.*'
 - takeScreenshot: 11-stress-top-edit
 
-# Middle: scroll a long way, tap, type; the viewport must not jump.
-- runFlow: dismiss-buffer-keyboard.yaml
-- repeat:
-    times: 14
-    commands:
-      - swipe:
-          start: 50%, 80%
-          end: 50%, 20%
-          duration: 250
-- waitForAnimationToEnd
-- takeScreenshot: 12-stress-middle-before
-- tapOn:
-    point: '95%,40%'
-- inputText: '@@MID@@'
-- waitForAnimationToEnd
-- assertVisible: '.*@@MID@@.*'
-- takeScreenshot: 13-stress-middle-after
-- assertNotVisible:
-    id: buffer-document
-    text: '.*@@MID@@.*@@MID@@.*'
+# Middle and end edits need drag-scroll; see the sub-flow for why it is Android-only.
+- runFlow:
+    when:
+      platform: Android
+    file: buffer-stress-scroll-edits.yaml
 
-# End: scroll to the last paragraph, type at the end.
-- runFlow: dismiss-buffer-keyboard.yaml
-- repeat:
-    times: 40
-    commands:
-      - swipe:
-          start: 50%, 85%
-          end: 50%, 15%
-          duration: 200
-- waitForAnimationToEnd
-- takeScreenshot: 14-stress-end-before
-- tapOn:
-    point: '95%,60%'
-- inputText: '@@END@@'
-- waitForAnimationToEnd
-- assertVisible: '.*@@END@@.*'
-- takeScreenshot: 15-stress-end-after
-- assertNotVisible:
-    id: buffer-document
-    text: '.*@@END@@.*@@END@@.*'
-
-# Back to the top: all three edits are in the text, once each.
+# The document is still whole. The accessibility text of a 30k input is cut
+# short, so only its start is asserted; the middle and end edits are asserted
+# where they are made, in buffer-stress-scroll-edits.yaml.
 - runFlow: dismiss-buffer-keyboard.yaml
 - assertVisible:
     id: buffer-document
-    text: '.*@@TOP@@.*@@MID@@.*@@END@@.*'
+    text: 'Paragraph 001 human\..*@@TOP@@.*'
