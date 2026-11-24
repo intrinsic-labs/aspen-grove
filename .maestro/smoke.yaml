@@ -56,12 +56,17 @@ appId: com.intrinsiclabs.aspengrove
 
 - tapOn:
     id: settings-link-connections
+# Connections is a list of providers; each row pushes that provider's screen.
+- extendedWaitUntil:
+    visible:
+      id: connections-row-lmstudio
+    timeout: 10000
+- takeScreenshot: 08-connections
+- tapOn:
+    id: connections-row-openrouter
 - assertVisible:
     id: connections-openrouter-edit
-- scrollUntilVisible:
-    element:
-      id: connections-lmstudio-endpoint-input
-- takeScreenshot: 08-connections
+- takeScreenshot: 08a-connections-openrouter
 # The key is entered in a sheet, as in Latent Spaces' API Keys page.
 - tapOn:
     id: connections-openrouter-edit
@@ -73,9 +78,9 @@ appId: com.intrinsiclabs.aspengrove
 - assertNotVisible:
     id: connections-openrouter-key-input
 # Back to Settings (go-back.yaml), retried, since a tap during the push
-# transition can be dropped.
+# transition can be dropped. Two screens deep: the provider, then the list.
 - repeat:
-    times: 3
+    times: 4
     while:
       notVisible:
         id: settings-screen

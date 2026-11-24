@@ -1,5 +1,6 @@
-# Direct providers against the mock: an Anthropic key and an OpenAI key
-# entered in Settings -> API Settings and tested, then for each a tree
+# Direct providers against the mock: Settings -> API Settings -> Connections
+# lists the providers; an Anthropic key and an OpenAI key are entered on their
+# screens and tested, then for each a tree
 # switched to the provider, its mock model picked in the model browser, one
 # turn sent and the reply seen.
 # Needs three mock servers (each lists and answers for one --model) and Metro
@@ -22,34 +23,28 @@ env:
 - runFlow: setup.yaml
 - runFlow: ../go-home.yaml
 
-# API Settings: four sections, in order.
+# API Settings: a short list, one row per provider, in order.
 - runFlow: ../open-settings.yaml
 - tapOn:
     id: settings-link-connections
 - extendedWaitUntil:
     visible:
-      id: connections-openrouter-edit
+      id: connections-row-lmstudio
     timeout: 10000
-- scrollUntilVisible:
-    element:
-      id: connections-anthropic-edit
-    timeout: 10000
-- takeScreenshot: direct-01a-api-settings-top
-- scrollUntilVisible:
-    element:
-      id: connections-openai-edit
-    timeout: 10000
-- scrollUntilVisible:
-    element:
-      id: connections-lmstudio-test
-    timeout: 10000
-- takeScreenshot: direct-01-api-settings
+- assertVisible:
+    id: connections-row-openrouter
+- assertVisible:
+    id: connections-row-anthropic
+- assertVisible:
+    id: connections-row-openai
+- takeScreenshot: direct-01-connections-list-no-keys
 
-# --- Anthropic: enter and test the key (the page is at its end: scroll up).
-- scrollUntilVisible:
-    element:
+# --- Anthropic: its own screen; enter and test the key.
+- tapOn:
+    id: connections-row-anthropic
+- extendedWaitUntil:
+    visible:
       id: connections-anthropic-edit
-    direction: UP
     timeout: 10000
 - tapOn:
     id: connections-anthropic-edit
@@ -75,13 +70,19 @@ env:
       id: connections-anthropic-status
       text: '.*accepted the key.*'
     timeout: 15000
-- takeScreenshot: direct-03-anthropic-tested
+- takeScreenshot: direct-03-anthropic-screen
 
-# --- OpenAI: enter and test the key.
-- scrollUntilVisible:
-    element:
+# --- OpenAI: back to the list, then its screen; enter and test the key.
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: connections-row-openai
+    timeout: 10000
+- tapOn:
+    id: connections-row-openai
+- extendedWaitUntil:
+    visible:
       id: connections-openai-edit
-    direction: DOWN
     timeout: 10000
 - tapOn:
     id: connections-openai-edit
@@ -102,16 +103,28 @@ env:
     timeout: 10000
 - tapOn:
     id: connections-openai-test
-- scrollUntilVisible:
-    element:
-      id: connections-openai-status
-    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: connections-openai-status
       text: '.*accepted the key.*'
     timeout: 15000
-- takeScreenshot: direct-04-openai-tested
+- takeScreenshot: direct-04-openai-screen
+
+# --- Back on the list: both keys read as stored. Then LM Studio's screen.
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: connections-row-lmstudio
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: direct-05-connections-list-keys-stored
+- tapOn:
+    id: connections-row-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-endpoint-input
+    timeout: 10000
+- takeScreenshot: direct-06-lmstudio-screen
 
 # --- A tree on Anthropic's mock model.
 - runFlow: ../go-home.yaml

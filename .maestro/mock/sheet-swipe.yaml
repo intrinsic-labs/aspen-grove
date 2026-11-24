@@ -212,6 +212,8 @@ appId: com.intrinsiclabs.aspengrove
 - tapOn:
     id: settings-link-connections
 - tapOn:
+    id: connections-row-openrouter
+- tapOn:
     id: connections-openrouter-edit
 - extendedWaitUntil:
     visible:

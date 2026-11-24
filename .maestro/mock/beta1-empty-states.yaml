@@ -184,9 +184,18 @@ env:
 - takeScreenshot: es-06-home-no-key
 - tapOn:
     id: home-setup-action
+# The Connections sheet opens on its list: OpenRouter says "No key".
+- extendedWaitUntil:
+    visible:
+      id: connections-row-openrouter
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: es-07-no-key-opens-connections
+- tapOn:
+    id: connections-row-openrouter
 - extendedWaitUntil:
     visible:
       id: connections-openrouter-edit
     timeout: 10000
 - waitForAnimationToEnd
-- takeScreenshot: es-07-no-key-opens-connections
+- takeScreenshot: es-07b-no-key-openrouter-screen

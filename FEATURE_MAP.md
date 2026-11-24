@@ -35,7 +35,7 @@ every entry on a device or simulator.
 
 **Scope.** v1 is branching dialogue, inline continuations, edit-as-branch, bookmarks,
 provenance as it stands, Open Loom import and export, and OpenRouter, Anthropic, OpenAI and
-LM Studio as providers (a key section per hosted provider in Settings → Connections; a
+LM Studio as providers (a list of providers in Settings → Connections, each with its own screen: a key section per hosted provider; a
 connected provider shows in every provider and model picker). The cut features (sync,
 sharing or publishing, Field Guide, memory or stash, the documents editor, RFC 3161 and
 other provenance extras, other native provider adapters, MCP, connectors and web search) have no UI, route, setting or code in the app, so none is
@@ -1316,6 +1316,47 @@ dialogue.
   "LM Studio isn't answering…" in `agent-editor-model-error`, not the raw fetch error.
   Flow: `.maestro/model-browser.yaml`.
 
+### Connections list
+- **ID:** `settings.connections.list`
+- **Purpose:** The short page Settings → Connections opens on: the card on how API keys are
+  kept, then one grouped list with a row per provider (OpenRouter, Anthropic, OpenAI, LM
+  Studio). Each row names the provider, says where it stands on the right, and pushes that
+  provider's screen (`settings.connections.provider`). Latent Spaces' API Keys page
+  (`APIKeySettingsView.swift`) is one flat Form for two providers; with four, Aspen Grove
+  keeps the page short and puts each provider behind a row, as Settings does for Agents.
+- **Where:** Settings → Connections; the same list opens as the Connections sheet
+  (`settings.connections.sheet`).
+- **Reach:** Cold start → `home-settings-button` → `settings-link-connections`.
+- **Requires:** none
+- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-list`, `connections-row-openrouter`, `connections-row-anthropic`, `connections-row-openai`, `connections-row-lmstudio`
+- **Code:** `src/interface/components/settings/screens/ConnectionsListScreen.tsx`, `src/interface/components/settings/connections/ConnectionsList.tsx`, `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/useConnectionStatuses.ts`, `src/interface/components/settings/connections/connection-status.ts`, `src/interface/components/settings/connections/connection-routes.ts`, `src/app/settings/connections/index.tsx`
+- **Backend:** `expo-secure-store` (whether a key is stored per provider) and WatermelonDB
+  `user_preferences.lmstudio_settings` (the saved server address); no network
+- **Status:** live
+- **Notes:** A hosted provider's status reads "Key stored" or "No key"; LM Studio's reads
+  its saved server address (`localhost:1235`) or "Not set up" when the address is cleared.
+  The list doesn't call the server (Test Connection is on LM Studio's screen). Statuses are
+  read again each time the list is focused, so a key added or removed on a provider's
+  screen shows when going back.
+
+### Connection provider screen
+- **ID:** `settings.connections.provider`
+- **Purpose:** One provider's Connections screen, titled with its name: a hosted provider's
+  key section and sheet (`settings.connections.openrouter`, `.anthropic`, `.openai`), or LM
+  Studio's server section (`settings.connections.lmstudio`). Exactly the sections Connections
+  used to stack in one page.
+- **Where:** Route `settings/connections/[provider]` (`provider` is `openrouter`,
+  `anthropic`, `openai` or `lmstudio`), pushed from the list with the system back button;
+  inside the Connections sheet, route `connections/[provider]`.
+- **Reach:** `settings-link-connections` → `connections-row-<provider>`.
+- **Requires:** none
+- **Selector:** working — `connections-provider-screen`
+- **Code:** `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/connection-provider.ts`, `src/app/settings/connections/*.tsx`, `src/app/_layout.tsx`
+- **Backend:** As the provider's own entry
+- **Status:** live
+- **Notes:** An unknown `provider` param shows an empty screen. The title comes from the
+  route's param (`connectionProviderTitle`).
+
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
 - **Purpose:** Latent Spaces' API Keys page (`APIKeySettingsView.swift`) for OpenRouter: a
@@ -1323,14 +1364,15 @@ dialogue.
   Cancel and Save) and links to OpenRouter's key docs, keys and credits pages. One key
   section and sheet, parameterized by provider (`provider-key-config.ts`), serve OpenRouter,
   Anthropic and OpenAI; the Anthropic and OpenAI entries below name what differs.
-- **Where:** Settings → Connections, the top card and the OpenRouter section (the first of
-  the key sections: OpenRouter, Anthropic, OpenAI, then LM Studio).
+- **Where:** Settings → Connections → OpenRouter (`connections-row-openrouter`): the
+  provider's own screen, titled OpenRouter, holding its key section. The top card on how
+  keys are kept is on the list (`settings.connections.list`).
 - **Reach:** Cold start → `home-settings-button` →
-  `settings-link-connections` → `connections-openrouter-edit` →
+  `settings-link-connections` → `connections-row-openrouter` → `connections-openrouter-edit` →
   `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
-- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-status`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/key-storage-copy.ts`, `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections.tsx`
+- **Selector:** working — `connections-provider-screen`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-status`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/connections/key-storage-copy.ts`, `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections/*.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
@@ -1354,15 +1396,16 @@ dialogue.
   billing pages. Once a key is stored, Anthropic appears in the Provider pickers
   (`chat.model-settings`, `settings.agents.model-picker`), and trees and agents on an
   `anthropic:<model>` ref generate through Anthropic's Messages API.
-- **Where:** Settings → Connections (and its sheet), the section after OpenRouter.
-- **Reach:** `settings-link-connections` → `connections-anthropic-edit` →
+- **Where:** Settings → Connections → Anthropic (`connections-row-anthropic`), in Settings
+  and in the Connections sheet: its own screen, titled Anthropic.
+- **Reach:** `settings-link-connections` → `connections-row-anthropic` → `connections-anthropic-edit` →
   `connections-anthropic-key-input` → `connections-anthropic-key-save` →
   `connections-anthropic-test`.
 - **Requires:** An Anthropic API key; the test needs a network connection. A development
   build can point Anthropic at the mock server with `EXPO_PUBLIC_ANTHROPIC_ENDPOINT` (the full
   completion URL, such as `http://localhost:1236/v1/messages`; see `.maestro/mock/direct-providers.yaml`).
-- **Selector:** working — `connections-anthropic`, `connections-anthropic-edit`, `connections-anthropic-test`, `connections-anthropic-status`, `connections-anthropic-link-docs`, `connections-anthropic-link-keys`, `connections-anthropic-link-credits`, `connections-anthropic-key-sheet`, `connections-anthropic-key-input`, `connections-anthropic-key-cancel`, `connections-anthropic-key-save`
-- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/AnthropicAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
+- **Selector:** working — `connections-provider-screen`, `connections-anthropic`, `connections-anthropic-edit`, `connections-anthropic-test`, `connections-anthropic-status`, `connections-anthropic-link-docs`, `connections-anthropic-link-keys`, `connections-anthropic-link-credits`, `connections-anthropic-key-sheet`, `connections-anthropic-key-input`, `connections-anthropic-key-cancel`, `connections-anthropic-key-save`
+- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/AnthropicAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
 - **Backend:** `expo-secure-store` (key `anthropic_api_key`); test: Anthropic
   `GET https://api.anthropic.com/v1/models` (`AnthropicAdapter#fetchModels`)
 - **Status:** live
@@ -1377,14 +1420,15 @@ dialogue.
   ("Enter Key (sk-…)"), "Test Key" against OpenAI's model list, links to OpenAI's quickstart,
   API keys and billing pages; once stored, OpenAI appears in the Provider pickers and
   `openai:<model>` refs generate through the Responses API.
-- **Where:** Settings → Connections (and its sheet), the section after Anthropic.
-- **Reach:** `settings-link-connections` → `connections-openai-edit` →
+- **Where:** Settings → Connections → OpenAI (`connections-row-openai`), in Settings and in
+  the Connections sheet: its own screen, titled OpenAI.
+- **Reach:** `settings-link-connections` → `connections-row-openai` → `connections-openai-edit` →
   `connections-openai-key-input` → `connections-openai-key-save` → `connections-openai-test`.
 - **Requires:** An OpenAI API key; the test needs a network connection. A development build
   can point OpenAI at the mock server with `EXPO_PUBLIC_OPENAI_ENDPOINT` (such as
   `http://localhost:1237/v1/responses`).
-- **Selector:** working — `connections-openai`, `connections-openai-edit`, `connections-openai-test`, `connections-openai-status`, `connections-openai-link-docs`, `connections-openai-link-keys`, `connections-openai-link-credits`, `connections-openai-key-sheet`, `connections-openai-key-input`, `connections-openai-key-cancel`, `connections-openai-key-save`
-- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/OpenAIAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
+- **Selector:** working — `connections-provider-screen`, `connections-openai`, `connections-openai-edit`, `connections-openai-test`, `connections-openai-status`, `connections-openai-link-docs`, `connections-openai-link-keys`, `connections-openai-link-credits`, `connections-openai-key-sheet`, `connections-openai-key-input`, `connections-openai-key-cancel`, `connections-openai-key-save`
+- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/OpenAIAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
 - **Backend:** `expo-secure-store` (key `openai_api_key`); test: OpenAI
   `GET https://api.openai.com/v1/models` (`OpenAIAdapter#fetchModels`, filtered to the text
   models the Responses API serves)
@@ -1393,15 +1437,16 @@ dialogue.
 
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
-- **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
-  an LM Studio server that is down can be fixed without leaving a tree.
-- **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
-  the top.
+- **Purpose:** The Connections list as a sheet over the current screen, so a missing key or
+  an LM Studio server that is down can be fixed without leaving a tree. A provider's row
+  pushes its screen inside the sheet.
+- **Where:** Route `connections`, a modal page sheet with a stack of its own: the list under
+  "Connections" and a Done capsule, and each provider's screen with the system back button.
 - **Reach:** `home-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
-- **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.openrouter`, `settings.connections.anthropic`, `settings.connections.openai` and `settings.connections.lmstudio`
-- **Code:** `src/interface/components/settings/screens/ConnectionsSheetScreen.tsx`, `src/app/connections.tsx`
+- **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.list`, `settings.connections.openrouter`, `settings.connections.anthropic`, `settings.connections.openai` and `settings.connections.lmstudio`
+- **Code:** `src/interface/components/settings/screens/ConnectionsSheetScreen.tsx`, `src/interface/components/settings/connections/ConnectionsSheetStack.tsx`, `src/app/connections/_layout.tsx`, `src/app/connections/index.tsx`, `src/app/connections/*.tsx`
 - **Backend:** As `settings.connections.openrouter`, `settings.connections.anthropic`,
   `settings.connections.openai` and `settings.connections.lmstudio`
 - **Status:** live
@@ -1412,13 +1457,14 @@ dialogue.
 - **ID:** `settings.connections.lmstudio`
 - **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
   auto-load, and tests the connection.
-- **Where:** Settings → Connections, the LM Studio section below the key sections (scroll down).
-- **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
+- **Where:** Settings → Connections → LM Studio (`connections-row-lmstudio`): its own screen,
+  titled LM Studio, holding the server section.
+- **Reach:** `settings-link-connections` → `connections-row-lmstudio` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-provider-screen`, `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
