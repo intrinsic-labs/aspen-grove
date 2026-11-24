@@ -30,7 +30,7 @@ type BufferScreenProps = {
   readonly tree: LoomTree;
 };
 
-const { layout, colors, control } = bufferTokens;
+const { layout, control, bar } = bufferTokens;
 
 /**
  * A buffer-mode tree: continuous prose, no message boundaries. In this
@@ -91,7 +91,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           testID="buffer-control-bar"
           style={[
             styles.bar,
-            { paddingBottom: keyboardVisible ? 0 : insets.bottom },
+            {
+              paddingBottom:
+                (keyboardVisible ? 0 : insets.bottom) + bar.bottomGap,
+            },
           ]}
         >
           {count > 1 ? (
@@ -127,10 +130,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   bar: {
-    minHeight: control.height,
-    justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.controlDivider,
+    // The pill floats in this band, centered and never full width; the
+    // document above ends where the band begins, so its last line clears it.
+    alignItems: 'center',
+    paddingTop: bar.topGap,
   },
   sample: {
     minHeight: control.height,

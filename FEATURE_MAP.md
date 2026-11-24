@@ -1141,8 +1141,9 @@ dialogue.
   reading as the human's. In the developer preview the text lives in memory only.
 - **Where:** Route `tree/[treeId]` for a buffer-mode tree (`TreeModeScreen`), under the
   transparent header titled with the tree's title. A natively scrolling multiline input fills
-  the screen; a slim bar under it, above the keyboard and safe area, holds the sibling control
-  (`buffer.siblings`) or, on an empty buffer, "Load sample".
+  the screen; a band under it, above the keyboard and safe area, holds the floating branch pill
+  (`buffer.siblings`) or, on an empty buffer, "Load sample". The document ends where the band
+  begins, so its last line always clears the pill.
 - **Reach:** Preview build → `buffer.create` → tap `buffer-document` to type; `buffer-load-sample`
   fills the review sample (a human opening, two model endings, a human word inside model text).
 - **Requires:** The buffer preview switch. No model, no key.
@@ -1162,16 +1163,20 @@ dialogue.
 - **Purpose:** Switches between alternative endings at the buffer's branch point: previous and
   next, a mono "Branch 1 of 2" label, a swipe on the label, and increment/decrement for
   screen readers. Switching replaces the ending and keeps the shared opening.
-- **Where:** Buffer screen, the bar under the document, shown once the document has two or more
+- **Where:** Buffer screen, a floating pill centered in the band under the document (never full
+  width, a gap above the keyboard or bottom safe area), shown once the document has two or more
   endings (the preview sample has two).
 - **Reach:** Preview build → `buffer.create` → `buffer-load-sample` → `buffer-branch-next`.
 - **Requires:** The buffer preview switch; a buffer with siblings (the sample).
-- **Selector:** working — `buffer-branch-control`, `buffer-branch-prev`, `buffer-branch-next`, `buffer-branch-value` (the label text)
-- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview.ts`
+- **Selector:** working — `buffer-branch-control`, `buffer-branch-dots`, `buffer-branch-prev`, `buffer-branch-next`, `buffer-branch-value` (the label text)
+- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/branch-dots.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview.ts`
 - **Backend:** none yet — fixture siblings in memory
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
-- **Notes:** The control is one adjustable accessibility element; its prev/next buttons are
-  hidden from accessibility.
+- **Notes:** Look (mockup `03-branches-pill`): a 36 pt pill in the raised dark fill with a soft
+  shadow, gold chevrons (grey when there is no previous or next), a JetBrains Mono "Branch 1 of 3"
+  label and one dot per sibling, the current one green, at most 7 dots (a window that follows
+  the current sibling). The control is one adjustable accessibility element; its prev/next
+  buttons are hidden from accessibility. Every value is in `tokens/buffer.ts`.
 
 ## Node sheet
 
