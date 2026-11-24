@@ -64,3 +64,26 @@ describe('home menu', () => {
     );
   });
 });
+
+describe('home menu in the buffer preview', () => {
+  it('adds New Buffer as a last section, leaving every other path alone', () => {
+    const off = buildHomeMenu([], null);
+    const on = buildHomeMenu([], null, true);
+
+    expect(on.slice(0, off.length)).toEqual(off);
+    expect(on).toHaveLength(off.length + 1);
+    expect(commandAt(on, [off.length, 0])).toEqual({ type: 'newBuffer' });
+    expect(
+      toContextMenuActions(on)
+        .at(-1)
+        ?.actions?.map((a) => a.title)
+    ).toEqual(['New Buffer']);
+  });
+
+  it('offers no New Buffer by default', () => {
+    const titles = JSON.stringify(
+      toContextMenuActions(buildHomeMenu([], null))
+    );
+    expect(titles).not.toContain('New Buffer');
+  });
+});

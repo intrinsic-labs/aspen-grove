@@ -169,12 +169,14 @@ stays until the user makes one.
 - **ID:** `home.menu`
 - **Purpose:** Latent Spaces' home `···` menu (`HomeScreenView.swift:124-155`), plus Aspen
   Grove's Search and tag filter: Import OpenLoom Tree (a ControlGroup tile, icon over title), OpenLoom Docs, Info &
-  Tutorials, Show Onboarding, then Search and Filter by Tag.
+  Tutorials, Show Onboarding, then Search and Filter by Tag. In the buffer developer preview
+  (`buffer.create`) a last section adds New Buffer.
 - **Where:** Home, top left (`···`, the plain `ellipsis` in the toolbar's glass circle), a native pull-down menu.
 - **Reach:** Cold start → `home-menu-button`, then the item by its title.
-- **Requires:** none. "Filter by Tag" shows once the grove has a tag.
-- **Selector:** working — `home-menu-button`; items none — native context menu item; reach via a tap on `home-menu-button` ("Import OpenLoom Tree", "OpenLoom Docs", "Info & Tutorials", "Show Onboarding", "Search", "Filter by Tag")
-- **Code:** `src/interface/components/home/HomeMenu.tsx`, `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeHeader.tsx`, `src/interface/components/home/home-links.ts`
+- **Requires:** none. "Filter by Tag" shows once the grove has a tag; "New Buffer" only in a
+  build whose Metro bundle was made with `EXPO_PUBLIC_BUFFER_PREVIEW=1`.
+- **Selector:** working — `home-menu-button`; items none — native context menu item; reach via a tap on `home-menu-button` ("Import OpenLoom Tree", "OpenLoom Docs", "Info & Tutorials", "Show Onboarding", "Search", "Filter by Tag", "New Buffer" in the preview)
+- **Code:** `src/interface/components/home/HomeMenu.tsx`, `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeHeader.tsx`, `src/interface/components/home/home-links.ts`, `src/interface/components/buffer/buffer-preview-flag.ts`
 - **Backend:** none — client-only (each item's own feature has its backend)
 - **Status:** live
 - **Notes:** OpenLoom Docs opens the Open Loom spec in the repository and Info & Tutorials
@@ -221,8 +223,9 @@ stays until the user makes one.
 
 ### Recent trees
 - **ID:** `home.trees`
-- **Purpose:** Every active dialogue tree in the grove, most recent first (last message, else
-  last edit), each with its title on one line and its date. Tap a row to open it.
+- **Purpose:** Every active dialogue tree in the grove (and, in the buffer developer preview,
+  every buffer), most recent first (last message, else last edit), each with its title on one
+  line and its date. Tap a row to open it.
 - **Where:** Home, one inset-grouped card under the date line; the greeting and date stay put
   while the list scrolls.
 - **Reach:** Cold start; rows appear once a tree exists (P2, or `trees.import`).
@@ -231,9 +234,10 @@ stays until the user makes one.
   yet. Write a first message below to begin one." (`home-empty-hint`).
 - **Selector:** working — `home-trees-list`, rows `home-trees-row-<treeId>`, `home-empty-hint`
 - **Code:** `src/interface/components/home/TreeList.tsx`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/home/TreeRow.tsx`, `src/interface/components/home/useHomeTrees.ts`, `src/interface/components/home/tree-recency.ts`
-- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByMode`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
+- **Backend:** WatermelonDB `loom_trees` via `WatermelonLoomTreeRepository#findByGroveId`; `tags` via `WatermelonTagRepository#findTagsByGroveId`
 - **Status:** live
-- **Notes:** Reloaded each time Home comes into view. The title is in the mono face (JetBrains
+- **Notes:** Reloaded each time Home comes into view. Buffer trees are filtered out unless
+  the buffer preview is on, so a released build lists exactly the trees it always did. The title is in the mono face (JetBrains
   Mono standing in for Calling Code), the date is `Date.formatted()`'s "3/4/2025, 2:01 PM".
 
 ### Rename or delete a tree (swipe)
@@ -417,13 +421,14 @@ stays until the user makes one.
   model text in markdown on the left, system messages centered without a bubble at 0.6
   opacity (as Latent Spaces draws them), and a caption under each node for bookmarks,
   continuation count and pruned state.
-- **Where:** Route `tree/[treeId]`, a full screen with a transparent header (title is the tree
+- **Where:** Route `tree/[treeId]` (rendered by `TreeModeScreen`, which opens a buffer-mode
+  tree as `buffer.editor` in the buffer developer preview and every other tree here), a full screen with a transparent header (title is the tree
   title, blank while it is still the placeholder; the tree menu's sliders button at the right). The first row starts 16 pt under the header
   (`loomUiTokens.messageList.topPadding`).
 - **Reach:** P2, or `home-trees-row-<treeId>`.
 - **Requires:** A tree. Sending also needs a model agent and a key or server (P1).
 - **Selector:** working — `chat-screen`, `chat-message-list`, `chat-message-list-loading`, message rows `chat-message-row-<role>-<nodeId>` (role is `human`, `model` or `system`), `chat-streaming-message`, `chat-thinking-indicator`, a fenced code block `markdown-code-block-<language>` (e.g. `markdown-code-block-sh`), `chat-error`, `chat-error-action`, `chat-error-details-toggle`, `chat-error-detail`, `header-scroll-edge` (Android only)
-- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/app/tree/*.tsx`
+- **Code:** `src/interface/components/LoomTreeChatView.tsx`, `src/interface/ui/components/header/HeaderScrollEdge.tsx`, `src/interface/components/chat/ThinkingIndicator.tsx`, `src/interface/components/chat/thinking-indicator-frames.ts`, `src/interface/components/chat/ChatMessageList.tsx`, `src/interface/components/chat/message-list/`, `src/interface/components/chat/message-list/SystemMessage.tsx`, `src/interface/components/chat/ChatErrorNotice.tsx`, `src/interface/components/chat/turns/useProviderErrorNotice.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/provider-error-copy.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/interface/components/error-details/`, `src/interface/components/chat/useDialogueRouteParams.ts`, `src/interface/components/chat/MarkdownText.tsx`, `src/interface/components/chat/markdown/`, `src/interface/components/chat/message-type.ts`, `src/interface/components/chat/useLoomTreeChatController.ts`, `src/interface/components/chat/header-actions/useTreeHeaderActions.ts`, `src/interface/components/chat/turns/useChatTurns.ts`, `src/interface/components/chat/session/`, `src/interface/components/chat/session-helpers.ts`, `src/interface/components/chat/scroll/`, `src/interface/components/buffer/TreeModeScreen.tsx`, `src/app/tree/*.tsx`
 - **Backend:** WatermelonDB `loom_trees`, `paths`, `path_nodes`, `path_states`, `nodes`, `edges`
   via the Watermelon repositories
 - **Status:** live
@@ -1094,6 +1099,32 @@ stays until the user makes one.
   (speaker names; a system node is "System"). Writes a cache file and calls
   `expo-sharing`.
 - **Status:** live
+
+## Buffer
+
+Buffer mode (continuous prose with branching, see `docs/architecture/specs/buffer-mode.md`) is
+under construction and reachable only in the developer preview: bundle Metro with
+`EXPO_PUBLIC_BUFFER_PREVIEW=1`. Without it nothing here exists and every tree opens as a
+dialogue.
+
+### New Buffer
+- **ID:** `buffer.create`
+- **Purpose:** Creates an empty buffer-mode tree from Home and opens it; it reopens from Recents
+  like any tree. Unlike a dialogue tree it has no model agent.
+- **Where:** Home's `···` menu, last section: New Buffer. Opens `tree/[treeId]`, which
+  `TreeModeScreen` dispatches to the buffer screen by the tree's saved mode.
+- **Reach:** Preview build, cold start → `home-menu-button` → "New Buffer"; or
+  `home-trees-row-<treeId>` for an existing buffer.
+- **Requires:** The buffer preview switch. No model agent, no key.
+- **Selector:** working — `buffer-screen`; the menu item is native (title "New Buffer")
+- **Code:** `src/application/use-cases/CreateBufferLoomTreeUseCase.ts`, `src/interface/hooks/useCreateBufferTree.ts`, `src/interface/components/buffer/TreeModeScreen.tsx`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview-flag.ts`, `src/interface/components/home/home-menu.ts`, `src/interface/components/home/useHomeHeader.tsx`, `src/interface/composition/AppServicesProvider.tsx`
+- **Backend:** WatermelonDB `nodes` (an empty human root), `loom_trees` (`mode: buffer`, no
+  `default_model_agent_id`), `paths`, `path_nodes`, `path_states` (`mode: buffer`) via the
+  Watermelon repositories
+- **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Notes:** Not ephemeral: an empty buffer stays in Recents. Titled "Untitled Buffer".
+  Home lists buffer trees only in the preview. The dialogue chat adopts a default model agent
+  on open, so `TreeModeScreen` never gives it a buffer tree.
 
 ## Node sheet
 

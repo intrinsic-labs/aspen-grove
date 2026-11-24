@@ -3,10 +3,12 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import type { LoomTree, Tag } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { useAppBootstrapState, useAppServices } from '@interface/composition';
+import { isBufferPreviewEnabled } from '../buffer/buffer-preview-flag';
 import { byRecency } from './tree-recency';
 
 /**
- * Home's tree list: every active dialogue tree in the grove, most recent
+ * Home's tree list: every active tree in the grove (dialogue trees, plus
+ * buffers in the developer preview), most recent
  * first (HomeScreenView.swift sorts by `lastModified`), reloaded whenever
  * Home comes back into view. Also the grove's tags and the optional tag
  * filter, which narrows the list to one tag's trees.
@@ -32,10 +34,15 @@ export const useHomeTrees = () => {
     }
     try {
       const [found, groveTags] = await Promise.all([
-        repositories.treeRepo.findByMode(groveId, 'dialogue', true),
+        repositories.treeRepo.findByGroveId(groveId, true),
         repositories.tagRepo.findTagsByGroveId(groveId),
       ]);
-      setTrees([...found].sort(byRecency));
+      // Buffer trees list only in the developer preview; otherwise every row
+      // is a dialogue tree, as before.
+      const listed = isBufferPreviewEnabled()
+        ? found
+        : found.filter((tree) => tree.mode === 'dialogue');
+      setTrees([...listed].sort(byRecency));
       setTags(groveTags);
       setError(null);
     } catch (caught) {
