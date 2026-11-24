@@ -28,19 +28,36 @@ env:
     id: settings-link-connections
 - extendedWaitUntil:
     visible:
+      id: connections-openrouter-edit
+    timeout: 10000
+- scrollUntilVisible:
+    element:
       id: connections-anthropic-edit
     timeout: 10000
-- assertVisible:
-    id: connections-openai-edit
+- takeScreenshot: direct-01a-api-settings-top
+- scrollUntilVisible:
+    element:
+      id: connections-openai-edit
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: connections-lmstudio-test
+    timeout: 10000
 - takeScreenshot: direct-01-api-settings
 
-# --- Anthropic: enter and test the key.
+# --- Anthropic: enter and test the key (the page is at its end: scroll up).
+- scrollUntilVisible:
+    element:
+      id: connections-anthropic-edit
+    direction: UP
+    timeout: 10000
 - tapOn:
     id: connections-anthropic-edit
 - extendedWaitUntil:
     visible:
       id: connections-anthropic-key-input
     timeout: 10000
+- waitForAnimationToEnd
 - takeScreenshot: direct-02-anthropic-key-sheet
 - tapOn:
     id: connections-anthropic-key-input
@@ -64,6 +81,7 @@ env:
 - scrollUntilVisible:
     element:
       id: connections-openai-edit
+    direction: DOWN
     timeout: 10000
 - tapOn:
     id: connections-openai-edit
@@ -82,6 +100,10 @@ env:
     timeout: 10000
 - tapOn:
     id: connections-openai-test
+- scrollUntilVisible:
+    element:
+      id: connections-openai-status
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: connections-openai-status
@@ -120,9 +142,10 @@ env:
     visible:
       id: tree-model-option-.*
     timeout: 15000
-- assertVisible: ${ANTHROPIC_MODEL}
+# (A row is one accessible element: name, author, context.)
+- assertVisible: '${ANTHROPIC_MODEL}.*'
 - takeScreenshot: direct-06-anthropic-models
-- tapOn: ${ANTHROPIC_MODEL}
+- tapOn: '${ANTHROPIC_MODEL}.*'
 - extendedWaitUntil:
     visible:
       id: model-detail-use
@@ -178,9 +201,10 @@ env:
     visible:
       id: tree-model-option-.*
     timeout: 15000
-- assertVisible: ${OPENAI_MODEL}
+# (A row is one accessible element: name, author, context.)
+- assertVisible: '${OPENAI_MODEL}.*'
 - takeScreenshot: direct-08-openai-models
-- tapOn: ${OPENAI_MODEL}
+- tapOn: '${OPENAI_MODEL}.*'
 - extendedWaitUntil:
     visible:
       id: model-detail-use
@@ -207,10 +231,9 @@ env:
 - inputText: And the tallest trees?
 - tapOn:
     id: chat-composer-send
+# (The list is virtualized, so wait on the sent text, not a row index.)
 - extendedWaitUntil:
-    visible:
-      id: chat-message-row-.*
-      index: 5
+    visible: 'And the tallest trees?'
     timeout: 60000
 - extendedWaitUntil:
     notVisible:
