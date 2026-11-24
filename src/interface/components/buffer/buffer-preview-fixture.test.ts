@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { applyPreviewEdit, previewRuns, previewText } from './buffer-preview';
-import { STRESS_FIXTURE_LENGTH, stressPreview } from './buffer-preview-fixture';
+import {
+  STRESS_FIXTURE_LENGTH,
+  STRESS_FIXTURE_SIZES,
+  stressPreview,
+} from './buffer-preview-fixture';
 
 describe('stress fixture', () => {
   const state = stressPreview();
@@ -43,5 +47,15 @@ describe('stress fixture', () => {
         .map((run) => run.text)
         .join('')
     ).toBe(previewText(next));
+  });
+
+  it('comes in the measured sizes, each the same text cut off', () => {
+    const full = previewText(state);
+    for (const size of STRESS_FIXTURE_SIZES) {
+      const text = previewText(stressPreview(size));
+      expect(text).toHaveLength(size);
+      expect(full.startsWith(text)).toBe(true);
+      expect(text.startsWith('Paragraph 001 human. ')).toBe(true);
+    }
   });
 });

@@ -13,9 +13,9 @@ import { AppScreen, AppText } from '@/interface/ui/value-objects';
 import { messageFontFamily } from '@/interface/ui/value-objects/fonts';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
-import { BufferFixtureLink } from './BufferFixtureLink';
+import { BufferFixtureControls } from './BufferFixtureControls';
 import { BufferSiblingControl } from './BufferSiblingControl';
-import { BufferTextInput } from './BufferTextInput';
+import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
 import { stressPreview } from './buffer-preview-fixture';
 import {
   applyPreviewEdit,
@@ -50,6 +50,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
   const [preview, setPreview] = useState(emptyPreview);
+  const [variant, setVariant] = useState<BufferRenderVariant>('spans');
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: tree.title ?? 'Buffer' });
@@ -84,6 +85,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           text={text}
           runs={previewRuns(preview)}
           editable
+          variant={variant}
           textStyle={textStyle}
           topInset={headerHeight + layout.topGap}
           placeholder="Start writing"
@@ -113,18 +115,12 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
               onSelect={onSelectSibling}
             />
           ) : text.length === 0 ? (
-            <View style={styles.fixtures}>
-              <BufferFixtureLink
-                testID="buffer-load-sample"
-                label="Load sample"
-                onPress={() => setPreview(samplePreview())}
-              />
-              <BufferFixtureLink
-                testID="buffer-load-stress"
-                label="Load 30k"
-                onPress={() => setPreview(stressPreview())}
-              />
-            </View>
+            <BufferFixtureControls
+              variant={variant}
+              onLoadSample={() => setPreview(samplePreview())}
+              onLoadStress={(length) => setPreview(stressPreview(length))}
+              onVariant={setVariant}
+            />
           ) : null}
         </Pressable>
       </KeyboardAvoidingView>
@@ -144,5 +140,4 @@ const styles = StyleSheet.create({
     minHeight: bar.topGap + control.height,
     paddingTop: bar.topGap,
   },
-  fixtures: { flexDirection: 'row', gap: control.height / 2 },
 });

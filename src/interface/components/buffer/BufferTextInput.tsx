@@ -13,11 +13,20 @@ import type { PreviewEdit, PreviewRun } from './buffer-preview';
 import type { BufferSelection } from './derive-replacement';
 import { createChangeTracker } from './native-change-tracker';
 
+/**
+ * How the document is handed to the native input. `spans` is the product:
+ * one colored child per author run. `single` and `plain` are developer-preview
+ * measurement variants: the whole text in one uncolored child, and as a bare
+ * string, to price the spans against the text's length.
+ */
+export type BufferRenderVariant = 'spans' | 'single' | 'plain';
+
 type BufferTextInputProps = {
   /** The accepted document; `runs` concatenate to exactly this string. */
   readonly text: string;
   readonly runs: readonly PreviewRun[];
   readonly editable: boolean;
+  readonly variant?: BufferRenderVariant;
   readonly textStyle: TextStyle;
   readonly topInset: number;
   readonly placeholder?: string;
@@ -36,6 +45,7 @@ export const BufferTextInput = ({
   text,
   runs,
   editable,
+  variant = 'spans',
   textStyle,
   topInset,
   placeholder,
@@ -100,22 +110,30 @@ export const BufferTextInput = ({
         { color: bufferTokens.colors.humanText, paddingTop: topInset },
       ]}
     >
-      {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
-      {runs.map((run, index) => (
-        <Text
-          key={index}
-          style={
-            run.author === 'model'
-              ? { color: bufferTokens.colors.modelText }
-              : undefined
-          }
-        >
-          {run.text}
-        </Text>
-      ))}
+      {variant === 'plain' ? text : null}
+      {variant === 'single' ? <Text key="single">{text}</Text> : null}
+      {variant === 'spans' ? <AuthorRuns runs={runs} /> : null}
     </AppTextInput>
   );
 };
+
+const AuthorRuns = ({ runs }: { readonly runs: readonly PreviewRun[] }) => (
+  <>
+    {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
+    {runs.map((run, index) => (
+      <Text
+        key={index}
+        style={
+          run.author === 'model'
+            ? { color: bufferTokens.colors.modelText }
+            : undefined
+        }
+      >
+        {run.text}
+      </Text>
+    ))}
+  </>
+);
 
 const START = { start: 0, end: 0 } as const;
 

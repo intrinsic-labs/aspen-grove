@@ -31,20 +31,29 @@ const paragraph = (index: number): string => {
   return head + body;
 };
 
-const buildParagraphs = (): readonly PreviewRun[] => {
+const buildParagraphs = (total: number): readonly PreviewRun[] => {
   const runs: PreviewRun[] = [];
   let length = 0;
-  for (let i = 0; length < STRESS_FIXTURE_LENGTH; i += 1) {
-    const text = paragraph(i).slice(0, STRESS_FIXTURE_LENGTH - length);
+  for (let i = 0; length < total; i += 1) {
+    const text = paragraph(i).slice(0, total - length);
     runs.push({ author: authorOf(i), text });
     length += text.length;
   }
   return runs;
 };
 
-/** The 30,000-character document: opening, one ending, no siblings. */
-export const stressPreview = (): PreviewState => {
-  const runs = buildParagraphs();
+/** The lengths the responsiveness measurements run at (developer preview). */
+export const STRESS_FIXTURE_SIZES = [5_000, 10_000, 20_000, 30_000] as const;
+
+/**
+ * The long document, `length` characters of it (30,000 by default): opening,
+ * one ending, no siblings. A shorter one is the same text cut off, so every
+ * size opens with "Paragraph 001 human."
+ */
+export const stressPreview = (
+  length: number = STRESS_FIXTURE_LENGTH
+): PreviewState => {
+  const runs = buildParagraphs(length);
   const middle = Math.floor(runs.length / 2);
   return {
     prefix: runs.slice(0, middle),

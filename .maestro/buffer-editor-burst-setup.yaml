@@ -1,5 +1,8 @@
-# Opens a buffer with the 30,000-character fixture loaded and stops, so a
-# profiler can attach before buffer-editor-burst.yaml types into it.
+# Opens a buffer with a long fixture loaded and stops, so a profiler can attach
+# before buffer-editor-burst.yaml types into it. Defaults to the 30,000-character
+# spans fixture; -e LOAD_ID=buffer-load-10k (5k, 10k, 20k) picks another size and
+# -e VARIANT_TAPS=1 (spans, single, plain: 0, 1, 2 taps) the render variant.
+# -e RELEASE_BUILD=1 for a Release build.
 appId: com.intrinsiclabs.aspengrove
 ---
 - runFlow: open-app.yaml
@@ -10,6 +13,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${VARIANT_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-variant
 - tapOn:
-    id: buffer-load-stress
+    id: ${LOAD_ID || 'buffer-load-stress'}
 - waitForAnimationToEnd
