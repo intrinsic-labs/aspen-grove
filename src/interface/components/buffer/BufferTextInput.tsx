@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   type NativeSyntheticEvent,
+  Platform,
   StyleSheet,
   Text,
   type TextInputChangeEventData,
@@ -28,7 +29,10 @@ type BufferTextInputProps = {
   readonly editable: boolean;
   readonly variant?: BufferRenderVariant;
   readonly textStyle: TextStyle;
-  readonly topInset: number;
+  /** The translucent header's height: the document starts below it. */
+  readonly headerHeight: number;
+  /** The gap between the header and the first line. */
+  readonly topGap: number;
   readonly placeholder?: string;
   readonly onReplace: (edit: PreviewEdit) => void;
   readonly onSelectionChange?: (selection: BufferSelection) => void;
@@ -47,7 +51,8 @@ export const BufferTextInput = ({
   editable,
   variant = 'spans',
   textStyle,
-  topInset,
+  headerHeight,
+  topGap,
   placeholder,
   onReplace,
   onSelectionChange,
@@ -107,7 +112,8 @@ export const BufferTextInput = ({
       style={[
         styles.input,
         textStyle,
-        { color: bufferTokens.colors.humanText, paddingTop: topInset },
+        { color: bufferTokens.colors.humanText },
+        topLayout(headerHeight, topGap),
       ]}
     >
       {variant === 'plain' ? text : null}
@@ -134,6 +140,19 @@ const AuthorRuns = ({ runs }: { readonly runs: readonly PreviewRun[] }) => (
     ))}
   </>
 );
+
+/**
+ * Where the first line starts. On iOS the native text view is a scroll view
+ * and UIKit insets it by the header whenever its frame overlaps the bar and the
+ * text is taller than the view: padding for the header too would leave a
+ * header-high blank gap above a long document (and a short one would jump when
+ * it grew past a screen). So there the view's frame starts below the header and
+ * only the gap is padding, which leaves UIKit no inset to add. Android pads.
+ */
+const topLayout = (headerHeight: number, topGap: number): TextStyle =>
+  Platform.OS === 'ios'
+    ? { marginTop: headerHeight, paddingTop: topGap }
+    : { paddingTop: headerHeight + topGap };
 
 const START = { start: 0, end: 0 } as const;
 

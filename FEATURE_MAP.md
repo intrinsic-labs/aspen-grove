@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 5cdbc85768f08b9984fc5a5fc655cf6342815af5
+revision: f6e46af9e2234e74a52694f32cceb02771b490e0
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -1142,15 +1142,15 @@ dialogue.
 - **Where:** Route `tree/[treeId]` for a buffer-mode tree (`TreeModeScreen`), under the
   transparent header titled with the tree's title. A natively scrolling multiline input fills
   the screen; a band under it, above the keyboard and safe area, holds the floating branch pill
-  (`buffer.siblings`) or, on an empty buffer, the fixture links "Load sample" and "Load 30k". The
+  (`buffer.siblings`) or, on an empty buffer, the fixture links: "Load sample", "Mode: spans|single|plain" (how the text is handed to the native input, for measuring) and "Load 5k/10k/20k/30k". The
   document ends where the band begins, so its last line always clears the pill. A tap on the
   empty band beside the pill puts the keyboard away (there is no Done bar: a keyboard accessory
   broke double-tap word selection).
 - **Reach:** Preview build → `buffer.create` → tap `buffer-document` to type; `buffer-load-sample`
   fills the review sample (a human opening, two model endings, a human word inside model text).
 - **Requires:** The buffer preview switch. No model, no key.
-- **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-stress` (only while the document is empty)
-- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/derive-replacement.ts`, `src/interface/components/buffer/text-boundaries.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
+- **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-5k`, `buffer-load-10k`, `buffer-load-20k`, `buffer-load-stress` (the 30k one), `buffer-variant` (only while the document is empty)
+- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/derive-replacement.ts`, `src/interface/components/buffer/text-boundaries.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
 - **Backend:** none yet — in-memory review fixture; nothing typed is written to WatermelonDB
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
 - **Notes:** The input's value is its children (colored `<Text>` runs); each native change is
@@ -1161,10 +1161,12 @@ dialogue.
   renders (fast typing garbled the text before) and remembers the strings it sent so the
   re-rendered echo is not taken for an external change; iOS's double first character is ignored
   as a change equal to the baseline. A document loaded wholesale (not a sibling switch) remounts
-  the input with its caret pinned to the start, so Android opens a long fixture at its top. "Load 30k" fills a 30,000-character fixture
-  (`stressPreview`). Visual decisions: `docs/architecture/specs/buffer-mode.md`. Flows:
+  the input with its caret pinned to the start, so Android opens a long fixture at its top. The "Load Nk" links fill an N-character fixture
+  (`stressPreview(length)`, the same text cut off at 5, 10, 20 or 30 thousand characters);
+  the Mode link switches the render variant (`BufferRenderVariant`: colored runs, one uncolored
+  child, or a bare string) to price the spans against the length. Visual decisions: `docs/architecture/specs/buffer-mode.md`. Flows:
   `.maestro/buffer-editor-preview.yaml`, `.maestro/buffer-editor-stress.yaml` (with
-  `buffer-stress-scroll-edits.yaml`, Android only), `.maestro/buffer-editor-burst-setup.yaml` +
+  `buffer-stress-scroll-edits.yaml`, Android only), `.maestro/buffer-editor-burst-setup.yaml` (`-e LOAD_ID`, `-e VARIANT_TAPS`, `-e RELEASE_BUILD`) +
   `buffer-editor-burst.yaml` (200-character burst for traces), `.maestro/dismiss-buffer-keyboard.yaml`.
 
 ### Branch control

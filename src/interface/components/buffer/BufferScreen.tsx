@@ -87,7 +87,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           editable
           variant={variant}
           textStyle={textStyle}
-          topInset={headerHeight + layout.topGap}
+          headerHeight={headerHeight}
+          topGap={layout.topGap}
           placeholder="Start writing"
           onReplace={onReplace}
         />
