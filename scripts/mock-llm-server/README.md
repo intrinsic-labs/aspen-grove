@@ -31,9 +31,25 @@ For direct-adapter tests, initialize with any non-empty test key and override th
 completion endpoint to `http://localhost:1235/v1/messages` or `/v1/responses`.
 Discovery uses `/v1/models` on the same origin. Use `--model gpt-4.1` for OpenAI:
 the default `mock-model` is deliberately outside its text-model family filter.
-Direct-provider Settings screens are separate work. These endpoints use the same pacing,
+These endpoints use the same pacing,
 token caps (`max_tokens` or `max_output_tokens`), failure injection, titles and independent
 parallel requests as the chat mock. Keys are not validated by this local fixture.
+
+**Direct providers in the app.** Give each provider its own server (each lists and answers
+for one `--model`) and start Metro, or build a development build, with the full completion
+URL in `EXPO_PUBLIC_ANTHROPIC_ENDPOINT` / `EXPO_PUBLIC_OPENAI_ENDPOINT`; release builds refuse
+them. Then add any non-empty key in Settings → Connections:
+
+```sh
+node scripts/mock-llm-server/cli.ts --port 1236 --model claude-sonnet-mock   # Anthropic
+node scripts/mock-llm-server/cli.ts --port 1237 --model gpt-4.1              # OpenAI
+EXPO_PUBLIC_ANTHROPIC_ENDPOINT=http://localhost:1236/v1/messages \
+EXPO_PUBLIC_OPENAI_ENDPOINT=http://localhost:1237/v1/responses \
+  npx expo start --dev-client --port 8081
+```
+
+`.maestro/mock/direct-providers.yaml` drives this end to end. On an Android emulator, `adb
+reverse` each port as VERIFY.md section 9 shows.
 
 Then in the app: Settings → Connections → LM Studio endpoint
 `http://localhost:1235` → Test connection, and create an agent on the LM Studio

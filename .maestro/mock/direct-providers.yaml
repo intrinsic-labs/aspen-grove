@@ -1,0 +1,219 @@
+# Direct providers against the mock: an Anthropic key and an OpenAI key
+# entered in Settings -> API Settings and tested, then for each a tree
+# switched to the provider, its mock model picked in the model browser, one
+# turn sent and the reply seen.
+# Needs three mock servers (each lists and answers for one --model) and Metro
+# started with both endpoint overrides (see scripts/mock-llm-server/README.md,
+# "Direct providers in the app"):
+#   node scripts/mock-llm-server/cli.ts --port 1235
+#   node scripts/mock-llm-server/cli.ts --port 1236 --model claude-sonnet-mock
+#   node scripts/mock-llm-server/cli.ts --port 1237 --model gpt-4.1
+#   EXPO_PUBLIC_ANTHROPIC_ENDPOINT=http://localhost:1236/v1/messages \
+#   EXPO_PUBLIC_OPENAI_ENDPOINT=http://localhost:1237/v1/responses \
+#     npx expo start --dev-client
+#   maestro test .maestro/mock/direct-providers.yaml --test-output-dir "$SHOTS/direct-providers"
+# On Android, `adb reverse tcp:<port> tcp:<port>` each of 8081, 1235-1237.
+# The key's value is arbitrary: the mock takes any.
+appId: com.intrinsiclabs.aspengrove
+env:
+  ANTHROPIC_MODEL: claude-sonnet-mock
+  OPENAI_MODEL: gpt-4.1
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+
+# API Settings: four sections, in order.
+- runFlow: ../open-settings.yaml
+- tapOn:
+    id: settings-link-connections
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-edit
+    timeout: 10000
+- assertVisible:
+    id: connections-openai-edit
+- takeScreenshot: direct-01-api-settings
+
+# --- Anthropic: enter and test the key.
+- tapOn:
+    id: connections-anthropic-edit
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-key-input
+    timeout: 10000
+- takeScreenshot: direct-02-anthropic-key-sheet
+- tapOn:
+    id: connections-anthropic-key-input
+- inputText: sk-ant-mock-key
+- tapOn:
+    id: connections-anthropic-key-save
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-test
+    timeout: 10000
+- tapOn:
+    id: connections-anthropic-test
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-status
+      text: '.*accepted the key.*'
+    timeout: 15000
+- takeScreenshot: direct-03-anthropic-tested
+
+# --- OpenAI: enter and test the key.
+- scrollUntilVisible:
+    element:
+      id: connections-openai-edit
+    timeout: 10000
+- tapOn:
+    id: connections-openai-edit
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-key-input
+    timeout: 10000
+- tapOn:
+    id: connections-openai-key-input
+- inputText: sk-openai-mock-key
+- tapOn:
+    id: connections-openai-key-save
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-test
+    timeout: 10000
+- tapOn:
+    id: connections-openai-test
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-status
+      text: '.*accepted the key.*'
+    timeout: 15000
+- takeScreenshot: direct-04-openai-tested
+
+# --- A tree on Anthropic's mock model.
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Say hello in five words.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- assertVisible: 'Anthropic'
+- assertVisible: 'OpenAI'
+- takeScreenshot: direct-05-provider-picker
+- tapOn: 'Anthropic'
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 15000
+- assertVisible: ${ANTHROPIC_MODEL}
+- takeScreenshot: direct-06-anthropic-models
+- tapOn: ${ANTHROPIC_MODEL}
+- extendedWaitUntil:
+    visible:
+      id: model-detail-use
+    timeout: 10000
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- assertVisible:
+    id: tree-model-footer-id
+    text: ${ANTHROPIC_MODEL}
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-composer-input
+    commands:
+      - runFlow: ../go-back.yaml
+      - waitForAnimationToEnd
+- tapOn:
+    id: chat-composer-input
+- inputText: And the oldest lakes?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- takeScreenshot: direct-07-anthropic-reply
+
+# --- The same tree on OpenAI's mock model.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- tapOn: 'OpenAI'
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 15000
+- assertVisible: ${OPENAI_MODEL}
+- takeScreenshot: direct-08-openai-models
+- tapOn: ${OPENAI_MODEL}
+- extendedWaitUntil:
+    visible:
+      id: model-detail-use
+    timeout: 10000
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- assertVisible:
+    id: tree-model-footer-id
+    text: ${OPENAI_MODEL}
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-composer-input
+    commands:
+      - runFlow: ../go-back.yaml
+      - waitForAnimationToEnd
+- tapOn:
+    id: chat-composer-input
+- inputText: And the tallest trees?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 5
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- takeScreenshot: direct-09-openai-reply

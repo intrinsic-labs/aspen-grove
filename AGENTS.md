@@ -11,7 +11,7 @@ It is for people curious about what models are like: the loom and cyborgism crow
 Standing decisions:
 
 - **Local-first, bring your own keys, open source.** Nothing depends on an Intrinsic Labs server.
-- **Models come through OpenRouter, direct Anthropic and OpenAI, plus LM Studio for local models.** Direct-provider connection and picker UI is separate work under `ag-more-providers`.
+- **Models come through OpenRouter, direct Anthropic and OpenAI, plus LM Studio for local models.** Each hosted provider has a key section in Settings → Connections, and a connected one appears in every provider and model picker.
 - **A loom, not a harness:** no connectors, no web search, no MCP passthrough.
 - **Latent Spaces is the reference for look and behavior, not for its data model.** Latent Spaces is the SwiftUI prototype (`loom-swift`).
 - **Clean architecture** (Domain, Application, Infrastructure, Interface).

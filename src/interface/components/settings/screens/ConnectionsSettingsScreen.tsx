@@ -1,20 +1,18 @@
-import { useState } from 'react';
 import { ApiKeysHeroSection } from '../connections/ApiKeysHeroSection';
 import { LmStudioFormSection } from '../connections/LmStudioFormSection';
-import { OpenRouterKeySection } from '../connections/OpenRouterKeySection';
-import { OpenRouterKeySheet } from '../connections/OpenRouterKeySheet';
+import { PROVIDER_KEY_CONFIGS } from '../connections/provider-key-config';
+import { ProviderKeyConnection } from '../connections/ProviderKeyConnection';
 import { useConnectionsController } from '../connections/useConnectionsController';
 import { SettingsScreenScaffold } from '../SettingsScreenScaffold';
 import { SettingsStatus } from '../SettingsStatus';
 
 /**
  * Settings → Connections: Latent Spaces' API Keys page
- * (APIKeySettingsView.swift) with OpenRouter in place of Anthropic and
- * Aspen Grove's LM Studio server below it.
+ * (APIKeySettingsView.swift) with a key section per hosted provider
+ * (OpenRouter, Anthropic, OpenAI) and Aspen Grove's LM Studio server below.
  */
 const ConnectionsSettingsScreen = () => {
   const controller = useConnectionsController();
-  const [editingKey, setEditingKey] = useState(false);
 
   return (
     <SettingsScreenScaffold
@@ -22,25 +20,15 @@ const ConnectionsSettingsScreen = () => {
       loading={controller.loading}
     >
       <ApiKeysHeroSection />
-      <OpenRouterKeySection
-        hasStoredKey={controller.hasStoredApiKey}
-        onEditKey={() => setEditingKey(true)}
-      />
+      {PROVIDER_KEY_CONFIGS.map((config) => (
+        <ProviderKeyConnection key={config.provider} config={config} />
+      ))}
       <LmStudioFormSection controller={controller} />
       <SettingsStatus
         saving={controller.saving}
         notice={null}
         error={controller.error}
         hasValidationError={false}
-      />
-      <OpenRouterKeySheet
-        visible={editingKey}
-        currentKey={controller.apiKeyInput}
-        onCancel={() => setEditingKey(false)}
-        onSave={(key) => {
-          controller.setApiKeyInput(key);
-          setEditingKey(false);
-        }}
       />
     </SettingsScreenScaffold>
   );

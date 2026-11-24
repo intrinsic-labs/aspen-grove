@@ -50,14 +50,14 @@ describe('release env guard', () => {
     expect(guard.findReleaseEnvLeaks({ [KEY]: 'k' })).toEqual([]);
   });
 
-  it('covers every EXPO_PUBLIC_ fallback the app reads', () => {
-    const source = readFileSync(
-      join(__dirname, '../src/interface/components/chat/provider-key.ts'),
-      'utf8'
-    );
-    const read = [...source.matchAll(/'(EXPO_PUBLIC_[A-Z_]+)'/g)].map(
-      (m) => m[1]
-    );
+  it('covers every EXPO_PUBLIC_ variable the app reads', () => {
+    const read = [
+      'src/interface/components/chat/provider-key.ts',
+      'src/interface/composition/direct-provider-endpoints.ts',
+    ].flatMap((file) => {
+      const source = readFileSync(join(__dirname, '..', file), 'utf8');
+      return [...source.matchAll(/'(EXPO_PUBLIC_[A-Z_]+)'/g)].map((m) => m[1]);
+    });
     expect(read.length).toBeGreaterThan(0);
     expect([...guard.RELEASE_FORBIDDEN_ENV].sort()).toEqual([...read].sort());
   });

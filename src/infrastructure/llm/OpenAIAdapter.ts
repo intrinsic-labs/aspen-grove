@@ -4,7 +4,16 @@ import type { StreamTimeouts } from './shared/stream-timeouts';
 
 /** OpenAI Responses API; each request carries the full local branch history. */
 export class OpenAIAdapter extends DirectTextAdapter {
-  constructor(timeoutMs?: number, streamTimeouts?: StreamTimeouts) {
-    super(openAIProtocol, timeoutMs, streamTimeouts);
+  /** `endpoint` replaces the full completion URL (a development mock). */
+  constructor(
+    timeoutMs?: number,
+    streamTimeouts?: StreamTimeouts,
+    endpoint?: string
+  ) {
+    super(
+      endpoint ? { ...openAIProtocol, endpoint } : openAIProtocol,
+      timeoutMs,
+      streamTimeouts
+    );
   }
 }

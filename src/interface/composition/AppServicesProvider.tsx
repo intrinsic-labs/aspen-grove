@@ -56,6 +56,7 @@ import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { ExpoSpeechSynthesizer } from '@infrastructure/speech';
 import { parseULID, type ULID } from '@domain/value-objects';
 import { findProviderApiKey } from '@/interface/components/chat/provider-key';
+import { directProviderEndpoint } from './direct-provider-endpoints';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
 
@@ -155,8 +156,16 @@ const buildAppServices = (): AppServices => {
     providerRegistry: new ProviderRegistry({
       openrouter: openRouterAdapter,
       lmstudio: lmStudioAdapter,
-      anthropic: new AnthropicAdapter(),
-      openai: new OpenAIAdapter(),
+      anthropic: new AnthropicAdapter(
+        undefined,
+        undefined,
+        directProviderEndpoint('anthropic')
+      ),
+      openai: new OpenAIAdapter(
+        undefined,
+        undefined,
+        directProviderEndpoint('openai')
+      ),
     }),
     credentialStore: new ExpoSecureCredentialStore(),
     openRouterCatalog,
@@ -280,9 +289,8 @@ const buildAppServices = (): AppServices => {
     getSetupStatusUseCase: new GetSetupStatusUseCase({
       agentRepository: repositories.agentRepo,
       userPreferencesRepository: repositories.userPreferencesRepo,
-      hasOpenRouterKey: async () =>
-        (await findProviderApiKey(adapters.credentialStore, 'openrouter')) !==
-        null,
+      hasProviderKey: async (provider) =>
+        (await findProviderApiKey(adapters.credentialStore, provider)) !== null,
     }),
   } as const;
 

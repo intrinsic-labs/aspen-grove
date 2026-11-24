@@ -7,7 +7,11 @@ import {
   type SetupStatus,
 } from '@application/services/onboarding';
 import { resolveDefaultModelAgent } from '@application/services/resolve-default-model-agent';
-import type { Agent } from '@domain/entities';
+import {
+  isKeyedProvider,
+  type Agent,
+  type KeyedProvider,
+} from '@domain/entities';
 
 export type GetSetupStatusDependencies = {
   readonly agentRepository: Pick<
@@ -18,8 +22,8 @@ export type GetSetupStatusDependencies = {
     IUserPreferencesRepository,
     'get' | 'update'
   >;
-  /** Whether an OpenRouter key is available (secure storage or build env). */
-  readonly hasOpenRouterKey: () => Promise<boolean>;
+  /** Whether a hosted provider's key is available (secure storage or build env). */
+  readonly hasProviderKey: (provider: KeyedProvider) => Promise<boolean>;
 };
 
 export type GetSetupStatusResult = {
@@ -47,7 +51,7 @@ export class GetSetupStatusUseCase {
   constructor(private readonly dependencies: GetSetupStatusDependencies) {}
 
   async execute(): Promise<GetSetupStatusResult> {
-    const { agentRepository, userPreferencesRepository, hasOpenRouterKey } =
+    const { agentRepository, userPreferencesRepository, hasProviderKey } =
       this.dependencies;
 
     const preferences = await userPreferencesRepository.get();
@@ -57,11 +61,15 @@ export class GetSetupStatusUseCase {
     });
     const sharedAgents = await agentRepository.findSharedModels(true);
 
+    const defaultProvider = providerOf(defaultAgent);
     const status = assessSetupStatus({
       onboardingCompletedAt: preferences.onboardingCompletedAt,
       sharedModelAgentCount: sharedAgents.length,
-      defaultAgentProvider: providerOf(defaultAgent),
-      hasOpenRouterKey: await hasOpenRouterKey(),
+      defaultAgentProvider: defaultProvider,
+      hasDefaultProviderKey:
+        defaultProvider !== null && isKeyedProvider(defaultProvider)
+          ? await hasProviderKey(defaultProvider)
+          : false,
     });
 
     return { status, defaultAgent };

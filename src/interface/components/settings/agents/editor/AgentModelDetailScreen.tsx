@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { browsableProvider } from '../../../models/browsable-provider';
 import { ModelDetailView } from '../../../models/ModelDetailView';
-import { useOpenRouterModel } from '../../../models/useOpenRouterModel';
+import { useCatalogModel } from '../../../models/useCatalogModel';
 import { useAgentEditor } from './agent-editor-context';
 
 /**
@@ -10,19 +11,21 @@ import { useAgentEditor } from './agent-editor-context';
 export const AgentModelDetailScreen = () => {
   const { modelId } = useLocalSearchParams<{ modelId: string }>();
   const router = useRouter();
-  const { model, loading, error } = useOpenRouterModel(modelId);
   const { draft, patchDraft } = useAgentEditor();
+  const provider = browsableProvider(draft.provider);
+  const { model, loading, error } = useCatalogModel(provider, modelId);
 
   return (
     <ModelDetailView
+      provider={provider}
       model={model}
       loading={loading}
       error={error}
       isCurrent={
-        draft.provider === 'openrouter' && draft.modelIdentifier === modelId
+        draft.provider === provider && draft.modelIdentifier === modelId
       }
       onUse={() => {
-        patchDraft({ provider: 'openrouter', modelIdentifier: modelId });
+        patchDraft({ provider, modelIdentifier: modelId });
         // Past the list, back to the Form.
         router.dismiss(2);
         return Promise.resolve(true);

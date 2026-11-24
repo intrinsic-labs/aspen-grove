@@ -20,9 +20,9 @@ it('routes each direct provider through its own per-agent adapter', () => {
   });
   expect(registry.getAvailableProviders()).toEqual([
     'openrouter',
-    'lmstudio',
     'anthropic',
     'openai',
+    'lmstudio',
   ]);
   expect(
     registry.getProviderForModelRef(parseModelRef('anthropic:claude-opus-5-5'))

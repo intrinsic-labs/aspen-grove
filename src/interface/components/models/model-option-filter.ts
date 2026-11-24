@@ -22,8 +22,9 @@ export const filterModelOptions = (
 };
 
 /**
- * The search text as a custom identifier, when it can be one: OpenRouter
- * only (LM Studio lists what it has), and not already a listed id.
+ * The search text as a custom identifier, when it can be one: any provider
+ * with a browser (a model newer than its list can still be addressed by id;
+ * LM Studio lists what it has), and not already a listed id.
  */
 export const customModelIdentifier = (
   provider: SelectableProvider,
@@ -31,7 +32,7 @@ export const customModelIdentifier = (
   options: readonly ModelOption[]
 ): string | null => {
   const trimmed = search.trim();
-  if (provider !== 'openrouter' || trimmed.length === 0) {
+  if (provider === 'lmstudio' || trimmed.length === 0) {
     return null;
   }
   return options.some((option) => option.id === trimmed) ? null : trimmed;

@@ -1,29 +1,36 @@
 import { useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
+import { browsableProvider } from '../../models/browsable-provider';
 import { catalogModelForId } from '../../models/catalog-model-for-id';
 import { ModelBrowserList } from '../../models/ModelBrowserList';
 import { useModelPickerData } from '../../models/useModelPickerData';
 import { treeModelRoutes } from './tree-model-routes';
-import { useTreeOpenRouterChoice } from './useTreeOpenRouterChoice';
+import { useTreeModelChoice } from './useTreeModelChoice';
 
 /**
- * OpenRouter's Model page for a tree (TreeModelSettingsView.swift:101-117,
+ * A provider's Model page for a tree (TreeModelSettingsView.swift:101-117,
  * `.pickerStyle(.navigationLink)`), as Aspen Grove's model browser: a tap
- * opens the model's page, where "Use This Model" chooses it.
+ * opens the model's page, where "Use This Model" chooses it. The provider
+ * (OpenRouter, Anthropic or OpenAI) comes with the route.
  */
-const OpenRouterModelListScreen = () => {
-  const { treeId } = useLocalSearchParams<{ treeId: string }>();
+const TreeModelListScreen = () => {
+  const { treeId, provider: providerParam } = useLocalSearchParams<{
+    treeId: string;
+    provider?: string;
+  }>();
+  const provider = browsableProvider(providerParam);
   const router = useRouter();
-  const picker = useModelPickerData('openrouter');
-  const { currentId, error, choose } = useTreeOpenRouterChoice(
-    treeId as ULID | undefined
+  const picker = useModelPickerData(provider);
+  const { currentId, error, choose } = useTreeModelChoice(
+    treeId as ULID | undefined,
+    provider
   );
 
   const onOpen = useCallback(
     (id: string) =>
-      treeId && router.push(treeModelRoutes.modelDetail(treeId, id)),
-    [router, treeId]
+      treeId && router.push(treeModelRoutes.modelDetail(treeId, provider, id)),
+    [provider, router, treeId]
   );
   // A custom id naming a listed model is held to that model's limit.
   const onUseCustom = useCallback(
@@ -37,6 +44,7 @@ const OpenRouterModelListScreen = () => {
   return (
     <ModelBrowserList
       testIDPrefix="tree-model"
+      provider={provider}
       options={picker.options}
       loading={picker.loading}
       error={picker.error ?? error}
@@ -47,4 +55,4 @@ const OpenRouterModelListScreen = () => {
   );
 };
 
-export default OpenRouterModelListScreen;
+export default TreeModelListScreen;

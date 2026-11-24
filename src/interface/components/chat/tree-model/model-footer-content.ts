@@ -17,14 +17,15 @@ export type ModelFooterSource = {
 
 export type ModelFooterContent = {
   readonly description?: string;
-  /** OpenRouter's context window, as "Context: 128,000 tokens". */
+  /** A catalog model's context window, as "Context: 128,000 tokens". */
   readonly context?: string;
 };
 
 /**
- * What the Provider Options footer shows under the model id: OpenRouter's
- * description and context window, LM Studio's detail line (which carries its
- * own context), the list's error, or a nudge to choose a model.
+ * What the Provider Options footer shows under the model id: a catalog
+ * model's description (OpenRouter's) and context window, LM Studio's detail
+ * line (which carries its own context), the list's error, or a nudge to
+ * choose a model.
  */
 export const modelFooterContent = (
   source: ModelFooterSource
@@ -35,10 +36,10 @@ export const modelFooterContent = (
   if (!source.modelId) {
     return source.hasAgent ? {} : { description: NO_MODEL_NOTE };
   }
-  if (source.provider !== 'openrouter') {
+  if (source.provider === 'lmstudio') {
     return { description: source.selected?.detail };
   }
-  const contextLength = source.selected?.openRouter?.contextLength;
+  const contextLength = source.selected?.catalog?.contextLength;
   return {
     description: source.selected?.description,
     context: contextLength ? formatContextLength(contextLength) : undefined,

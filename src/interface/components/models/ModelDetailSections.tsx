@@ -6,6 +6,7 @@ import {
   formText,
 } from '@/interface/ui/components/form';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import type { BrowsableProvider } from './browsable-provider';
 import { DescriptionText } from './DescriptionText';
 import {
   formatIsoDay,
@@ -21,6 +22,7 @@ import { ModelParameterChips } from './ModelParameterChips';
 const browser = loomUiTokens.modelBrowser;
 
 type ModelDetailSectionsProps = {
+  readonly provider: BrowsableProvider;
   readonly model: OpenRouterCatalogModel;
 };
 
@@ -28,16 +30,25 @@ const tokens = (count?: number): string | null =>
   count === undefined ? null : `${formatTokensFull(count)} tokens`;
 
 /**
- * What OpenRouter's model page tells a person choosing a model: what it is,
- * how much it reads and writes, what it costs, what it takes in and puts
- * out, which parameters it accepts, when it arrived, and a link to the page
- * itself. Sections without data are left out.
+ * What a model's page tells a person choosing it: what it is, how much it
+ * reads and writes, what it costs, what it takes in and puts out, which
+ * parameters it accepts, when it arrived, and (OpenRouter's) a link to the
+ * page itself. Sections without data are left out; Anthropic's and OpenAI's
+ * lists carry no prices or descriptions, so those sections don't show.
  */
-export const ModelDetailSections = ({ model }: ModelDetailSectionsProps) => {
+export const ModelDetailSections = ({
+  model,
+  provider,
+}: ModelDetailSectionsProps) => {
   const context = tokens(model.contextLength);
   const maxOutput = tokens(model.maxCompletionTokens);
   const prices = pricingLines(model);
   const parameters = model.supportedParameters ?? [];
+  const hasDetails =
+    provider === 'openrouter' ||
+    model.aliasOf !== undefined ||
+    model.created !== undefined ||
+    model.knowledgeCutoff !== undefined;
 
   return (
     <>
@@ -107,30 +118,34 @@ export const ModelDetailSections = ({ model }: ModelDetailSectionsProps) => {
         </FormSection>
       ) : null}
 
-      <FormSection header="Details">
-        {model.aliasOf ? (
-          <ModelInfoRow title="Points to" value={model.aliasOf} />
-        ) : null}
-        {model.created !== undefined ? (
-          <ModelInfoRow
-            testID="model-detail-created"
-            title="Added"
-            value={formatUnixDate(model.created)}
-          />
-        ) : null}
-        {model.knowledgeCutoff ? (
-          <ModelInfoRow
-            title="Knowledge cutoff"
-            value={formatIsoDay(model.knowledgeCutoff)}
-          />
-        ) : null}
-        <FormButtonRow
-          testID="model-detail-link"
-          title="View on OpenRouter"
-          icon="open-outline"
-          onPress={() => void Linking.openURL(openRouterModelUrl(model))}
-        />
-      </FormSection>
+      {hasDetails ? (
+        <FormSection header="Details">
+          {model.aliasOf ? (
+            <ModelInfoRow title="Points to" value={model.aliasOf} />
+          ) : null}
+          {model.created !== undefined ? (
+            <ModelInfoRow
+              testID="model-detail-created"
+              title="Added"
+              value={formatUnixDate(model.created)}
+            />
+          ) : null}
+          {model.knowledgeCutoff ? (
+            <ModelInfoRow
+              title="Knowledge cutoff"
+              value={formatIsoDay(model.knowledgeCutoff)}
+            />
+          ) : null}
+          {provider === 'openrouter' ? (
+            <FormButtonRow
+              testID="model-detail-link"
+              title="View on OpenRouter"
+              icon="open-outline"
+              onPress={() => void Linking.openURL(openRouterModelUrl(model))}
+            />
+          ) : null}
+        </FormSection>
+      ) : null}
     </>
   );
 };

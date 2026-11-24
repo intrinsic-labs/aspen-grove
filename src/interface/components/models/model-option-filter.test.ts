@@ -33,6 +33,15 @@ describe('customModelIdentifier', () => {
     expect(customModelIdentifier('openrouter', ' x/y ', OPTIONS)).toBe('x/y');
   });
 
+  it.each(['anthropic', 'openai'] as const)(
+    'offers an id %s does not list yet, as a model can be newer than its list',
+    (provider) => {
+      expect(customModelIdentifier(provider, ' new-model ', OPTIONS)).toBe(
+        'new-model'
+      );
+    }
+  );
+
   it('offers nothing for a listed id, an empty search or LM Studio', () => {
     expect(
       customModelIdentifier('openrouter', 'meta/llama', OPTIONS)
