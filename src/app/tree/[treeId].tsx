@@ -1,3 +1,3 @@
-import LoomTreeChatView from '@interface/components/LoomTreeChatView';
+import TreeModeScreen from '@interface/components/buffer/TreeModeScreen';
 
-export default LoomTreeChatView;
+export default TreeModeScreen;

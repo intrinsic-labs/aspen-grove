@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
+  CreateBufferLoomTreeUseCase,
   CreateDialogueLoomTreeUseCase,
   CreateSharedAgentUseCase,
   DeleteAgentUseCase,
@@ -82,6 +83,7 @@ export type AppServices = {
     readonly readAloud: ReadAloudService;
   };
   readonly useCases: {
+    readonly createBufferLoomTreeUseCase: CreateBufferLoomTreeUseCase;
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
     readonly createSharedAgentUseCase: CreateSharedAgentUseCase;
     readonly deleteAgentUseCase: DeleteAgentUseCase;
@@ -165,6 +167,14 @@ const buildAppServices = (): AppServices => {
   });
 
   const useCases = {
+    createBufferLoomTreeUseCase: new CreateBufferLoomTreeUseCase({
+      groveRepository: repositories.groveRepo,
+      agentRepository: repositories.agentRepo,
+      loomTreeRepository: repositories.treeRepo,
+      nodeRepository: repositories.nodeRepo,
+      pathRepository: repositories.pathRepo,
+      pathStateRepository: repositories.pathStateRepo,
+    }),
     createDialogueLoomTreeUseCase: new CreateDialogueLoomTreeUseCase({
       groveRepository: repositories.groveRepo,
       agentRepository: repositories.agentRepo,

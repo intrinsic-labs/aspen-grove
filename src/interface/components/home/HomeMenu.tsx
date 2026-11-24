@@ -10,6 +10,7 @@ type HomeMenuProps = {
   readonly tags: readonly Tag[];
   readonly activeTagId: ULID | null;
   readonly busy: boolean;
+  readonly bufferPreview?: boolean;
   readonly onCommand: (command: HomeMenuCommand) => void;
 };
 
@@ -22,11 +23,12 @@ export const HomeMenu = ({
   tags,
   activeTagId,
   busy,
+  bufferPreview = false,
   onCommand,
 }: HomeMenuProps) => {
   const menu = useMemo(
-    () => buildHomeMenu(tags, activeTagId),
-    [tags, activeTagId]
+    () => buildHomeMenu(tags, activeTagId, bufferPreview),
+    [tags, activeTagId, bufferPreview]
   );
 
   return (

@@ -15,6 +15,9 @@ type UseHomeHeaderInput = {
   readonly setActiveTagId: (tagId: ULID | null) => void;
   readonly busy: boolean;
   readonly importTree: () => Promise<void>;
+  /** Buffer developer preview: the menu offers New Buffer. */
+  readonly bufferPreview?: boolean;
+  readonly createBuffer?: () => Promise<boolean>;
 };
 
 /**
@@ -27,6 +30,8 @@ export const useHomeHeader = ({
   setActiveTagId,
   busy,
   importTree,
+  bufferPreview = false,
+  createBuffer,
 }: UseHomeHeaderInput) => {
   const navigation = useNavigation();
   const router = useRouter();
@@ -49,6 +54,9 @@ export const useHomeHeader = ({
         case 'search':
           router.push('/search');
           break;
+        case 'newBuffer':
+          void createBuffer?.();
+          break;
         case 'filterTag':
           setActiveTagId(command.tagId);
           break;
@@ -61,10 +69,21 @@ export const useHomeHeader = ({
           tags={tags}
           activeTagId={activeTagId}
           busy={busy}
+          bufferPreview={bufferPreview}
           onCommand={onCommand}
         />
       ),
       headerRight: () => <HomeSettingsButton />,
     });
-  }, [activeTagId, busy, importTree, navigation, router, setActiveTagId, tags]);
+  }, [
+    activeTagId,
+    bufferPreview,
+    busy,
+    createBuffer,
+    importTree,
+    navigation,
+    router,
+    setActiveTagId,
+    tags,
+  ]);
 };

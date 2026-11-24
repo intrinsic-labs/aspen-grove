@@ -1,3 +1,4 @@
+export * from './CreateBufferLoomTreeUseCase';
 export * from './CreateDialogueLoomTreeUseCase';
 export * from './CreateSharedAgentUseCase';
 export * from './DeleteAgentUseCase';

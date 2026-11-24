@@ -13,6 +13,7 @@ export type HomeMenuCommand =
   | { readonly type: 'info' }
   | { readonly type: 'onboarding' }
   | { readonly type: 'search' }
+  | { readonly type: 'newBuffer' }
   | { readonly type: 'filterTag'; readonly tagId: ULID | null };
 
 type HomeMenuNode = MenuTreeNode<HomeMenuCommand>;
@@ -29,10 +30,13 @@ type MenuTag = { readonly id: ULID; readonly name: string };
  * then OpenLoom Docs, Info & Tutorials and Show Onboarding. Aspen Grove's
  * own Search and tag filter, which have no place in Latent Spaces, follow
  * in a last group. The tag filter is a submenu, shown once a tag exists.
+ * New Buffer, a section of its own after them, exists only in the buffer
+ * developer preview (`bufferPreview`).
  */
 export const buildHomeMenu = (
   tags: readonly MenuTag[],
-  activeTagId: ULID | null
+  activeTagId: ULID | null,
+  bufferPreview = false
 ): readonly HomeMenuNode[] => [
   menuControlGroup([leaf('Import OpenLoom Tree', 'tree', { type: 'import' })]),
   leaf('OpenLoom Docs', 'book', { type: 'docs' }),
@@ -65,4 +69,7 @@ export const buildHomeMenu = (
         ]
       : []),
   ]),
+  ...(bufferPreview
+    ? [inlineSection([leaf('New Buffer', 'doc.text', { type: 'newBuffer' })])]
+    : []),
 ];

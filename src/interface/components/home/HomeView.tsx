@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LoomTree } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
+import { useCreateBufferTree } from '@/interface/hooks/useCreateBufferTree';
 import { useCreateLoomTree } from '@/interface/hooks/useCreateLoomTree';
 import { useSetupStatus } from '@/interface/hooks/useSetupStatus';
 import { BlurTarget } from '@/interface/ui/components/blur/BlurTarget';
@@ -14,6 +15,7 @@ import { BlurTargetScope } from '@/interface/ui/components/blur/BlurTargetScope'
 import { TextPromptDialog } from '@/interface/ui/components/text-prompt/TextPromptDialog';
 import { AppScreen } from '@/interface/ui/value-objects';
 import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
+import { isBufferPreviewEnabled } from '../buffer/buffer-preview-flag';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
 import { useFirstRunRedirect } from '../onboarding/useFirstRunRedirect';
 import { DateHeader } from './DateHeader';
@@ -49,6 +51,7 @@ const HomeView = () => {
 
   const home = useHomeTrees();
   const { creating, createTree } = useCreateLoomTree(home.setError);
+  const { createBuffer } = useCreateBufferTree(home.setError);
   const { importing, importTree } = useImportTree({
     reload: home.reload,
     setError: home.setError,
@@ -63,6 +66,8 @@ const HomeView = () => {
     setActiveTagId: home.setActiveTagId,
     busy: importing,
     importTree,
+    bufferPreview: isBufferPreviewEnabled(),
+    createBuffer,
   });
 
   const openTree = (tree: LoomTree) => {
