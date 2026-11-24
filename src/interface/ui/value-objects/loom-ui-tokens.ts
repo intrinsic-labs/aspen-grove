@@ -17,6 +17,7 @@
  * ported against these. The expanded composer tokens are still Aspen
  * Grove's provisional values until that screen is ported.
  */
+import { bufferTokens } from './tokens/buffer';
 import { colorTokens } from './tokens/colors';
 import { dialogueTokens } from './tokens/dialogue';
 import { homeTokens } from './tokens/home';
@@ -33,4 +34,5 @@ export const loomUiTokens = {
   ...onboardingTokens,
   ...sheetTokens,
   ...modelBrowserTokens,
+  buffer: bufferTokens,
 } as const;
