@@ -45,12 +45,14 @@ export const BufferTextInput = ({
   const selection = useRef<BufferSelection | null>(null);
   const tracker = useRef(createChangeTracker(text));
   // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
-  // native input: Android otherwise keeps the end of the new text in view
-  // instead of its start.
+  // native input with its caret pinned to the start until the user moves it:
+  // Android otherwise keeps the end of the new text in view.
   const [generation, setGeneration] = useState(0);
+  const [atStart, setAtStart] = useState(false);
   const replaced = tracker.current.sync(text);
   if (replaced !== null && startsNewDocument(replaced, text)) {
     setGeneration(generation + 1);
+    setAtStart(true);
   }
 
   const onChange = useCallback(
@@ -69,14 +71,19 @@ export const BufferTextInput = ({
   const onSelection = useCallback(
     (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
       selection.current = event.nativeEvent.selection;
+      const { start, end } = event.nativeEvent.selection;
+      if (atStart && (start !== 0 || end !== 0)) {
+        setAtStart(false);
+      }
       onSelectionChange?.(event.nativeEvent.selection);
     },
-    [onSelectionChange]
+    [atStart, onSelectionChange]
   );
 
   return (
     <AppTextInput
       key={generation}
+      selection={atStart ? START : undefined}
       testID="buffer-document"
       multiline
       scrollEnabled
@@ -109,6 +116,8 @@ export const BufferTextInput = ({
     </AppTextInput>
   );
 };
+
+const START = { start: 0, end: 0 } as const;
 
 /** A sibling switch keeps the shared opening; a fixture load shares nothing. */
 const startsNewDocument = (before: string, after: string) =>

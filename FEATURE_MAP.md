@@ -1160,7 +1160,8 @@ dialogue.
   `native-change-tracker` keeps that baseline synchronously, because native events outrun React
   renders (fast typing garbled the text before) and remembers the strings it sent so the
   re-rendered echo is not taken for an external change; iOS's double first character is ignored
-  as a change equal to the baseline. "Load 30k" fills a 30,000-character fixture
+  as a change equal to the baseline. A document loaded wholesale (not a sibling switch) remounts
+  the input with its caret pinned to the start, so Android opens a long fixture at its top. "Load 30k" fills a 30,000-character fixture
   (`stressPreview`). Visual decisions: `docs/architecture/specs/buffer-mode.md`. Flows:
   `.maestro/buffer-editor-preview.yaml`, `.maestro/buffer-editor-stress.yaml` (with
   `buffer-stress-scroll-edits.yaml`, Android only), `.maestro/buffer-editor-burst-setup.yaml` +
