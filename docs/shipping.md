@@ -55,79 +55,89 @@ Nothing secret lives in this repository. Never commit an Expo token, a `.p8` key
 keystore or an `EXPO_PUBLIC_*` key.
 
 - **Expo:** `EXPO_TOKEN` is a robot access token on the `rocketbro` account (Developer
-  role). It created and linked the project. Expo's Developer role also covers builds and
-  credentials. Submitting isn't listed separately, so the first submit is where a missing
-  permission would show up. It can't set the project's dashboard icon. For an interactive
-  shell, `eas login` works too.
-- **Apple:** an App Store Connect API **team** key with the **Admin** role. A team key has
-  an issuer id, and Apple keeps individual keys out of certificates and profiles. An App
-  Manager key can do it only with "Access to Certificates, Identifiers & Profiles". EAS
-  stores the distribution certificate and provisioning profile it makes with the key.
-  [scripts/eas-ios-release.sh](../scripts/eas-ios-release.sh) reads the key from:
+  role). It created and linked the project. Expo's Developer role also covers builds,
+  credentials and submits. It can't set the project's dashboard icon. For an interactive
+  shell, `eas login` works too. Agents get the token from the project brief's
+  `credentials:`.
+- **Apple:** the app belongs to the Apple Developer team `8462243PH7` (an Individual
+  team). EAS keeps everything Apple needs after the first build: the distribution
+  certificate, the provisioning profile and an App Store Connect API key for submits. From
+  then on a release needs only `EXPO_TOKEN`.
+
+  For credential repair, or to submit with a key of your own,
+  [scripts/eas-ios-release.sh](../scripts/eas-ios-release.sh) also takes an App Store
+  Connect API **team** key (Admin role) from the environment. Set all four or none:
 
   | Variable | Value |
   |---|---|
-  | `EXPO_TOKEN` | Expo access token (above) |
   | `ASC_KEY_ID` | API key id |
   | `ASC_ISSUER_ID` | issuer id |
-  | `ASC_TEAM_ID` | Apple Developer team id |
+  | `ASC_TEAM_ID` | Apple Developer team id (`8462243PH7`) |
   | `ASC_API_KEY_P8` | contents of the `.p8` file |
-  | `ASC_TEAM_TYPE` | optional: `COMPANY_OR_ORGANIZATION` (default), `INDIVIDUAL` or `IN_HOUSE` |
+  | `ASC_TEAM_TYPE` | optional: `INDIVIDUAL` (default), `COMPANY_OR_ORGANIZATION` or `IN_HOUSE` |
 
   The script writes the key to a private temp file, which a trap deletes, and maps the
   variables to the ones eas-cli reads: `EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`,
-  `EXPO_ASC_ISSUER_ID`, `EXPO_APPLE_TEAM_ID` and `EXPO_APPLE_TEAM_TYPE`. It submits with the
-  `production-asc-key` submit profile, which is `production` plus the key read from the first
-  three. eas.json rejects those fields when they are empty, so plain `production` stays
-  usable without them, either with a key stored on EAS or interactively.
+  `EXPO_ASC_ISSUER_ID`, `EXPO_APPLE_TEAM_ID` and `EXPO_APPLE_TEAM_TYPE`. It then submits
+  with the `production-asc-key` submit profile, which is `production` plus the key read
+  from the first three. eas.json rejects those fields when they are empty, which is why
+  plain `production` is a separate profile that uses the key stored on EAS.
 
 ## First build
 
 eas-cli (27.x) has two limits that shape this:
 
 - It **won't create** a distribution certificate or provisioning profile with
-  `--non-interactive`, even with an API key. The first build runs interactively, but the
-  API key does the Apple side, so nobody signs in with an Apple ID.
-- It **can't create the App Store Connect app record with an API key.** That path needs an
-  Apple ID session, and with `--non-interactive` the submit just stops without `ascAppId`.
-  A person creates the record on the website.
+  `--non-interactive`. The first build runs in a terminal.
+- **Only an Apple ID session can create the App Store Connect app record.** An API key
+  can't, and without `ascAppId` a non-interactive submit stops.
 
-In order:
+So the first build is one interactive run, signed in with the Apple ID of the team's
+account holder:
 
-1. **Apple Developer / App Store Connect:** accept any pending agreements (App Store Connect
-   → Business, and the Program License Agreement on developer.apple.com). Builds and uploads
-   fail until they are accepted.
-2. **App Store Connect → Users and Access → Integrations → App Store Connect API → Team
-   Keys:** generate a key with the Admin role. Download the `.p8` (only possible once) and
-   note the key id, the issuer id and the team id (developer.apple.com → Membership).
-3. **First build, from a terminal**, with the variables above set:
-   `scripts/eas-ios-release.sh --first-run`. EAS registers the bundle id and creates the
-   certificate and profile with the key, then builds. Answer yes if eas-cli asks to
-   generate them. This run is the first time the robot token creates credentials.
-4. **App Store Connect → Apps → + → New App:** iOS, name "Aspen Grove" (choose another if the
-   name is taken; it can differ from the home-screen name), primary language English (U.S.),
-   bundle id `com.intrinsiclabs.aspengrove` (registered in step 3), and any unique SKU, such
-   as `aspen-grove`. Full access.
-5. Copy the app's numeric **Apple ID** (App Information → General Information) into
-   [eas.json](../eas.json) as `submit.production.ios.ascAppId` and commit it.
-6. `scripts/eas-ios-release.sh --submit-latest` uploads the build from step 3. EAS sets up
-   an internal TestFlight group on first submit.
-7. **TestFlight:** add internal testers. They must be users on the App Store Connect team.
-   For external testers, fill in Test Information (feedback email, beta description) and
-   send the build to Beta App Review. That first review takes a day or so.
+1. **Accept any pending Apple agreements** (App Store Connect → Business, and the Program
+   License Agreement on developer.apple.com). Builds and uploads fail until they are
+   accepted.
+2. **From a terminal on a checkout of `main`**, signed in to Expo (`EXPO_TOKEN` or
+   `eas login`), with no `ASC_*` variables set:
 
-If you'd rather submit in step 3, do step 4 first, after registering the bundle id by hand
-under developer.apple.com → Identifiers.
+   ```sh
+   npm ci
+   scripts/eas-ios-release.sh --first-run
+   ```
+
+   Answer yes to each prompt: sign in to the Apple account (Apple ID and two-factor code),
+   generate the distribution certificate, generate the provisioning profile. EAS registers
+   the bundle id and builds in the cloud (about 15 to 25 minutes). It then submits: it
+   creates the App Store Connect app ("Aspen Grove", English (U.S.), from eas.json's
+   `submit.production`) if it doesn't exist, offers to generate an App Store Connect API
+   key (answer yes; EAS stores it for later submits) and uploads the build.
+3. **Record the app id.** Copy the app's numeric **Apple ID** (App Store Connect → the app
+   → App Information → General Information, or the submit log) into
+   [eas.json](../eas.json) as `submit.production.ios.ascAppId` and commit it. Release runs
+   need it.
+4. **TestFlight:** the first upload lands in an internal group. Internal testers must be
+   users on the App Store Connect team; the account holder already is. For external
+   testers, fill in Test Information (feedback email, beta description) and send the
+   build to Beta App Review, which takes a day or so the first time.
+
+If the app record name "Aspen Grove" is taken, change `submit.production.ios.appName` to
+something unique; the home-screen name stays `expo.name`.
 
 ## Ship the next TestFlight build
 
-From a clean checkout of `main` with CI green, with the variables above set:
+From a clean checkout of `main` with CI green and `EXPO_TOKEN` set:
 
 ```sh
 npm ci
 scripts/eas-ios-release.sh   # builds the production profile, then submits it, without prompts
 ```
 
-Processing takes a few minutes before the build shows in TestFlight. Before you call it
-shipped, install it from TestFlight and walk the Beta 1 loop once. Check that LM Studio on
-the LAN still connects, since only Release builds use the app's own local-network prompt.
+`scripts/eas-ios-release.sh --submit-latest` re-submits the latest build if the upload
+step failed. Processing takes a few minutes before the build shows in TestFlight. Before
+you call it shipped, install it from TestFlight and walk the Beta 1 loop once. Check that
+LM Studio on the LAN still connects, since only Release builds use the app's own
+local-network prompt.
+
+When the provisioning profile expires (12 months) or the certificate is revoked, run
+`--first-run` again, or set the `ASC_*` key variables so eas-cli can repair them.
