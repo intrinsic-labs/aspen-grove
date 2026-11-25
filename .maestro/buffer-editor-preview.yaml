@@ -75,13 +75,14 @@ appId: com.intrinsiclabs.aspengrove
 - assertVisible: 'Branch 1 of 2'
 # iOS snaps a tap to the nearest word edge; Android puts the caret at the
 # exact character, so it is aimed at the end of "falling" (1080x2424 px).
+# The iOS point is relative to the screen, not the input: on iOS the input's
+# frame starts below the header, so a point relative to it lands lower.
 - runFlow:
     when:
       platform: iOS
     commands:
       - tapOn:
-          id: buffer-document
-          point: '50%,17%'
+          point: '55%,17%'
 - runFlow:
     when:
       platform: Android
