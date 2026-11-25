@@ -2,6 +2,8 @@
 # before buffer-editor-burst.yaml types into it. Defaults to the 30,000-character
 # spans fixture; -e LOAD_ID=buffer-load-10k (5k, 10k, 20k) picks another size and
 # -e VARIANT_TAPS=1 (spans, single, plain: 0, 1, 2 taps) the render variant.
+# -e ENGINE_TAPS=1 (Android) switches the editor engine to the CodeMirror WebView;
+# -e LOAD_ID=buffer-load-paragraphs loads the 30,000 characters as real paragraphs.
 # -e RELEASE_BUILD=1 for a Release build.
 appId: com.intrinsiclabs.aspengrove
 ---
@@ -18,6 +20,11 @@ appId: com.intrinsiclabs.aspengrove
     commands:
       - tapOn:
           id: buffer-variant
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 - tapOn:
     id: ${LOAD_ID || 'buffer-load-stress'}
 - waitForAnimationToEnd
