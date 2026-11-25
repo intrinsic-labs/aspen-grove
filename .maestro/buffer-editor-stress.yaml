@@ -1,0 +1,163 @@
+# Taps carry a screen-relative point and no id: the input's own frame shrinks
+# while the keyboard is up, so a point relative to it lands above the text.
+#
+# The buffer editor under real typing, both OSes: a typing burst, a word
+# typed into model text, emoji, select-all and paste over a human/model seam,
+# and edits at the top, middle and end of the 30,000-character fixture, each
+# checked for exact text, the caret landing where it was put, and the view
+# staying where it was.
+# Needs a Metro bundle made with EXPO_PUBLIC_BUFFER_PREVIEW=1 (see
+# buffer-editor-preview.yaml). Screenshots are named for what they show.
+#
+# What Maestro cannot drive, and where it is covered instead:
+#  - Software-keyboard autocorrect and predictions: inputText types key events
+#    and the iOS Simulator keeps its hardware-keyboard mode, so no suggestions
+#    are applied. Covered by buffer-editor-stress.test.ts.
+#  - CJK marked text, and a drag or select-all selection across the seam: no
+#    composition or selection-handle command. Covered by the same unit tests.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow: open-app.yaml
+- runFlow: skip-onboarding.yaml
+- runFlow: open-home-menu.yaml
+- tapOn: 'New Buffer'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+
+# A typing burst: every character arrives, none twice.
+- tapOn:
+    id: buffer-document
+- inputText: 'The quick brown fox jumps over the lazy dog, again and again. '
+- inputText: 'Pack my box with five dozen liquor jugs. '
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: 'The quick brown fox jumps over the lazy dog, again and again\. Pack my box with five dozen liquor jugs\. '
+- takeScreenshot: 01-burst
+
+# Emoji (surrogate pairs) typed mid-sentence stay whole.
+- inputText: 'Done 😀 ok 👍🏽 end.'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*jugs\. Done 😀 ok 👍🏽 end\.'
+- takeScreenshot: 02-emoji
+
+# A double tap selects a word; typing replaces the selection.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - doubleTapOn:
+          point: '21%,17%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - doubleTapOn:
+          point: '21%,15%'
+- waitForAnimationToEnd
+- takeScreenshot: 03-word-selected
+- inputText: 'slow'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: 'The slow brown fox jumps over the lazy dog, again and again\. Pack my box with five dozen liquor jugs\. Done 😀 ok 👍🏽 end\.'
+
+# The review sample: a model word replaced by typing over its selection.
+- runFlow: dismiss-buffer-keyboard.yaml
+- runFlow: go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 10000
+- runFlow: open-home-menu.yaml
+- tapOn: 'New Buffer'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- tapOn:
+    id: buffer-load-sample
+- assertVisible:
+    id: buffer-branch-control
+- takeScreenshot: 04-sample
+# A double tap selects a word; typing replaces the selection.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - doubleTapOn:
+          point: '14%,20%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - doubleTapOn:
+          point: '14%,18%'
+- inputText: 'night'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: 'The snow had been falling since dawn\. By night the whole town.*'
+- takeScreenshot: 05-model-word-replaced
+
+# The 30,000-character fixture: reopen into it from a fresh buffer.
+- runFlow: dismiss-buffer-keyboard.yaml
+- runFlow: go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 10000
+- runFlow: open-home-menu.yaml
+- tapOn: 'New Buffer'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- tapOn:
+    id: buffer-load-stress
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: 'Paragraph 001 human\..*'
+- takeScreenshot: 10-stress-top
+
+# Top: the caret goes where it was tapped and the text arrives once.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '95%,17%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '95%,15%'
+- inputText: '@@TOP@@'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: 'Paragraph 001 human\..*@@TOP@@.*'
+- assertNotVisible:
+    id: buffer-document
+    text: '.*@@TOP@@.*@@TOP@@.*'
+- takeScreenshot: 11-stress-top-edit
+
+# Middle and end edits need drag-scroll; see the sub-flow for why it is Android-only.
+- runFlow:
+    when:
+      platform: Android
+    file: buffer-stress-scroll-edits.yaml
+
+# The document is still whole. The accessibility text of a 30k input is cut
+# short, so only its start is asserted; the middle and end edits are asserted
+# where they are made, in buffer-stress-scroll-edits.yaml.
+- runFlow: dismiss-buffer-keyboard.yaml
+- assertVisible:
+    id: buffer-document
+    text: 'Paragraph 001 human\..*@@TOP@@.*'

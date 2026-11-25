@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   KeyboardAvoidingView,
   useKeyboardState,
@@ -13,8 +13,10 @@ import { AppScreen, AppText } from '@/interface/ui/value-objects';
 import { messageFontFamily } from '@/interface/ui/value-objects/fonts';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
+import { BufferFixtureControls } from './BufferFixtureControls';
 import { BufferSiblingControl } from './BufferSiblingControl';
-import { BufferTextInput } from './BufferTextInput';
+import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
+import { stressPreview } from './buffer-preview-fixture';
 import {
   applyPreviewEdit,
   emptyPreview,
@@ -48,6 +50,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
   const [preview, setPreview] = useState(emptyPreview);
+  const [variant, setVariant] = useState<BufferRenderVariant>('spans');
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: tree.title ?? 'Buffer' });
@@ -82,13 +85,21 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           text={text}
           runs={previewRuns(preview)}
           editable
+          variant={variant}
           textStyle={textStyle}
-          topInset={headerHeight + layout.topGap}
+          headerHeight={headerHeight}
+          topGap={layout.topGap}
           placeholder="Start writing"
           onReplace={onReplace}
         />
-        <View
+        {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
+            an input accessory bar breaks double-tap word selection, so the
+            empty band around the pill puts the keyboard away on a tap, as
+            Home's greeting does. Android also has the back key. */}
+        <Pressable
           testID="buffer-control-bar"
+          onPress={Keyboard.dismiss}
+          accessible={false}
           style={[
             styles.bar,
             {
@@ -105,22 +116,14 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
               onSelect={onSelectSibling}
             />
           ) : text.length === 0 ? (
-            <Pressable
-              testID="buffer-load-sample"
-              onPress={() => setPreview(samplePreview())}
-              hitSlop={control.hitSlop}
-              style={styles.sample}
-            >
-              <AppText
-                variant="mono"
-                tone="secondary"
-                style={styles.sampleText}
-              >
-                Load sample
-              </AppText>
-            </Pressable>
+            <BufferFixtureControls
+              variant={variant}
+              onLoadSample={() => setPreview(samplePreview())}
+              onLoadStress={(length) => setPreview(stressPreview(length))}
+              onVariant={setVariant}
+            />
           ) : null}
-        </View>
+        </Pressable>
       </KeyboardAvoidingView>
       <HeaderScrollEdge />
     </AppScreen>
@@ -132,13 +135,10 @@ const styles = StyleSheet.create({
   bar: {
     // The pill floats in this band, centered and never full width; the
     // document above ends where the band begins, so its last line clears it.
+    // Always as tall as the pill, so it is a tap target for putting the
+    // keyboard away and the document does not jump when the pill appears.
     alignItems: 'center',
+    minHeight: bar.topGap + control.height,
     paddingTop: bar.topGap,
   },
-  sample: {
-    minHeight: control.height,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sampleText: { fontSize: control.labelSize },
 });
