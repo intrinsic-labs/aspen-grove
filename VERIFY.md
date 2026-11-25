@@ -42,7 +42,13 @@ xcrun simctl list devices available | grep -E 'iPhone'
 xcrun simctl boot "<device name or UDID>"   # "Unable to boot in current state: Booted" is fine
 ```
 
-A build for a runtime that isn't installed fails late, so pick a device from that list.
+A build for a runtime that isn't installed fails late, so pick a device from that list. Prefer
+an iOS 27 device: only an iOS 27 runtime proves the scene-lifecycle launch (section 8), and
+`simctl create` or an older device silently gives you whatever runtime is installed. Check the
+runtime column (`xcrun simctl list runtimes`) and say which one you verified on.
+
+On a shared machine whose tooling hands out simulators (a lease or a booking step), get the
+device through that instead of booting it yourself.
 
 ## 3. Build, install and launch
 
@@ -385,8 +391,8 @@ pid=$(cat .verify/metro.pid)
 lsof -nP -t -iTCP:8081 -sTCP:LISTEN       # the listener is $pid or its child
 kill "$pid"                               # stops Metro
 kill "$(cat .verify/mock.pid)"            # if you started the mock server
-xcrun simctl uninstall "$UDID" com.intrinsiclabs.aspengrove   # the app and its data
-xcrun simctl shutdown "<device name>"     # if you booted it
+xcrun simctl uninstall "$UDID" com.intrinsiclabs.aspengrove   # the app and its data; needs the device booted
+xcrun simctl shutdown "<device name>"     # if you booted it, after the uninstall
 ```
 
 With `npx expo start` the recorded PID is the npm wrapper and the port listener is its child;
