@@ -2,7 +2,7 @@
 # Vendored copy of the feature-map checker, for CI. Do not edit here.
 # Source: Tools/skills/feature-mapping/check_map.md in the Intrinsic Labs vault
 #   (~/Documents/obsidian/intrinsic-labs-v01), the ```python block, which stays canonical.
-# Vault skill revision: 5c37b9835ad34ba053836bd29abe7d7f2da8f8fc
+# Vault skill revision: 0307f40f9bd233104df3f975062ec8f635cee433
 #   (git log -1 --format=%H -- Tools/skills/feature-mapping/check_map.md)
 # To update: re-extract with
 #   awk '/^```python$/{f=1;next} /^```$/{f=0} f' <vault>/Tools/skills/feature-mapping/check_map.md
@@ -10,7 +10,7 @@
 """Check a feature map against the code it describes.
 
 Usage:
-  python3 check_map.py MAP.md [--root DIR] [--routes GLOB]... [--strict]
+  python3 check_map.py MAP.md [--root DIR] [--routes GLOB]... [--strict] [--changed-since REF]
   (repeat --routes once per glob)
   python3 check_map.py --self-test
 
@@ -26,6 +26,17 @@ Warnings (exit 0 unless --strict): code that changed since the map's
 a backticked path in the `## Coverage` section accounts for; Coverage paths
 that no longer exist or sit outside the root; a --routes glob that matches
 nothing. Warnings mean "re-read this", not "this is wrong".
+--changed-since REF scopes the code warnings to one branch: drift is checked
+only for entries that own a file changed since `git merge-base REF HEAD`
+(committed, uncommitted or untracked), and an unmapped --routes file warns only
+if it changed too. Their drift is measured from `revision:` with that merge base
+folded in, so what REF changed in a file the branch also touched stays REF's.
+An entry whose text changed since the map at that merge base (matched by ID, or
+by heading without one; blank lines and the heading itself don't count) was
+re-read on the branch and doesn't drift; a `Checked:` date line is the way to
+mark one re-read and found accurate. A new entry counts as re-read; a map git
+can't show at the merge base marks none. Errors, Coverage warnings and a --routes glob that matches
+nothing still count everywhere. A REF with no merge base with HEAD is an error.
 Server endpoints in Coverage are a record for readers; the check only resolves
 file paths: a backticked token with no spaces that has a slash or a glob and
 doesn't start with `/`. Write a root-level file as `./App.tsx` and an endpoint
@@ -33,7 +44,9 @@ with its method, `GET /api/x`. A pass proves the
 referenced files exist and the entries are complete. It cannot prove a map is
 current: a file can still exist after the feature moved out of it.
 
-Stdlib only, Python 3.9+, and git on PATH.
+Stdlib only, Python 3.9+, and git on PATH: 2.38 or later for --changed-since, whose
+baseline can need `git merge-tree --write-tree` (an older git is an error there, never a
+silent fallback).
 """
 from __future__ import annotations
 
@@ -61,6 +74,15 @@ class Entry:
     name: str
     line: int
     fields: dict[str, str] = field(default_factory=dict)
+    lines: list[str] = field(default_factory=list)
+
+    def key(self) -> str:
+        # How an entry is matched across revisions of the map: its ID, or its heading without one.
+        return TICK_RE.sub(r"\1", self.fields.get("ID", "")).strip() or self.name
+
+    def body(self) -> list[str]:
+        # The entry's text below its heading, blank lines dropped, so moving it is not an edit.
+        return [ln.rstrip() for ln in self.lines if ln.strip()]
 
     def code_paths(self) -> list[str]:
         out = []
@@ -136,6 +158,7 @@ def parse(text: str) -> tuple[dict[str, str], list[Entry], list[str]]:
             coverage += [strip_hint(t) for t in TICK_RE.findall(line)
                          if " " not in t.strip() and not t.startswith("/") and is_pathish(strip_hint(t))]
         elif current is not None:
+            current.lines.append(line)
             m = FIELD_RE.match(line)
             if m:
                 last_field = m.group(1).strip()
@@ -159,8 +182,47 @@ def git(root: Path, *args: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-def check(map_path: Path, root_override: str | None = None,
-          routes: list[str] | None = None) -> tuple[list[str], list[str]]:
+def changed_files(root: Path, since: str, paths: list[str], relative: bool = False) -> list[str]:
+    # Committed, uncommitted and untracked (not ignored) changes under paths since a commit.
+    out = (git(root, "diff", "--name-only", *(["--relative"] if relative else []), since, "--", *paths) or "") + \
+        (git(root, "ls-files", "--others", "--exclude-standard", "--", *paths) or "")
+    return sorted({c for c in out.splitlines() if c})
+
+
+def drift_baseline(root: Path, rev: str, base: str) -> str | None:
+    # A branch's drift counts from what the map was reconciled with and what it merged from REF:
+    # the later of `revision:` and the merge base, or, where they diverged, their merge.
+    # None means that merge could not be computed (git older than 2.38).
+    if git(root, "merge-base", "--is-ancestor", rev, base) is not None:
+        return base
+    if git(root, "merge-base", "--is-ancestor", base, rev) is not None:
+        return rev
+    # merge-tree exits 1 on a conflict and still writes the merged tree (conflicts marked) first.
+    try:
+        r = subprocess.run(["git", "-C", str(root), "merge-tree", "--write-tree", rev, base],
+                           capture_output=True, text=True)
+    except OSError:
+        return None
+    tree = r.stdout.split("\n", 1)[0].strip() if r.returncode in (0, 1) else ""
+    return tree if re.fullmatch(r"[0-9a-f]{40,64}", tree) else None
+
+
+def reread_entries(map_path: Path, base: str, entries: list[Entry]) -> set[str]:
+    # Keys of entries whose text changed since the map as of `base`: re-read on this branch.
+    # An entry the base map lacks was written here. A map git can't show at `base` (one kept
+    # outside the code's repository, or not yet committed) marks none.
+    # `REV:./path` resolves against git's working directory (-C), so a nested map works too.
+    old = git(map_path.resolve().parent, "show", f"{base}:./{map_path.name}")
+    if old is None:
+        return set()
+    before: dict[str, list[str]] = {}
+    for e in parse(old)[1]:
+        before.setdefault(e.key(), e.body())
+    return {e.key() for e in entries if before.get(e.key()) != e.body()}
+
+
+def check(map_path: Path, root_override: str | None = None, routes: list[str] | None = None,
+          changed_since: str | None = None) -> tuple[list[str], list[str]]:
     meta, entries, coverage = parse(map_path.read_text(encoding="utf-8"))
     root = resolve_root(map_path, meta, root_override)
     errors: list[str] = []
@@ -216,6 +278,14 @@ def check(map_path: Path, root_override: str | None = None,
             accounted.update(Path(h).resolve() for h in hits)
         elif is_pathish(p):
             warnings.append(f"Coverage path `{p}` no longer exists under {root}")
+    base, scope = "", None
+    if changed_since:
+        # Files changed since the merge base; with none found, nothing is in scope and the error fails the run.
+        base = (git(root, "merge-base", changed_since, "HEAD") or "").strip()
+        scope = {(root / c).resolve() for c in changed_files(root, base, ["."], relative=True)} if base else set()
+        if not base and git(root, "rev-parse", "--git-dir") is not None:
+            errors.append(f"--changed-since {changed_since} has no merge base with HEAD in {root} "
+                          "(fetch it first; a shallow clone may need more history)")
     rev = meta.get("revision")
     if rev and git(root, "rev-parse", "--git-dir") is None:
         errors.append(f"root {root} is not in a git repository, so `revision:` can't be verified "
@@ -227,15 +297,21 @@ def check(map_path: Path, root_override: str | None = None,
             errors.append(f"revision {rev} is not an ancestor of HEAD in {root}, so it isn't a "
                           "baseline for the checked-out code")
         else:
+            since = drift_baseline(root, rev, base) if scope is not None and base else rev
+            if since is None:
+                errors.append(f"--changed-since: `revision:` and the merge base diverged, and this git can't "
+                              "merge them (`git merge-tree --write-tree` needs git 2.38 or later)")
+                since = rev
+            reread = reread_entries(map_path, base, entries) if scope is not None and base else set()
             for e in entries:
                 ps = [p for p in e.code_paths() if inside(root, p) and ((root / p).exists() or is_glob(p))]
-                if not ps:
+                if not ps or (scope is not None and not (scope and changed_files(root, base, ps))):
                     continue
-                changed = (git(root, "diff", "--name-only", rev, "--", *ps) or "") + \
-                    (git(root, "ls-files", "--others", "--exclude-standard", "--", *ps) or "")
-                files = sorted({c for c in changed.splitlines() if c})
+                if e.key() in reread:
+                    continue
+                files = changed_files(root, since, ps)
                 if files:
-                    warnings.append(f"[{e.name}] code changed since {rev[:10]}: "
+                    warnings.append(f"[{e.name}] code changed since {since[:10]}: "
                                     f"{', '.join(files[:4])}{' …' if len(files) > 4 else ''}"
                                     " (re-read this entry)")
     for pattern in routes or []:
@@ -244,6 +320,8 @@ def check(map_path: Path, root_override: str | None = None,
             warnings.append(f"--routes `{pattern}` matches no files under {root}")
         for hit in matched:
             hp = Path(hit).resolve()
+            if scope is not None and hp not in scope:
+                continue
             if hp.is_file() and not any(hp == r or r in hp.parents for r in accounted):
                 warnings.append(f"route/screen file in no entry and not in Coverage: "
                                 f"{os.path.relpath(hp, root)}")
@@ -340,6 +418,40 @@ reconciled: 2026-01-01
         (t / "src/screens/Profile.tsx").write_text("x")
         _, untracked_warn = check(m)
         (t / "src/screens/Profile.tsx").unlink()
+        (t / "src/screens/Settings.tsx").write_text("main moved")
+        (t / "src/routes/main.ts").write_text("x")
+        (t / "src/routes/home.ts").write_text("main moved home")
+        (t / "docs").mkdir()
+        nested = t / "docs/FEATURE_MAP.md"
+        nested_good = good.replace("root: .\n", "root: ..\n", 1)
+        nested.write_text(nested_good)
+        subprocess.run(g + ["add", "."], check=True)
+        subprocess.run(g + ["commit", "-qm", "main"], check=True)
+        main_sha = subprocess.run(g + ["rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        (t / "src/api.ts").write_text("pr moved")
+        (t / "src/routes/pr.ts").write_text("x")
+        subprocess.run(g + ["add", "."], check=True)
+        subprocess.run(g + ["commit", "-qm", "pr"], check=True)
+        all_err, all_warn = check(m, routes=["src/routes/*.ts"])
+        pr_err, pr_warn = check(m, routes=["src/routes/*.ts"], changed_since=main_sha)
+        badref_err, badref_warn = check(m, routes=["src/routes/*.ts"], changed_since="no-such-ref")
+        scoped = {"routes": ["src/routes/*.ts"], "changed_since": main_sha}
+        m.write_text(good.replace("Shows today's items.", "Shows today's items, newest first."))
+        edited_err, edited_warn = check(m, **scoped)
+        m.write_text(good.replace("Account settings.", "Account and privacy settings."))
+        other_err, other_warn = check(m, **scoped)
+        m.write_text(good.replace("- **Status:** live\n", "- **Status:** live\n- **Checked:** 2026-01-02\n"))
+        checked_err, checked_warn = check(m, **scoped)
+        home = good[good.index("### Home feed\n"):good.index("### Settings\n")]
+        m.write_text(good.replace(home, "").replace(
+            "## Coverage\n", "## Elsewhere\n\n" + home.replace("### Home feed", "### Feed") + "\n## Coverage\n"))
+        moved_err, moved_warn = check(m, **scoped)
+        nested.write_text(nested_good.replace("Shows today's items.", "Shows today's items, newest first."))
+        nested_err, nested_warn = check(nested, **scoped)
+        nested.unlink()
+        m.write_text(good)
+        (t / "src/routes/main.ts").unlink()
+        (t / "src/routes/pr.ts").unlink()
         (t / "src/api.ts").unlink()
         bad_err, _ = check(m)
         (t / "src/api.ts").write_text("x")
@@ -362,6 +474,30 @@ reconciled: 2026-01-01
         print("unknown revision fails:", "yes" if any("not a commit" in e for e in unknown_rev_err) else "NO")
         print("non-ancestor revision fails:", "yes" if any("not an ancestor" in e for e in side_rev_err) else "NO")
         print("non-git root fails:", "yes" if any("not in a git repository" in e for e in nogit_err) else "NO")
+        print("unscoped run sees main's drift:",
+              "yes" if any("[Settings]" in w for w in all_warn) and any("main.ts" in w for w in all_warn) else "NO")
+        print("--changed-since drifts only from the merge base:",
+              "yes" if pr_warn and not any("home.ts" in w for w in pr_warn) else f"NO {pr_warn}")
+        print("--changed-since keeps only the branch's own:",
+              "yes" if not pr_err and len(pr_warn) == 2 and any("[Home feed]" in w for w in pr_warn)
+              and any("pr.ts" in w for w in pr_warn) else f"NO {pr_warn}")
+        print("--changed-since unknown ref fails, scoped to nothing:",
+              "yes" if any("no merge base" in e for e in badref_err) and not badref_warn else "NO")
+        def reread_ok(err: list[str], warn: list[str], drifts: str | None) -> bool:
+            # The route warning stays either way; only the entry's drift warning depends on the map.
+            names = [w for w in warn if w.startswith("[")]
+            return (not err and any("pr.ts" in w for w in warn) and len(warn) == 1 + bool(drifts)
+                    and (drifts is None or any(w.startswith(f"[{drifts}]") for w in names)))
+        print("--changed-since: entry edited on the branch counts as re-read:",
+              "yes" if reread_ok(edited_err, edited_warn, None) else f"NO {edited_warn}")
+        print("--changed-since: editing another entry leaves this one's drift:",
+              "yes" if reread_ok(other_err, other_warn, "Home feed") else f"NO {other_warn}")
+        print("--changed-since: a Checked line counts as re-read:",
+              "yes" if reread_ok(checked_err, checked_warn, None) else f"NO {checked_warn}")
+        print("--changed-since: moved, renamed entry matched by ID still drifts:",
+              "yes" if reread_ok(moved_err, moved_warn, "Feed") else f"NO {moved_warn}")
+        print("--changed-since: an edit in a map below the repository root counts as re-read:",
+              "yes" if reread_ok(nested_err, nested_warn, None) else f"NO {nested_warn}")
         print("removed-file fixture:", "FAIL as expected" if bad_err else "PASSED (wrong)")
         for e in bad_err:
             print("  ", e)
@@ -379,7 +515,18 @@ reconciled: 2026-01-01
                   and len(untracked_warn) == 1 and "Profile" in untracked_warn[0]
                   and len(unknown_rev_err) == 1 and "not a commit" in unknown_rev_err[0]
                   and len(side_rev_err) == 1 and "not an ancestor" in side_rev_err[0]
-                  and len(nogit_err) == 1 and "not in a git repository" in nogit_err[0])
+                  and len(nogit_err) == 1 and "not in a git repository" in nogit_err[0]
+                  and not all_err and len(all_warn) == 4
+                  and any("[Settings]" in w for w in all_warn) and any("main.ts" in w for w in all_warn)
+                  and not pr_err and len(pr_warn) == 2
+                  and any("[Home feed]" in w for w in pr_warn) and any("pr.ts" in w for w in pr_warn)
+                  and not any("home.ts" in w for w in pr_warn)
+                  and len(badref_err) == 1 and "no merge base" in badref_err[0] and not badref_warn
+                  and reread_ok(edited_err, edited_warn, None)
+                  and reread_ok(other_err, other_warn, "Home feed")
+                  and reread_ok(checked_err, checked_warn, None)
+                  and reread_ok(moved_err, moved_warn, "Feed")
+                  and reread_ok(nested_err, nested_warn, None))
         print("self-test", "ok" if passed else "BROKEN")
         return 0 if passed else 1
 
@@ -391,19 +538,23 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--routes", action="append", default=[],
                     help="glob (relative to root) of route/screen files every entry set should cover")
     ap.add_argument("--strict", action="store_true", help="exit 1 on warnings too")
+    ap.add_argument("--changed-since", metavar="REF",
+                    help="check drift and unmapped routes only where code changed since "
+                         "`git merge-base REF HEAD` (a PR's check; a full refresh omits it)")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args(argv)
     if a.self_test:
         return self_test()
     if not a.map:
         ap.error("MAP is required")
-    errors, warnings = check(a.map, a.root, a.routes)
+    errors, warnings = check(a.map, a.root, a.routes, a.changed_since)
     for w in warnings:
         print("warn:", w)
     for e in errors:
         print("error:", e)
     _, entries, _ = parse(a.map.read_text(encoding="utf-8"))
-    print(f"{a.map}: {len(entries)} entries, {len(errors)} errors, {len(warnings)} warnings")
+    scoped = f" (drift and routes scoped to changes since {a.changed_since})" if a.changed_since else ""
+    print(f"{a.map}: {len(entries)} entries, {len(errors)} errors, {len(warnings)} warnings{scoped}")
     return 1 if errors or (a.strict and warnings) else 0
 
 
