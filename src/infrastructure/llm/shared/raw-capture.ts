@@ -12,10 +12,7 @@ export const headersToString = (headers: Headers): string => {
 };
 
 /** Same canonical headers + unmodified body representation as OpenRouter. */
-export const createDirectRawCapture = (
-  requestTimestamp: Date,
-  model: string
-) => {
+export const createRawCapture = (requestTimestamp: Date, model: string) => {
   let responseHeaders = '';
   let requestId: string | undefined;
   const chunks: string[] = [];

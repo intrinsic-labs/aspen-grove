@@ -7,23 +7,12 @@ import { fetch as expoFetch } from 'expo/fetch';
 import {
   buildTextCompletionBody,
   decodeCompletionBody,
-  type DecodedCompletion,
+  toInBandError,
 } from './completion-wire';
 import { toAbortedRequestError } from './interruption';
-import { createDirectRawCapture } from './raw-capture';
+import { createRawCapture } from './raw-capture';
 import { createRequestAbort } from './request-abort';
 import type { TextTransport } from './text-transport';
-
-/** An error an in-band `error` payload stands for, through the provider's mapping. */
-export const toInBandError = (
-  transport: TextTransport,
-  error: NonNullable<DecodedCompletion['error']>
-): LlmProviderError =>
-  transport.toError({
-    status: typeof error.code === 'number' ? error.code : 500,
-    responseBody: JSON.stringify({ error }),
-    fallbackMessage: `${transport.label} reported an error.`,
-  });
 
 /**
  * One non-streaming text completion. The capture is hashed from the body as
@@ -35,7 +24,7 @@ export const requestTextCompletion = async (input: {
   readonly timeoutMs: number;
 }): Promise<CompletionResponse> => {
   const { transport, request, timeoutMs } = input;
-  const raw = createDirectRawCapture(new Date(), request.model);
+  const raw = createRawCapture(new Date(), request.model);
   const abort = createRequestAbort({ timeoutMs, external: request.signal });
   try {
     const response = await expoFetch(transport.url, {

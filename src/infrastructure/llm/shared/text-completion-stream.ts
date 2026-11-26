@@ -7,13 +7,13 @@ import { fetch as expoFetch } from 'expo/fetch';
 import {
   buildTextCompletionBody,
   decodeCompletionPayload,
+  toInBandError,
 } from './completion-wire';
 import { toAbortedRequestError, toInterruptedReason } from './interruption';
-import { createDirectRawCapture } from './raw-capture';
+import { createRawCapture } from './raw-capture';
 import { createRequestAbort } from './request-abort';
 import { SseParser } from './sse-parser';
 import { toStreamAbortTimeouts, type StreamTimeouts } from './stream-timeouts';
-import { toInBandError } from './text-completion-request';
 import type { TextTransport } from './text-transport';
 
 const malformedEvent = (transport: TextTransport) =>
@@ -37,7 +37,7 @@ export const streamTextCompletion = async function* (input: {
   readonly timeouts: StreamTimeouts;
 }): AsyncIterable<StreamChunk> {
   const { transport, request, timeouts } = input;
-  const raw = createDirectRawCapture(new Date(), request.model);
+  const raw = createRawCapture(new Date(), request.model);
   // One abort per request: concurrent streams never cancel each other.
   const abort = createRequestAbort({
     ...toStreamAbortTimeouts(timeouts),

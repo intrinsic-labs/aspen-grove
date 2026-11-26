@@ -11,5 +11,9 @@ export const compareLMStudioModels = (
 ): number => {
   if (a.state === 'loaded' && b.state !== 'loaded') return -1;
   if (a.state !== 'loaded' && b.state === 'loaded') return 1;
-  return a.displayName.localeCompare(b.displayName) || a.id.localeCompare(b.id);
+  // Lowercased so the order doesn't depend on the runtime's collation of case.
+  return (
+    a.displayName.toLowerCase().localeCompare(b.displayName.toLowerCase()) ||
+    a.id.localeCompare(b.id)
+  );
 };

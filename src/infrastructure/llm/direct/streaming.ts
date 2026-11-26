@@ -15,7 +15,7 @@ import {
 } from '../shared/stream-timeouts';
 import { SseParser } from '../shared/sse-parser';
 import { directProviderError, parseErrorBody } from './errors';
-import { createDirectRawCapture } from '../shared/raw-capture';
+import { createRawCapture } from '../shared/raw-capture';
 import type { DirectConfig, DirectProtocol, StreamState } from './types';
 
 export async function* streamDirectCompletion(input: {
@@ -26,7 +26,7 @@ export async function* streamDirectCompletion(input: {
 }): AsyncIterable<StreamChunk> {
   const { config, protocol, request, timeouts } = input;
   const body = protocol.body(request, true);
-  const raw = createDirectRawCapture(new Date(), request.model);
+  const raw = createRawCapture(new Date(), request.model);
   const abort = createRequestAbort({
     ...toStreamAbortTimeouts(timeouts),
     external: request.signal,

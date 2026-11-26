@@ -5,6 +5,7 @@ import {
   type TokenUsage,
 } from '@application/services/llm';
 import type { Provider } from '@domain/entities';
+import type { TextTransport } from './text-transport';
 
 /**
  * The OpenAI-compatible `/v1/completions` wire: the URL, the request body and
@@ -30,18 +31,13 @@ export const chatUrlToCompletionsUrl = (
   chatUrl: string,
   provider: Provider
 ): string => {
-  let url: URL;
-  try {
-    url = new URL(chatUrl);
-  } catch {
+  // Plain string work: React Native's own `URL` has no pathname setter.
+  const match = /^([^?#]*)([?#].*)?$/.exec(chatUrl.trim());
+  const base = (match?.[1] ?? '').replace(/\/+$/, '');
+  if (!/^https?:\/\/[^/]+/.test(base) || !base.endsWith(CHAT_SUFFIX)) {
     throw invalidEndpoint(provider, chatUrl);
   }
-  const path = url.pathname.replace(/\/+$/, '');
-  if (!path.endsWith(CHAT_SUFFIX)) {
-    throw invalidEndpoint(provider, chatUrl);
-  }
-  url.pathname = `${path.slice(0, -CHAT_SUFFIX.length)}/completions`;
-  return url.toString();
+  return `${base.slice(0, -CHAT_SUFFIX.length)}/completions${match?.[2] ?? ''}`;
 };
 
 /** A server stored as an origin (`http://host:1234`): its `/v1/completions`. */
@@ -146,3 +142,14 @@ export const decodeCompletionPayload = (value: unknown): DecodedCompletion => {
 /** Decodes the text of one complete response body, as received. */
 export const decodeCompletionBody = (body: string): DecodedCompletion =>
   decodeCompletionPayload(JSON.parse(body));
+
+/** An error an in-band `error` payload stands for, through the provider's mapping. */
+export const toInBandError = (
+  transport: Pick<TextTransport, 'label' | 'toError'>,
+  error: NonNullable<DecodedCompletion['error']>
+): LlmProviderError =>
+  transport.toError({
+    status: typeof error.code === 'number' ? error.code : 500,
+    responseBody: JSON.stringify({ error }),
+    fallbackMessage: `${transport.label} reported an error.`,
+  });
