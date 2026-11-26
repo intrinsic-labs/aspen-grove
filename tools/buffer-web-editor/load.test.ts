@@ -92,6 +92,7 @@ test('a tap before the first edit posts host offsets', () => {
     type: 'selection',
     epoch: 1,
     selection: { anchor: 6, head: 6 },
+    released: false,
   });
 });
 

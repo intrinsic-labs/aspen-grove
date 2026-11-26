@@ -76,8 +76,8 @@ export const useBufferEditorFeed = (
         setReceipt(applied);
         barrier.observe(applied.composing);
       },
-      onCaretMoved: ({ anchor, head }) => {
-        setDoc(releaseHold);
+      onCaretMoved: ({ anchor, head }, released) => {
+        if (released) setDoc(releaseHold);
         onWebCaret?.(Math.min(anchor, head));
       },
       onComposition: barrier.observe,

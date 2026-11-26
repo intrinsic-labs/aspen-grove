@@ -67,8 +67,13 @@ test('a page selection reaches the sink in host units', async () => {
   const { result, sink, unmount } = mount();
   try {
     const selection = { anchor: 7, head: 3 };
-    result.current.receive({ type: 'selection', epoch: 2, selection });
-    expect(sink.onCaretMoved).toHaveBeenCalledWith(selection);
+    result.current.receive({
+      type: 'selection',
+      epoch: 2,
+      selection,
+      released: false,
+    });
+    expect(sink.onCaretMoved).toHaveBeenCalledWith(selection, false);
   } finally {
     await unmount();
   }

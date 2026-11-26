@@ -140,11 +140,10 @@ const create = (message: LoadMessage): EditorView => {
               anchor: toHostOffset(breaks, anchor),
               head: toHostOffset(breaks, head),
             };
-            // A caret the user moved: tell the host, and drop affinity here too.
-            if (movesCaret(layout, selection)) {
-              layout = releaseHold(layout);
-            }
-            post({ type: 'selection', epoch, selection });
+            // A caret the user moved drops affinity here, and the host follows.
+            const released = movesCaret(layout, selection);
+            if (released) layout = releaseHold(layout);
+            post({ type: 'selection', epoch, selection, released });
           }
         }),
       ],

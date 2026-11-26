@@ -196,9 +196,13 @@ test('Android tap selects the first version pill and switching keeps it there', 
     }
   );
   try {
-    await act(() => result.current.sink.onCaretMoved({ anchor: 8, head: 8 }));
+    await act(() =>
+      result.current.sink.onCaretMoved({ anchor: 8, head: 8 }, true)
+    );
     expect(pillChoice(result.current.choices)).toBeUndefined();
-    await act(() => result.current.sink.onCaretMoved({ anchor: 3, head: 3 }));
+    await act(() =>
+      result.current.sink.onCaretMoved({ anchor: 3, head: 3 }, true)
+    );
     const pill = pillChoice(result.current.choices);
     expect(pill?.label).toBe('Version 1 of 2');
     await act(async () => {
