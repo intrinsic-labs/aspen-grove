@@ -89,21 +89,17 @@ Removes an Edge.
 
 ---
 
-### addVersionSource
+### addSourceToEdge
 
-Adds a version node as an alternate source to an edge (for Buffer Mode editing).
+`addSourceToEdge(edgeId, source): Promise<Edge>` creates an `edge_sources` row or updates the role for an existing (edge, node) pair. Other source rows retain their roles.
 
-**Input:**
-- `edgeId` — ULID
-- `versionNodeId` — ULID, the new version node to add as source
-- `role` — enum: `primary` | `context` | `instruction` (typically matches existing sources)
+### Buffer mutation
 
-**Behavior:**
-- Appends new source to the edge's sources array
-- Validates version node belongs to same LoomTree
-- Used when editing a node creates a version node — all downstream edges gain the version as an alternate source
+`IBufferMutationRepository.apply(plan)` checks the buffer tree, path owner, expected sequence, revision, edit lineage and tree-local IDs inside one writer. A successful batch creates immutable versions and edges, appends primary sources to existing continuation edges, and writes the selected path’s sequence, buffer cursor, incoming selections and tree activity together. Existing context and instruction sources survive.
 
-**Returns:** Updated Edge
+The revision is `paths.updated_at` in epoch milliseconds. Each batch advances it to at least the previous value plus one, so two commands in the same millisecond remain distinguishable. `applied` acknowledges a committed batch. `already-applied` recognizes the intended sequence and inserted IDs. A switch can create zero nodes, so the first sequence membership carries the operation ID as a durable retry marker. Other mismatches return `stale` before preparation.
+
+Commit and switch share a per-tree queue. Each command uses a draft snapshot with a stable operation ID, timestamp and reserved IDs. Drafts live in Watermelon local storage by tree and path. Reads report sequence or revision conflicts and retain the text for recovery. A successful command clears its own snapshot. Hard tree deletion clears drafts for its paths.
 
 ---
 

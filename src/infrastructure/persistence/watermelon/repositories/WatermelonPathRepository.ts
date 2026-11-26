@@ -1,3 +1,4 @@
+import { bufferDraftKey } from './WatermelonBufferDraftStore';
 import type { Collection, Database } from '@nozbe/watermelondb';
 import { Q } from '@nozbe/watermelondb';
 import type {
@@ -17,7 +18,11 @@ import {
   PathSelection as PathSelectionModel,
   PathState as PathStateModel,
 } from '../model/Path';
-import { isRecordNotFoundError, toOptionalDate, toOptionalString } from './helpers';
+import {
+  isRecordNotFoundError,
+  toOptionalDate,
+  toOptionalString,
+} from './helpers';
 
 /** WatermelonDB implementation of `IPathRepository`. */
 export class WatermelonPathRepository implements IPathRepository {
@@ -121,6 +126,9 @@ export class WatermelonPathRepository implements IPathRepository {
       try {
         const path = await this.paths.find(id);
         await this.deletePathDependents(id);
+        await this.db.localStorage.remove(
+          bufferDraftKey(path.loomTreeId, path.id)
+        );
         await path.destroyPermanently();
         return true;
       } catch (error) {
@@ -150,8 +158,7 @@ export class WatermelonPathRepository implements IPathRepository {
         )
         .fetch();
 
-      const nextPosition =
-        lastRows.length === 0 ? 0 : lastRows[0].position + 1;
+      const nextPosition = lastRows.length === 0 ? 0 : lastRows[0].position + 1;
 
       const row = await this.pathNodes.create((record) => {
         record._raw.id = createULID();
@@ -173,7 +180,10 @@ export class WatermelonPathRepository implements IPathRepository {
 
     await this.db.write(async () => {
       const rows = await this.pathNodes
-        .query(Q.where('path_id', pathId), Q.where('position', Q.gte(newLength)))
+        .query(
+          Q.where('path_id', pathId),
+          Q.where('position', Q.gte(newLength))
+        )
         .fetch();
 
       for (const row of rows) {
@@ -232,7 +242,10 @@ export class WatermelonPathRepository implements IPathRepository {
     targetNodeId: ULID
   ): Promise<PathSelection | null> {
     const selections = await this.pathSelections
-      .query(Q.where('path_id', pathId), Q.where('target_node_id', targetNodeId))
+      .query(
+        Q.where('path_id', pathId),
+        Q.where('target_node_id', targetNodeId)
+      )
       .fetch();
 
     if (selections.length === 0) {
@@ -242,7 +255,9 @@ export class WatermelonPathRepository implements IPathRepository {
     return this.toPathSelectionDomain(selections[0]);
   }
 
-  async upsertSelection(input: UpsertPathSelectionInput): Promise<PathSelection> {
+  async upsertSelection(
+    input: UpsertPathSelectionInput
+  ): Promise<PathSelection> {
     return this.db.write(async () => {
       const existing = await this.pathSelections
         .query(
@@ -277,7 +292,10 @@ export class WatermelonPathRepository implements IPathRepository {
   async deleteSelection(pathId: ULID, targetNodeId: ULID): Promise<boolean> {
     return this.db.write(async () => {
       const selections = await this.pathSelections
-        .query(Q.where('path_id', pathId), Q.where('target_node_id', targetNodeId))
+        .query(
+          Q.where('path_id', pathId),
+          Q.where('target_node_id', targetNodeId)
+        )
         .fetch();
 
       if (selections.length === 0) {

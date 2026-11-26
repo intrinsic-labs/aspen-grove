@@ -1,3 +1,10 @@
+import { SwitchBufferPathUseCase } from '@application/use-cases/SwitchBufferPathUseCase';
+import {
+  BufferCommands,
+  CommitBufferChangesUseCase,
+} from '@application/use-cases/CommitBufferChangesUseCase';
+import { WatermelonBufferDraftStore } from '@infrastructure/persistence/watermelon/repositories/WatermelonBufferDraftStore';
+import { WatermelonBufferMutationRepository } from '@infrastructure/persistence/watermelon/repositories/WatermelonBufferMutationRepository';
 import { AnthropicAdapter, OpenAIAdapter } from '@infrastructure/llm';
 import {
   createContext,
@@ -61,6 +68,8 @@ import { AppText } from '@/interface/ui/value-objects';
 
 export type AppServices = {
   readonly repositories: {
+    readonly bufferMutationRepo: WatermelonBufferMutationRepository;
+    readonly bufferDraftStore: WatermelonBufferDraftStore;
     readonly agentRepo: WatermelonAgentRepository;
     readonly continuationCountRepo: WatermelonContinuationCountPreferenceRepository;
     readonly edgeRepo: WatermelonEdgeRepository;
@@ -83,6 +92,8 @@ export type AppServices = {
     readonly readAloud: ReadAloudService;
   };
   readonly useCases: {
+    readonly commitBufferChangesUseCase: CommitBufferChangesUseCase;
+    readonly switchBufferPathUseCase: SwitchBufferPathUseCase;
     readonly createBufferLoomTreeUseCase: CreateBufferLoomTreeUseCase;
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
     readonly createSharedAgentUseCase: CreateSharedAgentUseCase;
@@ -128,6 +139,8 @@ const AppCompositionContext = createContext<AppCompositionContextValue | null>(
 const buildAppServices = (): AppServices => {
   const userPreferencesRepo = new WatermelonUserPreferencesRepository(database);
   const repositories = {
+    bufferMutationRepo: new WatermelonBufferMutationRepository(database),
+    bufferDraftStore: new WatermelonBufferDraftStore(database),
     agentRepo: new WatermelonAgentRepository(database),
     continuationCountRepo: new WatermelonContinuationCountPreferenceRepository(
       database
@@ -166,7 +179,10 @@ const buildAppServices = (): AppServices => {
     openai: adapters.providerRegistry.getOpenAIAdapter(),
   });
 
+  const bufferCommands = new BufferCommands(repositories);
   const useCases = {
+    commitBufferChangesUseCase: new CommitBufferChangesUseCase(bufferCommands),
+    switchBufferPathUseCase: new SwitchBufferPathUseCase(bufferCommands),
     createBufferLoomTreeUseCase: new CreateBufferLoomTreeUseCase({
       groveRepository: repositories.groveRepo,
       agentRepository: repositories.agentRepo,

@@ -1,3 +1,4 @@
+import { writeNodeFields } from './write-node-fields';
 import type { Collection, Database } from '@nozbe/watermelondb';
 import { Q } from '@nozbe/watermelondb';
 import type {
@@ -192,22 +193,11 @@ export class WatermelonNodeRepository implements INodeRepository {
       );
 
       const model = await this.nodes.create((record) => {
-        record._raw.id = id;
-        record.localId = input.localId;
-        record.loomTreeId = input.loomTreeId;
-        record.content = input.content;
-        record.summary = null;
-        record.authorAgentId = input.authorAgentId;
-        record.authorType = input.authorType;
-        record.contentHash = input.contentHash;
-        record.createdAt = createdAt;
-        record.metadata = serializeNodeMetadata({}, metadata);
-        record.bookmarked = metadata.bookmarked;
-        record.bookmarkLabel = metadata.bookmarkLabel ?? null;
-        record.pruned = metadata.pruned;
-        record.excluded = metadata.excluded;
-        record.versionGroupId = versionGroupId;
-        record.editedFrom = input.editedFrom ?? null;
+        writeNodeFields(
+          record,
+          { ...input, id, createdAt, metadata },
+          versionGroupId
+        );
       });
 
       return this.toDomain(model);
