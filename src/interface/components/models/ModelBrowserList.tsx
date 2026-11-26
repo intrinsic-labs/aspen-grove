@@ -18,12 +18,15 @@ import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { textInputTint } from '@/interface/ui/value-objects/text-input-tint';
 import { browserRows } from './browser-rows';
 import { customModelIdentifier } from './model-option-filter';
+import type { BrowsableProvider } from './browsable-provider';
 import type { ModelOption } from './model-options';
 import { ModelBrowserRow } from './ModelBrowserRow';
 
 const form = loomUiTokens.settingsForm;
 
 export type ModelBrowserListProps = {
+  /** Whose models are listed. */
+  readonly provider: BrowsableProvider;
   readonly options: readonly ModelOption[];
   readonly loading: boolean;
   readonly error: string | null;
@@ -31,19 +34,20 @@ export type ModelBrowserListProps = {
   readonly currentId: string | null;
   /** A row's tap: open that model's page. */
   readonly onOpen: (id: string) => void;
-  /** Use a typed id OpenRouter doesn't list (it may be newer than the cache). */
+  /** Use a typed id the provider doesn't list (it may be newer than the list). */
   readonly onUseCustom: (id: string) => void;
   /** Ids: `<prefix>-list-screen`, `<prefix>-list`, `<prefix>-option-<id>`. */
   readonly testIDPrefix: string;
 };
 
 /**
- * The OpenRouter model browser: every catalog model in one inset card, each
- * row with its name, maker, context and price; the native search field in
- * the bar narrows it by name, maker or id. A tap opens the model's page.
- * Shared by the agent editor and a tree's Model Settings.
+ * The model browser: every model a provider lists in one inset card, each
+ * row with its name, maker, context and (OpenRouter's) price; the native
+ * search field in the bar narrows it by name, maker or id. A tap opens the
+ * model's page. Shared by the agent editor and a tree's Model Settings.
  */
 export const ModelBrowserList = ({
+  provider,
   options,
   loading,
   error,
@@ -72,7 +76,7 @@ export const ModelBrowserList = ({
   const rows = useMemo(() => browserRows(options, search), [options, search]);
   const custom = loading
     ? null
-    : customModelIdentifier('openrouter', search, options);
+    : customModelIdentifier(provider, search, options);
 
   return (
     <AppScreen

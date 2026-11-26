@@ -32,7 +32,8 @@ const TreeModelSettingsScreen = () => {
       <ProviderOptionsSection
         settings={settings}
         onOpenModelList={() =>
-          treeId && router.push(treeModelRoutes.openRouterModels(treeId))
+          treeId &&
+          router.push(treeModelRoutes.models(treeId, settings.provider))
         }
       />
       <ParameterSections settings={settings} />

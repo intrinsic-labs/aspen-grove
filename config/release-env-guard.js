@@ -1,8 +1,11 @@
-// Fails a release build that carries a developer's provider key.
+// Fails a release build that carries a developer's provider key or a provider
+// endpoint override.
 //
-// `EXPO_PUBLIC_*` values can be inlined into the JS bundle, and these two are
+// `EXPO_PUBLIC_*` values can be inlined into the JS bundle. The two keys are
 // the env fallbacks in src/interface/components/chat/provider-key.ts: fine in a
-// local dev build, a leaked key in anything that ships. Today's dynamic read
+// local dev build, a leaked key in anything that ships. The two endpoints
+// point Anthropic and OpenAI at a local mock (src/interface/composition/
+// direct-provider-endpoints.ts) and would send a user's key to that address. Today's dynamic read
 // keeps them out of a release bundle, but one static `process.env.X` would not,
 // so the build refuses them outright.
 //
@@ -14,6 +17,8 @@
 const RELEASE_FORBIDDEN_ENV = [
   'EXPO_PUBLIC_OPENROUTER_API_KEY',
   'EXPO_PUBLIC_LMSTUDIO_API_TOKEN',
+  'EXPO_PUBLIC_ANTHROPIC_ENDPOINT',
+  'EXPO_PUBLIC_OPENAI_ENDPOINT',
 ];
 
 const DEV_CLIENT_PROFILES = new Set(['development', 'development-simulator']);

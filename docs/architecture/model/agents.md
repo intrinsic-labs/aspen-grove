@@ -111,7 +111,7 @@ The `modelRef` field on Agent stores a reference to the underlying model.
 - `openrouter:{openrouter model id}` — e.g. `openrouter:anthropic/claude-sonnet-4.5`
 - `lmstudio:{LM Studio model key}` — a model served by the user's LM Studio
 
-Provider routing is resolved per request from this prefix (`selectableProviderFromModelRef`); there is no global active provider. The domain `Provider` type still lists other values (`anthropic`, `openai`, `google`, `hyperbolic`, `local`, `custom`), but only `openrouter` and `lmstudio` can be routed, and no native Anthropic or OpenAI adapters are planned.
+Provider routing is resolved per request from this prefix (`selectableProviderFromModelRef`); there is no global active provider. The domain `Provider` type still lists other values (`anthropic`, `openai`, `google`, `hyperbolic`, `local`, `custom`), but only `openrouter`, `lmstudio`, `anthropic` and `openai` can be routed.
 
 OpenRouter models are listed from the public catalog (`OpenRouterModelCatalog`, cached for 24 hours); LM Studio models are discovered live from the server.
 

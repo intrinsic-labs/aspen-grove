@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 8b98def2e056b6164eb8e8a5ae29ea9a3085d8a6
+revision: f57ec50dfbd777b23218d9f0dff35bff83c663eb
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -9,7 +9,7 @@ reconciled: 2026-11-10
 One entry per user-visible feature of the Aspen Grove mobile app (Expo / React Native, one
 tree for iOS and Android): where it is on screen, how to reach it from a cold start, the
 `testID` to drive it by, the code that owns it and what it reads or writes. The app has no
-server. "Backend" means the LLM provider call (OpenRouter or LM Studio) or the on-device
+server. "Backend" means the LLM provider call (OpenRouter, Anthropic, OpenAI or LM Studio) or the on-device
 WatermelonDB table and repository behind the feature. To start, sign in to and drive the app,
 see [VERIFY.md](VERIFY.md).
 
@@ -34,10 +34,11 @@ check:map:strict` then passes. Bump `reconciled:` only after a full walk of
 every entry on a device or simulator.
 
 **Scope.** v1 is branching dialogue, inline continuations, edit-as-branch, bookmarks,
-provenance as it stands, Open Loom import and export, and OpenRouter and LM Studio as
-providers. The cut features (sync, sharing or publishing, Field Guide, memory or stash, the
-documents editor, RFC 3161 and other provenance extras, native Anthropic or OpenAI adapters,
-MCP, connectors and web search) have no UI, route, setting or code in the app, so none is
+provenance as it stands, Open Loom import and export, and OpenRouter, Anthropic, OpenAI and
+LM Studio as providers (a list of providers in Settings → Connections, each with its own screen: a key section per hosted provider; a
+connected provider shows in every provider and model picker). The cut features (sync,
+sharing or publishing, Field Guide, memory or stash, the documents editor, RFC 3161 and
+other provenance extras, other native provider adapters, MCP, connectors and web search) have no UI, route, setting or code in the app, so none is
 mapped. Export uses the OS share sheet only to hand off the Open Loom file. That is the
 in-scope export, not the cut "sharing" feature. The only leftovers are kept for stored data
 and are not user-visible: the extra `Provider` values, and the ignored legacy keys
@@ -133,7 +134,8 @@ stays until the user makes one.
 - **Code:** `src/interface/composition/AppServicesProvider.tsx#AppBootstrapGate`, `src/infrastructure/bootstrap/run-startup-orchestrator.ts`, `src/application/use-cases/InitializeAppDefaultsUseCase.ts`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences`, `agents`, `groves`, through the Watermelon
   repositories; the composition root also registers OpenRouter, LM Studio, Anthropic and OpenAI
-  adapters (direct-provider UI is separate work). Schema v9 adds `user_preferences.onboarding_completed_at`, v10
+  adapters (a development build's `EXPO_PUBLIC_ANTHROPIC_ENDPOINT` / `EXPO_PUBLIC_OPENAI_ENDPOINT`
+  point the last two at a mock server: `direct-provider-endpoints.ts`). Schema v9 adds `user_preferences.onboarding_completed_at`, v10
   `user_preferences.tree_onboarding_completed_at`
 - **Status:** live
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
@@ -300,17 +302,19 @@ stays until the user makes one.
 - **Purpose:** Where a tree can't start yet, one line says what to do and the action sits
   under it: "Choose a model to start your first tree." with "Set up" (opens onboarding),
   or "Add your OpenRouter key to start a tree." with "Add key" (opens the Connections
-  sheet).
+  sheet). The key line is the same whichever hosted provider (OpenRouter, Anthropic,
+  OpenAI) the default agent is on and lacks a key for.
 - **Where:** Home, above the tree list.
 - **Reach:** Fresh install → swipe onboarding down → Home shows `home-setup-hint`. For "no key":
   create an OpenRouter agent in Settings → Agents without storing a key.
-- **Requires:** Not ready to start a tree: no model agent, or an OpenRouter default agent and
-  no key. LM Studio reachability is not checked here; a server that is down is reported
+- **Requires:** Not ready to start a tree: no model agent, or a default agent on a hosted
+  provider (OpenRouter, Anthropic or OpenAI) with no key stored for it. LM Studio reachability is not checked here; a server that is down is reported
   when generation fails (`chat.dialogue`).
 - **Selector:** working — `home-setup-hint`, `home-setup-action`
 - **Code:** `src/interface/components/setup/SetupHint.tsx`, `src/interface/components/setup/setup-hint-copy.ts`, `src/interface/hooks/useSetupStatus.ts`, `src/application/use-cases/GetSetupStatusUseCase.ts`, `src/application/services/onboarding/setup-status.ts`
 - **Backend:** WatermelonDB `agents`, `user_preferences` (`default_model_agent_id`,
-  `onboarding_completed_at`); `expo-secure-store` `openrouter_api_key` (read only)
+  `onboarding_completed_at`); `expo-secure-store` `openrouter_api_key`, `anthropic_api_key`
+  or `openai_api_key` (read only, the default agent's provider)
 - **Status:** live
 - **Notes:** Re-read on every focus, so returning from onboarding or Connections updates it.
 
@@ -362,14 +366,17 @@ stays until the user makes one.
 - **Requires:** LM Studio: a reachable server to list models. When it isn't,
   `onboarding-lmstudio-model-error` says so, with `onboarding-lmstudio-model-refresh`.
 - **Selector:** working — `onboarding-step-setup`, `onboarding-provider-openrouter`, `onboarding-provider-lmstudio`, `onboarding-openrouter`, `onboarding-openrouter-key`, `onboarding-openrouter-key-docs`, `onboarding-templates`, `onboarding-template-<key>`, `onboarding-lmstudio-models`, `onboarding-lmstudio-model-<model id>`, `onboarding-lmstudio-model-error`, `onboarding-lmstudio-model-refresh`, `onboarding-error`, plus the reused `connections-openrouter-key-input`, `connections-openrouter-key-save`, `connections-openrouter-key-cancel`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-test`, `connections-lmstudio-status`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`, `connections-openrouter-key-sheet`
-- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/application/services/model-agent-name.ts#readableModelName`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
+- **Code:** `src/interface/components/onboarding/setup/`, `src/interface/components/onboarding/onboarding-drafts.ts`, `src/application/services/model-agent-name.ts#readableModelName`, `src/interface/components/settings/agents/editor/ProviderSection.tsx`, `src/interface/components/settings/agents/editor/TemplateSection.tsx`, `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/agents/agent-templates.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/agents/useCreateAgentFromDraft.ts`, `src/interface/hooks/useCreateLoomTree.ts`
 - **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
   (secure store and `user_preferences.lmstudio_settings`); then WatermelonDB `agents`,
   `user_preferences` (`default_model_agent_id`, `onboarding_completed_at`) and the tree
   tables as in `home.composer`
 - **Status:** live
 - **Notes:** Agent customizing lives in Settings → Agents only. The LM Studio token and
-  auto-load rows stay in Settings. Back from the new tree without sending discards it
+  auto-load rows stay in Settings. Onboarding offers only OpenRouter and LM Studio;
+  Anthropic and OpenAI are connected in Settings → Connections (`settings.connections.anthropic`,
+  `settings.connections.openai`). The key sheet writes the key to secure storage before it
+  closes, so Begin Weaving can't race it. Back from the new tree without sending discards it
   (`chat.ephemeral-discard`).
 
 ### Tree onboarding (Getting Started)
@@ -503,7 +510,8 @@ stays until the user makes one.
   LM Studio `POST <endpoint>/v1/chat/completions` (OpenAI-compatible), Anthropic
   `POST https://api.anthropic.com/v1/messages`, or OpenAI
   `POST https://api.openai.com/v1/responses`. Direct providers use the same raw-capture
-  and Stop contract; their connection and picker UI is separate work. Writes WatermelonDB
+  and Stop contract; their keys are stored in Settings → Connections
+  (`settings.connections.anthropic`, `settings.connections.openai`). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
   updates `loom_trees.last_message_at`.
 - **Status:** live
@@ -919,9 +927,10 @@ stays until the user makes one.
 ### Tree model settings
 - **ID:** `chat.model-settings`
 - **Purpose:** Latent Spaces' tree Model Settings (TreeModelSettingsView.swift): "Provider
-  Options" with the Provider menu picker (OpenRouter, LM Studio) and Model, a footer with the
-  model id in bold, its description and, for OpenRouter, its context length ("Context:
-  128,000 tokens"); Stream Messages (on, disabled: the app always
+  Options" with the Provider menu picker (OpenRouter and LM Studio, plus Anthropic and OpenAI
+  once their key is stored, and the tree's own provider even if its key was removed) and
+  Model, a footer with the model id in bold, its description and, for a catalog provider
+  (OpenRouter, Anthropic, OpenAI), its context length ("Context: 128,000 tokens"); Stream Messages (on, disabled: the app always
   streams); Maximum Output Tokens with its slider (1 to the model's output limit; "Provider
   default", thumb at the limit, while the agent sets none and requests send no
   `max_tokens`) and "Always use maximum allowed"; Temperature, 0 to 1 in steps of 0.1; and System Message
@@ -931,13 +940,13 @@ stays until the user makes one.
 - **Reach:** P2 → `chat-menu-button` → "Model".
 - **Requires:** A tree. Without a model agent the parameters are disabled until a model is
   chosen, and the footer says "Choose a model for this tree."
-- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
-- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/ui/components/form/FormLinkRow.tsx`, `src/interface/ui/components/form/FormLabel.tsx`, `src/interface/ui/components/SymbolIcon.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/application/services/model-agent-name.ts`, `src/app/tree/*/model/index.tsx`
+- **Selector:** working — `tree-model-screen`, `tree-model-provider` (menu row), `tree-model-model` (OpenRouter, Anthropic, OpenAI: pushes the list; LM Studio: a menu row), `tree-model-footer-id`, `tree-model-footer-description`, `tree-model-footer-context`, `tree-model-stream`, `tree-model-max-tokens-value`, `tree-model-max-tokens-slider`, `tree-model-use-max-tokens`, `tree-model-temperature-value`, `tree-model-temperature-slider`, `tree-model-system-message`, `tree-model-error`; Provider and LM Studio model menu items none — native context menu item; reach via a tap on `tree-model-provider` or `tree-model-model`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelSettingsScreen.tsx`, `src/interface/ui/components/form/FormLinkRow.tsx`, `src/interface/ui/components/form/FormLabel.tsx`, `src/interface/ui/components/SymbolIcon.tsx`, `src/interface/components/chat/tree-model/ProviderOptionsSection.tsx`, `src/interface/ui/components/form/FormPickerRow.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/chat/tree-model/ParameterSections.tsx`, `src/interface/components/models/ModelFooter.tsx`, `src/interface/components/chat/tree-model/model-footer-content.ts`, `src/interface/components/models/DescriptionText.tsx`, `src/interface/components/models/description-segments.ts`, `src/interface/components/chat/tree-model/useTreeModelSettings.ts`, `src/interface/components/chat/tree-model/useTreeModelAgent.ts`, `src/interface/components/chat/tree-model/tree-model-values.ts`, `src/interface/components/chat/tree-model/max-tokens-display.ts`, `src/interface/components/models/model-max-tokens.ts`, `src/interface/components/chat/tree-model/model-choice.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/models/provider-options.ts`, `src/interface/components/models/useConnectedProviders.ts`, `src/interface/components/chat/tree-model/tree-model-change-store.ts`, `src/interface/components/chat/tree-model/tree-model-routes.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/model-options.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`, `src/application/services/model-agent-name.ts`, `src/app/tree/*/model/index.tsx`
 - **Backend:** WatermelonDB `agents` (model, `configuration` temperature, `maxTokens`,
   `useMaxTokens`; a fork sets `owner_tree_id`) and `loom_trees` (`default_model_agent_id`),
   via `WatermelonAgentRepository` and `WatermelonLoomTreeRepository`; the OpenRouter
-  catalog (`GET https://openrouter.ai/api/v1/models`, no key, cached 24 h) or LM Studio's
-  `GET /api/v1/models`
+  catalog (`GET https://openrouter.ai/api/v1/models`, no key, cached 24 h), Anthropic's or
+  OpenAI's own `GET /v1/models` with the stored key, or LM Studio's `GET /api/v1/models`
 - **Status:** live
 - **Notes:** Per-tree settings on Aspen Grove's agents (`UpdateTreeModelSettingsUseCase`):
   the tree's own agent (owned by it, used by no other tree) is edited in place; a shared one
@@ -950,7 +959,8 @@ stays until the user makes one.
   part of an agent's name. Tree-owned agents
   don't show in Settings → Agents. A new provider switches to a model on it: the default
   agent's model when it is on that provider, else onboarding's first template for
-  OpenRouter, else a loaded LM Studio model (never one listed but not loaded); an LM
+  OpenRouter, else the newest model Anthropic or OpenAI lists, else a loaded LM Studio
+  model (never one listed but not loaded); an LM
   Studio that can't be reached leaves the
   tree as it was and says so in the footer. The output limit is Latent Spaces': OpenRouter's
   `top_provider.max_completion_tokens` (8192 when it names none, 4096 for a model not in
@@ -965,32 +975,36 @@ stays until the user makes one.
 
   The System Message row uses LS's `scroll` SF Symbol on iOS, with a document icon fallback on Android.
 
-### OpenRouter model browser (tree)
+### Model browser (tree)
 - **ID:** `chat.model-settings.openrouter-models`
 - **Purpose:** OpenRouter's Model page (`.pickerStyle(.navigationLink)`) as Aspen Grove's
-  model browser: every catalog model in one inset card, each row with the model's name, who
-  made it, and its context and input/output price per million tokens in mono; a gold check
-  on the tree's. The native search field in the bar narrows it by name, maker or id. A tap
+  model browser, for OpenRouter, Anthropic and OpenAI alike (the route's `provider`
+  param): every model the provider lists in one inset card, each row with the model's name, who
+  made it (Anthropic or OpenAI for their own lists), and its context and, for OpenRouter,
+  input/output price per million tokens in mono; a gold check on the tree's. The native search field in the bar narrows it by name, maker or id. A tap
   opens the model's page (`models.detail`), whose "Use This Model" chooses it. A search that
   matches no listed id offers "Use “<id>” as a model id" (`tree-model-custom`), for a model
-  newer than the cached catalog. The same browser serves the agent editor
+  newer than the cached catalog or the provider's list. The same browser serves the agent editor
   (`settings.agents.model-picker`).
-- **Where:** Pushed from Model Settings' Model row while the provider is OpenRouter; titled
-  "Model".
-- **Reach:** P2 → `chat-menu-button` → "Model" → (Provider: OpenRouter) → `tree-model-model`
-  → `tree-model-option-<model id>`.
-- **Requires:** The catalog: a network connection, or a cached copy.
+- **Where:** Pushed from Model Settings' Model row while the provider is OpenRouter,
+  Anthropic or OpenAI; titled "Model".
+- **Reach:** P2 → `chat-menu-button` → "Model" → (Provider: OpenRouter, Anthropic or OpenAI)
+  → `tree-model-model` → `tree-model-option-<model id>`.
+- **Requires:** OpenRouter: the catalog (a network connection, or a cached copy). Anthropic
+  or OpenAI: its key (`settings.connections.anthropic`) and a network connection.
 - **Selector:** working — `tree-model-list-screen`, `tree-model-list`, rows `tree-model-option-<model id>`, `tree-model-custom`; the search field is the native header search bar (no testID; tap its "Search models" placeholder)
-- **Code:** `src/interface/components/chat/tree-model/OpenRouterModelListScreen.tsx`, `src/interface/components/chat/tree-model/useTreeOpenRouterChoice.ts`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/browser-rows.ts`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/app/tree/*/model/models.tsx`
-- **Backend:** The OpenRouter catalog (as above); the choice through
+- **Code:** `src/interface/components/chat/tree-model/TreeModelListScreen.tsx`, `src/interface/components/chat/tree-model/useTreeModelChoice.ts`, `src/interface/components/models/browsable-provider.ts`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/browser-rows.ts`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/app/tree/*/model/models.tsx`
+- **Backend:** The OpenRouter catalog (as above), or Anthropic's or OpenAI's authenticated
+  `GET /v1/models` through `fetchModels()`; the choice through
   `UpdateTreeModelSettingsUseCase`
 - **Status:** live
 - **Notes:** Flow: `.maestro/mock/tree-model-browser.yaml`.
 
 ### Model page
 - **ID:** `models.detail`
-- **Purpose:** One OpenRouter model, with what openrouter.ai's page shows that helps choose
-  it: its name (Cardo), who made it and its id; About (OpenRouter's description, which its
+- **Purpose:** One model, with what its provider lists that helps choose it (for OpenRouter
+  what openrouter.ai's page shows; Anthropic's and OpenAI's lists carry no prices or
+  description, so those sections are left out and "View on OpenRouter" does not show): its name (Cardo), who made it and its id; About (OpenRouter's description, which its
   list endpoint shortens); Limits (context, max output); Pricing (input and output per
   million tokens, image input and output and a per-request price when the model has them,
   "Varies" for a router); Modalities (input, output); Supported Parameters (mono chips);
@@ -1002,11 +1016,12 @@ stays until the user makes one.
   `tree/[treeId]/model/detail`, saves the tree's model) or inside the agent editor's sheet
   (route `agent-editor/detail`, sets the draft's model).
 - **Reach:** `tree-model-option-<model id>` or `agent-editor-model-option-<model id>`.
-- **Requires:** The catalog, cached or fetched.
+- **Requires:** The provider's list, cached or fetched.
 - **Selector:** working — `model-detail-screen`, `model-detail-scroll`, `model-detail-title`, `model-detail-author`, `model-detail-description`, `model-detail-context`, `model-detail-max-output`, `model-detail-pricing`, `model-detail-parameters`, `model-detail-created`, `model-detail-link`, `model-detail-use`
-- **Code:** `src/interface/components/models/ModelDetailView.tsx`, `src/interface/components/models/ScrollBottomFade.tsx`, `src/interface/components/models/ModelDetailHero.tsx`, `src/interface/components/models/ModelDetailSections.tsx`, `src/interface/components/models/ModelInfoRow.tsx`, `src/interface/components/models/ModelParameterChips.tsx`, `src/interface/components/models/useOpenRouterModel.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/interface/components/chat/tree-model/TreeModelDetailScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/application/services/llm/openrouter-catalog-model.ts`, `src/infrastructure/llm/openrouter/catalog-normalize.ts`, `src/app/tree/*/model/detail.tsx`, `src/app/agent-editor/detail.tsx`
+- **Code:** `src/interface/components/models/ModelDetailView.tsx`, `src/interface/components/models/ScrollBottomFade.tsx`, `src/interface/components/models/ModelDetailHero.tsx`, `src/interface/components/models/ModelDetailSections.tsx`, `src/interface/components/models/ModelInfoRow.tsx`, `src/interface/components/models/ModelParameterChips.tsx`, `src/interface/components/models/useCatalogModel.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/interface/components/chat/tree-model/TreeModelDetailScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/application/services/llm/openrouter-catalog-model.ts`, `src/infrastructure/llm/openrouter/catalog-normalize.ts`, `src/app/tree/*/model/detail.tsx`, `src/app/agent-editor/detail.tsx`
 - **Backend:** The cached OpenRouter catalog (`GET https://openrouter.ai/api/v1/models`, no
-  key; WatermelonDB local key `openrouter_model_catalog_v3`, 24 h); the choice through
+  key; WatermelonDB local key `openrouter_model_catalog_v3`, 24 h), or Anthropic's or
+  OpenAI's authenticated list (in memory); the choice through
   `UpdateTreeModelSettingsUseCase` (tree) or the agent editor's save
 - **Status:** live
 
@@ -1333,7 +1348,7 @@ dialogue.
 ### Agent editor
 - **ID:** `settings.agents.editor`
 - **Purpose:** Creates or edits a shared agent: quick-start templates (create only), name,
-  Provider and Model, temperature, max tokens and system prompt.
+  Provider (connected providers only) and Model, temperature, max tokens and system prompt.
 - **Where:** A page sheet over Settings → Agents (route `agent-editor`, a modal with its own
   stack), titled "New Agent" or "Edit Agent". A Form in a sheet: glass Cancel and
   Create/Save capsules either side of the title, the error pinned under the bar. The model
@@ -1367,12 +1382,14 @@ dialogue.
 ### Model picker
 - **ID:** `settings.agents.model-picker`
 - **Purpose:** Picks the agent's provider and model the way a tree's Model Settings does:
-  Provider is a menu row (OpenRouter, LM Studio); on OpenRouter, Model shows the chosen
-  model's name and pushes the model browser (the one `chat.model-settings.openrouter-models`
-  describes), where a row opens the model's page (`models.detail`) and "Use This Model" puts
-  it in the draft; on LM Studio, Model is a menu of the server's models. The footer shows the
-  model id in bold and its description. A new provider starts on its default model
-  (onboarding's first template on OpenRouter; on LM Studio the first loaded model once the
+  Provider is a menu row (OpenRouter and LM Studio, plus Anthropic and OpenAI once their key
+  is stored); on OpenRouter, Anthropic and OpenAI, Model shows the chosen model's name and
+  pushes the model browser (the one `chat.model-settings.openrouter-models` describes, for
+  the draft's provider), where a row opens the model's page (`models.detail`) and "Use This
+  Model" puts it in the draft; on LM Studio, Model is a menu of the server's models. The
+  footer shows the model id in bold and its description. A new provider starts on its
+  default model (onboarding's first template on OpenRouter; the newest listed model on
+  Anthropic and OpenAI once the list arrives; on LM Studio the first loaded model once the
   list arrives, never one the server lists but hasn't loaded).
 - **Where:** The agent editor's Model section; the browser and a model's page push inside
   the editor's sheet (routes `agent-editor/models`, `agent-editor/detail`). Onboarding's
@@ -1380,37 +1397,84 @@ dialogue.
   `useModelPickerData`.
 - **Reach:** `settings-agents-new` → `agent-editor-model` →
   `agent-editor-model-option-<model id>` → `model-detail-use`.
-- **Requires:** OpenRouter: network for the catalog, or a cached copy. LM Studio: a
-  reachable endpoint (set in `settings.connections.lmstudio`).
+- **Requires:** OpenRouter: network for the catalog, or a cached copy. Anthropic and OpenAI:
+  their key (`settings.connections.anthropic`, `settings.connections.openai`) and network.
+  LM Studio: a reachable endpoint (set in `settings.connections.lmstudio`).
 - **Selector:** working — `agent-editor-provider` and `agent-editor-model` (menu rows; LM Studio's model is a menu row too), `agent-editor-model-list-screen`, `agent-editor-model-list`, rows `agent-editor-model-option-<model id>`, `agent-editor-model-custom`, `agent-editor-model-error`; the search field is the native header search bar (tap its "Search models" placeholder); Provider and LM Studio model menu items none — native context menu item; reach via a tap on `agent-editor-provider` or `agent-editor-model`
-- **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
+- **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/interface/components/models/provider-options.ts`, `src/interface/components/models/useConnectedProviders.ts`, `src/interface/components/models/browsable-provider.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` (cached for
   24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`.
-  Backend adapters also expose authenticated Anthropic/OpenAI `GET /v1/models` through
-  `fetchModels()`, returning `OpenRouterCatalogModel[]`; picker integration is separate work.
+  Anthropic and OpenAI: their authenticated `GET /v1/models` through the adapter's
+  `fetchModels()` after `initialize` with the stored key, returning
+  `OpenRouterCatalogModel[]`.
 - **Status:** live
 - **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. The
   browser lists every model (no cap); search to narrow. A failed LM Studio discovery reads
   "LM Studio isn't answering…" in `agent-editor-model-error`, not the raw fetch error.
   Flow: `.maestro/model-browser.yaml`.
 
+### Connections list
+- **ID:** `settings.connections.list`
+- **Purpose:** The short page Settings → Connections opens on: the card on how API keys are
+  kept, then one grouped list with a row per provider (OpenRouter, Anthropic, OpenAI, LM
+  Studio). Each row names the provider, says where it stands on the right, and pushes that
+  provider's screen (`settings.connections.provider`). Latent Spaces' API Keys page
+  (`APIKeySettingsView.swift`) is one flat Form for two providers; with four, Aspen Grove
+  keeps the page short and puts each provider behind a row, as Settings does for Agents.
+- **Where:** Settings → Connections; the same list opens as the Connections sheet
+  (`settings.connections.sheet`).
+- **Reach:** Cold start → `home-settings-button` → `settings-link-connections`.
+- **Requires:** none
+- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-list`, `connections-row-openrouter`, `connections-row-anthropic`, `connections-row-openai`, `connections-row-lmstudio`
+- **Code:** `src/interface/components/settings/screens/ConnectionsListScreen.tsx`, `src/interface/components/settings/connections/ConnectionsList.tsx`, `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/useConnectionStatuses.ts`, `src/interface/components/settings/connections/connection-status.ts`, `src/interface/components/settings/connections/connection-routes.ts`, `src/app/settings/connections/index.tsx`
+- **Backend:** `expo-secure-store` (whether a key is stored per provider) and WatermelonDB
+  `user_preferences.lmstudio_settings` (the saved server address); no network
+- **Status:** live
+- **Notes:** A hosted provider's status reads "Key stored" or "No key"; LM Studio's reads
+  its saved server address (`localhost:1235`) or "Not set up" when the address is cleared.
+  The list doesn't call the server (Test Connection is on LM Studio's screen). Statuses are
+  read again each time the list is focused, so a key added or removed on a provider's
+  screen shows when going back.
+
+### Connection provider screen
+- **ID:** `settings.connections.provider`
+- **Purpose:** One provider's Connections screen, titled with its name: a hosted provider's
+  key section and sheet (`settings.connections.openrouter`, `.anthropic`, `.openai`), or LM
+  Studio's server section (`settings.connections.lmstudio`). Exactly the sections Connections
+  used to stack in one page.
+- **Where:** Route `settings/connections/[provider]` (`provider` is `openrouter`,
+  `anthropic`, `openai` or `lmstudio`), pushed from the list with the system back button;
+  inside the Connections sheet, route `connections/[provider]`.
+- **Reach:** `settings-link-connections` → `connections-row-<provider>`.
+- **Requires:** none
+- **Selector:** working — `connections-provider-screen`
+- **Code:** `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/connection-provider.ts`, `src/app/settings/connections/*.tsx`, `src/app/_layout.tsx`
+- **Backend:** As the provider's own entry
+- **Status:** live
+- **Notes:** An unknown `provider` param shows an empty screen. The title comes from the
+  route's param (`connectionProviderTitle`).
+
 ### OpenRouter connection
 - **ID:** `settings.connections.openrouter`
 - **Purpose:** Latent Spaces' API Keys page (`APIKeySettingsView.swift`) for OpenRouter: a
   card on how keys are kept, "Edit OpenRouter API Key" (a sheet with one secure field,
-  Cancel and Save) and links to OpenRouter's key docs, keys and credits pages.
-- **Where:** Settings → Connections, the top card and the OpenRouter section.
+  Cancel and Save) and links to OpenRouter's key docs, keys and credits pages. One key
+  section and sheet, parameterized by provider (`provider-key-config.ts`), serve OpenRouter,
+  Anthropic and OpenAI; the Anthropic and OpenAI entries below name what differs.
+- **Where:** Settings → Connections → OpenRouter (`connections-row-openrouter`): the
+  provider's own screen, titled OpenRouter, holding its key section. The top card on how
+  keys are kept is on the list (`settings.connections.list`).
 - **Reach:** Cold start → `home-settings-button` →
-  `settings-link-connections` → `connections-openrouter-edit` →
+  `settings-link-connections` → `connections-row-openrouter` → `connections-openrouter-edit` →
   `connections-openrouter-key-input` → `connections-openrouter-key-save`.
 - **Requires:** none
-- **Selector:** working — `settings-connections-screen`, `connections-hero`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
-- **Code:** `src/interface/components/settings/connections/ApiKeysHeroSection.tsx`, `src/interface/components/settings/connections/key-storage-copy.ts`, `src/interface/components/settings/connections/OpenRouterKeySection.tsx`, `src/interface/components/settings/connections/OpenRouterKeySheet.tsx`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/screens/ConnectionsSettingsScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections.tsx`
+- **Selector:** working — `connections-provider-screen`, `connections-openrouter`, `connections-openrouter-edit`, `connections-openrouter-status`, `connections-openrouter-link-docs`, `connections-openrouter-link-keys`, `connections-openrouter-link-credits`, `connections-openrouter-key-sheet`, `connections-openrouter-key-input`, `connections-openrouter-key-cancel`, `connections-openrouter-key-save`, `settings-status-saving`, `settings-status-error`
+- **Code:** `src/interface/components/settings/connections/key-storage-copy.ts`, `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`, `src/app/settings/connections/*.tsx`
 - **Backend:** `expo-secure-store` (key `openrouter_api_key`), not WatermelonDB; the provider
   registry is reconfigured on save
 - **Status:** live
-- **Notes:** Save stores the key (about 450 ms later, or at once if the screen closes);
-  Cancel discards the edit. A swipe down closes the sheet when the field still holds the
+- **Notes:** Save writes the key to secure storage at once (`useProviderKey`), and
+  re-initializes the provider's adapter; Cancel discards the edit. A swipe down closes the sheet when the field still holds the
   stored key, and asks "Discard changes?" first when it doesn't (`FormSheet`'s
   `hasUnsavedChanges`, `src/interface/ui/components/sheet/`). On Android, where a sheet is a
   full-screen modal, `PageSheet` keeps it below the status bar, so Cancel and Save are
@@ -1419,18 +1483,69 @@ dialogue.
   footer say where the key is kept, per platform (`key-storage-copy.ts`): the iOS Keychain,
   or encrypted with the Android Keystore and left out of Android backups. Neither Settings nor onboarding has a show/hide
   button, as Latent Spaces' SecureField has none; onboarding opens this same key sheet. The links open the system browser (Safari on iOS). The top card's icon is the SF Symbol `lock.shield.fill` on iOS (Ionicons `shield-checkmark` on Android), via `SymbolIcon`.
+### Anthropic connection
+- **ID:** `settings.connections.anthropic`
+- **Purpose:** Add, test, replace and remove an Anthropic API key, as for OpenRouter
+  (`settings.connections.openrouter`): "Edit Anthropic API Key" opens the same key sheet
+  ("Enter Key (sk-ant-…)"); with a key stored, "Test Key" asks Anthropic for its model
+  list and the footer reads "Anthropic accepted the key. N models available." or a plain
+  line when it refused or couldn't be reached; links to Anthropic's key docs, keys and
+  billing pages. Once a key is stored, Anthropic appears in the Provider pickers
+  (`chat.model-settings`, `settings.agents.model-picker`), and trees and agents on an
+  `anthropic:<model>` ref generate through Anthropic's Messages API.
+- **Where:** Settings → Connections → Anthropic (`connections-row-anthropic`), in Settings
+  and in the Connections sheet: its own screen, titled Anthropic.
+- **Reach:** `settings-link-connections` → `connections-row-anthropic` → `connections-anthropic-edit` →
+  `connections-anthropic-key-input` → `connections-anthropic-key-save` →
+  `connections-anthropic-test`.
+- **Requires:** An Anthropic API key; the test needs a network connection. A development
+  build can point Anthropic at the mock server with `EXPO_PUBLIC_ANTHROPIC_ENDPOINT` (the full
+  completion URL, such as `http://localhost:1236/v1/messages`; see `.maestro/mock/direct-providers.yaml`).
+- **Selector:** working — `connections-provider-screen`, `connections-anthropic`, `connections-anthropic-edit`, `connections-anthropic-test`, `connections-anthropic-status`, `connections-anthropic-link-docs`, `connections-anthropic-link-keys`, `connections-anthropic-link-credits`, `connections-anthropic-key-sheet`, `connections-anthropic-key-input`, `connections-anthropic-key-cancel`, `connections-anthropic-key-save`
+- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/AnthropicAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
+- **Backend:** `expo-secure-store` (key `anthropic_api_key`); test: Anthropic
+  `GET https://api.anthropic.com/v1/models` (`AnthropicAdapter#fetchModels`)
+- **Status:** live
+- **Notes:** The test uses the stored key, so the Test Key row shows only once a key is
+  saved; saving, replacing or removing a key puts the footer back to "A key is stored on
+  this device." and drops a test still running. Unlike OpenRouter, there is no build
+  environment fallback for this key.
+
+### OpenAI connection
+- **ID:** `settings.connections.openai`
+- **Purpose:** The same as `settings.connections.anthropic` for OpenAI: key sheet
+  ("Enter Key (sk-…)"), "Test Key" against OpenAI's model list, links to OpenAI's quickstart,
+  API keys and billing pages; once stored, OpenAI appears in the Provider pickers and
+  `openai:<model>` refs generate through the Responses API.
+- **Where:** Settings → Connections → OpenAI (`connections-row-openai`), in Settings and in
+  the Connections sheet: its own screen, titled OpenAI.
+- **Reach:** `settings-link-connections` → `connections-row-openai` → `connections-openai-edit` →
+  `connections-openai-key-input` → `connections-openai-key-save` → `connections-openai-test`.
+- **Requires:** An OpenAI API key; the test needs a network connection. A development build
+  can point OpenAI at the mock server with `EXPO_PUBLIC_OPENAI_ENDPOINT` (such as
+  `http://localhost:1237/v1/responses`).
+- **Selector:** working — `connections-provider-screen`, `connections-openai`, `connections-openai-edit`, `connections-openai-test`, `connections-openai-status`, `connections-openai-link-docs`, `connections-openai-link-keys`, `connections-openai-link-credits`, `connections-openai-key-sheet`, `connections-openai-key-input`, `connections-openai-key-cancel`, `connections-openai-key-save`
+- **Code:** `src/interface/components/settings/connections/ProviderKeySection.tsx`, `src/interface/components/settings/connections/ProviderKeySheet.tsx`, `src/interface/components/settings/connections/ProviderKeyConnection.tsx`, `src/interface/components/settings/connections/provider-key-config.ts`, `src/interface/components/settings/connections/provider-key-status.ts`, `src/interface/components/settings/connections/provider-key-actions.ts`, `src/interface/components/settings/connections/useProviderKey.ts`, `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/composition/direct-provider-endpoints.ts`, `src/infrastructure/llm/OpenAIAdapter.ts`, `src/infrastructure/security/ExpoSecureCredentialStore.ts`
+- **Backend:** `expo-secure-store` (key `openai_api_key`); test: OpenAI
+  `GET https://api.openai.com/v1/models` (`OpenAIAdapter#fetchModels`, filtered to the text
+  models the Responses API serves)
+- **Status:** live
+- **Notes:** As `settings.connections.anthropic`.
+
 ### Connections sheet
 - **ID:** `settings.connections.sheet`
-- **Purpose:** The Connections screen as a sheet over the current screen, so a missing key or
-  an LM Studio server that is down can be fixed without leaving a tree.
-- **Where:** Route `connections`, a modal page sheet with "Connections" and a Done capsule at
-  the top.
+- **Purpose:** The Connections list as a sheet over the current screen, so a missing key or
+  an LM Studio server that is down can be fixed without leaving a tree. A provider's row
+  pushes its screen inside the sheet.
+- **Where:** Route `connections`, a modal page sheet with a stack of its own: the list under
+  "Connections" and a Done capsule, and each provider's screen with the system back button.
 - **Reach:** `home-setup-action` ("Add key") or
   `chat-error-action` ("Open Connections").
 - **Requires:** none
-- **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.openrouter` and `settings.connections.lmstudio`
-- **Code:** `src/interface/components/settings/screens/ConnectionsSheetScreen.tsx`, `src/app/connections.tsx`
-- **Backend:** As `settings.connections.openrouter` and `settings.connections.lmstudio`
+- **Selector:** working — `connections-sheet`, `connections-sheet-done`, plus every selector of `settings.connections.list`, `settings.connections.openrouter`, `settings.connections.anthropic`, `settings.connections.openai` and `settings.connections.lmstudio`
+- **Code:** `src/interface/components/settings/screens/ConnectionsSheetScreen.tsx`, `src/interface/components/settings/connections/ConnectionsSheetStack.tsx`, `src/app/connections/_layout.tsx`, `src/app/connections/index.tsx`, `src/app/connections/*.tsx`
+- **Backend:** As `settings.connections.openrouter`, `settings.connections.anthropic`,
+  `settings.connections.openai` and `settings.connections.lmstudio`
 - **Status:** live
 - **Notes:** Swipe down also closes it. On Android it is a full-screen screen; its bar
   (`FormSheetHeader`) keeps below the status bar, and back closes it too.
@@ -1439,13 +1554,14 @@ dialogue.
 - **ID:** `settings.connections.lmstudio`
 - **Purpose:** Sets the LM Studio server address and an optional API token, toggles model
   auto-load, and tests the connection.
-- **Where:** Settings → Connections, the LM Studio section below OpenRouter (scroll down).
-- **Reach:** `settings-link-connections` → `connections-lmstudio-endpoint-input` →
+- **Where:** Settings → Connections → LM Studio (`connections-row-lmstudio`): its own screen,
+  titled LM Studio, holding the server section.
+- **Reach:** `settings-link-connections` → `connections-row-lmstudio` → `connections-lmstudio-endpoint-input` →
   `connections-lmstudio-test`.
 - **Requires:** A reachable LM Studio server for "Connected". On the iOS Simulator,
   `localhost` is the Mac.
-- **Selector:** working — `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
-- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
+- **Selector:** working — `connections-provider-screen`, `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
+- **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
   Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.

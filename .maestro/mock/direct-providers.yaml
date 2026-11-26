@@ -1,0 +1,257 @@
+# Direct providers against the mock: Settings -> API Settings -> Connections
+# lists the providers; an Anthropic key and an OpenAI key are entered on their
+# screens and tested, then for each a tree
+# switched to the provider, its mock model picked in the model browser, one
+# turn sent and the reply seen.
+# Needs three mock servers (each lists and answers for one --model) and Metro
+# started with both endpoint overrides (see scripts/mock-llm-server/README.md,
+# "Direct providers in the app"):
+#   node scripts/mock-llm-server/cli.ts --port 1235
+#   node scripts/mock-llm-server/cli.ts --port 1236 --model claude-sonnet-mock
+#   node scripts/mock-llm-server/cli.ts --port 1237 --model gpt-4.1
+#   EXPO_PUBLIC_ANTHROPIC_ENDPOINT=http://localhost:1236/v1/messages \
+#   EXPO_PUBLIC_OPENAI_ENDPOINT=http://localhost:1237/v1/responses \
+#     npx expo start --dev-client
+#   maestro test .maestro/mock/direct-providers.yaml --test-output-dir "$SHOTS/direct-providers"
+# On Android, `adb reverse tcp:<port> tcp:<port>` each of 8081, 1235-1237.
+# The key's value is arbitrary: the mock takes any.
+appId: com.intrinsiclabs.aspengrove
+env:
+  ANTHROPIC_MODEL: claude-sonnet-mock
+  OPENAI_MODEL: gpt-4.1
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+
+# API Settings: a short list, one row per provider, in order.
+- runFlow: ../open-settings.yaml
+- tapOn:
+    id: settings-link-connections
+- extendedWaitUntil:
+    visible:
+      id: connections-row-lmstudio
+    timeout: 10000
+- assertVisible:
+    id: connections-row-openrouter
+- assertVisible:
+    id: connections-row-anthropic
+- assertVisible:
+    id: connections-row-openai
+- takeScreenshot: direct-01-connections-list-no-keys
+
+# --- Anthropic: its own screen; enter and test the key.
+- tapOn:
+    id: connections-row-anthropic
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-edit
+    timeout: 10000
+- tapOn:
+    id: connections-anthropic-edit
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-key-input
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: direct-02-anthropic-key-sheet
+- tapOn:
+    id: connections-anthropic-key-input
+- inputText: sk-ant-mock-key
+- tapOn:
+    id: connections-anthropic-key-save
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-test
+    timeout: 10000
+- tapOn:
+    id: connections-anthropic-test
+- extendedWaitUntil:
+    visible:
+      id: connections-anthropic-status
+      text: '.*accepted the key.*'
+    timeout: 15000
+- takeScreenshot: direct-03-anthropic-screen
+
+# --- OpenAI: back to the list, then its screen; enter and test the key.
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: connections-row-openai
+    timeout: 10000
+- tapOn:
+    id: connections-row-openai
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-edit
+    timeout: 10000
+- tapOn:
+    id: connections-openai-edit
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-key-input
+    timeout: 10000
+- tapOn:
+    id: connections-openai-key-input
+# (No 'p' or 'i' in a mock key: typed over adb on Android, the dev client reads
+# them as its perf-monitor and inspector shortcuts.)
+- inputText: sk-oa-mock-key
+- tapOn:
+    id: connections-openai-key-save
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-test
+    timeout: 10000
+- tapOn:
+    id: connections-openai-test
+- extendedWaitUntil:
+    visible:
+      id: connections-openai-status
+      text: '.*accepted the key.*'
+    timeout: 15000
+- takeScreenshot: direct-04-openai-screen
+
+# --- Back on the list: both keys read as stored. Then LM Studio's screen.
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: connections-row-lmstudio
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: direct-05-connections-list-keys-stored
+- tapOn:
+    id: connections-row-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: connections-lmstudio-endpoint-input
+    timeout: 10000
+- takeScreenshot: direct-06-lmstudio-screen
+
+# --- A tree on Anthropic's mock model.
+- runFlow: ../go-home.yaml
+- runFlow:
+    file: ../start-tree.yaml
+    env:
+      MESSAGE: Say hello in five words.
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 1
+    timeout: 60000
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- assertVisible: 'Anthropic'
+- assertVisible: 'OpenAI'
+- takeScreenshot: direct-05-provider-picker
+- tapOn: 'Anthropic'
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 15000
+# (A row is one accessible element: name, author, context.)
+- assertVisible: '${ANTHROPIC_MODEL}.*'
+- takeScreenshot: direct-06-anthropic-models
+- tapOn: '${ANTHROPIC_MODEL}.*'
+- extendedWaitUntil:
+    visible:
+      id: model-detail-use
+    timeout: 10000
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- assertVisible:
+    id: tree-model-footer-id
+    text: ${ANTHROPIC_MODEL}
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-composer-input
+    commands:
+      - runFlow: ../go-back.yaml
+      - waitForAnimationToEnd
+- tapOn:
+    id: chat-composer-input
+- inputText: And the oldest lakes?
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-message-row-.*
+      index: 3
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- takeScreenshot: direct-07-anthropic-reply
+
+# --- The same tree on OpenAI's mock model.
+- runFlow: ../open-tree-menu.yaml
+- tapOn: 'Model'
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- tapOn:
+    id: tree-model-provider
+- waitForAnimationToEnd
+- tapOn: 'OpenAI'
+- waitForAnimationToEnd
+- tapOn:
+    id: tree-model-model
+- extendedWaitUntil:
+    visible:
+      id: tree-model-option-.*
+    timeout: 15000
+# (A row is one accessible element: name, author, context.)
+- assertVisible: '${OPENAI_MODEL}.*'
+- takeScreenshot: direct-08-openai-models
+- tapOn: '${OPENAI_MODEL}.*'
+- extendedWaitUntil:
+    visible:
+      id: model-detail-use
+    timeout: 10000
+- tapOn:
+    id: model-detail-use
+- extendedWaitUntil:
+    visible:
+      id: tree-model-screen
+    timeout: 10000
+- assertVisible:
+    id: tree-model-footer-id
+    text: ${OPENAI_MODEL}
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-composer-input
+    commands:
+      - runFlow: ../go-back.yaml
+      - waitForAnimationToEnd
+- tapOn:
+    id: chat-composer-input
+- inputText: And the tallest trees?
+- tapOn:
+    id: chat-composer-send
+# (The list is virtualized, so wait on the sent text, not a row index.)
+- extendedWaitUntil:
+    visible: 'And the tallest trees?'
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-streaming-message
+    timeout: 60000
+- takeScreenshot: direct-09-openai-reply

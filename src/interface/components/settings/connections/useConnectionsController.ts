@@ -12,7 +12,6 @@ import {
 export type { LmStudioConnectionStatus } from './useLmStudioConnectionTest';
 
 type ConnectionsDraft = {
-  readonly apiKeyInput: string;
   readonly lmstudioEndpointInput: string;
   readonly lmstudioApiTokenInput: string;
   readonly lmstudioAutoLoadModels: boolean;
@@ -21,12 +20,13 @@ type ConnectionsDraft = {
 const toDraftKey = (draft: ConnectionsDraft): string => JSON.stringify(draft);
 
 /**
- * Provider connection settings: OpenRouter API key and the LM Studio server
- * connection (endpoint, optional token, auto-load switch).
+ * The LM Studio server connection (endpoint, optional token, auto-load
+ * switch), autosaved. The hosted providers' keys are saved from their sheets
+ * by `useProviderKey`.
  *
- * This is deliberately the only credential-bearing settings surface. Model
- * and generation configuration live on Agents (Settings → Agents and the
- * chat ⚙️ sheet), not here.
+ * Connections is deliberately the only credential-bearing settings surface.
+ * Model and generation configuration live on Agents (Settings → Agents and
+ * the chat ⚙️ sheet), not here.
  */
 export const useConnectionsController = () => {
   const { repositories, adapters } = useAppServices();
@@ -38,10 +38,6 @@ export const useConnectionsController = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastSavedDraftKeyRef = useRef<string | null>(null);
-
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
 
   const [lmstudioEndpointInput, setLmstudioEndpointInput] = useState(
     DEFAULT_LMSTUDIO_SETTINGS.endpoint
@@ -58,23 +54,18 @@ export const useConnectionsController = () => {
       setLoading(true);
       setError(null);
 
-      const [userPreferences, storedOpenRouterKey, storedLmstudioToken] =
-        await Promise.all([
-          repositories.userPreferencesRepo.get(),
-          adapters.credentialStore.getProviderApiKey('openrouter'),
-          adapters.credentialStore.getProviderApiKey('lmstudio'),
-        ]);
+      const [userPreferences, storedLmstudioToken] = await Promise.all([
+        repositories.userPreferencesRepo.get(),
+        adapters.credentialStore.getProviderApiKey('lmstudio'),
+      ]);
 
       const lmSettings = userPreferences.lmstudioSettings;
       const draft: ConnectionsDraft = {
-        apiKeyInput: storedOpenRouterKey?.trim() ?? '',
         lmstudioEndpointInput: lmSettings.endpoint,
         lmstudioApiTokenInput: storedLmstudioToken?.trim() ?? '',
         lmstudioAutoLoadModels: lmSettings.autoLoadModels,
       };
 
-      setApiKeyInput(draft.apiKeyInput);
-      setHasStoredApiKey(draft.apiKeyInput.length > 0);
       setLmstudioEndpointInput(draft.lmstudioEndpointInput);
       setLmstudioApiTokenInput(draft.lmstudioApiTokenInput);
       setHasStoredLmstudioToken(draft.lmstudioApiTokenInput.length > 0);
@@ -120,7 +111,6 @@ export const useConnectionsController = () => {
 
   const persistDraft = useCallback(
     async (draft: ConnectionsDraft): Promise<void> => {
-      const normalizedApiKey = draft.apiKeyInput.trim();
       const normalizedLmstudioToken = draft.lmstudioApiTokenInput.trim();
       const normalizedEndpoint = draft.lmstudioEndpointInput.trim();
 
@@ -135,12 +125,6 @@ export const useConnectionsController = () => {
               autoLoadModels: draft.lmstudioAutoLoadModels,
             },
           }),
-          normalizedApiKey.length > 0
-            ? adapters.credentialStore.setProviderApiKey(
-                'openrouter',
-                normalizedApiKey
-              )
-            : adapters.credentialStore.deleteProviderApiKey('openrouter'),
           normalizedLmstudioToken.length > 0
             ? adapters.credentialStore.setProviderApiKey(
                 'lmstudio',
@@ -163,11 +147,9 @@ export const useConnectionsController = () => {
 
         lastSavedDraftKeyRef.current = toDraftKey({
           ...draft,
-          apiKeyInput: normalizedApiKey,
           lmstudioApiTokenInput: normalizedLmstudioToken,
           lmstudioEndpointInput: normalizedEndpoint,
         });
-        setHasStoredApiKey(normalizedApiKey.length > 0);
         setHasStoredLmstudioToken(normalizedLmstudioToken.length > 0);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
@@ -201,13 +183,11 @@ export const useConnectionsController = () => {
   const saveNow = useCallback(
     () =>
       persistDraft({
-        apiKeyInput,
         lmstudioEndpointInput,
         lmstudioApiTokenInput,
         lmstudioAutoLoadModels,
       }),
     [
-      apiKeyInput,
       lmstudioApiTokenInput,
       lmstudioAutoLoadModels,
       lmstudioEndpointInput,
@@ -221,7 +201,6 @@ export const useConnectionsController = () => {
     }
 
     const draft: ConnectionsDraft = {
-      apiKeyInput,
       lmstudioEndpointInput,
       lmstudioApiTokenInput,
       lmstudioAutoLoadModels,
@@ -239,7 +218,6 @@ export const useConnectionsController = () => {
       clearTimeout(timeoutId);
     };
   }, [
-    apiKeyInput,
     lmstudioEndpointInput,
     lmstudioApiTokenInput,
     lmstudioAutoLoadModels,
@@ -247,22 +225,10 @@ export const useConnectionsController = () => {
     persistDraft,
   ]);
 
-  const apiKeyStatusText = hasStoredApiKey
-    ? 'Stored securely. Clear this field to remove.'
-    : 'No key currently stored.';
-
   return {
     loading,
     saving,
     error,
-
-    // OpenRouter
-    apiKeyStatusText,
-    apiKeyInput,
-    setApiKeyInput,
-    hasStoredApiKey,
-    showApiKey,
-    setShowApiKey,
 
     // LM Studio
     lmstudioEndpointInput,

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import type { SelectableProvider } from '@domain/entities';
 import { formText } from '@/interface/ui/components/form';
+import { useConnectedProviders } from '../../../models/useConnectedProviders';
 import { ModelFooter } from '../../../models/ModelFooter';
 import { providerDefaultModel } from '../../../models/provider-default-model';
 import { ProviderModelSection } from '../../../models/ProviderModelSection';
@@ -18,9 +19,10 @@ type AgentModelSectionProps = {
 
 /**
  * The agent's provider and model, laid out as a tree's Model Settings lays
- * them out: OpenRouter's Model pushes the model browser, LM Studio's is a
- * menu. A new provider starts on its default model (onboarding's first
- * template on OpenRouter, a loaded model on LM Studio once it answers).
+ * them out: the Model row of OpenRouter, Anthropic and OpenAI pushes the
+ * model browser, LM Studio's is a menu. A new provider starts on its default
+ * model (onboarding's first template on OpenRouter; a loaded model on LM
+ * Studio, or the newest on Anthropic and OpenAI, once their list answers).
  */
 export const AgentModelSection = ({
   draft,
@@ -30,12 +32,14 @@ export const AgentModelSection = ({
 }: AgentModelSectionProps) => {
   const { picker, listReady, modelId, selected } = selection;
 
-  // LM Studio's list arrives after the switch: then pick from it.
+  const providers = useConnectedProviders(draft.provider);
+
+  // These lists arrive after the switch: then pick from them.
   useEffect(() => {
-    if (draft.provider !== 'lmstudio' || modelId || !listReady) {
+    if (draft.provider === 'openrouter' || modelId || !listReady) {
       return;
     }
-    const id = providerDefaultModel('lmstudio', picker.options, null);
+    const id = providerDefaultModel(draft.provider, picker.options, null);
     if (id) {
       onChange({ modelIdentifier: id });
     }
@@ -57,6 +61,7 @@ export const AgentModelSection = ({
       header="Model"
       testIDPrefix="agent-editor"
       provider={draft.provider}
+      providers={providers}
       onChangeProvider={chooseProvider}
       modelId={modelId}
       selected={selected}
@@ -76,9 +81,9 @@ export const AgentModelSection = ({
             testIDPrefix="agent-editor"
             modelId={modelId}
             description={
-              draft.provider === 'openrouter'
-                ? selected?.description
-                : selected?.detail
+              draft.provider === 'lmstudio'
+                ? selected?.detail
+                : (selected?.description ?? selected?.detail)
             }
           />
         )

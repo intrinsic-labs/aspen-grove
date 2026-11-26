@@ -8,8 +8,10 @@ import {
   FormTextFieldRow,
 } from '@/interface/ui/components/form';
 import { keyStorageCopy } from './key-storage-copy';
+import type { ProviderKeyConfig } from './provider-key-config';
 
-type OpenRouterKeySheetProps = {
+type ProviderKeySheetProps = {
+  readonly config: ProviderKeyConfig;
   readonly visible: boolean;
   /** The stored key, so Save without typing keeps it. */
   readonly currentKey: string;
@@ -20,16 +22,19 @@ type OpenRouterKeySheetProps = {
 
 /**
  * Key entry (APIKeySettingsView.swift:106-131): one secure field, Cancel
- * and Save. Aspen Grove saves without a biometric prompt, so its footer
- * says only what happens.
+ * and Save, for any hosted provider. Aspen Grove saves without a biometric
+ * prompt, so its footer says only what happens. Ids:
+ * `connections-<provider>-key-sheet|-key-input|-key-cancel|-key-save`.
  */
-export const OpenRouterKeySheet = ({
+export const ProviderKeySheet = ({
+  config,
   visible,
   currentKey,
   onCancel,
   onSave,
-}: OpenRouterKeySheetProps) => {
+}: ProviderKeySheetProps) => {
   const [draft, setDraft] = useState(currentKey);
+  const id = `connections-${config.provider}`;
 
   useEffect(() => {
     if (visible) {
@@ -39,22 +44,22 @@ export const OpenRouterKeySheet = ({
 
   return (
     <FormSheet
-      testID="connections-openrouter-key-sheet"
+      testID={`${id}-key-sheet`}
       visible={visible}
       onRequestClose={onCancel}
       hasUnsavedChanges={draft.trim() !== currentKey.trim()}
     >
       <FormSheetHeader
-        title="OpenRouter API Key"
+        title={`${config.name} API Key`}
         leading={{
           label: 'Cancel',
           onPress: onCancel,
-          testID: 'connections-openrouter-key-cancel',
+          testID: `${id}-key-cancel`,
         }}
         trailing={{
           label: 'Save',
           onPress: () => onSave(draft.trim()),
-          testID: 'connections-openrouter-key-save',
+          testID: `${id}-key-save`,
         }}
       />
       <KeyboardAwareScrollView
@@ -66,10 +71,10 @@ export const OpenRouterKeySheet = ({
           footer={keyStorageCopy(Platform.OS).sheetFooter}
         >
           <FormTextFieldRow
-            testID="connections-openrouter-key-input"
+            testID={`${id}-key-input`}
             value={draft}
             onChangeText={setDraft}
-            placeholder="Enter Key"
+            placeholder={config.placeholder}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}

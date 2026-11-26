@@ -5,12 +5,16 @@ import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { ProviderSection } from '../../settings/agents/editor/ProviderSection';
 import { TemplateSection } from '../../settings/agents/editor/TemplateSection';
 import { LmStudioFormSection } from '../../settings/connections/LmStudioFormSection';
-import { OpenRouterKeySheet } from '../../settings/connections/OpenRouterKeySheet';
+import { providerKeyConfig } from '../../settings/connections/provider-key-config';
+import { ProviderKeySheet } from '../../settings/connections/ProviderKeySheet';
 import { LmStudioModelSection } from './LmStudioModelSection';
 import { OpenRouterSetupSection } from './OpenRouterSetupSection';
 import { ScrollEdgeFades } from './ScrollEdgeFades';
 import { useRevealOnAppear } from './useRevealOnAppear';
-import type { OnboardingSetup } from './useOnboardingSetup';
+import {
+  ONBOARDING_PROVIDERS,
+  type OnboardingSetup,
+} from './useOnboardingSetup';
 
 type OnboardingSetupPageProps = {
   readonly setup: OnboardingSetup;
@@ -47,6 +51,7 @@ export const OnboardingSetupPage = ({
           style={styles.scroll}
         >
           <ProviderSection
+            providers={ONBOARDING_PROVIDERS}
             provider={setup.provider}
             onChange={setup.chooseProvider}
             testIDPrefix="onboarding-provider"
@@ -96,11 +101,12 @@ export const OnboardingSetupPage = ({
             </Text>
           ) : null}
 
-          <OpenRouterKeySheet
+          <ProviderKeySheet
+            config={providerKeyConfig('openrouter')}
             visible={setup.editingKey}
-            currentKey={setup.connections.apiKeyInput}
+            currentKey={setup.openRouterKey.storedKey}
             onCancel={setup.closeKeyEditor}
-            onSave={setup.saveKey}
+            onSave={(key) => void setup.saveKey(key)}
           />
         </KeyboardAwareScrollView>
         <ScrollEdgeFades />

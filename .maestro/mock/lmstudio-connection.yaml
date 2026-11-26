@@ -21,6 +21,12 @@ env:
     visible:
       id: settings-connections-screen
     timeout: 10000
+- tapOn:
+    id: connections-row-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: connections-provider-screen
+    timeout: 10000
 - scrollUntilVisible:
     element:
       id: connections-lmstudio-test
