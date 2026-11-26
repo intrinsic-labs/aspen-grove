@@ -31,9 +31,11 @@ export type SessionAction =
       readonly type: 'adopt';
       readonly text: string;
       readonly modelRanges: readonly ModelRange[];
+      readonly seam: number;
     }
   | { readonly type: 'ack'; readonly revision: number }
   | { readonly type: 'requestCheckpoint' }
+  | { readonly type: 'composition'; readonly composing: boolean }
   | {
       readonly type: 'applied';
       readonly revision: number;
@@ -106,13 +108,14 @@ const receiveCheckpoint = (
             type: 'adopt',
             text: message.text,
             modelRanges: message.modelRanges,
+            seam: message.seam,
           },
           { type: 'ack', revision: message.revision },
           {
             type: 'applied',
             revision: message.revision,
             head: message.selection.head,
-            composing: false,
+            composing: message.composing,
           },
         ],
       };
@@ -125,7 +128,15 @@ export const reduceSession = (
   if (message.type === 'ready' || message.epoch !== state.epoch) {
     return none(state);
   }
-  return message.type === 'changes'
-    ? receiveChanges(state, message)
-    : receiveCheckpoint(state, message);
+  switch (message.type) {
+    case 'changes':
+      return receiveChanges(state, message);
+    case 'checkpoint':
+      return receiveCheckpoint(state, message);
+    case 'composition':
+      return {
+        state,
+        actions: [{ type: 'composition', composing: message.composing }],
+      };
+  }
 };

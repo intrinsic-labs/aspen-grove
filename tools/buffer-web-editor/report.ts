@@ -28,9 +28,7 @@ export const changesOf = (
     replacements,
     selection: { anchor, head },
     composing: update.view.composing,
-    ...(restored
-      ? { modelRanges: update.state.field(modelRangesField) }
-      : {}),
+    ...(restored ? { modelRanges: update.state.field(modelRangesField) } : {}),
   };
 };
 
@@ -38,7 +36,8 @@ export const changesOf = (
 export const checkpointOf = (
   view: EditorView,
   epoch: number,
-  revision: number
+  revision: number,
+  seam: number
 ): CheckpointMessage => {
   const { anchor, head } = view.state.selection.main;
   return {
@@ -47,6 +46,8 @@ export const checkpointOf = (
     revision,
     text: view.state.doc.toString(),
     modelRanges: view.state.field(modelRangesField),
+    seam,
     selection: { anchor, head },
+    composing: view.composing,
   };
 };

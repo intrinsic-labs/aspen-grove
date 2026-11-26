@@ -53,7 +53,7 @@ export const useEditorSession = (
           }
           break;
         case 'adopt':
-          sink.onAdopt(action.text, action.modelRanges);
+          sink.onAdopt(action.text, action.modelRanges, action.seam);
           break;
         case 'ack':
           scheduleAck(action.revision);
@@ -63,6 +63,9 @@ export const useEditorSession = (
           break;
         case 'applied':
           sink.onApplied(action);
+          break;
+        case 'composition':
+          sink.onComposition(action.composing);
           break;
       }
     },

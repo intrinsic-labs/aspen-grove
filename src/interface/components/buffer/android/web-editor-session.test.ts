@@ -60,7 +60,9 @@ describe('reduceSession', () => {
       revision: 4,
       text: 'whole text',
       modelRanges: [[0, 3]],
+      seam: 4,
       selection: { anchor: 10, head: 10 },
+      composing: false,
     };
     const resumed = reduceSession(gap, checkpoint);
     expect(resumed.state).toEqual({
@@ -72,6 +74,7 @@ describe('reduceSession', () => {
       type: 'adopt',
       text: 'whole text',
       modelRanges: [[0, 3]],
+      seam: 4,
     });
     expect(reduceSession(resumed.state, changes(3)).actions).toEqual([
       { type: 'ack', revision: 4 },
@@ -96,9 +99,31 @@ describe('reduceSession', () => {
         revision: 5,
         text: 'old',
         modelRanges: [],
+        seam: 0,
         selection: { anchor: 0, head: 0 },
+        composing: false,
       }).actions
     ).toEqual([]);
+  });
+
+  it('keeps a checkpoint taken mid-composition composing', () => {
+    const gap = reduceSession(startSession(1), changes(2)).state;
+    const resumed = reduceSession(gap, {
+      type: 'checkpoint',
+      epoch: 1,
+      revision: 3,
+      text: 'かあ',
+      modelRanges: [],
+      seam: 0,
+      selection: { anchor: 2, head: 2 },
+      composing: true,
+    });
+    expect(resumed.actions[2]).toEqual({
+      type: 'applied',
+      revision: 3,
+      head: 2,
+      composing: true,
+    });
   });
 
   it('passes the composing flag and the caret through', () => {
@@ -120,5 +145,19 @@ describe('reduceSession', () => {
       changes(0, { modelRanges: [[2, 5]] })
     );
     expect(step.actions[0]).toMatchObject({ modelRanges: [[2, 5]] });
+  });
+
+  it('reports a composition that ended without an edit', () => {
+    const state = startSession(1);
+    expect(
+      reduceSession(state, { type: 'composition', epoch: 1, composing: false })
+    ).toEqual({
+      state,
+      actions: [{ type: 'composition', composing: false }],
+    });
+    expect(
+      reduceSession(state, { type: 'composition', epoch: 0, composing: false })
+        .actions
+    ).toEqual([]);
   });
 });

@@ -35,6 +35,12 @@ export type LoadMessage = {
   readonly epoch: number;
   readonly text: string;
   readonly modelRanges: readonly ModelRange[];
+  /**
+   * Where the shared prefix ends and the current sibling ending begins. The
+   * page keeps it through every edit so a checkpoint can say which side of
+   * the seam each character belongs to.
+   */
+  readonly seam: number;
   readonly style: WebEditorStyle;
 };
 
@@ -51,10 +57,20 @@ export type CheckpointRequestMessage = {
   readonly epoch: number;
 };
 
+/**
+ * The host is about to replace the document and wants any composition
+ * committed first. The page answers with a `composition` status.
+ */
+export type EndCompositionMessage = {
+  readonly type: 'endComposition';
+  readonly epoch: number;
+};
+
 export type HostMessage =
   | LoadMessage
   | AckMessage
-  | CheckpointRequestMessage;
+  | CheckpointRequestMessage
+  | EndCompositionMessage;
 
 /** `[from, to)` of the pre-edit document becomes `insert`. */
 export type Replacement = {
@@ -90,13 +106,29 @@ export type CheckpointMessage = {
   readonly revision: number;
   readonly text: string;
   readonly modelRanges: readonly ModelRange[];
+  /** The seam as the page tracked it (see `LoadMessage.seam`). */
+  readonly seam: number;
   readonly selection: Selection;
+  /** Whether an IME composition is still active when the checkpoint is taken. */
+  readonly composing: boolean;
+};
+
+/**
+ * Whether an IME composition is active, sent when one ends. An edit says so
+ * itself (`ChangesMessage.composing`); this covers a composition that ends
+ * without changing the text (a cancel, or a candidate equal to what was typed).
+ */
+export type CompositionMessage = {
+  readonly type: 'composition';
+  readonly epoch: number;
+  readonly composing: boolean;
 };
 
 export type EditorMessage =
   | { readonly type: 'ready' }
   | ChangesMessage
-  | CheckpointMessage;
+  | CheckpointMessage
+  | CompositionMessage;
 
 export const encodeHostMessage = (message: HostMessage): string =>
   JSON.stringify(message);
@@ -169,9 +201,18 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
     Number.isInteger(m.revision) &&
     typeof m.text === 'string' &&
     isRanges(m.modelRanges) &&
-    isSelection(m.selection)
+    Number.isInteger(m.seam) &&
+    isSelection(m.selection) &&
+    typeof m.composing === 'boolean'
   ) {
     return m as unknown as CheckpointMessage;
+  }
+  if (
+    m.type === 'composition' &&
+    Number.isInteger(m.epoch) &&
+    typeof m.composing === 'boolean'
+  ) {
+    return m as unknown as CompositionMessage;
   }
   return null;
 };

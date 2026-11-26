@@ -5,6 +5,7 @@ import type {
   HostMessage,
   LoadMessage,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
+import { mapSeamThrough } from '../../src/interface/components/buffer/android/web-editor-seam';
 import { listen, post } from './bridge';
 import { authorMarks } from './marks';
 import { changesOf, checkpointOf } from './report';
@@ -17,6 +18,8 @@ let epoch = -1;
 let revision = 0;
 /** The latest revision the host has acknowledged (diagnostics only). */
 let acknowledged = 0;
+/** The end of the shared prefix, carried through every edit (checkpoints). */
+let seam = 0;
 let diagnostics = false;
 let idle: ReturnType<typeof setTimeout> | undefined;
 
@@ -38,6 +41,18 @@ const logSettled = (editor: EditorView): void => {
   }, 400);
 };
 
+/** Settles a moment after a composition ends, so CodeMirror's own final edit goes out first. */
+const COMPOSITION_SETTLE_MS = 150;
+
+/** Tells the host whether a composition is active; an edit says so itself, this covers the end. */
+const reportComposition = (editor: EditorView): void => {
+  setTimeout(() => {
+    if (view === editor) {
+      post({ type: 'composition', epoch, composing: editor.composing });
+    }
+  }, COMPOSITION_SETTLE_MS);
+};
+
 const create = (message: LoadMessage): EditorView =>
   new EditorView({
     parent: document.getElementById('editor') as HTMLElement,
@@ -49,15 +64,21 @@ const create = (message: LoadMessage): EditorView =>
         EditorView.lineWrapping,
         authorMarks(message.modelRanges),
         placeholder(message.style.placeholder),
+        EditorView.domEventObservers({
+          compositionend: (_event, editor) => reportComposition(editor),
+        }),
         EditorView.contentAttributes.of({
           id: 'buffer-document',
+          'aria-label': 'Document',
           spellcheck: 'true',
           autocorrect: 'on',
           autocapitalize: 'sentences',
         }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            post(changesOf(update, epoch, revision));
+            const message = changesOf(update, epoch, revision);
+            post(message);
+            seam = mapSeamThrough(seam, message.replacements);
             revision += 1;
             logSettled(update.view);
           }
@@ -70,11 +91,17 @@ const create = (message: LoadMessage): EditorView =>
 const load = (message: LoadMessage): void => {
   applyStyle(message.style);
   diagnostics = message.style.diagnostics;
+  // A reload must not take the keyboard down: the new editor keeps the focus.
+  const hadFocus = view?.hasFocus ?? false;
   view?.destroy();
   epoch = message.epoch;
   revision = 0;
   acknowledged = 0;
+  seam = message.seam;
   view = create(message);
+  if (hadFocus) {
+    view.focus();
+  }
 };
 
 const receive = (message: HostMessage): void => {
@@ -85,7 +112,16 @@ const receive = (message: HostMessage): void => {
   } else if (message.type === 'ack') {
     acknowledged = Math.max(acknowledged, message.revision);
   } else if (message.type === 'checkpointRequest') {
-    post(checkpointOf(view, epoch, revision));
+    post(checkpointOf(view, epoch, revision, seam));
+  } else if (message.type === 'endComposition') {
+    // Blurring commits the composing text through the IME; focusing again
+    // keeps the keyboard up and the caret where it was. The answer follows.
+    const hadFocus = view.hasFocus;
+    view.contentDOM.blur();
+    if (hadFocus) {
+      view.focus();
+    }
+    reportComposition(view);
   }
 };
 

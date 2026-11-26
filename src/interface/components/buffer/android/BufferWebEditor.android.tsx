@@ -40,6 +40,8 @@ const Editor = ({
   epoch,
   text,
   runs,
+  seam,
+  composition,
   textStyle,
   headerHeight,
   topGap,
@@ -48,8 +50,8 @@ const Editor = ({
 }: BufferWebEditorProps) => {
   const webView = useRef<WebView>(null);
   const ready = useRef(false);
-  const latest = useRef({ epoch, text, runs });
-  latest.current = { epoch, text, runs };
+  const latest = useRef({ epoch, text, runs, seam });
+  latest.current = { epoch, text, runs, seam };
   const style = useRef(webEditorStyle(textStyle, headerHeight, topGap, placeholder));
   style.current = webEditorStyle(textStyle, headerHeight, topGap, placeholder);
 
@@ -64,6 +66,7 @@ const Editor = ({
       epoch: document.epoch,
       text: document.text,
       modelRanges: modelRangesOf(document.runs),
+      seam: document.seam,
       style: style.current,
     });
   }, [send]);
@@ -73,6 +76,14 @@ const Editor = ({
       load();
     }
   }, [epoch, load]);
+
+  useEffect(() => {
+    composition.end = () =>
+      send({ type: 'endComposition', epoch: latest.current.epoch });
+    return () => {
+      composition.end = () => {};
+    };
+  }, [composition, send]);
 
   const receive = useEditorSession(epoch, sink, send);
 

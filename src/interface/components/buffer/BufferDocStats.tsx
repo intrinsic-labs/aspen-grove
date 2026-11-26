@@ -19,6 +19,9 @@ export const BufferDocStats = ({ length, receipt }: BufferDocStatsProps) => (
   <Text
     testID="buffer-doc-stats"
     pointerEvents="none"
+    // A measurement receipt, not content: TalkBack must not read it out.
+    importantForAccessibility="no-hide-descendants"
+    accessibilityElementsHidden
     style={styles.stats}
   >
     {`len=${length} head=${receipt?.head ?? 0} rev=${receipt?.revision ?? 0}`}
