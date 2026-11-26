@@ -32,6 +32,8 @@ export type ModelRange = readonly [number, number];
 
 export type LoadMessage = {
   readonly type: 'load';
+  /** Absent on a fresh open; command reloads restore this UTF-16 offset. */
+  readonly caret?: number;
   readonly readOnly: boolean;
   /** Identifies this document load; edits from an older epoch are ignored. */
   readonly epoch: number;
@@ -148,14 +150,16 @@ export type CompositionMessage = {
 };
 
 /**
- * The user moved the caret or selection without editing. Left affinity
- * belongs to a caret that has not moved, so the host drops it, as the page
- * already has. Sent once per hold, only while an owner holds it.
+ * The caret or selection changed without an edit. The host uses the
+ * selection to choose the passage pill. `released` says the page judged it a
+ * caret the user moved (`movesCaret`) and dropped left affinity; the host
+ * drops it then and only then, so both sides keep the same owners.
  */
 export type SelectionMessage = {
   readonly type: 'selection';
   readonly epoch: number;
   readonly selection: Selection;
+  readonly released: boolean;
 };
 
 export type EditorMessage =
@@ -265,7 +269,8 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
   if (
     m.type === 'selection' &&
     Number.isInteger(m.epoch) &&
-    isSelection(m.selection)
+    isSelection(m.selection) &&
+    typeof m.released === 'boolean'
   ) {
     return m as unknown as SelectionMessage;
   }

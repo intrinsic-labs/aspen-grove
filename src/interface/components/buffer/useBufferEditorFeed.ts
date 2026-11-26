@@ -25,7 +25,8 @@ import type { CompositionBarrier } from './composition-barrier';
  */
 export const useBufferEditorFeed = (
   barrier: CompositionBarrier,
-  initial: () => PreviewDocument
+  initial: () => PreviewDocument,
+  onWebCaret?: (offset: number) => void
 ) => {
   const [doc, setState] = useState(initial);
   // The newest document, applied eagerly: a command that snapshots the text
@@ -71,13 +72,17 @@ export const useBufferEditorFeed = (
       onAdopt: (text, ranges, layout, caret) =>
         setDoc((current) => adopt(current, text, ranges, layout, caret)),
       onApplied: (applied) => {
+        onWebCaret?.(applied.head);
         setReceipt(applied);
         barrier.observe(applied.composing);
       },
-      onCaretMoved: () => setDoc(releaseHold),
+      onCaretMoved: ({ anchor, head }, released) => {
+        if (released) setDoc(releaseHold);
+        onWebCaret?.(Math.min(anchor, head));
+      },
       onComposition: barrier.observe,
     }),
-    [barrier]
+    [barrier, onWebCaret]
   );
   const clearReceipt = useCallback(() => setReceipt(null), []);
   return {

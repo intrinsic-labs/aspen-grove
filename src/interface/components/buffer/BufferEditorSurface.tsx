@@ -19,6 +19,7 @@ type BufferEditorSurfaceProps = {
   readonly variant: BufferRenderVariant;
   /** Counts document loads; the web editor reloads when it changes. */
   readonly epoch: number;
+  readonly caret?: number;
   /** Counts fixture loads only (not sibling switches), for the native input. */
   readonly fixtureEpoch: number;
   readonly text: string;
@@ -46,6 +47,7 @@ export const BufferEditorSurface = ({
   readOnly,
   variant,
   epoch,
+  caret,
   fixtureEpoch,
   text,
   runs,
@@ -62,6 +64,7 @@ export const BufferEditorSurface = ({
   hasWebEngine && engine === 'web' ? (
     <BufferWebEditor
       epoch={epoch}
+      caret={caret}
       readOnly={readOnly}
       text={text}
       runs={runs}

@@ -131,8 +131,14 @@ describe('parseEditorMessage', () => {
       type: 'selection',
       epoch: 1,
       selection: { anchor: 2, head: 5 },
+      released: true,
     };
     expect(parseEditorMessage(JSON.stringify(selection))).toEqual(selection);
+    expect(
+      parseEditorMessage(
+        '{"type":"selection","epoch":1,"selection":{"anchor":2,"head":2}}'
+      )
+    ).toBeNull();
     expect(
       parseEditorMessage('{"type":"selection","epoch":1,"selection":{"anchor":2}}')
     ).toBeNull();

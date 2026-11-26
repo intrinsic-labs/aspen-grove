@@ -101,7 +101,13 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const [fixture, setFixture] = useState(false);
   // Android real documents always use CodeMirror. The engine selector controls fixtures only.
   const engine = fixture ? fixtureEngine : hasWebEngine ? 'web' : 'native';
-  const real = useBufferDocument(tree, barrier, !fixture, composition);
+  const real = useBufferDocument(
+    tree,
+    barrier,
+    !fixture,
+    composition,
+    hasWebEngine
+  );
   useBufferLeaveGuard({ dirty: real.dirty, commit: real.commit });
   const previewFeed = useBufferPreview(barrier);
   const {
@@ -155,6 +161,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           readOnly={real.readOnly}
           variant={variant}
           epoch={fixture ? epoch : real.epoch}
+          caret={fixture ? undefined : real.loadCaret}
           fixtureEpoch={fixtureEpoch}
           text={text}
           runs={runs}

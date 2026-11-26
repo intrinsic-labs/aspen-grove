@@ -39,6 +39,7 @@ const allowNavigation = (request: WebViewNavigation): boolean =>
  */
 const Editor = ({
   epoch,
+  caret,
   readOnly,
   text,
   runs,
@@ -52,8 +53,8 @@ const Editor = ({
 }: BufferWebEditorProps) => {
   const webView = useRef<WebView>(null);
   const ready = useRef(false);
-  const latest = useRef({ epoch, text, runs, ends, readOnly });
-  latest.current = { epoch, text, runs, ends, readOnly };
+  const latest = useRef({ epoch, text, runs, ends, readOnly, caret });
+  latest.current = { epoch, text, runs, ends, readOnly, caret };
   const style = useRef(
     webEditorStyle(textStyle, headerHeight, topGap, placeholder)
   );
@@ -69,6 +70,7 @@ const Editor = ({
       type: 'load',
       epoch: document.epoch,
       text: document.text,
+      caret: document.caret,
       readOnly: document.readOnly,
       modelRanges: modelRangesOf(document.runs),
       ends: document.ends,
