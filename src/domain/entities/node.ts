@@ -1,3 +1,4 @@
+import type { BufferNodeInfo } from './buffer-node-info';
 import { ContentHash, ULID, LocalId } from '../value-objects';
 import { Content } from './content';
 import { NodeAuthorType } from './enums';
@@ -23,6 +24,7 @@ export interface Node {
  * Node Metadata
  */
 export interface NodeMetadata {
+  readonly buffer?: BufferNodeInfo;
   readonly bookmarked: boolean;
   readonly bookmarkLabel?: string;
   readonly pruned: boolean;
