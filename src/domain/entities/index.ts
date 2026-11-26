@@ -1,6 +1,7 @@
 // Barrel for entities
 
 export * from './agent';
+export * from './buffer-node-info';
 export * from './content';
 export * from './edge';
 export * from './enums';

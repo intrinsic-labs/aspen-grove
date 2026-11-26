@@ -1,3 +1,4 @@
+import { bufferPassageText } from './buffer-passage-text';
 import type { Node } from '@domain/entities';
 import {
   ContextAssemblyError,
@@ -44,27 +45,10 @@ export type AssembledBufferContext = {
   readonly promptBudgetTokens: number;
 };
 
-/**
- * Text of a node as written. Text nodes give their text, mixed nodes the
- * concatenation of their text blocks, image and audio give nothing.
- * Annotation nodes never reach here: path resolution follows continuation
- * edges only.
- */
-const literalText = (node: Node): string => {
-  const { content } = node;
-  if (content.type === 'text') return content.text;
-  if (content.type === 'mixed') {
-    return content.blocks
-      .map((block) => (block.type === 'text' ? block.text : ''))
-      .join('');
-  }
-  return '';
-};
-
 const eligibleTexts = (nodes: readonly Node[]): string[] =>
   nodes
     .filter((node) => !node.metadata.excluded && !node.metadata.pruned)
-    .map(literalText)
+    .map(bufferPassageText)
     .filter((text) => text.length > 0);
 
 export const assembleBufferContext = (
