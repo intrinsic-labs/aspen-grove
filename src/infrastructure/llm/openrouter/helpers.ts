@@ -9,14 +9,7 @@ import type {
 
 export { toJsonString } from '../to-json-string';
 
-export const headersToString = (headers: Headers): string => {
-  const lines: string[] = [];
-  headers.forEach((value, key) => {
-    lines.push(`${key}: ${value}`);
-  });
-  lines.sort((a, b) => a.localeCompare(b));
-  return lines.join('\n');
-};
+export { headersToString } from '../shared/raw-capture';
 
 export const parseRetryAfterMs = (headers: Headers): number | undefined => {
   const retryAfter = headers.get('retry-after');

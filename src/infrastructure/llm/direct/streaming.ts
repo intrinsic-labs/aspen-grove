@@ -15,7 +15,7 @@ import {
 } from '../shared/stream-timeouts';
 import { SseParser } from '../shared/sse-parser';
 import { directProviderError, parseErrorBody } from './errors';
-import { createDirectRawCapture } from './raw-capture';
+import { createDirectRawCapture } from '../shared/raw-capture';
 import type { DirectConfig, DirectProtocol, StreamState } from './types';
 
 export async function* streamDirectCompletion(input: {

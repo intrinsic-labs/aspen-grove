@@ -7,7 +7,7 @@ import {
 import { createRequestAbort } from '../shared/request-abort';
 import { toAbortedRequestError } from '../shared/interruption';
 import { directProviderError, parseErrorBody } from './errors';
-import { createDirectRawCapture } from './raw-capture';
+import { createDirectRawCapture } from '../shared/raw-capture';
 import type { DirectConfig, DirectProtocol } from './types';
 
 export const requestDirectCompletion = async (input: {

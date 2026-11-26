@@ -1,15 +1,16 @@
 import {
-  CompletionRequest,
   CompletionResponse,
   ILlmProvider,
+  isTextCompletionRequest,
   LlmProviderError,
+  type ProviderRequest,
   type StreamInterruptionReason,
 } from './ILlmProvider';
 import { isRetryableLlmError, withRetry, type RetryOptions } from './retry';
 
 export type CollectCompletionInput = {
   readonly llmProvider: ILlmProvider;
-  readonly request: CompletionRequest;
+  readonly request: ProviderRequest;
   readonly stream?: boolean;
   readonly fallbackToNonStreamingOnInvalidRequest?: boolean;
   readonly retry?: RetryOptions;
@@ -109,11 +110,11 @@ export const collectCompletion = async (
       throw new Error('Provider streaming completion ended without final raw response.');
     }
 
-    const persistedContent = shouldMarkInterruption(
-      finishReason,
-      interruptionReason,
-      content
-    )
+    // A literal prompt's continuation stays literal: the reason travels on
+    // `interruptionReason`, never inside the text.
+    const persistedContent =
+      !isTextCompletionRequest(request) &&
+      shouldMarkInterruption(finishReason, interruptionReason, content)
       ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
       : content;
 
@@ -126,8 +127,8 @@ export const collectCompletion = async (
     };
   };
 
+  let chunkReceivedThisAttempt = false;
   try {
-    let chunkReceivedThisAttempt = false;
     return await withRetry(
       () => {
         chunkReceivedThisAttempt = false;
@@ -144,8 +145,12 @@ export const collectCompletion = async (
       }
     );
   } catch (error) {
+    // Never replay a literal prompt as a plain request once text arrived.
+    const replayable =
+      !isTextCompletionRequest(request) || !chunkReceivedThisAttempt;
     if (
       fallbackToNonStreamingOnInvalidRequest &&
+      replayable &&
       error instanceof LlmProviderError &&
       error.code === 'invalidRequest'
     ) {
