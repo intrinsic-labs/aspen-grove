@@ -134,3 +134,15 @@ test('a recovered switch draft replays the switch after a lost acknowledgement',
   expect(replayed.nodeIds).toEqual([f.root, f.child]);
   expect(await f.sequence()).toEqual([f.root, f.child]);
 });
+
+test('a stored switch matches the same switch written in another key order', async () => {
+  const f = await bufferFixture();
+  const stored = { nodeId: f.root, position: 0, kind: 'version' } as const;
+  const draft = { ...(await f.draft()), action: stored };
+  const result = await f.switchPath.execute({
+    ...f,
+    draft,
+    action: { kind: 'version', position: 0, nodeId: f.root },
+  });
+  expect(result.nodeIds).toEqual([f.root, f.child]);
+});

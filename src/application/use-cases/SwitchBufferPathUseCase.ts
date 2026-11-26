@@ -5,6 +5,9 @@ import type {
   BufferCommands,
 } from './CommitBufferChangesUseCase';
 
+const sameSwitch = (a: BufferSwitchAction, b: BufferSwitchAction): boolean =>
+  a.kind === b.kind && a.position === b.position && a.nodeId === b.nodeId;
+
 /**
  * Folds the draft and a version or branch switch into one command. The
  * caller persists the draft with `action` set before calling, so a lost
@@ -16,7 +19,7 @@ export class SwitchBufferPathUseCase {
     input: BufferCommandInput & { readonly action: BufferSwitchAction }
   ): Promise<ResolvedBufferPath> {
     const { action, draft } = input;
-    if (draft.action && JSON.stringify(draft.action) !== JSON.stringify(action))
+    if (draft.action && !sameSwitch(draft.action, action))
       throw new Error('Buffer draft carries a different switch');
     return this.commands.execute({ ...input, draft: { ...draft, action } });
   }
