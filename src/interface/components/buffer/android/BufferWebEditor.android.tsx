@@ -38,6 +38,7 @@ const allowNavigation = (request: WebViewNavigation): boolean =>
  */
 const Editor = ({
   epoch,
+  readOnly,
   text,
   runs,
   ends,
@@ -50,8 +51,8 @@ const Editor = ({
 }: BufferWebEditorProps) => {
   const webView = useRef<WebView>(null);
   const ready = useRef(false);
-  const latest = useRef({ epoch, text, runs, ends });
-  latest.current = { epoch, text, runs, ends };
+  const latest = useRef({ epoch, text, runs, ends, readOnly });
+  latest.current = { epoch, text, runs, ends, readOnly };
   const style = useRef(webEditorStyle(textStyle, headerHeight, topGap, placeholder));
   style.current = webEditorStyle(textStyle, headerHeight, topGap, placeholder);
 
@@ -65,6 +66,7 @@ const Editor = ({
       type: 'load',
       epoch: document.epoch,
       text: document.text,
+      readOnly: document.readOnly,
       modelRanges: modelRangesOf(document.runs),
       ends: document.ends,
       style: style.current,
@@ -84,6 +86,10 @@ const Editor = ({
       composition.end = () => {};
     };
   }, [composition, send]);
+
+  useEffect(() => {
+    if (ready.current) send({ type: 'readOnly', epoch, readOnly });
+  }, [epoch, readOnly, send]);
 
   const receive = useEditorSession(epoch, sink, send);
 
@@ -122,7 +128,9 @@ const Editor = ({
 export const BufferWebEditor = memo(
   Editor,
   (before, after) =>
-    before.epoch === after.epoch && before.sink === after.sink
+    before.epoch === after.epoch &&
+    before.readOnly === after.readOnly &&
+    before.sink === after.sink
 );
 
 const styles = StyleSheet.create({

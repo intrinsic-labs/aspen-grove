@@ -23,6 +23,21 @@ import { useBufferEditorFeed } from './useBufferEditorFeed';
 
 export type BufferDocumentStatus = 'loading' | 'ready' | 'error';
 
+type EditorAccess = {
+  readonly enabled: boolean;
+  readonly status: BufferDocumentStatus;
+  readonly commandRunning: boolean;
+  readonly recoveryPending: boolean;
+};
+
+export const bufferReadOnly = ({
+  enabled,
+  status,
+  commandRunning,
+  recoveryPending,
+}: EditorAccess): boolean =>
+  enabled && (status !== 'ready' || commandRunning || recoveryPending);
+
 /**
  * A buffer tree's real document: opened on its stored path, edited through
  * the same feed as the preview, kept as a draft while typing, and saved by
@@ -51,6 +66,8 @@ export const useBufferDocument = (
     [tree.id, useCases]
   );
   const [status, setStatus] = useState<BufferDocumentStatus>('loading');
+  const [commandRunning, setCommandRunning] = useState(false);
+  const [reload, setReload] = useState(0);
   const [epoch, setEpoch] = useState(0);
   const [choices, setChoices] = useState<readonly BufferPositionChoices[]>([]);
   const [commitError, setCommitError] = useState<string | null>(null);
@@ -102,12 +119,12 @@ export const useBufferDocument = (
         if (!cancelled) setStatus('error');
       })
       .finally(() => {
-        busy.current = false;
+        if (!cancelled) busy.current = false;
       });
     return () => {
       cancelled = true;
     };
-  }, [enabled, session, show]);
+  }, [enabled, session, show, reload]);
 
   const lifecycle = useBufferDraftLifecycle({
     session,
@@ -127,7 +144,9 @@ export const useBufferDocument = (
       switchedPosition?: number
     ): Promise<boolean> => {
       if (inflight.current) return inflight.current;
-      if (!enabled || status !== 'ready') return Promise.resolve(false);
+      if (!enabled || status !== 'ready' || recovery)
+        return Promise.resolve(false);
+      setCommandRunning(true);
       const task = (async () => {
         await new Promise<void>((resolve) => barrier.run(resolve));
         lifecycle.cancel();
@@ -158,11 +177,12 @@ export const useBufferDocument = (
       inflight.current = task;
       const clear = () => {
         inflight.current = null;
+        setCommandRunning(false);
       };
       task.then(clear, clear);
       return task;
     },
-    [barrier, enabled, latest, lifecycle, show, status]
+    [barrier, enabled, latest, lifecycle, show, status, recovery]
   );
 
   /** Saves the typing as new versions. True if there is nothing left unsaved. */
@@ -180,8 +200,13 @@ export const useBufferDocument = (
     [run, session]
   );
   const dismissRecovery = useCallback(async () => {
-    await session.dismissRecovery();
-    setRecovery(null);
+    try {
+      await session.dismissRecovery();
+      setRecovery(null);
+      setCommitError(null);
+    } catch (error) {
+      setCommitError(error instanceof Error ? error.message : String(error));
+    }
   }, [session]);
 
   const onSelection = useCallback(
@@ -214,6 +239,17 @@ export const useBufferDocument = (
           ? "Couldn't open this buffer"
           : null,
     recovery,
+    readOnly: bufferReadOnly({
+      enabled,
+      status,
+      commandRunning,
+      recoveryPending: recovery !== null,
+    }),
+    keepRecovery: () => {
+      setCommitError(null);
+      setStatus('loading');
+      setReload((value) => value + 1);
+    },
     dismissRecovery,
   };
 };

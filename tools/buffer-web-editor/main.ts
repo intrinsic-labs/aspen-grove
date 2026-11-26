@@ -1,4 +1,4 @@
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { history, historyKeymap } from '@codemirror/commands';
 import {
@@ -24,6 +24,12 @@ import {
   toPageOffset,
 } from './separators';
 import { applyStyle } from './theme';
+
+const editability = new Compartment();
+const editorAccess = (readOnly: boolean) => [
+  EditorState.readOnly.of(readOnly),
+  EditorView.editable.of(!readOnly),
+];
 
 let view: EditorView | undefined;
 /** Names the load in progress; host messages for another epoch are dropped. */
@@ -82,6 +88,7 @@ const create = (message: LoadMessage): EditorView => {
     state: EditorState.create({
       doc: text,
       extensions: [
+        editability.of(editorAccess(message.readOnly)),
         history(),
         keymap.of(historyKeymap),
         EditorView.lineWrapping,
@@ -151,6 +158,10 @@ const receive = (message: HostMessage): void => {
     load(message);
   } else if (message.epoch !== epoch || !view) {
     return;
+  } else if (message.type === 'readOnly') {
+    view.dispatch({
+      effects: editability.reconfigure(editorAccess(message.readOnly)),
+    });
   } else if (message.type === 'ack') {
     acknowledged = Math.max(acknowledged, message.revision);
   } else if (message.type === 'checkpointRequest') {

@@ -32,6 +32,7 @@ export type ModelRange = readonly [number, number];
 
 export type LoadMessage = {
   readonly type: 'load';
+  readonly readOnly: boolean;
   /** Identifies this document load; edits from an older epoch are ignored. */
   readonly epoch: number;
   readonly text: string;
@@ -69,6 +70,11 @@ export type EndCompositionMessage = {
 };
 
 export type HostMessage =
+  | {
+      readonly type: 'readOnly';
+      readonly epoch: number;
+      readonly readOnly: boolean;
+    }
   | LoadMessage
   | AckMessage
   | CheckpointRequestMessage

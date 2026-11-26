@@ -9,6 +9,8 @@ const { control } = bufferTokens;
 type BufferDocumentNoticeProps = {
   readonly error: string | null;
   readonly recovery: BufferRecovery | null;
+  readonly loading: boolean;
+  readonly onKeepRecovery?: () => void;
   readonly onDismissRecovery: () => void;
 };
 
@@ -17,6 +19,8 @@ export const BufferDocumentNotice = ({
   error,
   recovery,
   onDismissRecovery,
+  onKeepRecovery,
+  loading,
 }: BufferDocumentNoticeProps) => {
   if (!error && !recovery) return null;
   return (
@@ -51,7 +55,20 @@ export const BufferDocumentNotice = ({
                 Copy unsaved text
               </AppText>
             </Pressable>
+            {onKeepRecovery && (
+              <Pressable
+                testID="buffer-recovery-keep"
+                hitSlop={control.hitSlop}
+                disabled={loading}
+                onPress={onKeepRecovery}
+              >
+                <AppText variant="mono" style={styles.text}>
+                  Keep
+                </AppText>
+              </Pressable>
+            )}
             <Pressable
+              disabled={loading}
               testID="buffer-recovery-discard"
               hitSlop={control.hitSlop}
               onPress={onDismissRecovery}

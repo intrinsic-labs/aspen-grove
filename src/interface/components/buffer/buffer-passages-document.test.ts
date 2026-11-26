@@ -1,3 +1,5 @@
+import { adopt } from './buffer-preview-restore';
+import { draftFromDocument } from '@application/services/buffer/draft-from-document';
 import { id } from '@application/services/buffer/buffer-graph-fixtures';
 import { documentText, applyEdits } from './buffer-preview-document';
 import {
@@ -84,4 +86,37 @@ test('after a switch the caret stays in the passage that was switched', () => {
   expect(caretOnReload(undefined, before, 1)).toBeUndefined();
   expect(caretOnReload(inMiddle, before)).toBe(inMiddle);
   expect(caretOnReload(999, before)).toBe(before.index.length);
+});
+
+test('adopting a checkpoint keeps real passage ids, and the draft carries the typed text', () => {
+  const original = previewFromPassages(passages);
+  const middle = 'The sea was rough.';
+  const parts = [passages[0].text, middle, passages[2].text, ' Gulls.'];
+  const text = parts.join('');
+  let offset = 0;
+  const ends = parts.map((part) => (offset += part.length));
+  const sequence = passages.map((p) => p.nodeId);
+  for (const hold of [1, 2, 3]) {
+    const adopted = adopt(original, text, [], { ends, hold });
+    expect(adopted.index.document.passages.map((p) => p.id)).toEqual(sequence);
+    expect(adopted.hold).toEqual(
+      hold < 3 ? { kind: 'passage', id: sequence[hold] } : { kind: 'tail' }
+    );
+    expect(
+      draftFromDocument(
+        {
+          treeId: id('tree'),
+          pathId: id('path'),
+          ownerAgentId: id('owner'),
+          sequence,
+          revision: 1,
+          passages,
+        },
+        adopted.index.document
+      )
+    ).toMatchObject({
+      edits: [{ nodeId: sequence[1], text: middle }],
+      workingTail: parts[3],
+    });
+  }
 });

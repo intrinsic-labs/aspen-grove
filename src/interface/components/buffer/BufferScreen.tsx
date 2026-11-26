@@ -137,6 +137,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
       <KeyboardAvoidingView behavior="padding" style={styles.screen} enabled>
         <BufferEditorSurface
           engine={engine}
+          readOnly={real.readOnly}
           variant={variant}
           epoch={fixture ? epoch : real.epoch}
           fixtureEpoch={fixtureEpoch}
@@ -159,6 +160,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           <BufferDocumentNotice
             error={real.notice}
             recovery={real.recovery}
+            onKeepRecovery={
+              real.recovery?.reason === 'failed' ? real.keepRecovery : undefined
+            }
+            loading={real.status === 'loading'}
             onDismissRecovery={real.dismissRecovery}
           />
         )}

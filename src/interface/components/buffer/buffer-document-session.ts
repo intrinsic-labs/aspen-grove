@@ -110,8 +110,7 @@ export class BufferDocumentSession {
         await this.deps.drafts.put(draft);
         this.reserved = draft;
       } else if (this.reserved) {
-        this.reserved = undefined;
-        await this.deps.drafts.discard(opened.treeId, opened.pathId);
+        await this.discardReserved(opened);
       }
     });
   }
@@ -133,10 +132,15 @@ export class BufferDocumentSession {
   dismissRecovery(): Promise<void> {
     return this.enqueue(async () => {
       const opened = this.current;
-      if (opened) await this.deps.drafts.discard(opened.treeId, opened.pathId);
+      if (!opened || !this.recovering) return;
+      await this.discardReserved(opened);
       this.recovering = false;
-      this.reserved = undefined;
     });
+  }
+
+  private async discardReserved(opened: OpenedBufferDocument): Promise<void> {
+    await this.deps.drafts.discard(opened.treeId, opened.pathId);
+    this.reserved = undefined;
   }
 
   private enqueue<T>(run: () => Promise<T>): Promise<T> {
@@ -175,7 +179,10 @@ export class BufferDocumentSession {
     let draft: BufferDraft | null = null;
     try {
       draft = await this.prepare(opened, document, action);
-      if (!draft) return { kind: 'nothing' };
+      if (!draft) {
+        if (this.reserved) await this.discardReserved(opened);
+        return { kind: 'nothing' };
+      }
       // The draft and its switch are stored before the command runs, so a
       // lost acknowledgement replays exactly this command on the next open.
       await this.deps.drafts.put(draft);
@@ -210,11 +217,9 @@ export class BufferDocumentSession {
         treeId: this.deps.treeId,
       });
       if (draft && probe.headOperationId === draft.operationId) {
-        await this.deps.drafts
-          .discard(probe.treeId, probe.pathId)
-          .catch(() => undefined);
         this.current = probe;
-        this.reserved = undefined;
+        // The command landed. Keep the reservation if cleanup needs another save.
+        await this.discardReserved(probe).catch(() => undefined);
         return { kind: 'done', opened: probe };
       }
       // Remember what is stored now, so a later reservation can tell.

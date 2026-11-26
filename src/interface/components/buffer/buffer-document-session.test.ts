@@ -209,3 +209,19 @@ test('a draft left by a closed session is replayed when the tree opens', async (
   expect(loaded.recovery).toBeUndefined();
   expect(loaded.opened.passages[1].text).toBe('The sea was calm and wide.');
 });
+
+test('a failed discard is retried on the next save and the undone text is not replayed on open', async () => {
+  const { f, typed } = await seeded();
+  const drafts = new StoreBufferDraftUseCase(f.bufferDraftStore);
+  const discard = jest
+    .spyOn(drafts, 'discard')
+    .mockRejectedValueOnce(new Error('disk busy'));
+  const session = new BufferDocumentSession({ ...f, drafts });
+  await session.load();
+  await session.save(typed({}, 'undone'));
+  await expect(session.save(typed())).rejects.toThrow('disk busy');
+  await session.save(typed());
+  const { opened } = await session.load();
+  expect(opened.passages.map((p) => p.text)).toEqual(['', SEA]);
+  expect(discard).toHaveBeenCalledTimes(2);
+});
