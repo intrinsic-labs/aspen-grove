@@ -1,3 +1,4 @@
+import { resolveVersionFamilies } from './version-family';
 import { describe, expect, it } from '@jest/globals';
 import type { PathSelection } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
@@ -177,6 +178,21 @@ describe('malformed graphs', () => {
       kind: 'walk-cycle',
       nodeId: id('y'),
     });
+  });
+
+  it('an edit of a cyclic lineage gets the same family whatever the input order', () => {
+    const nodes = [
+      textNode('a', 'a', { editedFrom: 'c' }),
+      textNode('b', 'b', { editedFrom: 'a' }),
+      textNode('c', 'c', { editedFrom: 'b' }),
+      textNode('d', 'd', { editedFrom: 'a' }),
+    ];
+    const families = [nodes, [...nodes].reverse()].map(
+      (order) => resolveVersionFamilies(order).familyOf
+    );
+    for (const name of ['a', 'b', 'c', 'd'])
+      expect(families[1].get(id(name))).toBe(families[0].get(id(name)));
+    expect(families[0].get(id('d'))).toBe(id('a'));
   });
 
   it('reports broken references and cross-tree hops and ignores those edges', () => {

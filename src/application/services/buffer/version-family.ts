@@ -89,10 +89,12 @@ export const resolveVersionFamilies = (
       if (known) return settle(trail, known);
       if (onTrail.has(cursor.id)) {
         // A cycle: its members cannot share a family; each stands alone.
+        // Nodes that edit into it join the member they reach, the same
+        // whichever node the walk started from.
         const members = trail.slice(trail.indexOf(cursor.id));
         issues.push({ kind: 'lineage-cycle', nodeIds: members });
         for (const member of members) familyOf.set(member, member);
-        return settle(trail, familyOf.get(start.id) ?? start.id);
+        return settle(trail, cursor.id);
       }
       trail.push(cursor.id);
       onTrail.add(cursor.id);

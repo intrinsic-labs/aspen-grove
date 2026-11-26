@@ -293,7 +293,12 @@ export const resolveBufferPath = (
 
   const head = [...ids.slice(0, position), nodeId];
   const next = ids[position + 1];
-  if (next === undefined || linkEdge(graph, nodeId, next)) {
+  if (next === undefined) {
+    // The new last version may have continuations of its own: follow them.
+    const issues: BufferPathIssue[] = [];
+    return finish(graph, extendToLeaf(graph, selections, head, issues), issues);
+  }
+  if (linkEdge(graph, nodeId, next)) {
     return finish(graph, [...head, ...ids.slice(position + 1)], []);
   }
   const issues: BufferPathIssue[] = [

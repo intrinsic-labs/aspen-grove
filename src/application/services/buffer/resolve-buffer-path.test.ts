@@ -136,6 +136,29 @@ describe('versions', () => {
     ]);
   });
 
+  it('switching the last node to a version with continuations follows them to a leaf', () => {
+    const graph = indexBufferGraph(
+      [
+        textNode('r', 'r', { at: 0 }),
+        textNode('a', 'a', { at: 1 }),
+        textNode('a2', 'a2', { at: 2, editedFrom: 'a' }),
+        textNode('t', 't', { at: 3 }),
+      ],
+      [
+        link('ea', ['r'], 'a', 1),
+        link('ea2', ['r'], 'a2', 2),
+        link('et', ['a2'], 't', 3),
+      ]
+    );
+    const result = resolveBufferPath(graph, ids('r', 'a'), [], {
+      kind: 'version',
+      position: 1,
+      nodeId: id('a2'),
+    });
+    expect(result.nodeIds).toEqual(ids('r', 'a2', 't'));
+    expect(result.leafId).toBe(id('t'));
+  });
+
   it('replaces the suffix when the new version does not reach it', () => {
     const { nodes, edges } = spine(4);
     const graph = indexBufferGraph(
