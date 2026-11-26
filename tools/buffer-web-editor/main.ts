@@ -1,17 +1,28 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { history, historyKeymap } from '@codemirror/commands';
-import type {
-  HostMessage,
-  LoadMessage,
+import {
+  type HostMessage,
+  type LoadMessage,
+  toReplacements,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
-import { mapSeamThrough } from '../../src/interface/components/buffer/android/web-editor-seam';
+import {
+  type OwnerLayout,
+  advanceLayout,
+  movesCaret,
+  releaseHold,
+} from '../../src/application/services/buffer/owner-layout';
 import { listen, post } from './bridge';
 import { authorMarks } from './marks';
 import { breaksField, lineSeparators } from './line-separators';
 import { keepViewportOnSelectAll } from './select-all';
 import { changesOf, checkpointOf } from './report';
-import { restoreSeparators, splitSeparators, toPageOffset } from './separators';
+import {
+  restoreSeparators,
+  splitSeparators,
+  toHostOffset,
+  toPageOffset,
+} from './separators';
 import { applyStyle } from './theme';
 
 let view: EditorView | undefined;
@@ -21,8 +32,11 @@ let epoch = -1;
 let revision = 0;
 /** The latest revision the host has acknowledged (diagnostics only). */
 let acknowledged = 0;
-/** The end of the shared prefix, carried through every edit (checkpoints). */
-let seam = 0;
+/**
+ * Where each owner of the document ends and who keeps left affinity, carried
+ * through every edit with the host's own planner (checkpoints).
+ */
+let layout: OwnerLayout = { ends: [0] };
 let diagnostics = false;
 let idle: ReturnType<typeof setTimeout> | undefined;
 
@@ -89,9 +103,25 @@ const create = (message: LoadMessage): EditorView => {
           if (update.docChanged) {
             const message = changesOf(update, epoch, revision);
             post(message);
-            seam = mapSeamThrough(seam, message.replacements);
+            layout = advanceLayout(
+              layout,
+              toReplacements(message.replacements),
+              message.selection.head
+            );
             revision += 1;
             logSettled(update.view);
+          } else if (update.selectionSet) {
+            const { anchor, head } = update.state.selection.main;
+            const breaks = update.state.field(breaksField);
+            const selection = {
+              anchor: toHostOffset(breaks, anchor),
+              head: toHostOffset(breaks, head),
+            };
+            // A caret the user moved: tell the host, and drop affinity here too.
+            if (movesCaret(layout, selection)) {
+              layout = releaseHold(layout);
+              post({ type: 'selection', epoch, selection });
+            }
           }
         }),
       ],
@@ -109,7 +139,7 @@ const load = (message: LoadMessage): void => {
   epoch = message.epoch;
   revision = 0;
   acknowledged = 0;
-  seam = message.seam;
+  layout = { ends: message.ends };
   view = create(message);
   if (hadFocus) {
     view.focus();
@@ -124,7 +154,7 @@ const receive = (message: HostMessage): void => {
   } else if (message.type === 'ack') {
     acknowledged = Math.max(acknowledged, message.revision);
   } else if (message.type === 'checkpointRequest') {
-    post(checkpointOf(view, epoch, revision, seam));
+    post(checkpointOf(view, epoch, revision, layout));
   } else if (message.type === 'endComposition') {
     // Blurring commits the composing text through the IME; focusing again
     // keeps the keyboard up and the caret where it was. The answer follows.

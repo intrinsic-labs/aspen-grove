@@ -47,13 +47,15 @@ export const useEditorSession = (
     (action: SessionAction) => {
       switch (action.type) {
         case 'apply':
-          action.edits.forEach(sink.onReplace);
-          if (action.modelRanges) {
-            sink.onModelRanges(action.modelRanges);
-          }
+          sink.onChanges(action.replacements, action.caret, action.modelRanges);
           break;
         case 'adopt':
-          sink.onAdopt(action.text, action.modelRanges, action.seam);
+          sink.onAdopt(
+            action.text,
+            action.modelRanges,
+            action.layout,
+            action.caret
+          );
           break;
         case 'ack':
           scheduleAck(action.revision);
@@ -63,6 +65,9 @@ export const useEditorSession = (
           break;
         case 'applied':
           sink.onApplied(action);
+          break;
+        case 'caretMoved':
+          sink.onCaretMoved();
           break;
         case 'composition':
           sink.onComposition(action.composing);

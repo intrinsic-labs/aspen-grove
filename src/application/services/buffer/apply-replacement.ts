@@ -7,6 +7,7 @@ import {
   type BufferDocument,
   type DocumentIndex,
   type DocumentRange,
+  type RangeLayout,
   type RangeOwner,
   TAIL_OWNER,
   indexDocument,
@@ -68,6 +69,68 @@ const descending = (
   return placed;
 };
 
+/** One owner's share of an edit: `[from, to)` of its own text becomes `inserted`. */
+export type ReplacementStep = {
+  readonly range: DocumentRange;
+  readonly from: number;
+  readonly to: number;
+  readonly inserted: string;
+};
+
+export type ReplacementPlan = {
+  /** In the order they apply: descending offsets, so none moves another. */
+  readonly steps: readonly ReplacementStep[];
+  /** The owner of the last edit's start, which keeps left affinity. */
+  readonly affinity: RangeOwner;
+};
+
+/**
+ * Which owner each part of a transaction belongs to, from the layout alone.
+ * Everything that depends on lengths and `hold` and nothing on text lives
+ * here, so the editor page can track the same boundaries as the host (see
+ * `owner-layout.ts`) and a checkpoint resumes exactly.
+ */
+export const planReplacements = (
+  layout: RangeLayout,
+  replacements: readonly Replacement[],
+  hold?: RangeOwner
+): ReplacementPlan => {
+  const steps: ReplacementStep[] = [];
+  let affinity: RangeOwner = hold ?? TAIL_OWNER;
+  for (const edit of descending(replacements, layout.length)) {
+    if (edit.start === edit.end && edit.inserted.length === 0) {
+      continue;
+    }
+    const first = ownerAt(
+      layout,
+      edit.start,
+      edit.start === edit.end ? hold : undefined
+    );
+    affinity = first.owner;
+    for (const range of layout.ranges) {
+      const from = Math.max(edit.start, range.start);
+      const to = Math.min(edit.end, range.end);
+      if (range === first) {
+        const local = edit.start - range.start;
+        steps.push({
+          range,
+          from: local,
+          to: Math.max(local, to - range.start),
+          inserted: edit.inserted,
+        });
+      } else if (from < to) {
+        steps.push({
+          range,
+          from: from - range.start,
+          to: to - range.start,
+          inserted: '',
+        });
+      }
+    }
+  }
+  return { steps, affinity };
+};
+
 const keyOf = (owner: RangeOwner): string =>
   owner.kind === 'tail' ? 'tail' : `passage:${owner.id}`;
 
@@ -87,8 +150,8 @@ const keyOf = (owner: RangeOwner): string =>
  *   cluster the cluster is recolored human afterwards.
  *
  * Replacements must not overlap (an insertion at the start of a deletion is
- * one replacement, not two, whichever is listed first); overlapping ones throw a RangeError. Offsets
- * outside the document are clamped.
+ * one replacement, not two, whichever is listed first); overlapping ones
+ * throw a RangeError. Offsets outside the document are clamped.
  */
 export const applyReplacements = (
   index: DocumentIndex,
@@ -97,42 +160,19 @@ export const applyReplacements = (
 ): ApplyResult => {
   const working = new Map<string, readonly AuthorshipRun[]>();
   const touched = new Map<string, DocumentRange>();
-  const runsOf = (range: DocumentRange): readonly AuthorshipRun[] =>
-    working.get(keyOf(range.owner)) ?? ownerRuns(index.document, range.owner);
-  const change = (
-    range: DocumentRange,
-    from: number,
-    to: number,
-    inserted: string
-  ) => {
+  const { steps, affinity } = planReplacements(index, replacements, hold);
+  for (const { range, from, to, inserted } of steps) {
+    const key = keyOf(range.owner);
     working.set(
-      keyOf(range.owner),
-      replaceInRuns(runsOf(range), from, to, inserted)
+      key,
+      replaceInRuns(
+        working.get(key) ?? ownerRuns(index.document, range.owner),
+        from,
+        to,
+        inserted
+      )
     );
-    touched.set(keyOf(range.owner), range);
-  };
-
-  let affinity: RangeOwner = hold ?? TAIL_OWNER;
-  for (const edit of descending(replacements, index.length)) {
-    if (edit.start === edit.end && edit.inserted.length === 0) {
-      continue;
-    }
-    const first = ownerAt(
-      index,
-      edit.start,
-      edit.start === edit.end ? hold : undefined
-    );
-    affinity = first.owner;
-    for (const range of index.ranges) {
-      const from = Math.max(edit.start, range.start);
-      const to = Math.min(edit.end, range.end);
-      if (range === first) {
-        const local = edit.start - range.start;
-        change(range, local, Math.max(local, to - range.start), edit.inserted);
-      } else if (from < to) {
-        change(range, from - range.start, to - range.start, '');
-      }
-    }
+    touched.set(key, range);
   }
 
   const passages = index.document.passages.map((passage) => {

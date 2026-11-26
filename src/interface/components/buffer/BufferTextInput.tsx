@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
-import type { PreviewEdit, PreviewRun } from './buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
+import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
 import type { BufferSelection } from './derive-replacement';
 import type { CompositionControl } from './composition-barrier';
 import { useNativeComposition } from './ios/useNativeComposition';
@@ -27,7 +28,7 @@ export type BufferRenderVariant = 'spans' | 'single' | 'plain';
 type BufferTextInputProps = {
   /** The accepted document; `runs` concatenate to exactly this string. */
   readonly text: string;
-  readonly runs: readonly PreviewRun[];
+  readonly runs: readonly AuthorshipRun[];
   readonly editable: boolean;
   readonly variant?: BufferRenderVariant;
   /** Counts fixture loads; a new one starts a fresh input at the top. */
@@ -42,7 +43,7 @@ type BufferTextInputProps = {
   /** The gap between the header and the first line. */
   readonly topGap: number;
   readonly placeholder?: string;
-  readonly onReplace: (edit: PreviewEdit) => void;
+  readonly onReplace: (edit: Replacement) => void;
   readonly onSelectionChange?: (selection: BufferSelection) => void;
 };
 
@@ -138,7 +139,7 @@ export const BufferTextInput = ({
   );
 };
 
-const AuthorRuns = ({ runs }: { readonly runs: readonly PreviewRun[] }) => (
+const AuthorRuns = ({ runs }: { readonly runs: readonly AuthorshipRun[] }) => (
   <>
     {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
     {runs.map((run, index) => (

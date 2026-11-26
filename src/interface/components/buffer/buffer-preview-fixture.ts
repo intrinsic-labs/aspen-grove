@@ -1,4 +1,14 @@
-import type { PreviewAuthor, PreviewRun, PreviewState } from './buffer-preview';
+import type {
+  Author,
+  AuthorshipRun,
+} from '@application/services/buffer/authorship-runs';
+import {
+  type PreviewDocument,
+  previewDocument,
+} from './buffer-preview-document';
+
+type PreviewAuthor = Author;
+type PreviewRun = AuthorshipRun;
 
 /**
  * The long-document review fixture: exactly 30,000 characters in about a
@@ -50,13 +60,12 @@ const buildParagraphs = (
 /** The lengths the responsiveness measurements run at (developer preview). */
 export const STRESS_FIXTURE_SIZES = [5_000, 10_000, 20_000, 30_000] as const;
 
-const splitAtMiddle = (runs: readonly PreviewRun[]): PreviewState => {
+const splitAtMiddle = (runs: readonly PreviewRun[]): PreviewDocument => {
   const middle = Math.floor(runs.length / 2);
-  return {
+  return previewDocument({
     prefix: runs.slice(0, middle),
-    suffixes: [runs.slice(middle)],
-    index: 0,
-  };
+    endings: [runs.slice(middle)],
+  });
 };
 
 /**
@@ -66,9 +75,7 @@ const splitAtMiddle = (runs: readonly PreviewRun[]): PreviewState => {
  */
 export const stressPreview = (
   length: number = STRESS_FIXTURE_LENGTH
-): PreviewState => {
-  return splitAtMiddle(buildParagraphs(length));
-};
+): PreviewDocument => splitAtMiddle(buildParagraphs(length));
 
 /**
  * The same long document as real paragraphs: blank lines between them, as
@@ -77,4 +84,4 @@ export const stressPreview = (
  */
 export const paragraphStressPreview = (
   length: number = STRESS_FIXTURE_LENGTH
-): PreviewState => splitAtMiddle(buildParagraphs(length, '\n\n'));
+): PreviewDocument => splitAtMiddle(buildParagraphs(length, '\n\n'));
