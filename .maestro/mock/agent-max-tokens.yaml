@@ -61,7 +61,7 @@ appId: com.intrinsiclabs.aspengrove
 - waitForAnimationToEnd
 - tapOn: 'LM Studio'
 # LM Studio starts on a loaded model from its list: mock-model, never
-# mock-missing, which the mock lists but hasn't loaded (and sorts first).
+# mock-missing, which the mock lists but hasn't loaded (unloaded models sort last).
 - extendedWaitUntil:
     visible:
       id: agent-editor-footer-id
