@@ -2,7 +2,7 @@ import type { TextStyle } from 'react-native';
 import type { Replacement } from '@application/services/buffer/apply-replacement';
 import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
 import type { OwnerLayout } from '@application/services/buffer/owner-layout';
-import type { ModelRange } from './web-editor-protocol';
+import type { ModelRange, Selection } from './web-editor-protocol';
 import type { CompositionControl } from '../composition-barrier';
 
 /** What the host applies from the page; one stable object per screen. */
@@ -25,7 +25,7 @@ export type WebEditorSink = {
     caret: number
   ) => void;
   /** The user moved the caret without editing: no owner keeps left affinity. */
-  readonly onCaretMoved: () => void;
+  readonly onCaretMoved: (selection: Selection) => void;
   /** The page's composing state changed without an edit (a composition ended). */
   readonly onComposition: (composing: boolean) => void;
   /** An edit or checkpoint was applied; for measurement receipts. */
@@ -39,11 +39,11 @@ export type AppliedReceipt = {
   readonly composing: boolean;
 };
 
-
 export type BufferWebEditorProps = {
   /** Identifies a document load: the editor reloads when it changes. */
   readonly readOnly: boolean;
   readonly epoch: number;
+  readonly caret?: number;
   /** The document as of `epoch`; read on load only, never per keystroke. */
   readonly text: string;
   readonly runs: readonly AuthorshipRun[];

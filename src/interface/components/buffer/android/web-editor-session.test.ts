@@ -155,7 +155,7 @@ describe('reduceSession', () => {
     const moved = { anchor: 3, head: 3 };
     expect(
       reduceSession(state, { type: 'selection', epoch: 1, selection: moved })
-    ).toEqual({ state, actions: [{ type: 'caretMoved' }] });
+    ).toEqual({ state, actions: [{ type: 'caretMoved', selection: moved }] });
     expect(
       reduceSession(state, { type: 'selection', epoch: 0, selection: moved })
         .actions

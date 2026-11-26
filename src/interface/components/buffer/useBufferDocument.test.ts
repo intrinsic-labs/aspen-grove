@@ -2,6 +2,7 @@ import { useBufferDocument, bufferReadOnly } from './useBufferDocument';
 import { act, renderHook } from '@interface/test-support/render-hook';
 import { bufferOpenFixture } from '@infrastructure/persistence/watermelon/repositories/buffer-open-fixture';
 import { StoreBufferDraftUseCase } from '@application/use-cases/StoreBufferDraftUseCase';
+import { pillChoice } from './buffer-choice-pill';
 import { BufferDocumentSession } from './buffer-document-session';
 import { previewFromPassages } from './buffer-passages-document';
 import { createCompositionBarrier } from './composition-barrier';
@@ -85,8 +86,12 @@ test.each(['discard', 'keep'])(
   }
 );
 
-const mountCommand = async (settle: () => Promise<void>) => {
+const mountCommand = async (
+  settle: () => Promise<void>,
+  seed?: (f: Awaited<ReturnType<typeof bufferOpenFixture>>) => Promise<void>
+) => {
   const f = await bufferOpenFixture();
+  await seed?.(f);
   (useAppServices as jest.Mock).mockReturnValue({
     useCases: {
       openBufferDocumentUseCase: f.open,
@@ -98,9 +103,15 @@ const mountCommand = async (settle: () => Promise<void>) => {
   const barrier = createCompositionBarrier({ requestEnd() {} });
   const hook = renderHook(
     () =>
-      useBufferDocument({ id: f.treeId } as LoomTree, barrier, true, {
-        settle,
-      }),
+      useBufferDocument(
+        { id: f.treeId } as LoomTree,
+        barrier,
+        true,
+        {
+          settle,
+        },
+        true
+      ),
     undefined
   );
   await act(async () => {});
@@ -164,6 +175,39 @@ test('a settle timeout fails the command and keeps the text', async () => {
       { author: 'human', text: 'keep me' },
     ]);
     expect(result.current.readOnly).toBe(false);
+  } finally {
+    await unmount();
+  }
+});
+
+test('Android tap selects the first version pill and switching keeps it there', async () => {
+  const { result, unmount } = await mountCommand(
+    async () => {},
+    async (f) => {
+      const first = await f.addNode('first', {
+        parents: [f.root],
+        onPath: true,
+      });
+      const other = await f.addNode('replacement', {
+        parents: [f.root],
+        editedFrom: first,
+      });
+      await f.addNode(' last', { parents: [first, other], onPath: true });
+    }
+  );
+  try {
+    await act(() => result.current.sink.onCaretMoved({ anchor: 8, head: 8 }));
+    expect(pillChoice(result.current.choices)).toBeUndefined();
+    await act(() => result.current.sink.onCaretMoved({ anchor: 3, head: 3 }));
+    const pill = pillChoice(result.current.choices);
+    expect(pill?.label).toBe('Version 1 of 2');
+    await act(async () => {
+      expect(await result.current.switchTo(pill!.set.entries[1].action)).toBe(
+        true
+      );
+    });
+    expect(result.current.loadCaret).toBe(0);
+    expect(pillChoice(result.current.choices)?.label).toBe('Version 2 of 2');
   } finally {
     await unmount();
   }

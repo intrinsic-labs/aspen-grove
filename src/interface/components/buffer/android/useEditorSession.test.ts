@@ -62,3 +62,14 @@ test('a missing reply rejects after 1.5 seconds', async () => {
     jest.useRealTimers();
   }
 });
+
+test('a page selection reaches the sink in host units', async () => {
+  const { result, sink, unmount } = mount();
+  try {
+    const selection = { anchor: 7, head: 3 };
+    result.current.receive({ type: 'selection', epoch: 2, selection });
+    expect(sink.onCaretMoved).toHaveBeenCalledWith(selection);
+  } finally {
+    await unmount();
+  }
+});

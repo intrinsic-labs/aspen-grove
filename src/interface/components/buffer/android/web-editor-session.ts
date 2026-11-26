@@ -4,6 +4,7 @@ import {
   toReplacements,
   type EditorMessage,
   type ModelRange,
+  type Selection,
 } from './web-editor-protocol';
 
 /**
@@ -41,7 +42,7 @@ export type SessionAction =
   | { readonly type: 'ack'; readonly revision: number }
   | { readonly type: 'requestCheckpoint' }
   | { readonly type: 'composition'; readonly composing: boolean }
-  | { readonly type: 'caretMoved' }
+  | { readonly type: 'caretMoved'; readonly selection: Selection }
   | {
       readonly type: 'applied';
       readonly revision: number;
@@ -148,7 +149,10 @@ export const reduceSession = (
     case 'checkpoint':
       return receiveCheckpoint(state, message);
     case 'selection':
-      return { state, actions: [{ type: 'caretMoved' }] };
+      return {
+        state,
+        actions: [{ type: 'caretMoved', selection: message.selection }],
+      };
     case 'composition':
       return {
         state,

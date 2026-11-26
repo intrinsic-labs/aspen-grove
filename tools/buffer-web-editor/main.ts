@@ -85,10 +85,21 @@ const create = (message: LoadMessage): EditorView => {
     ([from, to]) =>
       [toPageOffset(breaks, from), toPageOffset(breaks, to)] as const
   );
+  const caret = toPageOffset(
+    breaks,
+    Math.max(0, Math.min(message.caret ?? 0, message.text.length))
+  );
   return new EditorView({
+    scrollTo: EditorView.scrollIntoView(
+      caret,
+      message.caret === undefined
+        ? { y: 'start', yMargin: message.style.paddingTop }
+        : { y: 'nearest', yMargin: message.style.paddingTop }
+    ),
     parent: document.getElementById('editor') as HTMLElement,
     state: EditorState.create({
       doc: text,
+      selection: { anchor: caret },
       extensions: [
         editability.of(editorAccess(message.readOnly)),
         history(),
@@ -119,7 +130,10 @@ const create = (message: LoadMessage): EditorView => {
             );
             revision += 1;
             logSettled(update.view);
-          } else if (update.selectionSet) {
+          } else if (
+            update.selectionSet &&
+            !update.state.selection.eq(update.startState.selection)
+          ) {
             const { anchor, head } = update.state.selection.main;
             const breaks = update.state.field(breaksField);
             const selection = {
@@ -129,8 +143,8 @@ const create = (message: LoadMessage): EditorView => {
             // A caret the user moved: tell the host, and drop affinity here too.
             if (movesCaret(layout, selection)) {
               layout = releaseHold(layout);
-              post({ type: 'selection', epoch, selection });
             }
+            post({ type: 'selection', epoch, selection });
           }
         }),
       ],
@@ -144,6 +158,8 @@ const load = (message: LoadMessage): void => {
   diagnostics = message.style.diagnostics;
   // A reload must not take the keyboard down: the new editor keeps the focus.
   const hadFocus = view?.hasFocus ?? false;
+  const scrollTop =
+    message.caret === undefined ? 0 : (view?.scrollDOM.scrollTop ?? 0);
   pendingLock = undefined;
   view?.destroy();
   epoch = message.epoch;
@@ -151,6 +167,7 @@ const load = (message: LoadMessage): void => {
   acknowledged = 0;
   layout = { ends: message.ends };
   view = create(message);
+  view.scrollDOM.scrollTop = scrollTop;
   if (hadFocus) {
     view.focus();
   }
