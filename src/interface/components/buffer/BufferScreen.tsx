@@ -23,7 +23,10 @@ import { useBufferDocument } from './useBufferDocument';
 import { useBufferPreview } from './useBufferPreview';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
 import type { CompositionControl } from './composition-barrier';
-import { createCompositionBarrier } from './composition-barrier';
+import {
+  createCompositionBarrier,
+  editorUnavailable,
+} from './composition-barrier';
 import type { BufferRenderVariant } from './BufferTextInput';
 import {
   paragraphStressPreview,
@@ -81,14 +84,17 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   );
 
   // A document load waits for an IME composition to end (see the barrier).
-  const composition = useRef<CompositionControl>({ end: () => {} }).current;
+  const composition = useRef<CompositionControl>({
+    end: () => {},
+    settle: editorUnavailable,
+  }).current;
   const barrier = useMemo(
     () => createCompositionBarrier({ requestEnd: () => composition.end() }),
     [composition]
   );
   // The real document by default; a fixture link switches to the preview.
   const [fixture, setFixture] = useState(false);
-  const real = useBufferDocument(tree, barrier, !fixture);
+  const real = useBufferDocument(tree, barrier, !fixture, composition);
   const previewFeed = useBufferPreview(barrier);
   const {
     doc: preview,

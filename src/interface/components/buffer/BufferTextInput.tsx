@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   type NativeSyntheticEvent,
   Platform,
@@ -7,6 +7,7 @@ import {
   type TextInputChangeEventData,
   type TextInputSelectionChangeEventData,
   type TextStyle,
+  type TextInput,
 } from 'react-native';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
@@ -14,6 +15,7 @@ import type { Replacement } from '@application/services/buffer/apply-replacement
 import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
 import type { BufferSelection } from './derive-replacement';
 import type { CompositionControl } from './composition-barrier';
+import { editorUnavailable } from './composition-barrier';
 import { useNativeComposition } from './ios/useNativeComposition';
 import { createChangeTracker } from './native-change-tracker';
 
@@ -69,6 +71,21 @@ export const BufferTextInput = ({
   onReplace,
   onSelectionChange,
 }: BufferTextInputProps) => {
+  const input = useRef<TextInput>(null);
+  useLayoutEffect(() => {
+    composition.settle = () => {
+      if (!input.current) return editorUnavailable();
+      input.current.setNativeProps({ editable: false });
+      return new Promise<void>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTimeout(resolve, 0))
+        )
+      );
+    };
+    return () => {
+      composition.settle = editorUnavailable;
+    };
+  }, [composition]);
   const selection = useRef<BufferSelection | null>(null);
   useNativeComposition(composition, onComposition);
   const tracker = useRef(createChangeTracker(text));
@@ -113,6 +130,7 @@ export const BufferTextInput = ({
 
   return (
     <AppTextInput
+      ref={input}
       key={generation}
       selection={atStart ? START : undefined}
       testID="buffer-document"

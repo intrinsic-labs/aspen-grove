@@ -18,7 +18,11 @@
  */
 export type CompositionControl = {
   end: () => void;
+  settle: () => Promise<void>;
 };
+
+export const editorUnavailable = (): Promise<void> =>
+  Promise.reject(new Error('The editor is unavailable. Try again.'));
 
 export type CompositionBarrierOptions = {
   readonly fallbackMs?: number;

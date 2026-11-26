@@ -17,7 +17,10 @@ import {
 } from './buffer-passages-document';
 import { emptyPreview } from './buffer-preview-document';
 import type { BufferSelection } from './derive-replacement';
-import type { CompositionBarrier } from './composition-barrier';
+import type {
+  CompositionBarrier,
+  CompositionControl,
+} from './composition-barrier';
 import { useBufferDraftLifecycle } from './useBufferDraftLifecycle';
 import { useBufferEditorFeed } from './useBufferEditorFeed';
 
@@ -49,7 +52,8 @@ export const bufferReadOnly = ({
 export const useBufferDocument = (
   tree: LoomTree,
   barrier: CompositionBarrier,
-  enabled: boolean
+  enabled: boolean,
+  editor: Pick<CompositionControl, 'settle'>
 ) => {
   const { useCases } = useAppServices();
   const feed = useBufferEditorFeed(barrier, emptyPreview);
@@ -148,6 +152,14 @@ export const useBufferDocument = (
         return Promise.resolve(false);
       setCommandRunning(true);
       const task = (async () => {
+        try {
+          await editor.settle();
+        } catch (error) {
+          setCommitError(
+            error instanceof Error ? error.message : String(error)
+          );
+          return false;
+        }
         await new Promise<void>((resolve) => barrier.run(resolve));
         lifecycle.cancel();
         busy.current = true;
@@ -182,7 +194,7 @@ export const useBufferDocument = (
       task.then(clear, clear);
       return task;
     },
-    [barrier, enabled, latest, lifecycle, show, status, recovery]
+    [barrier, editor, enabled, latest, lifecycle, show, status, recovery]
   );
 
   /** Saves the typing as new versions. True if there is nothing left unsaved. */

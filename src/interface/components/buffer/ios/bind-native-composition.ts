@@ -11,7 +11,7 @@ import {
  */
 export const bindNativeComposition = (
   native: BufferCompositionNative,
-  composition: CompositionControl,
+  composition: Pick<CompositionControl, 'end'>,
   onComposition: (composing: boolean) => void
 ): (() => void) => {
   const subscription = native.addListener(

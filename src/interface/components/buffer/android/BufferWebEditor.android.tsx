@@ -14,6 +14,7 @@ import {
   parseEditorMessage,
   type HostMessage,
 } from './web-editor-protocol';
+import { editorUnavailable } from '../composition-barrier';
 import { useEditorSession } from './useEditorSession';
 import { webEditorStyle } from './web-editor-style';
 
@@ -53,7 +54,9 @@ const Editor = ({
   const ready = useRef(false);
   const latest = useRef({ epoch, text, runs, ends, readOnly });
   latest.current = { epoch, text, runs, ends, readOnly };
-  const style = useRef(webEditorStyle(textStyle, headerHeight, topGap, placeholder));
+  const style = useRef(
+    webEditorStyle(textStyle, headerHeight, topGap, placeholder)
+  );
   style.current = webEditorStyle(textStyle, headerHeight, topGap, placeholder);
 
   const send = useCallback((message: HostMessage) => {
@@ -79,19 +82,20 @@ const Editor = ({
     }
   }, [epoch, load]);
 
+  const { receive, settle } = useEditorSession(epoch, sink, send);
   useEffect(() => {
+    composition.settle = settle;
     composition.end = () =>
       send({ type: 'endComposition', epoch: latest.current.epoch });
     return () => {
+      composition.settle = editorUnavailable;
       composition.end = () => {};
     };
-  }, [composition, send]);
+  }, [composition, send, settle]);
 
   useEffect(() => {
     if (ready.current) send({ type: 'readOnly', epoch, readOnly });
   }, [epoch, readOnly, send]);
-
-  const receive = useEditorSession(epoch, sink, send);
 
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {

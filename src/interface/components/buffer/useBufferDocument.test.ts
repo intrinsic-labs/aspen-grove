@@ -49,7 +49,10 @@ test.each(['discard', 'keep'])(
     const barrier = createCompositionBarrier({ requestEnd() {} });
     const mount = () =>
       renderHook(
-        () => useBufferDocument({ id: f.treeId } as LoomTree, barrier, true),
+        () =>
+          useBufferDocument({ id: f.treeId } as LoomTree, barrier, true, {
+            settle: async () => {},
+          }),
         undefined
       );
     const earlier = new BufferDocumentSession({ ...f, drafts: store });
@@ -81,3 +84,87 @@ test.each(['discard', 'keep'])(
     }
   }
 );
+
+const mountCommand = async (settle: () => Promise<void>) => {
+  const f = await bufferOpenFixture();
+  (useAppServices as jest.Mock).mockReturnValue({
+    useCases: {
+      openBufferDocumentUseCase: f.open,
+      commitBufferChangesUseCase: f.commit,
+      switchBufferPathUseCase: f.switchPath,
+      storeBufferDraftUseCase: new StoreBufferDraftUseCase(f.bufferDraftStore),
+    },
+  });
+  const barrier = createCompositionBarrier({ requestEnd() {} });
+  const hook = renderHook(
+    () =>
+      useBufferDocument({ id: f.treeId } as LoomTree, barrier, true, {
+        settle,
+      }),
+    undefined
+  );
+  await act(async () => {});
+  return { ...hook, f };
+};
+
+test('a switch waits for accepted web edits before it snapshots', async () => {
+  let release!: () => void;
+  const settle = jest.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      })
+  );
+  const { result, f, unmount } = await mountCommand(settle);
+  const command = jest
+    .spyOn(BufferDocumentSession.prototype, 'switchTo')
+    .mockResolvedValue({ kind: 'nothing' });
+  try {
+    let switched!: Promise<boolean>;
+    await act(() => {
+      switched = result.current.switchTo({
+        kind: 'branch',
+        position: 0,
+        nodeId: f.treeId,
+      });
+    });
+    expect(command).not.toHaveBeenCalled();
+    expect(result.current.readOnly).toBe(true);
+    expect(settle).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      result.current.sink.onChanges(
+        [{ start: 0, end: 0, inserted: 'last characters' }],
+        15
+      );
+      release();
+      expect(await switched).toBe(true);
+    });
+    expect(command.mock.calls[0][0].tail).toEqual([
+      { author: 'human', text: 'last characters' },
+    ]);
+  } finally {
+    command.mockRestore();
+    await unmount();
+  }
+});
+
+test('a settle timeout fails the command and keeps the text', async () => {
+  const { result, unmount } = await mountCommand(async () => {
+    throw new Error('Editor timed out');
+  });
+  try {
+    await act(() =>
+      result.current.onReplace({ start: 0, end: 0, inserted: 'keep me' })
+    );
+    await act(async () => {
+      expect(await result.current.commit()).toBe(false);
+    });
+    expect(result.current.notice).toMatch(/timed out/i);
+    expect(result.current.latest().index.document.tail).toEqual([
+      { author: 'human', text: 'keep me' },
+    ]);
+    expect(result.current.readOnly).toBe(false);
+  } finally {
+    await unmount();
+  }
+});

@@ -4,6 +4,7 @@ import { history, historyKeymap } from '@codemirror/commands';
 import {
   type HostMessage,
   type LoadMessage,
+  type SettleMessage,
   toReplacements,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
 import {
@@ -153,15 +154,61 @@ const load = (message: LoadMessage): void => {
   }
 };
 
+// CodeMirror drains pending DOM mutations before its scheduled measurement.
+// The update listener posts each resulting transaction synchronously.
+const flush = (editor: EditorView) =>
+  new Promise<void>((resolve) =>
+    editor.requestMeasure({ read: () => resolve() })
+  );
+
+let requestedReadOnly = false;
+const setReadOnly = async (editor: EditorView, readOnly: boolean) => {
+  requestedReadOnly = readOnly;
+  if (editor.state.readOnly === readOnly) return;
+  // A read-only state ignores DOM mutations, including already accepted input.
+  if (readOnly) await flush(editor);
+  if (
+    view === editor &&
+    requestedReadOnly === readOnly &&
+    editor.state.readOnly !== readOnly
+  ) {
+    editor.dispatch({
+      effects: editability.reconfigure(editorAccess(readOnly)),
+    });
+  }
+};
+
+const endComposition = (editor: EditorView) => {
+  const hadFocus = editor.hasFocus;
+  editor.contentDOM.blur();
+  if (hadFocus) editor.focus();
+  reportComposition(editor);
+};
+
+const settlePage = async (editor: EditorView, request: SettleMessage) => {
+  await setReadOnly(editor, true);
+  if (view !== editor || !editor.state.readOnly) return;
+  if (editor.compositionStarted) {
+    endComposition(editor);
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, COMPOSITION_SETTLE_MS)
+    );
+  }
+  await flush(editor);
+  if (view === editor && editor.state.readOnly && !editor.compositionStarted) {
+    post({ type: 'settled', epoch, requestId: request.requestId, revision });
+  }
+};
+
 const receive = (message: HostMessage): void => {
   if (message.type === 'load') {
     load(message);
   } else if (message.epoch !== epoch || !view) {
     return;
   } else if (message.type === 'readOnly') {
-    view.dispatch({
-      effects: editability.reconfigure(editorAccess(message.readOnly)),
-    });
+    void setReadOnly(view, message.readOnly);
+  } else if (message.type === 'settle') {
+    void settlePage(view, message);
   } else if (message.type === 'ack') {
     acknowledged = Math.max(acknowledged, message.revision);
   } else if (message.type === 'checkpointRequest') {
@@ -169,12 +216,7 @@ const receive = (message: HostMessage): void => {
   } else if (message.type === 'endComposition') {
     // Blurring commits the composing text through the IME; focusing again
     // keeps the keyboard up and the caret where it was. The answer follows.
-    const hadFocus = view.hasFocus;
-    view.contentDOM.blur();
-    if (hadFocus) {
-      view.focus();
-    }
-    reportComposition(view);
+    endComposition(view);
   }
 };
 

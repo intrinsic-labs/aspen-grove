@@ -19,7 +19,53 @@ export const useEditorSession = (
   epoch: number,
   sink: WebEditorSink,
   send: (message: HostMessage) => void
-): ((message: EditorMessage) => void) => {
+) => {
+  const nextId = useRef(0);
+  const pending = useRef<{
+    epoch: number;
+    requestId: number;
+    revision?: number;
+    finish: () => void;
+    cancel: (reason: string) => void;
+  } | null>(null);
+  useEffect(
+    () => () => pending.current?.cancel('The editor document changed.'),
+    [epoch]
+  );
+
+  const settle = useCallback(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        pending.current?.cancel('Another editor request started.');
+        const requestId = ++nextId.current;
+        const clear = () => {
+          clearTimeout(timer);
+          pending.current = null;
+        };
+        const cancel = (reason: string) => {
+          clear();
+          reject(new Error(reason));
+        };
+        const timer = setTimeout(
+          () =>
+            cancel(
+              'The editor timed out while confirming your last edit. Try again.'
+            ),
+          1500
+        );
+        pending.current = {
+          epoch,
+          requestId,
+          cancel,
+          finish: () => {
+            clear();
+            resolve();
+          },
+        };
+        send({ type: 'settle', epoch, requestId });
+      }),
+    [epoch, send]
+  );
   const session = useRef(startSession(epoch));
   const ackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const ackRevision = useRef(0);
@@ -77,15 +123,32 @@ export const useEditorSession = (
     [send, scheduleAck, sink]
   );
 
-  return useCallback(
+  const receive = useCallback(
     (message: EditorMessage) => {
       if (session.current.epoch !== epoch) {
         session.current = startSession(epoch);
       }
       const step = reduceSession(session.current, message);
-      session.current = step.state;
       step.actions.forEach(perform);
+      session.current = step.state;
+      const waiting = pending.current;
+      if (!waiting || waiting.epoch !== epoch) return;
+      if (
+        message.type === 'settled' &&
+        message.epoch === epoch &&
+        message.requestId === waiting.requestId
+      ) {
+        waiting.revision = message.revision;
+      }
+      if (
+        waiting.revision !== undefined &&
+        step.state.revision >= waiting.revision &&
+        !step.state.awaitingCheckpoint
+      ) {
+        waiting.finish();
+      }
     },
     [epoch, perform]
   );
+  return { receive, settle };
 };
