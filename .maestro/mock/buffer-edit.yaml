@@ -148,8 +148,9 @@ env:
     text: '.*had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
 - takeScreenshot: 09-edit-again
 
-# 7. Relaunch (keeping data) and reopen: the same text and version.
-- runFlow: ../dismiss-buffer-keyboard.yaml
+# 7. Relaunch (keeping data) and reopen: the same text and version. The
+# keyboard is already down here (the pill taps closed it), and on Android the
+# back key that dismisses a keyboard would leave the screen, so go straight back.
 - runFlow: ../go-back.yaml
 - extendedWaitUntil:
     visible:
@@ -184,3 +185,33 @@ env:
 - waitForAnimationToEnd
 - assertVisible: 'Version 2 of 2'
 - takeScreenshot: 11-version-after-relaunch
+
+# 8. Typing still works after a save and a switch: step the pill to the other
+# version and back, tap into the text and type a word. The editor must take the
+# keyboard again (it is read-only while a switch runs) and show the word.
+- tapOn:
+    id: buffer-version-prev
+- waitForAnimationToEnd
+- assertVisible: 'Version 1 of 2'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- assertVisible: 'Version 2 of 2'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '50%,45%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '96%,25%'
+- inputText: ' Calm.'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*Gulls wheeled\. Calm\.'
+- takeScreenshot: 12-typed-after-switch
