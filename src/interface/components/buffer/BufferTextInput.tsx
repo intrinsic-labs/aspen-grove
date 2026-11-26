@@ -17,6 +17,8 @@ import type { BufferSelection } from './derive-replacement';
 import type { CompositionControl } from './composition-barrier';
 import { editorUnavailable } from './composition-barrier';
 import { useNativeComposition } from './ios/useNativeComposition';
+import { bufferCompositionNative } from './ios/buffer-composition-native';
+import { waitForNativeText } from './wait-for-native-text';
 import { createChangeTracker } from './native-change-tracker';
 
 /**
@@ -72,14 +74,21 @@ export const BufferTextInput = ({
   onSelectionChange,
 }: BufferTextInputProps) => {
   const input = useRef<TextInput>(null);
+  const tracker = useRef(createChangeTracker(text));
+  const deliveryCheck = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
     composition.settle = () => {
-      if (!input.current) return editorUnavailable();
+      if (
+        Platform.OS !== 'ios' ||
+        !input.current ||
+        !bufferCompositionNative?.currentText
+      )
+        return editorUnavailable();
       input.current.setNativeProps({ editable: false });
-      return new Promise<void>((resolve) =>
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => setTimeout(resolve, 0))
-        )
+      return waitForNativeText(
+        bufferCompositionNative.currentText(),
+        () => tracker.current.lastText(),
+        deliveryCheck
       );
     };
     return () => {
@@ -88,7 +97,6 @@ export const BufferTextInput = ({
   }, [composition]);
   const selection = useRef<BufferSelection | null>(null);
   useNativeComposition(composition, onComposition);
-  const tracker = useRef(createChangeTracker(text));
   // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
   // native input with its caret pinned to the start until the user moves it:
   // Android otherwise keeps the end of the new text in view. The screen says
@@ -112,6 +120,7 @@ export const BufferTextInput = ({
       if (edit) {
         onReplace(edit);
       }
+      deliveryCheck.current?.();
     },
     [onReplace]
   );

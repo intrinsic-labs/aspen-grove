@@ -24,6 +24,7 @@ import {
   toHostOffset,
   toPageOffset,
 } from './separators';
+import { settleComposition } from './settle-composition';
 import { applyStyle } from './theme';
 
 const editability = new Compartment();
@@ -143,6 +144,7 @@ const load = (message: LoadMessage): void => {
   diagnostics = message.style.diagnostics;
   // A reload must not take the keyboard down: the new editor keeps the focus.
   const hadFocus = view?.hasFocus ?? false;
+  pendingLock = undefined;
   view?.destroy();
   epoch = message.epoch;
   revision = 0;
@@ -161,23 +163,6 @@ const flush = (editor: EditorView) =>
     editor.requestMeasure({ read: () => resolve() })
   );
 
-let requestedReadOnly = false;
-const setReadOnly = async (editor: EditorView, readOnly: boolean) => {
-  requestedReadOnly = readOnly;
-  if (editor.state.readOnly === readOnly) return;
-  // A read-only state ignores DOM mutations, including already accepted input.
-  if (readOnly) await flush(editor);
-  if (
-    view === editor &&
-    requestedReadOnly === readOnly &&
-    editor.state.readOnly !== readOnly
-  ) {
-    editor.dispatch({
-      effects: editability.reconfigure(editorAccess(readOnly)),
-    });
-  }
-};
-
 const endComposition = (editor: EditorView) => {
   const hadFocus = editor.hasFocus;
   editor.contentDOM.blur();
@@ -185,17 +170,48 @@ const endComposition = (editor: EditorView) => {
   reportComposition(editor);
 };
 
-const settlePage = async (editor: EditorView, request: SettleMessage) => {
-  await setReadOnly(editor, true);
-  if (view !== editor || !editor.state.readOnly) return;
-  if (editor.compositionStarted) {
-    endComposition(editor);
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, COMPOSITION_SETTLE_MS)
-    );
+// Both host messages share the lock so either may arrive first during an IME edit.
+let pendingLock: Promise<boolean> | undefined;
+const setReadOnly = (
+  editor: EditorView,
+  readOnly: boolean
+): Promise<boolean> => {
+  const configure = (locked: boolean) =>
+    editor.dispatch({
+      effects: editability.reconfigure(editorAccess(locked)),
+    });
+  if (!readOnly) {
+    pendingLock = undefined;
+    if (editor.state.readOnly) configure(false);
+    return Promise.resolve(false);
   }
-  await flush(editor);
-  if (view === editor && editor.state.readOnly && !editor.compositionStarted) {
+  if (pendingLock) return pendingLock;
+  // The operation can be superseded by an unlock or a new document.
+  const current = (): boolean => view === editor && pendingLock === lock;
+  const lock: Promise<boolean> = Promise.resolve()
+    .then(() =>
+      settleComposition({
+        current,
+        composing: () => editor.compositionStarted,
+        end: () => endComposition(editor),
+        flush: () => flush(editor),
+        lock: async () => {
+          if (editor.state.readOnly) return;
+          await flush(editor);
+          if (current() && !editor.compositionStarted) configure(true);
+        },
+      })
+    )
+    .finally(() => {
+      if (current()) pendingLock = undefined;
+    });
+  pendingLock = lock;
+  return lock;
+};
+
+const settlePage = async (editor: EditorView, request: SettleMessage) => {
+  const settled = await setReadOnly(editor, true);
+  if (settled && view === editor && editor.state.readOnly) {
     post({ type: 'settled', epoch, requestId: request.requestId, revision });
   }
 };

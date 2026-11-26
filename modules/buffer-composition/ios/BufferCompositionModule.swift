@@ -27,6 +27,20 @@ public class BufferCompositionModule: Module {
       DispatchQueue.main.async { self.stopObserving() }
     }
 
+    AsyncFunction("currentText") { () -> String? in
+      if let view = self.textView, view.window?.isKeyWindow == true, self.isEditor(view) {
+        return view.text
+      }
+      for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+        if let window = scene.windows.first(where: { $0.isKeyWindow }),
+           let view = self.findEditor(in: window) {
+          self.textView = view
+          return view.text
+        }
+      }
+      return nil
+    }.runOnQueue(.main)
+
     /// Commits the marked text and ends the composition; the keyboard stays up.
     AsyncFunction("endComposition") { () -> Bool in
       guard let view = self.textView, view.markedTextRange != nil else {
@@ -60,6 +74,14 @@ public class BufferCompositionModule: Module {
     poll = nil
     composing = false
     textView = nil
+  }
+
+  private func findEditor(in root: UIView) -> UITextView? {
+    if let view = root as? UITextView, isEditor(view) { return view }
+    for child in root.subviews {
+      if let view = findEditor(in: child) { return view }
+    }
+    return nil
   }
 
   private func isEditor(_ view: UIView) -> Bool {

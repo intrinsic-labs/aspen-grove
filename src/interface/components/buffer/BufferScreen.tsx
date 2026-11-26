@@ -21,7 +21,11 @@ import { BufferDocStats } from './BufferDocStats';
 import { pillChoice } from './buffer-choice-pill';
 import { useBufferDocument } from './useBufferDocument';
 import { useBufferPreview } from './useBufferPreview';
-import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
+import {
+  BufferEditorSurface,
+  hasWebEngine,
+  type BufferEngine,
+} from './BufferEditorSurface';
 import type { CompositionControl } from './composition-barrier';
 import {
   createCompositionBarrier,
@@ -64,7 +68,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
   const [variant, setVariant] = useState<BufferRenderVariant>('spans');
-  const [engine, setEngine] = useState<BufferEngine>('native');
+  const [fixtureEngine, setFixtureEngine] = useState<BufferEngine>('native');
   // Counts wholesale document loads (fixture, sibling switch) for the web editor.
   const [epoch, setEpoch] = useState(0);
   // Counts fixture loads only; the native input starts afresh on one.
@@ -94,6 +98,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   );
   // The real document by default; a fixture link switches to the preview.
   const [fixture, setFixture] = useState(false);
+  // Android real documents always use CodeMirror. The engine selector controls fixtures only.
+  const engine = fixture ? fixtureEngine : hasWebEngine ? 'web' : 'native';
   const real = useBufferDocument(tree, barrier, !fixture, composition);
   const previewFeed = useBufferPreview(barrier);
   const {
@@ -142,6 +148,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     <AppScreen testID="buffer-screen" style={styles.screen}>
       <KeyboardAvoidingView behavior="padding" style={styles.screen} enabled>
         <BufferEditorSurface
+          key={fixture ? 'fixture' : 'document'}
           engine={engine}
           readOnly={real.readOnly}
           variant={variant}
@@ -201,12 +208,12 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           ) : showFixtures ? (
             <BufferFixtureControls
               variant={variant}
-              engine={engine}
+              engine={fixtureEngine}
               onLoadSample={() => load(samplePreview())}
               onLoadStress={(length) => load(stressPreview(length))}
               onLoadParagraphs={() => load(paragraphStressPreview())}
               onVariant={setVariant}
-              onEngine={setEngine}
+              onEngine={setFixtureEngine}
             />
           ) : null}
         </Pressable>
