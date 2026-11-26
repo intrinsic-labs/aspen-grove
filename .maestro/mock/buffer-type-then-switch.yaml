@@ -1,0 +1,96 @@
+# Manual-check flow (run 3): type a word, then tap the version pill at once.
+# The word must be saved in the version that was left; switching back shows it.
+# Same prerequisites as buffer-edit.yaml (preview Metro bundle, fixture on device).
+appId: com.intrinsiclabs.aspengrove
+env:
+  TREE_FILE: buffer-versions.openloom
+---
+- runFlow: ../open-app.yaml
+- runFlow: ../skip-onboarding.yaml
+- assertVisible:
+    id: home-welcome
+- runFlow: ../import-buffer-fixture.yaml
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Make a saved version: change "fogged" to "misted", go back (saves), reopen.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+      - waitForAnimationToEnd
+      - doubleTapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+      - waitForAnimationToEnd
+      - longPressOn:
+          point: '12%,21%'
+- inputText: 'misted'
+- waitForAnimationToEnd
+- runFlow: ../dismiss-buffer-keyboard.yaml
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 15000
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+
+# Caret into the edited word: the pill shows its versions.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+- waitForAnimationToEnd
+- assertVisible: 'Version 2 of 2'
+
+# Type, and tap the pill at once (no wait between).
+- inputText: 'zq'
+- tapOn:
+    id: buffer-version-prev
+- takeScreenshot: 01-just-switched
+- waitForAnimationToEnd
+- assertNotVisible: '.*timed out.*'
+- assertVisible:
+    id: buffer-document
+    text: '.*had fogged\. Snow.*'
+- takeScreenshot: 02-original-version
+# The typing was saved as a new version (3 of 3) when the pill was tapped.
+# Step forward past the edit to it: the word is there.
+- assertVisible: 'Version 1 of 3'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- assertVisible: 'Version 2 of 3'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- assertNotVisible: '.*timed out.*'
+- assertVisible: 'Version 3 of 3'
+- assertVisible:
+    id: buffer-document
+    text: '.*zq.*'
+- takeScreenshot: 03-word-kept
