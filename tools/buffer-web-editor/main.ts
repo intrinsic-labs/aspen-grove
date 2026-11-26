@@ -1,80 +1,54 @@
 import { EditorState } from '@codemirror/state';
-import {
-  EditorView,
-  keymap,
-  placeholder,
-  type ViewUpdate,
-} from '@codemirror/view';
+import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { history, historyKeymap } from '@codemirror/commands';
-import {
-  type EditorMessage,
-  type LoadMessage,
-  type Replacement,
+import type {
+  HostMessage,
+  LoadMessage,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
-import { authorMarks, setModelRanges } from './marks';
+import { listen, post } from './bridge';
+import { authorMarks } from './marks';
+import { changesOf, checkpointOf } from './report';
 import { applyStyle } from './theme';
 
-declare global {
-  interface Window {
-    ReactNativeWebView?: { postMessage(message: string): void };
-  }
-}
-
-const post = (message: EditorMessage): void =>
-  window.ReactNativeWebView?.postMessage(JSON.stringify(message));
-
+let view: EditorView | undefined;
+/** Names the load in progress; host messages for another epoch are dropped. */
 let epoch = -1;
+/** Edits reported since the load. */
 let revision = 0;
+/** The latest revision the host has acknowledged (diagnostics only). */
+let acknowledged = 0;
 let diagnostics = false;
 let idle: ReturnType<typeof setTimeout> | undefined;
 
 /** One line after typing settles: the page's own count, for the receipts. */
-const logSettled = (view: EditorView): void => {
+const logSettled = (editor: EditorView): void => {
   clearTimeout(idle);
   if (!diagnostics) {
     return;
   }
   idle = setTimeout(() => {
-    const { head } = view.state.selection.main;
-    const text = view.state.doc.toString();
+    const { head } = editor.state.selection.main;
+    const text = editor.state.doc.toString();
     const bursts = (text.match(/burst\d\d /g) ?? []).length;
     console.log(
-      `AGBUF page epoch=${epoch} rev=${revision} len=${text.length} head=${head} bursts=${bursts} before=${JSON.stringify(
+      `AGBUF page epoch=${epoch} rev=${revision} acked=${acknowledged} len=${text.length} head=${head} bursts=${bursts} before=${JSON.stringify(
         text.slice(Math.max(0, head - 60), head)
       )}`
     );
   }, 400);
 };
 
-const reportChanges = (update: ViewUpdate): void => {
-  const replacements: Replacement[] = [];
-  update.changes.iterChanges((from, to, _fromB, _toB, inserted) =>
-    replacements.push({ from, to, insert: inserted.toString() })
-  );
-  revision += 1;
-  const { anchor, head } = update.state.selection.main;
-  post({
-    type: 'changes',
-    epoch,
-    revision,
-    replacements,
-    selection: { anchor, head },
-    composing: update.view.composing,
-  });
-  logSettled(update.view);
-};
-
-const create = (text: string, hint: string): EditorView =>
+const create = (message: LoadMessage): EditorView =>
   new EditorView({
     parent: document.getElementById('editor') as HTMLElement,
     state: EditorState.create({
-      doc: text,
+      doc: message.text,
       extensions: [
         history(),
         keymap.of(historyKeymap),
         EditorView.lineWrapping,
-        authorMarks,
-        placeholder(hint),
+        authorMarks(message.modelRanges),
+        placeholder(message.style.placeholder),
         EditorView.contentAttributes.of({
           id: 'buffer-document',
           spellcheck: 'true',
@@ -83,14 +57,14 @@ const create = (text: string, hint: string): EditorView =>
         }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            reportChanges(update);
+            post(changesOf(update, epoch, revision));
+            revision += 1;
+            logSettled(update.view);
           }
         }),
       ],
     }),
   });
-
-let view: EditorView | undefined;
 
 /** A fresh editor per load: no history, selection or marks carry over. */
 const load = (message: LoadMessage): void => {
@@ -99,27 +73,21 @@ const load = (message: LoadMessage): void => {
   view?.destroy();
   epoch = message.epoch;
   revision = 0;
-  view = create(message.text, message.style.placeholder);
-  view.dispatch({ effects: setModelRanges.of(message.modelRanges) });
+  acknowledged = 0;
+  view = create(message);
 };
 
-const receive = (event: Event): void => {
-  const data = (event as MessageEvent<unknown>).data;
-  if (typeof data !== 'string') {
+const receive = (message: HostMessage): void => {
+  if (message.type === 'load') {
+    load(message);
+  } else if (message.epoch !== epoch || !view) {
     return;
-  }
-  try {
-    const message = JSON.parse(data) as LoadMessage;
-    if (message.type === 'load') {
-      load(message);
-    }
-  } catch {
-    // Malformed host input is dropped; the page keeps its document.
+  } else if (message.type === 'ack') {
+    acknowledged = Math.max(acknowledged, message.revision);
+  } else if (message.type === 'checkpointRequest') {
+    post(checkpointOf(view, epoch, revision));
   }
 };
 
-// react-native-webview delivers host messages to `document` on Android and
-// to `window` on iOS.
-document.addEventListener('message', receive);
-window.addEventListener('message', receive);
+listen(receive);
 post({ type: 'ready' });

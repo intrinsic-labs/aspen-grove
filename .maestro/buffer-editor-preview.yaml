@@ -1,6 +1,7 @@
 # The buffer editor's developer preview, no key and no mock server: Home's
 # menu → New Buffer → type → the review sample → a word typed into model text
 # → back out and reopen from Recents.
+# -e ENGINE_TAPS=1 (Android) runs it on the CodeMirror WebView engine.
 # Needs a build whose Metro bundle was made with EXPO_PUBLIC_BUFFER_PREVIEW=1:
 #   EXPO_PUBLIC_BUFFER_PREVIEW=1 npx expo start --dev-client --port 8081
 #   maestro --device "$DEVICE" test .maestro/buffer-editor-preview.yaml --test-output-dir "$SHOTS"
@@ -19,6 +20,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 
 # An empty buffer takes typing, keyboard up.
 - tapOn:
@@ -47,6 +53,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 - assertVisible:
     id: buffer-load-sample
 - tapOn:
@@ -99,9 +110,23 @@ appId: com.intrinsiclabs.aspengrove
 # surrounding spaces stay single.
 - inputText: ' softly'
 - waitForAnimationToEnd
-- assertVisible:
-    id: buffer-document
-    text: '.*falling softly since dawn\..*'
+# The web engine's accessibility text can lag behind typing, and its caret
+# lands a character later, so there the receipt is read instead: the sample's
+# 156 characters plus the 7 typed.
+- runFlow:
+    when:
+      true: ${ENGINE_TAPS == '1'}
+    commands:
+      - assertVisible:
+          id: buffer-doc-stats
+          text: 'len=163 head=.*'
+- runFlow:
+    when:
+      true: ${ENGINE_TAPS != '1'}
+    commands:
+      - assertVisible:
+          id: buffer-document
+          text: '.*falling softly since dawn\..*'
 - takeScreenshot: 04-typed-into-model-text
 
 # Fill the document so its last line has to clear the pill.

@@ -28,6 +28,8 @@ type BufferTextInputProps = {
   readonly runs: readonly PreviewRun[];
   readonly editable: boolean;
   readonly variant?: BufferRenderVariant;
+  /** Counts fixture loads; a new one starts a fresh input at the top. */
+  readonly fixtureEpoch?: number;
   readonly textStyle: TextStyle;
   /** The translucent header's height: the document starts below it. */
   readonly headerHeight: number;
@@ -50,6 +52,7 @@ export const BufferTextInput = ({
   runs,
   editable,
   variant = 'spans',
+  fixtureEpoch = 0,
   textStyle,
   headerHeight,
   topGap,
@@ -61,11 +64,14 @@ export const BufferTextInput = ({
   const tracker = useRef(createChangeTracker(text));
   // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
   // native input with its caret pinned to the start until the user moves it:
-  // Android otherwise keeps the end of the new text in view.
+  // Android otherwise keeps the end of the new text in view. The screen says
+  // so with `fixtureEpoch`; the text is never guessed at.
   const [generation, setGeneration] = useState(0);
   const [atStart, setAtStart] = useState(false);
-  const replaced = tracker.current.sync(text);
-  if (replaced !== null && startsNewDocument(replaced, text)) {
+  const [seenFixture, setSeenFixture] = useState(fixtureEpoch);
+  tracker.current.sync(text);
+  if (seenFixture !== fixtureEpoch) {
+    setSeenFixture(fixtureEpoch);
     setGeneration(generation + 1);
     setAtStart(true);
   }
@@ -155,10 +161,6 @@ const topLayout = (headerHeight: number, topGap: number): TextStyle =>
     : { paddingTop: headerHeight + topGap };
 
 const START = { start: 0, end: 0 } as const;
-
-/** A sibling switch keeps the shared opening; a fixture load shares nothing. */
-const startsNewDocument = (before: string, after: string) =>
-  after.length > 0 && before.charAt(0) !== after.charAt(0);
 
 const styles = StyleSheet.create({
   input: {

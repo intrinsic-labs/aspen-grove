@@ -15,6 +15,8 @@ import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
 import { BufferFixtureControls } from './BufferFixtureControls';
 import { BufferSiblingControl } from './BufferSiblingControl';
+import { BufferDocStats } from './BufferDocStats';
+import { useBufferWebSink } from './useBufferWebSink';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
 import type { BufferRenderVariant } from './BufferTextInput';
 import {
@@ -59,6 +61,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const [engine, setEngine] = useState<BufferEngine>('native');
   // Counts wholesale document loads (fixture, sibling switch) for the web editor.
   const [epoch, setEpoch] = useState(0);
+  // Counts fixture loads only; the native input starts afresh on one.
+  const [fixtureEpoch, setFixtureEpoch] = useState(0);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: tree.title ?? 'Buffer' });
@@ -77,17 +81,27 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     (edit: PreviewEdit) => setPreview((state) => applyPreviewEdit(state, edit)),
     []
   );
+  const { sink, receipt, clearReceipt } = useBufferWebSink(
+    setPreview,
+    onReplace
+  );
   const onSelectSibling = useCallback(
     (index: number) => {
       setPreview((state) => selectPreviewSibling(state, index));
       setEpoch((value) => value + 1);
+      clearReceipt();
     },
-    []
+    [clearReceipt]
   );
-  const load = useCallback((next: PreviewState) => {
-    setPreview(next);
-    setEpoch((value) => value + 1);
-  }, []);
+  const load = useCallback(
+    (next: PreviewState) => {
+      setPreview(next);
+      setEpoch((value) => value + 1);
+      setFixtureEpoch((value) => value + 1);
+      clearReceipt();
+    },
+    [clearReceipt]
+  );
 
   const text = previewText(preview);
   const count = siblingCount(preview);
@@ -99,13 +113,18 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           engine={engine}
           variant={variant}
           epoch={epoch}
+          fixtureEpoch={fixtureEpoch}
           text={text}
           runs={previewRuns(preview)}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}
           onReplace={onReplace}
+          sink={sink}
         />
+        {engine === 'web' ? (
+          <BufferDocStats length={text.length} receipt={receipt} />
+        ) : null}
         {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
             an input accessory bar breaks double-tap word selection, so the
             empty band around the pill puts the keyboard away on a tap, as

@@ -116,26 +116,51 @@ describe('replacements', () => {
 });
 
 describe('parseEditorMessage', () => {
-  it('accepts ready and well-formed changes', () => {
+  const changes = {
+    type: 'changes',
+    epoch: 1,
+    prevRevision: 2,
+    revision: 3,
+    replacements: [{ from: 0, to: 0, insert: 'a' }],
+    selection: { anchor: 1, head: 1 },
+    composing: false,
+  };
+
+  it('accepts ready, changes and checkpoints', () => {
     expect(parseEditorMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
-    const changes = {
-      type: 'changes',
-      epoch: 1,
-      revision: 3,
-      replacements: [{ from: 0, to: 0, insert: 'a' }],
-      selection: { anchor: 1, head: 1 },
-      composing: false,
-    };
     expect(parseEditorMessage(JSON.stringify(changes))).toEqual(changes);
+    const restored = { ...changes, modelRanges: [[1, 4]] };
+    expect(parseEditorMessage(JSON.stringify(restored))).toEqual(restored);
+    const checkpoint = {
+      type: 'checkpoint',
+      epoch: 1,
+      revision: 9,
+      text: 'abc',
+      modelRanges: [[0, 2]],
+      selection: { anchor: 3, head: 3 },
+    };
+    expect(parseEditorMessage(JSON.stringify(checkpoint))).toEqual(checkpoint);
   });
 
   it('rejects malformed input', () => {
     expect(parseEditorMessage('nope')).toBeNull();
+    expect(parseEditorMessage('null')).toBeNull();
     expect(parseEditorMessage('{"type":"changes"}')).toBeNull();
     expect(
       parseEditorMessage(
-        '{"type":"changes","epoch":1,"revision":1,"selection":{"anchor":0,"head":0},"replacements":[{"from":3,"to":1,"insert":""}]}'
+        JSON.stringify({ ...changes, replacements: [{ from: 3, to: 1, insert: '' }] })
       )
+    ).toBeNull();
+    const { prevRevision: _omitted, ...withoutPrev } = changes;
+    expect(parseEditorMessage(JSON.stringify(withoutPrev))).toBeNull();
+    expect(
+      parseEditorMessage(JSON.stringify({ ...changes, composing: 'yes' }))
+    ).toBeNull();
+    expect(
+      parseEditorMessage(JSON.stringify({ ...changes, modelRanges: [[4, 1]] }))
+    ).toBeNull();
+    expect(
+      parseEditorMessage('{"type":"checkpoint","epoch":1,"revision":1}')
     ).toBeNull();
   });
 });
