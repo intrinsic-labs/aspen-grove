@@ -96,6 +96,44 @@ Each StreamChunk contains:
 - **usage** — TokenUsage (present in final `done` chunk)
 - **rawResponse** — complete response (present in final `done` chunk)
 
+### Text completions (base models)
+
+A base model takes one literal prompt and returns its continuation. It is a second
+request shape, not a flag on the chat one:
+
+- **TextCompletionRequest** — `kind: 'text'`, `prompt` (string, sent verbatim), plus
+  `model`, `temperature`, `maxTokens`, `stopSequences` and `signal` as in a
+  `CompletionRequest`. It has no `messages` or `systemPrompt`.
+- **ProviderRequest** — `CompletionRequest | TextCompletionRequest`. `generateCompletion`,
+  `generateStreamingCompletion` and `collectCompletion` accept it; adapters narrow with
+  `isTextCompletionRequest` (`'prompt' in request`). Dialogue code builds
+  `CompletionRequest`s only and is unaffected.
+- **Wire** — OpenAI-compatible `POST /v1/completions`, body `{model, prompt, max_tokens,
+  temperature, stop, stream}` (OpenRouter's streams also set
+  `stream_options.include_usage`). Never `messages`, `system` or `n`: parallel draws are one
+  request per slot. Text is read from `choices[0].text`, in JSON and in SSE. One helper owns
+  this (`infrastructure/llm/shared/completion-wire.ts`, with the transport in
+  `shared/text-completion-{request,stream}.ts`), provider-neutral so another server of this
+  shape can reuse it. An adapter supplies a `TextTransport`: URL, auth headers and its own
+  error mapping.
+- **URL** — OpenRouter stores a full chat URL; the text URL is its sibling,
+  `.../chat/completions` becoming `.../completions`, keeping origin, base path and query. An
+  endpoint that doesn't end in `/chat/completions` is an `invalidRequest`. LM Studio stores an
+  origin; the URL is `<origin>/v1/completions`. Anthropic and OpenAI reject a text request
+  with a non-retryable `invalidRequest`, before any network call.
+- **Text is literal.** Whitespace-only output, leading and trailing spaces and newlines are
+  kept; UTF-8 split between byte chunks and CRLF split between events decode correctly; a
+  usage-only event (`choices: []`) updates usage only; an SSE `error` event is a provider
+  error (before text it throws; after text it ends the stream as `provider_error`). Any text
+  at all, a single space included, counts as a continuation: a stop after it returns the
+  partial (`interruptedReason: cancelled`), a stop before it throws `cancelled`.
+- **No marker, no replay.** `collectCompletion` adds no `[stream interrupted: ...]` line to a
+  text continuation (the reason is only `interruptionReason`), retries a failure only before
+  the first delta, and never replays a streamed text request as a plain one after text
+  arrived.
+- **Evidence.** The capture is the canonical headers, a blank line and the body in arrival
+  order, hashed before anything is parsed from it.
+
 ---
 
 ## Message Format
@@ -186,6 +224,8 @@ Four adapters implement the interface (`src/infrastructure/llm/`). Settings → 
 - Authentication: Bearer token (`Authorization: Bearer <key>`), the user's own key
 - Models: aggregates models from many providers (Claude, GPT, Llama, Gemini, etc.)
 - Optional headers: `HTTP-Referer` (app URL), `X-Title` (app name) for attribution
+- A `TextCompletionRequest` goes to the sibling `/api/v1/completions` (see Text completions), with the same auth and attribution headers
+- Real-model proof of that route is open: as of 2026-11-23 no catalog row was a pretrained base model, and the route is covered against the mock server only
 
 ### AnthropicAdapter
 
@@ -220,7 +260,8 @@ Four adapters implement the interface (`src/infrastructure/llm/`). Settings → 
   a plain `invalidRequest` message. Sampling is sent only for the older GPT-4 text
   families known to accept it; reasoning families use provider defaults.
 
-Both direct adapters support text only; image input is rejected explicitly. Each request
+Both direct adapters support text only; image input is rejected explicitly, and so is a
+`TextCompletionRequest` (they don't serve base models). Each request
 owns its abort controller, so parallel continuations remain one independent request per
 slot. Stop after text yields the partial capture with `interruptedReason: cancelled`;
 Stop before text throws `cancelled`. Timeouts distinguish first-byte and idle waits,
@@ -235,6 +276,8 @@ there is no build-environment fallback for them. Provider IDs are `anthropic` an
 
 - Endpoint: user-configured LM Studio server reachable from the phone (local network IP, Tailscale, etc.), default port 1234
 - Completions use the OpenAI-compatible `/v1/chat/completions`: the native `/api/v1/chat` chains history statefully, which doesn't fit branching trees
+- A `TextCompletionRequest` goes to `/v1/completions` instead (see Text completions); LM Studio applies no prompt template to it
+- The model list shows loaded models first, then by display name
 - Model discovery, load and unload use LM Studio's `/api/v1/models` endpoints
 - Authentication: optional API token from secure storage
 
@@ -340,6 +383,7 @@ For unit and integration testing:
 ### Test Patterns
 
 - Deterministic responses for use case testing
+- `scripts/mock-llm-server` lists a loaded base model, `mock-base`, and answers `POST /v1/completions` for it (JSON and SSE), sharing the chat routes' numbering, pacing and failure controls
 - Error injection for error handling testing
 - Latency simulation for timeout testing
 - No actual API calls in automated tests
