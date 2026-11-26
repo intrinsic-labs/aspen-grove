@@ -1,0 +1,142 @@
+{
+ "format": "open-loom",
+ "version": "2.0",
+ "exportedAt": "2026-01-01T00:00:10.000Z",
+ "generator": {
+  "name": "aspen-grove buffer sample"
+ },
+ "trees": [
+  {
+   "id": "buffer-versions",
+   "title": "Buffer versions sample",
+   "mode": "buffer",
+   "systemContext": "",
+   "rootNodeIds": [
+    "b-0"
+   ],
+   "currentNodeId": "b-3",
+   "createdAt": "2026-01-01T00:00:00.000Z",
+   "updatedAt": "2026-01-01T00:00:04.000Z",
+   "nodes": {
+    "b-0": {
+     "id": "b-0",
+     "content": [
+      {
+       "type": "text",
+       "text": ""
+      }
+     ],
+     "author": {
+      "role": "human"
+     },
+     "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    "b-1": {
+     "id": "b-1",
+     "content": [
+      {
+       "type": "text",
+       "text": "The kettle was already warm"
+      }
+     ],
+     "author": {
+      "role": "human"
+     },
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    "b-2": {
+     "id": "b-2",
+     "content": [
+      {
+       "type": "text",
+       "text": " when I came down, and the window over the sink had fogged."
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "base-model/sample"
+     },
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    },
+    "b-3": {
+     "id": "b-3",
+     "content": [
+      {
+       "type": "text",
+       "text": " Snow was still falling on the yard."
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "base-model/sample"
+     },
+     "createdAt": "2026-01-01T00:00:03.000Z"
+    },
+    "b-3b": {
+     "id": "b-3b",
+     "content": [
+      {
+       "type": "text",
+       "text": " Rain had washed the yard clean overnight."
+      }
+     ],
+     "author": {
+      "role": "model",
+      "name": "base-model/sample"
+     },
+     "createdAt": "2026-01-01T00:00:04.000Z"
+    }
+   },
+   "edges": [
+    {
+     "id": "e-1",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "b-0",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "b-1",
+     "createdAt": "2026-01-01T00:00:01.000Z"
+    },
+    {
+     "id": "e-2",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "b-1",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "b-2",
+     "createdAt": "2026-01-01T00:00:02.000Z"
+    },
+    {
+     "id": "e-3",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "b-2",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "b-3",
+     "createdAt": "2026-01-01T00:00:03.000Z"
+    },
+    {
+     "id": "e-3b",
+     "type": "continuation",
+     "sources": [
+      {
+       "nodeId": "b-2",
+       "role": "primary"
+      }
+     ],
+     "targetNodeId": "b-3b",
+     "createdAt": "2026-01-01T00:00:04.000Z"
+    }
+   ]
+  }
+ ]
+}
