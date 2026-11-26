@@ -1,6 +1,7 @@
-import type { PreviewEdit } from '../buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
+import type { OwnerLayout } from '@application/services/buffer/owner-layout';
 import {
-  replacementsToEdits,
+  toReplacements,
   type EditorMessage,
   type ModelRange,
 } from './web-editor-protocol';
@@ -23,7 +24,10 @@ export type SessionState = {
 export type SessionAction =
   | {
       readonly type: 'apply';
-      readonly edits: readonly PreviewEdit[];
+      /** One transaction, every replacement against the pre-edit document. */
+      readonly replacements: readonly Replacement[];
+      /** The caret after the edit. */
+      readonly caret: number;
       /** Undo/redo: the authorship to restore, exact. */
       readonly modelRanges?: readonly ModelRange[];
     }
@@ -31,7 +35,8 @@ export type SessionAction =
       readonly type: 'adopt';
       readonly text: string;
       readonly modelRanges: readonly ModelRange[];
-      readonly seam: number;
+      readonly layout: OwnerLayout;
+      readonly caret: number;
     }
   | { readonly type: 'ack'; readonly revision: number }
   | { readonly type: 'requestCheckpoint' }
@@ -81,7 +86,8 @@ const receiveChanges = (
     actions: [
       {
         type: 'apply',
-        edits: replacementsToEdits(message.replacements),
+        replacements: toReplacements(message.replacements),
+        caret: message.selection.head,
         modelRanges: message.modelRanges,
       },
       { type: 'ack', revision: message.revision },
@@ -108,7 +114,8 @@ const receiveCheckpoint = (
             type: 'adopt',
             text: message.text,
             modelRanges: message.modelRanges,
-            seam: message.seam,
+            layout: { ends: message.ends, hold: message.hold },
+            caret: message.selection.head,
           },
           { type: 'ack', revision: message.revision },
           {

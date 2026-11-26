@@ -16,7 +16,7 @@ import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPrefere
 import { BufferFixtureControls } from './BufferFixtureControls';
 import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferDocStats } from './BufferDocStats';
-import { useBufferWebSink } from './useBufferWebSink';
+import { useBufferPreview } from './useBufferPreview';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
 import type { CompositionControl } from './composition-barrier';
 import { createCompositionBarrier } from './composition-barrier';
@@ -26,17 +26,14 @@ import {
   stressPreview,
 } from './buffer-preview-fixture';
 import {
-  applyPreviewEdit,
-  emptyPreview,
-  previewRuns,
-  previewText,
-  runsLength,
-  samplePreview,
-  selectPreviewSibling,
+  documentEnds,
+  documentRuns,
+  documentText,
+  selectSibling,
   siblingCount,
-  type PreviewEdit,
-  type PreviewState,
-} from './buffer-preview';
+  type PreviewDocument,
+} from './buffer-preview-document';
+import { samplePreview } from './buffer-preview-sample';
 
 type BufferScreenProps = {
   readonly tree: LoomTree;
@@ -59,7 +56,6 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const { preferences } = useDialogueDisplayPreferences({
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
-  const [preview, setPreview] = useState(emptyPreview);
   const [variant, setVariant] = useState<BufferRenderVariant>('spans');
   const [engine, setEngine] = useState<BufferEngine>('native');
   // Counts wholesale document loads (fixture, sibling switch) for the web editor.
@@ -80,33 +76,34 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     [preferences.messageFontFamily, preferences.messageFontSize]
   );
 
-  const onReplace = useCallback(
-    (edit: PreviewEdit) => setPreview((state) => applyPreviewEdit(state, edit)),
-    []
-  );
   // A document load waits for an IME composition to end (see the barrier).
   const composition = useRef<CompositionControl>({ end: () => {} }).current;
   const barrier = useMemo(
     () => createCompositionBarrier({ requestEnd: () => composition.end() }),
     [composition]
   );
-  const { sink, receipt, clearReceipt } = useBufferWebSink(
-    setPreview,
+  const {
+    doc: preview,
+    setDoc: setPreview,
     onReplace,
-    barrier
-  );
+    onSelection,
+    onComposition,
+    sink,
+    receipt,
+    clearReceipt,
+  } = useBufferPreview(barrier);
   const onSelectSibling = useCallback(
     (index: number) =>
       barrier.run(() => {
         barrier.reset();
-        setPreview((state) => selectPreviewSibling(state, index));
+        setPreview((state) => selectSibling(state, index));
         setEpoch((value) => value + 1);
         clearReceipt();
       }),
-    [barrier, clearReceipt]
+    [barrier, clearReceipt, setPreview]
   );
   const load = useCallback(
-    (next: PreviewState) =>
+    (next: PreviewDocument) =>
       barrier.run(() => {
         barrier.reset();
         setPreview(next);
@@ -114,10 +111,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
         setFixtureEpoch((value) => value + 1);
         clearReceipt();
       }),
-    [barrier, clearReceipt]
+    [barrier, clearReceipt, setPreview]
   );
 
-  const text = previewText(preview);
+  const text = documentText(preview);
   const count = siblingCount(preview);
 
   return (
@@ -129,14 +126,15 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           epoch={epoch}
           fixtureEpoch={fixtureEpoch}
           text={text}
-          runs={previewRuns(preview)}
-          seam={runsLength(preview.prefix)}
+          runs={documentRuns(preview)}
+          ends={documentEnds(preview)}
           composition={composition}
-          onComposition={barrier.observe}
+          onComposition={onComposition}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}
           onReplace={onReplace}
+          onSelection={onSelection}
           sink={sink}
         />
         {engine === 'web' ? (
@@ -160,9 +158,9 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
         >
           {count > 1 ? (
             <BufferSiblingControl
-              index={preview.index}
+              index={preview.selected}
               count={count}
-              label={`Branch ${preview.index + 1} of ${count}`}
+              label={`Branch ${preview.selected + 1} of ${count}`}
               onSelect={onSelectSibling}
             />
           ) : text.length === 0 ? (

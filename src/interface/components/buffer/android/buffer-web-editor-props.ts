@@ -1,19 +1,28 @@
 import type { TextStyle } from 'react-native';
-import type { PreviewEdit, PreviewRun } from '../buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
+import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
+import type { OwnerLayout } from '@application/services/buffer/owner-layout';
 import type { ModelRange } from './web-editor-protocol';
 import type { CompositionControl } from '../composition-barrier';
 
 /** What the host applies from the page; one stable object per screen. */
 export type WebEditorSink = {
-  /** Sequential edits, in the document after the earlier ones. */
-  readonly onReplace: (edit: PreviewEdit) => void;
-  /** Undo/redo restored these exact model ranges. */
-  readonly onModelRanges: (ranges: readonly ModelRange[]) => void;
+  /**
+   * One accepted transaction: replacements measured against the document
+   * before it, applied in one call. `modelRanges` come with undo and redo and
+   * are the exact colors to restore.
+   */
+  readonly onChanges: (
+    replacements: readonly Replacement[],
+    caret: number,
+    modelRanges?: readonly ModelRange[]
+  ) => void;
   /** Resume from the page's whole state after a revision gap. */
   readonly onAdopt: (
     text: string,
     ranges: readonly ModelRange[],
-    seam: number
+    layout: OwnerLayout,
+    caret: number
   ) => void;
   /** The page's composing state changed without an edit (a composition ended). */
   readonly onComposition: (composing: boolean) => void;
@@ -34,9 +43,9 @@ export type BufferWebEditorProps = {
   readonly epoch: number;
   /** The document as of `epoch`; read on load only, never per keystroke. */
   readonly text: string;
-  readonly runs: readonly PreviewRun[];
-  /** Where the shared prefix ends and the current ending begins. */
-  readonly seam: number;
+  readonly runs: readonly AuthorshipRun[];
+  /** Where each owner ends: prefix, current ending, tail. */
+  readonly ends: readonly number[];
   /** Where the editor registers how to end a composition (stable). */
   readonly composition: CompositionControl;
   readonly textStyle: TextStyle;

@@ -48,6 +48,9 @@ export type DocumentIndex = {
   readonly length: number;
 };
 
+/** What owner lookup needs: the ranges, not the text in them. */
+export type RangeLayout = Pick<DocumentIndex, 'ranges' | 'length'>;
+
 /** The runs a range's owner holds. */
 export const ownerRuns = (
   document: BufferDocument,
@@ -74,7 +77,7 @@ export const indexDocument = (document: BufferDocument): DocumentIndex => {
 };
 
 export const rangeOf = (
-  index: DocumentIndex,
+  index: RangeLayout,
   owner: RangeOwner
 ): DocumentRange | undefined =>
   index.ranges.find((range) => sameOwner(range.owner, owner));
@@ -94,7 +97,7 @@ export const rangeOf = (
  * has not been moved, and drops it on any explicit caret move.
  */
 export const ownerAt = (
-  index: DocumentIndex,
+  index: RangeLayout,
   offset: number,
   hold?: RangeOwner
 ): DocumentRange => {

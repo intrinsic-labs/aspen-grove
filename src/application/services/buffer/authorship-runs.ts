@@ -2,7 +2,6 @@ import {
   clusterEndAtOrAfter,
   clusterStartAtOrBefore,
   isClusterBoundary,
-  splitGraphemes,
 } from './text-boundaries';
 
 /**
@@ -131,96 +130,4 @@ export const alignRunsToClusters = (
     }
   }
   return spans.length === 0 ? runs : humanize(runs, spans);
-};
-
-/** Beyond this many table cells the diff falls back to common ends only. */
-const MAX_DIFF_CELLS = 2_000_000;
-
-const commonPrefix = (a: readonly string[], b: readonly string[]): number => {
-  let n = 0;
-  while (n < a.length && n < b.length && a[n] === b[n]) {
-    n += 1;
-  }
-  return n;
-};
-
-/** For each grapheme of `current`, whether it is matched to the ancestor. */
-const matchGraphemes = (
-  ancestor: readonly string[],
-  current: readonly string[]
-): boolean[] => {
-  const matched = current.map(() => false);
-  const head = commonPrefix(ancestor, current);
-  matched.fill(true, 0, head);
-  const a = ancestor.slice(head);
-  const b = current.slice(head);
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  if (a.length === 0 || b.length === 0) {
-    return matched;
-  }
-  if (rows * cols > MAX_DIFF_CELLS) {
-    let tail = 0;
-    while (
-      tail < Math.min(a.length, b.length) &&
-      a[a.length - 1 - tail] === b[b.length - 1 - tail]
-    ) {
-      tail += 1;
-    }
-    matched.fill(true, current.length - tail);
-    return matched;
-  }
-  // lcs[i * cols + j] is the longest common subsequence of a[i..] and b[j..].
-  const lcs = new Uint32Array(rows * cols);
-  for (let i = a.length - 1; i >= 0; i -= 1) {
-    for (let j = b.length - 1; j >= 0; j -= 1) {
-      lcs[i * cols + j] =
-        a[i] === b[j]
-          ? lcs[(i + 1) * cols + j + 1] + 1
-          : Math.max(lcs[(i + 1) * cols + j], lcs[i * cols + j + 1]);
-    }
-  }
-  let i = 0;
-  let j = 0;
-  while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) {
-      matched[head + j] = true;
-      i += 1;
-      j += 1;
-    } else if (lcs[(i + 1) * cols + j] >= lcs[i * cols + j + 1]) {
-      i += 1;
-    } else {
-      j += 1;
-    }
-  }
-  return matched;
-};
-
-/**
- * The authorship of a passage that descends from model text: what still
- * matches the earliest model ancestor is the model's, everything else is the
- * human's. The diff works on grapheme clusters, so no cluster is split.
- *
- * It is deterministic and leftmost: equal prefixes match first, and where the
- * ancestor's text could match in several places the earliest place in the
- * current text wins. Only the common prefix is trimmed, never the suffix,
- * because trimming the suffix would prefer the rightmost match on a tie.
- *
- * Exact up to MAX_DIFF_CELLS table cells (a model passage of 200 output
- * tokens is about a thousand graphemes, far under it). Past that the diff
- * degrades to common ends, so everything between the first and last change
- * reads as the human's; Myers' O(ND) diff would keep it exact.
- */
-export const reconcileWithAncestor = (
-  ancestorText: string,
-  currentText: string
-): readonly AuthorshipRun[] => {
-  const current = splitGraphemes(currentText);
-  const matched = matchGraphemes(splitGraphemes(ancestorText), current);
-  return coalesce(
-    current.map((text, index) => ({
-      author: matched[index] ? 'model' : 'human',
-      text,
-    }))
-  );
 };

@@ -28,7 +28,8 @@ describe('reduceSession', () => {
     const first = reduceSession(state, changes(0));
     expect(kinds(first.actions)).toEqual(['apply', 'ack', 'applied']);
     expect(first.actions[0]).toMatchObject({
-      edits: [{ start: 0, end: 0, inserted: 'a' }],
+      replacements: [{ start: 0, end: 0, inserted: 'a' }],
+      caret: 1,
     });
     expect(first.actions[1]).toEqual({ type: 'ack', revision: 1 });
     state = reduceSession(first.state, changes(1)).state;
@@ -60,7 +61,8 @@ describe('reduceSession', () => {
       revision: 4,
       text: 'whole text',
       modelRanges: [[0, 3]],
-      seam: 4,
+      ends: [4, 8, 10],
+      hold: 1,
       selection: { anchor: 10, head: 10 },
       composing: false,
     };
@@ -74,7 +76,8 @@ describe('reduceSession', () => {
       type: 'adopt',
       text: 'whole text',
       modelRanges: [[0, 3]],
-      seam: 4,
+      layout: { ends: [4, 8, 10], hold: 1 },
+      caret: 10,
     });
     expect(reduceSession(resumed.state, changes(3)).actions).toEqual([
       { type: 'ack', revision: 4 },
@@ -99,7 +102,7 @@ describe('reduceSession', () => {
         revision: 5,
         text: 'old',
         modelRanges: [],
-        seam: 0,
+        ends: [0, 0, 3],
         selection: { anchor: 0, head: 0 },
         composing: false,
       }).actions
@@ -114,7 +117,7 @@ describe('reduceSession', () => {
       revision: 3,
       text: 'かあ',
       modelRanges: [],
-      seam: 0,
+      ends: [0, 0, 2],
       selection: { anchor: 2, head: 2 },
       composing: true,
     });

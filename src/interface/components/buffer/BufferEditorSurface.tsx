@@ -3,7 +3,9 @@ import { BufferWebEditor } from './android/BufferWebEditor';
 import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
 import type { WebEditorSink } from './android/buffer-web-editor-props';
 import type { CompositionControl } from './composition-barrier';
-import type { PreviewEdit, PreviewRun } from './buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
+import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
+import type { BufferSelection } from './derive-replacement';
 
 /** Which editor draws the document. `web` exists on Android only. */
 export type BufferEngine = 'native' | 'web';
@@ -19,16 +21,18 @@ type BufferEditorSurfaceProps = {
   /** Counts fixture loads only (not sibling switches), for the native input. */
   readonly fixtureEpoch: number;
   readonly text: string;
-  readonly runs: readonly PreviewRun[];
-  /** Where the shared prefix ends and the current ending begins. */
-  readonly seam: number;
+  readonly runs: readonly AuthorshipRun[];
+  /** Where each owner ends: prefix, current ending, tail. */
+  readonly ends: readonly number[];
   readonly composition: CompositionControl;
   /** The native input's IME composing state, for the composition barrier. */
   readonly onComposition: (composing: boolean) => void;
   readonly textStyle: TextStyle;
   readonly headerHeight: number;
   readonly topGap: number;
-  readonly onReplace: (edit: PreviewEdit) => void;
+  readonly onReplace: (edit: Replacement) => void;
+  /** The native input's selection changes, which move the caret. */
+  readonly onSelection: (selection: BufferSelection) => void;
   /** What the web editor applies from the page; stable across renders. */
   readonly sink: WebEditorSink;
 };
@@ -43,13 +47,14 @@ export const BufferEditorSurface = ({
   fixtureEpoch,
   text,
   runs,
-  seam,
+  ends,
   composition,
   onComposition,
   textStyle,
   headerHeight,
   topGap,
   onReplace,
+  onSelection,
   sink,
 }: BufferEditorSurfaceProps) =>
   hasWebEngine && engine === 'web' ? (
@@ -57,7 +62,7 @@ export const BufferEditorSurface = ({
       epoch={epoch}
       text={text}
       runs={runs}
-      seam={seam}
+      ends={ends}
       composition={composition}
       textStyle={textStyle}
       headerHeight={headerHeight}
@@ -79,5 +84,6 @@ export const BufferEditorSurface = ({
       topGap={topGap}
       placeholder={PLACEHOLDER}
       onReplace={onReplace}
+      onSelectionChange={onSelection}
     />
   );
