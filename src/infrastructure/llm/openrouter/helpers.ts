@@ -1,7 +1,4 @@
-import type {
-  CompletionResponse,
-  Message,
-} from '@application/services/llm';
+import type { CompletionResponse, Message } from '@application/services/llm';
 import type {
   OpenRouterMessagePayload,
   OpenRouterResponsePayload,
@@ -131,4 +128,3 @@ export const toTokenUsage = (usage: OpenRouterResponsePayload['usage']) => {
       (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0),
   };
 };
-

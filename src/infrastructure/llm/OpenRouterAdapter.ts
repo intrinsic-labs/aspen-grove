@@ -69,7 +69,9 @@ export class OpenRouterAdapter implements ILlmProvider {
     };
   }
 
-  async generateCompletion(request: ProviderRequest): Promise<CompletionResponse> {
+  async generateCompletion(
+    request: ProviderRequest
+  ): Promise<CompletionResponse> {
     const config = this.requireConfig();
     try {
       return await (isTextCompletionRequest(request)
@@ -138,4 +140,3 @@ export class OpenRouterAdapter implements ILlmProvider {
     return this.config;
   }
 }
-

@@ -77,7 +77,9 @@ export const collectCompletion = async (
     let interruptionReason: StreamInterruptionReason | undefined;
     let rawResponse: CompletionResponse['rawResponse'] | undefined;
 
-    for await (const chunk of llmProvider.generateStreamingCompletion(request)) {
+    for await (const chunk of llmProvider.generateStreamingCompletion(
+      request
+    )) {
       onChunkReceived();
 
       if (chunk.type === 'text' && chunk.content) {
@@ -107,7 +109,9 @@ export const collectCompletion = async (
     }
 
     if (!rawResponse) {
-      throw new Error('Provider streaming completion ended without final raw response.');
+      throw new Error(
+        'Provider streaming completion ended without final raw response.'
+      );
     }
 
     // A literal prompt's continuation stays literal: the reason travels on
@@ -115,8 +119,8 @@ export const collectCompletion = async (
     const persistedContent =
       !isTextCompletionRequest(request) &&
       shouldMarkInterruption(finishReason, interruptionReason, content)
-      ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
-      : content;
+        ? `${content.trimEnd()}\n\n${toInterruptedMarker(interruptionReason)}`
+        : content;
 
     return {
       content: persistedContent,
