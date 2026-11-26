@@ -11,6 +11,8 @@ type BufferSiblingControlProps = {
   readonly count: number;
   /** Mono label, e.g. "Branch 1 of 2". */
   readonly label: string;
+  /** What the control switches between; names its selectors. */
+  readonly kind?: 'branch' | 'version';
   readonly onSelect: (index: number) => void;
 };
 
@@ -26,8 +28,10 @@ export const BufferSiblingControl = ({
   index,
   count,
   label,
+  kind = 'branch',
   onSelect,
 }: BufferSiblingControlProps) => {
+  const prefix = `buffer-${kind}`;
   const canPrevious = index > 0;
   const canNext = index < count - 1;
   const previous = () => canPrevious && onSelect(index - 1);
@@ -51,11 +55,16 @@ export const BufferSiblingControl = ({
 
   return (
     <View
-      testID="buffer-branch-control"
+      testID={`${prefix}-control`}
       accessible
       accessibilityRole="adjustable"
-      accessibilityLabel="Branch"
+      accessibilityLabel={kind === 'branch' ? 'Branch' : 'Version'}
       accessibilityValue={{ text: label }}
+      accessibilityHint={
+        kind === 'branch'
+          ? 'Swipe up or down to switch to another ending of this text'
+          : 'Swipe up or down to switch to another version of this passage'
+      }
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === 'increment') next();
@@ -64,23 +73,19 @@ export const BufferSiblingControl = ({
       style={styles.pill}
     >
       <Step
-        testID="buffer-branch-prev"
+        testID={`${prefix}-prev`}
         icon="chevron-back"
         enabled={canPrevious}
         onPress={previous}
       />
       <View {...swipe.panHandlers} style={styles.labelWrap}>
-        <AppText
-          testID="buffer-branch-value"
-          variant="mono"
-          style={styles.label}
-        >
+        <AppText testID={`${prefix}-value`} variant="mono" style={styles.label}>
           {label}
         </AppText>
-        <Dots count={count} index={index} />
+        <Dots testID={`${prefix}-dots`} count={count} index={index} />
       </View>
       <Step
-        testID="buffer-branch-next"
+        testID={`${prefix}-next`}
         icon="chevron-forward"
         enabled={canNext}
         onPress={next}
@@ -114,10 +119,18 @@ const Step = ({ testID, icon, enabled, onPress }: StepProps) => (
   </Pressable>
 );
 
-const Dots = ({ count, index }: { count: number; index: number }) => {
+const Dots = ({
+  testID,
+  count,
+  index,
+}: {
+  testID: string;
+  count: number;
+  index: number;
+}) => {
   const { visible, activeSlot } = branchDots(count, index, dots.max);
   return (
-    <View testID="buffer-branch-dots" style={styles.dots}>
+    <View testID={testID} style={styles.dots}>
       {Array.from({ length: visible }, (_, slot) => (
         <View
           key={slot}

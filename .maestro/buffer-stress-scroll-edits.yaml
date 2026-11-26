@@ -1,0 +1,49 @@
+# Middle and end edits on the 30k fixture: scroll with swipes, tap, type.
+# Android only: on the iOS simulator a Maestro swipe over the focused input is read
+# as a tap (the keyboard returns and the caret snaps back; the plain Home
+# composer behaves the same), so iOS drag-scroll is not drivable here.
+appId: com.intrinsiclabs.aspengrove
+---
+# Swipes stay above where the keyboard sits: one that starts on the keys is
+# glide typing and puts words into the document.
+# Middle: scroll a long way, tap, type; the viewport must not jump.
+- runFlow: dismiss-buffer-keyboard.yaml
+- repeat:
+    times: 8
+    commands:
+      - swipe:
+          start: 50%, 58%
+          end: 50%, 14%
+          duration: 90
+- waitForAnimationToEnd
+- takeScreenshot: 12-stress-middle-before
+- tapOn:
+    point: '95%,30%'
+- inputText: '@@MID@@'
+- waitForAnimationToEnd
+- assertVisible: '.*@@MID@@.*'
+- takeScreenshot: 13-stress-middle-after
+- assertNotVisible:
+    id: buffer-document
+    text: '.*@@MID@@.*@@MID@@.*'
+
+# End: scroll to the last paragraph, type at the end.
+- runFlow: dismiss-buffer-keyboard.yaml
+- repeat:
+    times: 40
+    commands:
+      - swipe:
+          start: 50%, 58%
+          end: 50%, 14%
+          duration: 90
+- waitForAnimationToEnd
+- takeScreenshot: 14-stress-end-before
+- tapOn:
+    point: '95%,30%'
+- inputText: '@@END@@'
+- waitForAnimationToEnd
+- assertVisible: '.*@@END@@.*'
+- takeScreenshot: 15-stress-end-after
+- assertNotVisible:
+    id: buffer-document
+    text: '.*@@END@@.*@@END@@.*'

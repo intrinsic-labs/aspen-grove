@@ -1,5 +1,5 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   KeyboardAvoidingView,
   useKeyboardState,
@@ -13,18 +13,37 @@ import { AppScreen, AppText } from '@/interface/ui/value-objects';
 import { messageFontFamily } from '@/interface/ui/value-objects/fonts';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
+import { BufferFixtureControls } from './BufferFixtureControls';
+import { BufferChoicePill } from './BufferChoicePill';
+import { BufferDocumentNotice } from './BufferDocumentNotice';
 import { BufferSiblingControl } from './BufferSiblingControl';
-import { BufferTextInput } from './BufferTextInput';
+import { BufferDocStats } from './BufferDocStats';
+import { pillChoice } from './buffer-choice-pill';
+import { useBufferDocument } from './useBufferDocument';
+import { useBufferPreview } from './useBufferPreview';
 import {
-  applyPreviewEdit,
-  emptyPreview,
-  previewRuns,
-  previewText,
-  samplePreview,
-  selectPreviewSibling,
+  BufferEditorSurface,
+  hasWebEngine,
+  type BufferEngine,
+} from './BufferEditorSurface';
+import type { CompositionControl } from './composition-barrier';
+import {
+  createCompositionBarrier,
+  editorUnavailable,
+} from './composition-barrier';
+import type { BufferRenderVariant } from './BufferTextInput';
+import {
+  paragraphStressPreview,
+  stressPreview,
+} from './buffer-preview-fixture';
+import {
+  documentEnds,
+  selectSibling,
   siblingCount,
-  type PreviewEdit,
-} from './buffer-preview';
+  type PreviewDocument,
+} from './buffer-preview-document';
+import { materialize } from '@application/services/buffer/document-ranges';
+import { samplePreview } from './buffer-preview-sample';
 
 type BufferScreenProps = {
   readonly tree: LoomTree;
@@ -33,10 +52,11 @@ type BufferScreenProps = {
 const { layout, control, bar } = bufferTokens;
 
 /**
- * A buffer-mode tree: continuous prose, no message boundaries. In this
- * developer preview the text lives in memory only (nothing typed here is
- * saved yet), and an empty buffer can load a review sample: a human opening,
- * two model endings and a human word inside model text.
+ * A buffer-mode tree: continuous prose, no message boundaries. It opens on
+ * the tree's real passages; typing is kept as a draft and saved by `commit()`
+ * or a switch (see `useBufferDocument`). An empty buffer can instead load a
+ * review fixture (a sample, or a long document), which stays in memory and
+ * never touches the database.
  */
 export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const navigation = useNavigation();
@@ -47,7 +67,12 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const { preferences } = useDialogueDisplayPreferences({
     userPreferencesRepo: repositories.userPreferencesRepo,
   });
-  const [preview, setPreview] = useState(emptyPreview);
+  const [variant, setVariant] = useState<BufferRenderVariant>('spans');
+  const [fixtureEngine, setFixtureEngine] = useState<BufferEngine>('native');
+  // Counts wholesale document loads (fixture, sibling switch) for the web editor.
+  const [epoch, setEpoch] = useState(0);
+  // Counts fixture loads only; the native input starts afresh on one.
+  const [fixtureEpoch, setFixtureEpoch] = useState(0);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: tree.title ?? 'Buffer' });
@@ -62,33 +87,107 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     [preferences.messageFontFamily, preferences.messageFontSize]
   );
 
-  const onReplace = useCallback(
-    (edit: PreviewEdit) => setPreview((state) => applyPreviewEdit(state, edit)),
-    []
+  // A document load waits for an IME composition to end (see the barrier).
+  const composition = useRef<CompositionControl>({
+    end: () => {},
+    settle: editorUnavailable,
+  }).current;
+  const barrier = useMemo(
+    () => createCompositionBarrier({ requestEnd: () => composition.end() }),
+    [composition]
   );
+  // The real document by default; a fixture link switches to the preview.
+  const [fixture, setFixture] = useState(false);
+  // Android real documents always use CodeMirror. The engine selector controls fixtures only.
+  const engine = fixture ? fixtureEngine : hasWebEngine ? 'web' : 'native';
+  const real = useBufferDocument(tree, barrier, !fixture, composition);
+  const previewFeed = useBufferPreview(barrier);
+  const {
+    doc: preview,
+    setDoc: setPreview,
+    onReplace,
+    onSelection,
+    onComposition,
+    sink,
+    receipt,
+    clearReceipt,
+  } = fixture ? previewFeed : real;
   const onSelectSibling = useCallback(
     (index: number) =>
-      setPreview((state) => selectPreviewSibling(state, index)),
-    []
+      barrier.run(() => {
+        barrier.reset();
+        setPreview((state) => selectSibling(state, index));
+        setEpoch((value) => value + 1);
+        clearReceipt();
+      }),
+    [barrier, clearReceipt, setPreview]
+  );
+  const load = useCallback(
+    (next: PreviewDocument) =>
+      barrier.run(() => {
+        barrier.reset();
+        setFixture(true);
+        previewFeed.setDoc(next);
+        setEpoch((value) => value + 1);
+        setFixtureEpoch((value) => value + 1);
+        clearReceipt();
+      }),
+    [barrier, clearReceipt, previewFeed]
   );
 
-  const text = previewText(preview);
+  const { text, runs } = useMemo(
+    () => materialize(preview.index),
+    [preview.index]
+  );
   const count = siblingCount(preview);
+  const pill = fixture ? undefined : pillChoice(real.choices);
+  const showFixtures =
+    text.length === 0 && (fixture || real.status !== 'loading');
 
   return (
     <AppScreen testID="buffer-screen" style={styles.screen}>
       <KeyboardAvoidingView behavior="padding" style={styles.screen} enabled>
-        <BufferTextInput
+        <BufferEditorSurface
+          key={fixture ? 'fixture' : 'document'}
+          engine={engine}
+          readOnly={real.readOnly}
+          variant={variant}
+          epoch={fixture ? epoch : real.epoch}
+          fixtureEpoch={fixtureEpoch}
           text={text}
-          runs={previewRuns(preview)}
-          editable
+          runs={runs}
+          ends={documentEnds(preview)}
+          composition={composition}
+          onComposition={onComposition}
           textStyle={textStyle}
-          topInset={headerHeight + layout.topGap}
-          placeholder="Start writing"
+          headerHeight={headerHeight}
+          topGap={layout.topGap}
           onReplace={onReplace}
+          onSelection={onSelection}
+          sink={sink}
         />
-        <View
+        {engine === 'web' ? (
+          <BufferDocStats length={text.length} receipt={receipt} />
+        ) : null}
+        {fixture ? null : (
+          <BufferDocumentNotice
+            error={real.notice}
+            recovery={real.recovery}
+            onKeepRecovery={
+              real.recovery?.reason === 'failed' ? real.keepRecovery : undefined
+            }
+            loading={real.status === 'loading'}
+            onDismissRecovery={real.dismissRecovery}
+          />
+        )}
+        {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
+            an input accessory bar breaks double-tap word selection, so the
+            empty band around the pill puts the keyboard away on a tap, as
+            Home's greeting does. Android also has the back key. */}
+        <Pressable
           testID="buffer-control-bar"
+          onPress={Keyboard.dismiss}
+          accessible={false}
           style={[
             styles.bar,
             {
@@ -97,30 +196,27 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
             },
           ]}
         >
-          {count > 1 ? (
+          {pill ? (
+            <BufferChoicePill choice={pill} onSwitch={real.switchTo} />
+          ) : fixture && count > 1 ? (
             <BufferSiblingControl
-              index={preview.index}
+              index={preview.selected}
               count={count}
-              label={`Branch ${preview.index + 1} of ${count}`}
+              label={`Branch ${preview.selected + 1} of ${count}`}
               onSelect={onSelectSibling}
             />
-          ) : text.length === 0 ? (
-            <Pressable
-              testID="buffer-load-sample"
-              onPress={() => setPreview(samplePreview())}
-              hitSlop={control.hitSlop}
-              style={styles.sample}
-            >
-              <AppText
-                variant="mono"
-                tone="secondary"
-                style={styles.sampleText}
-              >
-                Load sample
-              </AppText>
-            </Pressable>
+          ) : showFixtures ? (
+            <BufferFixtureControls
+              variant={variant}
+              engine={fixtureEngine}
+              onLoadSample={() => load(samplePreview())}
+              onLoadStress={(length) => load(stressPreview(length))}
+              onLoadParagraphs={() => load(paragraphStressPreview())}
+              onVariant={setVariant}
+              onEngine={setFixtureEngine}
+            />
           ) : null}
-        </View>
+        </Pressable>
       </KeyboardAvoidingView>
       <HeaderScrollEdge />
     </AppScreen>
@@ -132,13 +228,10 @@ const styles = StyleSheet.create({
   bar: {
     // The pill floats in this band, centered and never full width; the
     // document above ends where the band begins, so its last line clears it.
+    // Always as tall as the pill, so it is a tap target for putting the
+    // keyboard away and the document does not jump when the pill appears.
     alignItems: 'center',
+    minHeight: bar.topGap + control.height,
     paddingTop: bar.topGap,
   },
-  sample: {
-    minHeight: control.height,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sampleText: { fontSize: control.labelSize },
 });

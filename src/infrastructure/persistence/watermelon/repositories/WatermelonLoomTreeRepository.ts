@@ -1,3 +1,4 @@
+import { bufferDraftKey } from './WatermelonBufferDraftStore';
 import type { Collection, Database } from '@nozbe/watermelondb';
 import { Q } from '@nozbe/watermelondb';
 import type {
@@ -321,6 +322,7 @@ export class WatermelonLoomTreeRepository implements ILoomTreeRepository {
       await pathState.destroyPermanently();
     }
     for (const path of paths) {
+      await this.db.localStorage.remove(bufferDraftKey(loomTreeId, path.id));
       await path.destroyPermanently();
     }
   }

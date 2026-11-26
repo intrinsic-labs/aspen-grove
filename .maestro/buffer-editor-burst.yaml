@@ -1,0 +1,23 @@
+# A 200-character typing burst into the loaded 30,000-character fixture, for
+# the responsiveness trace (run buffer-editor-burst-setup.yaml first, attach the
+# profiler, then this; it does not relaunch the app).
+appId: com.intrinsiclabs.aspengrove
+---
+- tapOn:
+    point: '95%,17%'
+- extendedWaitUntil:
+    visible:
+      id: buffer-document
+      text: 'Paragraph 001 human\..*'
+    timeout: 5000
+- inputText: 'burst00 burst01 burst02 burst03 burst04 burst05 burst06 burst07 burst08 burst09 burst10 burst11 burst12 burst13 burst14 burst15 burst16 burst17 burst18 burst19 burst20 burst21 burst22 burst23 burst24 '
+- waitForAnimationToEnd
+# Web engine (-e EXPECT_LEN=30200 for the paragraph fixture): the full length the
+# editor reports once the burst is applied, from the receipt, not the viewport.
+- runFlow:
+    when:
+      true: ${!!EXPECT_LEN}
+    commands:
+      - assertVisible:
+          id: buffer-doc-stats
+          text: 'len=${EXPECT_LEN} head=.*'

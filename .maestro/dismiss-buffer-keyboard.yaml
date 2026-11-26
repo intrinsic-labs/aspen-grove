@@ -1,0 +1,19 @@
+# Puts the keyboard away in a buffer without leaving it. iOS: a tap on the empty
+# band beside the pill (`buffer-control-bar`; it is not an accessibility element,
+# so the Android hierarchy does not list it). Android: the back key closes an open
+# keyboard without leaving the screen, so call this only with the keyboard up.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: buffer-control-bar
+          point: '6%,50%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- waitForAnimationToEnd

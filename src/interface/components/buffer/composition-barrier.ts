@@ -1,0 +1,102 @@
+/**
+ * Holds host actions that replace the document (a sibling switch, a fixture
+ * load, later a generation insert) while the user is mid-composition. An IME
+ * candidate that is still being chosen lives in the editor; reloading under
+ * it drops the candidate or splits it. Platform-neutral: the Android page
+ * reports `composing` and the iOS input can feed the same `observe`.
+ *
+ * The action is the user's intent, so a composing editor is asked to commit
+ * at once (`requestEnd`) and the action runs on its answer. Gboard keeps the
+ * word being typed in composition, so waiting for the user to finish would
+ * stall every tap after typing. Only if no answer comes (a dead page) does
+ * the action run after `fallbackMs`, so it is never lost.
+ * Latest wins: a newer action replaces one still held.
+ */
+/**
+ * The editor's side of the barrier: each engine (the Android page, the iOS
+ * native input) sets `end` on mount to commit its composition.
+ */
+export type CompositionControl = {
+  end: () => void;
+  settle: () => Promise<void>;
+};
+
+export const editorUnavailable = (): Promise<void> =>
+  Promise.reject(new Error('The editor is unavailable. Try again.'));
+
+export type CompositionBarrierOptions = {
+  readonly fallbackMs?: number;
+  /** Asks the editor to commit and end its composition, and then report. */
+  readonly requestEnd: () => void;
+  /** Injectable timers for tests. */
+  readonly setTimer?: (callback: () => void, ms: number) => unknown;
+  readonly clearTimer?: (handle: unknown) => void;
+};
+
+export type CompositionBarrier = {
+  /** The editor's latest composing state. */
+  readonly observe: (composing: boolean) => void;
+  /** Runs `action` now, or once composition has ended. */
+  readonly run: (action: () => void) => void;
+  /** A new document is loaded: nothing is composing, nothing is held. */
+  readonly reset: () => void;
+  readonly isComposing: () => boolean;
+};
+
+/** How long the editor has to answer a request to end its composition. */
+export const COMPOSITION_FALLBACK_MS = 400;
+
+export const createCompositionBarrier = ({
+  fallbackMs = COMPOSITION_FALLBACK_MS,
+  requestEnd,
+  setTimer = (callback, ms) => setTimeout(callback, ms),
+  clearTimer = (handle) =>
+    clearTimeout(handle as ReturnType<typeof setTimeout>),
+}: CompositionBarrierOptions): CompositionBarrier => {
+  let composing = false;
+  let held: (() => void) | undefined;
+  let timer: unknown;
+
+  const stopTimer = () => {
+    if (timer !== undefined) {
+      clearTimer(timer);
+      timer = undefined;
+    }
+  };
+
+  const release = () => {
+    stopTimer();
+    const action = held;
+    held = undefined;
+    action?.();
+  };
+
+  return {
+    observe: (next) => {
+      composing = next;
+      if (!next && held) {
+        release();
+      }
+    },
+    run: (action) => {
+      if (!composing) {
+        held = undefined;
+        stopTimer();
+        action();
+        return;
+      }
+      const asked = held !== undefined;
+      held = action;
+      if (!asked) {
+        requestEnd();
+        timer = setTimer(release, fallbackMs);
+      }
+    },
+    reset: () => {
+      composing = false;
+      held = undefined;
+      stopTimer();
+    },
+    isComposing: () => composing,
+  };
+};

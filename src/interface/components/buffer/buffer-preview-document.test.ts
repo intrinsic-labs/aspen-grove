@@ -1,14 +1,21 @@
 import { describe, expect, it } from '@jest/globals';
-import { deriveReplacement } from './BufferTextInput';
 import {
-  applyPreviewEdit,
+  applyEdits,
+  documentRuns as previewRuns,
+  documentText as previewText,
   emptyPreview,
-  previewRuns,
-  previewText,
-  samplePreview,
-  selectPreviewSibling,
+  noteSelection,
+  prefixLength,
+  releaseHold,
+  selectSibling as selectPreviewSibling,
   siblingCount,
-} from './buffer-preview';
+} from './buffer-preview-document';
+import { samplePreview } from './buffer-preview-sample';
+
+const applyPreviewEdit = (
+  doc: ReturnType<typeof samplePreview>,
+  edit: { start: number; end: number; inserted: string }
+) => applyEdits(doc, [edit]);
 
 const authors = (state: ReturnType<typeof samplePreview>) =>
   previewRuns(state).map((run) => [run.author, run.text]);
@@ -89,19 +96,19 @@ describe('edits', () => {
 
   it('gives an insertion at the seam to the ending', () => {
     const state = samplePreview();
-    const seam = state.prefix.map((run) => run.text).join('').length;
+    const seam = prefixLength(state);
     const next = applyPreviewEdit(state, {
       start: seam,
       end: seam,
       inserted: 'So ',
     });
-    expect(next.prefix).toEqual(state.prefix);
+    expect(prefixLength(next)).toBe(seam);
     expect(previewText(next)).toContain('dawn. So By evening');
   });
 
   it('gives a replacement across the seam to the prefix and trims the ending', () => {
     const state = samplePreview();
-    const seam = state.prefix.map((run) => run.text).join('').length;
+    const seam = prefixLength(state);
     const next = applyPreviewEdit(state, {
       start: seam - 2,
       end: seam + 3,
@@ -159,73 +166,81 @@ describe('edits', () => {
   });
 });
 
-describe('deriveReplacement', () => {
-  it('reads a typed character at the caret', () => {
-    expect(deriveReplacement('ab', 'aXb', { start: 1, end: 1 })).toEqual({
-      start: 1,
-      end: 1,
-      inserted: 'X',
-    });
-  });
-
-  it('puts a repeated character at the actual caret', () => {
-    expect(deriveReplacement('aaa', 'aaaa', { start: 1, end: 1 })).toEqual({
-      start: 1,
-      end: 1,
-      inserted: 'a',
-    });
-    expect(deriveReplacement('aaa', 'aaaa', { start: 3, end: 3 })).toEqual({
-      start: 3,
-      end: 3,
-      inserted: 'a',
-    });
-  });
-
-  it('reads backspace and forward delete at the caret', () => {
-    expect(deriveReplacement('aaa', 'aa', { start: 2, end: 2 })).toEqual({
-      start: 1,
-      end: 2,
-      inserted: '',
-    });
-    expect(deriveReplacement('abc', 'ac', { start: 1, end: 1 })).toEqual({
-      start: 1,
-      end: 2,
-      inserted: '',
-    });
-    expect(deriveReplacement('abc', 'ac', { start: 2, end: 2 })).toEqual({
-      start: 1,
-      end: 2,
-      inserted: '',
-    });
-  });
-
-  it('reads a paste over a selection', () => {
+describe('the working tail', () => {
+  it('takes text typed at the end, and goes with its ending on a switch', () => {
+    const state = samplePreview();
+    const end = previewText(state).length;
+    const typed = applyEdits(state, [{ start: end, end, inserted: '!' }]);
+    expect(typed.index.document.tail).toEqual([{ author: 'human', text: '!' }]);
+    const away = selectPreviewSibling(typed, 1);
+    expect(away.index.document.tail).toEqual([]);
     expect(
-      deriveReplacement('hello world', 'hello there', { start: 6, end: 11 })
-    ).toEqual({
-      start: 6,
-      end: 11,
-      inserted: 'there',
+      previewText(selectPreviewSibling(away, 0)).endsWith('yellow.!')
+    ).toBe(true);
+  });
+});
+
+describe('left affinity', () => {
+  const emptied = () => {
+    const state = samplePreview();
+    const seam = prefixLength(state);
+    // Backspace the whole opening, one tap, then type where the caret is.
+    return applyEdits(state, [{ start: 0, end: seam, inserted: '' }], {
+      caret: 0,
     });
+  };
+
+  it('keeps typing in a passage that was deleted to nothing', () => {
+    const typed = applyEdits(emptied(), [{ start: 0, end: 0, inserted: 'N' }]);
+    expect(typed.index.document.passages[0].runs).toEqual([
+      { author: 'human', text: 'N' },
+    ]);
   });
 
-  it('recovers an autocorrect that replaces more than the selection', () => {
-    expect(deriveReplacement('I teh', 'I the', { start: 5, end: 5 })).toEqual({
-      start: 3,
-      end: 5,
-      inserted: 'he',
-    });
+  it('is gone once an edit lands away from the caret', () => {
+    const typed = applyEdits(emptied(), [{ start: 5, end: 5, inserted: 'N' }]);
+    expect(typed.hold?.kind === 'passage' && typed.hold.id).not.toBe('prefix');
+    expect(typed.index.document.passages[0].runs).toEqual([]);
   });
 
-  it('falls back to common ends with no selection', () => {
-    expect(deriveReplacement('abcd', 'abXd', null)).toEqual({
-      start: 2,
-      end: 3,
-      inserted: 'X',
-    });
+  it('is cleared by a selection that moved the caret, then back to it', () => {
+    let doc = emptied();
+    doc = noteSelection(doc, { start: 40, end: 40 });
+    doc = noteSelection(doc, { start: 0, end: 0 });
+    expect(doc.hold).toBeUndefined();
+    const typed = applyEdits(doc, [{ start: 0, end: 0, inserted: 'N' }]);
+    expect(typed.index.document.passages[0].runs).toEqual([]);
   });
 
-  it('reports no change for equal strings', () => {
-    expect(deriveReplacement('same', 'same', { start: 1, end: 1 })).toBeNull();
+  it('survives its own edit’s selection event, before or after the change', () => {
+    // Selection first: the event is the post-edit caret, then the change.
+    let doc = emptied();
+    doc = noteSelection(doc, { start: 1, end: 1 });
+    doc = applyEdits(doc, [{ start: 0, end: 0, inserted: 'N' }]);
+    expect(doc.index.document.passages[0].runs).toEqual([
+      { author: 'human', text: 'N' },
+    ]);
+    // Change first: the event lands on the caret the edit left, twice over.
+    doc = applyEdits(doc, [{ start: 1, end: 1, inserted: 'O' }]);
+    doc = noteSelection(doc, { start: 2, end: 2 });
+    doc = noteSelection(doc, { start: 2, end: 2 });
+    expect(doc.hold).toBeDefined();
+    doc = applyEdits(doc, [{ start: 2, end: 2, inserted: 'P' }]);
+    expect(doc.index.document.passages[0].runs).toEqual([
+      { author: 'human', text: 'NOP' },
+    ]);
+  });
+
+  it('is cleared when the Android page reports the caret moved', () => {
+    const doc = releaseHold(emptied());
+    expect(doc.hold).toBeUndefined();
+    const typed = applyEdits(doc, [{ start: 0, end: 0, inserted: 'N' }]);
+    expect(typed.index.document.passages[0].runs).toEqual([]);
+    // Nothing held: nothing to release.
+    expect(releaseHold(doc)).toBe(doc);
+  });
+
+  it('is cleared by a range selection', () => {
+    expect(noteSelection(emptied(), { start: 0, end: 4 }).hold).toBeUndefined();
   });
 });

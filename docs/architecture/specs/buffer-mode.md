@@ -80,6 +80,7 @@ How the writing surface looks and behaves. Aspen Grove is dark only, so there is
 - **A quiet document, not a chat.** One natively scrolling multiline text input in the app's reading face (Cardo, at the size set in Settings), with generous margins (24 pt) and a line pitch of 1.6 × the font size. No bubbles, rules or boundary glyphs; selecting and copying never include a boundary.
 - **Authorship by color alone.** Human text uses the app's usual foreground; model text is a muted blue (`#7FA6E6`, 8.5:1 against black). Text typed or pasted into a model run is human, so a single sentence can read blue, then white, then blue again.
 - **Sibling control.** Branches at a position are switched with a compact bar docked under the document: a mono label ("Branch 1 of 2") between previous and next buttons. It also answers a horizontal swipe on the label and is one adjustable accessibility element (increment and decrement, value "Branch 1 of 2"). The bar sits in the column below the text, above the keyboard and the safe area, so it never covers text.
+- **Line separators are kept as they came.** The Android page (CodeMirror) shows every line break as LF, because CodeMirror splits on `\n`, `\r\n` and `\r` alike and its `lineSeparator` facet admits only one. The page keeps a map of the breaks that were not LF (`tools/buffer-web-editor/separators.ts`, `line-separators.ts`): everything that crosses the bridge is in the host's units (a CRLF is two UTF-16 units to the host and one to the page), inserted text gets its separators back, a paste's separators are recorded before CodeMirror splits it, and copy and cut restore them. Undo and redo restore the map with the text. The host's text stays byte-exact.
 - **Preview scope.** In the developer preview (`EXPO_PUBLIC_BUFFER_PREVIEW=1`) an empty buffer offers "Load sample": a human opening, two model endings and a human word inside model text, held in memory. Nothing typed is saved yet; switching a sample's ending keeps edits to the shared opening.
 
 ---
@@ -328,10 +329,24 @@ Node 6 follows from ANY version       Each branch has its own node 6
 of node 5 (5, 5', or 5'')             (6a, 6b, 6c are different nodes)
 ```
 
+### Resolver Decisions (Phase 3)
+
+Implemented as pure functions in `src/application/services/buffer/` (`indexBufferGraph`, `resolveBufferPath`). No repository or UI code is involved.
+
+- **Links.** Each alternative version of a position is a `primary` source of the continuations of that position, so every version reaches every continuation. New children are created with all parent versions as sources. An edit adds its new version as a source of each affected outgoing continuation and copies the edited node's incoming alternatives. Only `continuation` edges and `primary` sources carry the document; annotation edges and context/instruction sources are never traversed.
+- **Families.** A version family is every node sharing the same ultimate `editedFrom` ancestor. Lineage that loops, points at a missing node or crosses trees is reported and cut: the affected nodes become singleton families, so no walk can loop.
+- **Stored path.** The path persists the exact active version ids in order, including the leaf. Incoming selections (`path_selections`, keyed by the child, `selectedSourceNodeId` = the active parent version) are stored only for ambiguous transitions, where more than one incoming edge or primary source exists. Selections choose parents, never outgoing branches.
+- **Open.** An exact stored sequence is validated step by step (the first node is a root; each node has a continuation edge listing the previous node as a primary source; no family repeats). It is kept as stored, leaf included, and beats any default. A broken sequence is repaired: the longest valid prefix is kept and the rest is chosen by the defaults below, with a `sequence-repaired` issue. A valid sequence that stops before a leaf is extended by the defaults.
+- **Version switch.** Substitutes one id with another version of the same family and keeps the suffix when the next node is still reachable from it. Otherwise the suffix is replaced by the defaults (`suffix-replaced`). A version that is not linked to the previous node, or is of another family, is rejected and the path is returned unchanged.
+- **Branch switch.** Keeps the prefix, enters a different child family of the same parent at the given node and follows that family's continuations to its leaf. The previous branch's suffix is not kept. Same-family and unreachable targets are rejected.
+- **Defaults.** Child family: the newest continuation edge from the current node (creation time, then id). Version within it: a valid remembered selection (it must name the current node as source, point at an edge that targets the selection's node, and that edge must list the node as a primary source; newest `updatedAt`, then id), otherwise the latest edit (creation time, then id), considering only versions the current node actually reaches. A stale selection is ignored and can never pull in another family. A family already on the path is never re-entered. With no stored sequence the walk starts at the oldest root (time, then id).
+- **Sibling order** follows the order of the edges as given: source-file order on import, request slot order within a draw.
+- **Result.** `resolveBufferPath` returns the ordered ids, the leaf, the incoming selections to upsert and any issues. It never throws on bad input.
+
 ### Rendering the Active Path
 
 1. Start from root
-2. At each position, use the version specified in `versionSelections` (or default to latest edit if not specified)
+2. At each position, use the exact version in the stored sequence (or, past its end, a valid remembered selection, then the latest edit; see Resolver Decisions)
 3. At branch points, follow the branch specified in `nodeSequence`
 4. Concatenate content from resolved nodes
 5. Append working buffer
@@ -339,6 +354,8 @@ of node 5 (5, 5', or 5'')             (6a, 6b, 6c are different nodes)
 ---
 
 ## Context Assembly for Generation
+
+The prompt is the selected versions' literal text in order, including whitespace and blank lines, plus the working tail. A configured tree prefix is sent only on explicit opt-in, with one blank line between it. Default agent instructions stay out of raw prose. Excluded and pruned nodes are left out. Truncation drops whole middle nodes behind a documented marker and is reported outside the document; see [Context Assembly](./context-assembly.md#buffer-mode-assembly). Implemented by `assembleBufferContext`.
 
 When requesting a continuation in Buffer Mode:
 
@@ -421,3 +438,4 @@ The model preserves the full Loom Tree semantics (immutable nodes, provenance, b
 
 - **v0.1** (Initial): Core spec based on design discussion — editing vs branching distinction, hypergraph support for versions, working buffer model
 - **v0.2** (Buffer editor preview): Visual decisions for the writing surface and sibling control (developer preview, Phase 1b).
+- **v0.3** (Phase 3): Pure path resolver and context assembly decisions (Resolver Decisions, literal-text prompt).

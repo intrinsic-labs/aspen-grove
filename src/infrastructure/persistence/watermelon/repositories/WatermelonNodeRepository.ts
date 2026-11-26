@@ -1,3 +1,4 @@
+import { writeNodeFields } from './write-node-fields';
 import type { Collection, Database } from '@nozbe/watermelondb';
 import { Q } from '@nozbe/watermelondb';
 import type {
@@ -20,7 +21,11 @@ import {
 
 import NodeModel from '../model/Node';
 import RawApiResponseModel from '../model/RawApiResponse';
-import { isPlainObject, isRecordNotFoundError, toOptionalString } from './helpers';
+import { isRecordNotFoundError, toOptionalString } from './helpers';
+import {
+  parseBufferNodeMetadata,
+  serializeNodeMetadata,
+} from './buffer-node-metadata';
 import { toNodeAuthorType } from './node-author-type';
 
 /** WatermelonDB implementation of `INodeRepository`. */
@@ -33,11 +38,15 @@ export class WatermelonNodeRepository implements INodeRepository {
   constructor(database: Database, now: () => Date = () => new Date()) {
     this.db = database;
     this.nodes = this.db.get<NodeModel>('nodes');
-    this.rawApiResponses = this.db.get<RawApiResponseModel>('raw_api_responses');
+    this.rawApiResponses =
+      this.db.get<RawApiResponseModel>('raw_api_responses');
     this.now = now;
   }
 
-  async findById(id: ULID, includePruned: boolean = false): Promise<NodeEntity | null> {
+  async findById(
+    id: ULID,
+    includePruned: boolean = false
+  ): Promise<NodeEntity | null> {
     try {
       const model = await this.nodes.find(id);
       if (!includePruned && model.pruned === true) {
@@ -101,7 +110,10 @@ export class WatermelonNodeRepository implements INodeRepository {
     return models.map((model) => this.toDomain(model));
   }
 
-  async findPruned(loomTreeId: ULID, agentType?: NodeAuthorType): Promise<NodeEntity[]> {
+  async findPruned(
+    loomTreeId: ULID,
+    agentType?: NodeAuthorType
+  ): Promise<NodeEntity[]> {
     const queryClauses = [
       Q.where('loom_tree_id', loomTreeId),
       Q.where('pruned', true),
@@ -140,7 +152,9 @@ export class WatermelonNodeRepository implements INodeRepository {
   }
 
   async getAllLocalIds(loomTreeId: ULID): Promise<Set<LocalId>> {
-    const models = await this.nodes.query(Q.where('loom_tree_id', loomTreeId)).fetch();
+    const models = await this.nodes
+      .query(Q.where('loom_tree_id', loomTreeId))
+      .fetch();
     return new Set(models.map((model) => model.localId as LocalId));
   }
 
@@ -158,10 +172,7 @@ export class WatermelonNodeRepository implements INodeRepository {
     // term can miss — acceptable for v1 search.
     const models = await this.nodes
       .query(
-        Q.where(
-          'content',
-          Q.like(`%${Q.sanitizeLikeString(trimmed)}%`)
-        ),
+        Q.where('content', Q.like(`%${Q.sanitizeLikeString(trimmed)}%`)),
         Q.where('pruned', Q.notEq(true)),
         Q.sortBy('created_at', Q.desc),
         Q.take(limit)
@@ -176,25 +187,17 @@ export class WatermelonNodeRepository implements INodeRepository {
     const metadata = this.defaultMetadata();
 
     return this.db.write(async () => {
-      const versionGroupId = await this.resolveVersionGroupId(id, input.editedFrom);
+      const versionGroupId = await this.resolveVersionGroupId(
+        id,
+        input.editedFrom
+      );
 
       const model = await this.nodes.create((record) => {
-        record._raw.id = id;
-        record.localId = input.localId;
-        record.loomTreeId = input.loomTreeId;
-        record.content = input.content;
-        record.summary = null;
-        record.authorAgentId = input.authorAgentId;
-        record.authorType = input.authorType;
-        record.contentHash = input.contentHash;
-        record.createdAt = createdAt;
-        record.metadata = this.serializeMetadata(metadata);
-        record.bookmarked = metadata.bookmarked;
-        record.bookmarkLabel = metadata.bookmarkLabel ?? null;
-        record.pruned = metadata.pruned;
-        record.excluded = metadata.excluded;
-        record.versionGroupId = versionGroupId;
-        record.editedFrom = input.editedFrom ?? null;
+        writeNodeFields(
+          record,
+          { ...input, id, createdAt, metadata },
+          versionGroupId
+        );
       });
 
       return this.toDomain(model);
@@ -212,7 +215,7 @@ export class WatermelonNodeRepository implements INodeRepository {
       const nextBookmarked = changes.bookmarked ?? current.bookmarked;
       const nextBookmarkLabel =
         changes.bookmarkLabel !== undefined
-          ? changes.bookmarkLabel ?? undefined
+          ? (changes.bookmarkLabel ?? undefined)
           : current.bookmarkLabel;
 
       const next: NodeMetadata = {
@@ -223,7 +226,7 @@ export class WatermelonNodeRepository implements INodeRepository {
       };
 
       await model.update((record) => {
-        record.metadata = this.serializeMetadata(next);
+        record.metadata = serializeNodeMetadata(model.metadata, next);
         record.bookmarked = next.bookmarked;
         record.bookmarkLabel = next.bookmarkLabel ?? null;
         record.pruned = next.pruned;
@@ -288,7 +291,7 @@ export class WatermelonNodeRepository implements INodeRepository {
   }
 
   private readMetadata(model: NodeModel): NodeMetadata {
-    const raw = isPlainObject(model.metadata) ? model.metadata : {};
+    const raw = parseBufferNodeMetadata(model.metadata);
 
     const bookmarked =
       typeof model.bookmarked === 'boolean'
@@ -319,19 +322,11 @@ export class WatermelonNodeRepository implements INodeRepository {
           : undefined;
 
     return {
+      ...(raw.buffer && { buffer: raw.buffer }),
       bookmarked,
       bookmarkLabel: bookmarked ? bookmarkLabel : undefined,
       pruned,
       excluded,
-    };
-  }
-
-  private serializeMetadata(metadata: NodeMetadata): Record<string, unknown> {
-    return {
-      bookmarked: metadata.bookmarked,
-      bookmarkLabel: metadata.bookmarkLabel,
-      pruned: metadata.pruned,
-      excluded: metadata.excluded,
     };
   }
 

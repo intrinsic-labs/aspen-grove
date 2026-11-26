@@ -1,92 +1,53 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   type NativeSyntheticEvent,
+  Platform,
   StyleSheet,
   Text,
   type TextInputChangeEventData,
   type TextInputSelectionChangeEventData,
   type TextStyle,
+  type TextInput,
 } from 'react-native';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
-import type { PreviewEdit, PreviewRun } from './buffer-preview';
-
-export type BufferSelection = { readonly start: number; readonly end: number };
+import type { Replacement } from '@application/services/buffer/apply-replacement';
+import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
+import type { BufferSelection } from './derive-replacement';
+import type { CompositionControl } from './composition-barrier';
+import { editorUnavailable } from './composition-barrier';
+import { useNativeComposition } from './ios/useNativeComposition';
+import { bufferCompositionNative } from './ios/buffer-composition-native';
+import { waitForNativeText } from './wait-for-native-text';
+import { createChangeTracker } from './native-change-tracker';
 
 /**
- * What changed between the last string the editor accepted and the string
- * the keyboard produced, as one replacement of `[start, end)`; null when
- * nothing changed.
- *
- * The caret disambiguates repeated text ("aaa" to "aaaa"): the edit is
- * taken to be where the selection was, whether a typed character, a
- * replaced selection, backspace or forward delete. An autocorrect that
- * rewrites more than the selection matches none of those, so it falls back
- * to the longest common prefix and suffix.
+ * How the document is handed to the native input. `spans` is the product:
+ * one colored child per author run. `single` and `plain` are developer-preview
+ * measurement variants: the whole text in one uncolored child, and as a bare
+ * string, to price the spans against the text's length.
  */
-export const deriveReplacement = (
-  previous: string,
-  next: string,
-  selection: BufferSelection | null
-): PreviewEdit | null => {
-  if (previous === next) {
-    return null;
-  }
-  if (selection) {
-    const { start, end } = selection;
-    if (start <= end && end <= previous.length) {
-      const insertedLength = next.length - (previous.length - (end - start));
-      if (insertedLength >= 0) {
-        const inserted = next.slice(start, start + insertedLength);
-        if (
-          previous.slice(0, start) + inserted + previous.slice(end) ===
-          next
-        ) {
-          return { start, end, inserted };
-        }
-      }
-      const removed = previous.length - next.length;
-      if (start === end && removed > 0) {
-        for (const from of [start - removed, start]) {
-          if (
-            from >= 0 &&
-            from + removed <= previous.length &&
-            previous.slice(0, from) + previous.slice(from + removed) === next
-          ) {
-            return { start: from, end: from + removed, inserted: '' };
-          }
-        }
-      }
-    }
-  }
-  let prefix = 0;
-  const shortest = Math.min(previous.length, next.length);
-  while (prefix < shortest && previous[prefix] === next[prefix]) {
-    prefix += 1;
-  }
-  let suffix = 0;
-  while (
-    suffix < shortest - prefix &&
-    previous[previous.length - 1 - suffix] === next[next.length - 1 - suffix]
-  ) {
-    suffix += 1;
-  }
-  return {
-    start: prefix,
-    end: previous.length - suffix,
-    inserted: next.slice(prefix, next.length - suffix),
-  };
-};
+export type BufferRenderVariant = 'spans' | 'single' | 'plain';
 
 type BufferTextInputProps = {
   /** The accepted document; `runs` concatenate to exactly this string. */
   readonly text: string;
-  readonly runs: readonly PreviewRun[];
+  readonly runs: readonly AuthorshipRun[];
   readonly editable: boolean;
+  readonly variant?: BufferRenderVariant;
+  /** Counts fixture loads; a new one starts a fresh input at the top. */
+  readonly fixtureEpoch?: number;
+  /** Where the input registers how to end an IME composition (stable). */
+  readonly composition: CompositionControl;
+  /** The input's IME composing state (iOS marked text). */
+  readonly onComposition: (composing: boolean) => void;
   readonly textStyle: TextStyle;
-  readonly topInset: number;
+  /** The translucent header's height: the document starts below it. */
+  readonly headerHeight: number;
+  /** The gap between the header and the first line. */
+  readonly topGap: number;
   readonly placeholder?: string;
-  readonly onReplace: (edit: PreviewEdit) => void;
+  readonly onReplace: (edit: Replacement) => void;
   readonly onSelectionChange?: (selection: BufferSelection) => void;
 };
 
@@ -101,34 +62,65 @@ export const BufferTextInput = ({
   text,
   runs,
   editable,
+  variant = 'spans',
+  fixtureEpoch = 0,
+  composition,
+  onComposition,
   textStyle,
-  topInset,
+  headerHeight,
+  topGap,
   placeholder,
   onReplace,
   onSelectionChange,
 }: BufferTextInputProps) => {
+  const input = useRef<TextInput>(null);
+  const tracker = useRef(createChangeTracker(text));
+  const deliveryCheck = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    composition.settle = () => {
+      if (
+        Platform.OS !== 'ios' ||
+        !input.current ||
+        !bufferCompositionNative?.currentText
+      )
+        return editorUnavailable();
+      input.current.setNativeProps({ editable: false });
+      return waitForNativeText(
+        bufferCompositionNative.currentText(),
+        () => tracker.current.lastText(),
+        deliveryCheck
+      );
+    };
+    return () => {
+      composition.settle = editorUnavailable;
+    };
+  }, [composition]);
   const selection = useRef<BufferSelection | null>(null);
-  const accepted = useRef(text);
-  // The last native string already handled. iOS can deliver the same change
-  // twice before React renders (the first character into an empty input
-  // does), and applying it twice would double the character.
-  const handled = useRef(text);
-  if (accepted.current !== text) {
-    accepted.current = text;
-    handled.current = text;
+  useNativeComposition(composition, onComposition);
+  // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
+  // native input with its caret pinned to the start until the user moves it:
+  // Android otherwise keeps the end of the new text in view. The screen says
+  // so with `fixtureEpoch`; the text is never guessed at.
+  const [generation, setGeneration] = useState(0);
+  const [atStart, setAtStart] = useState(false);
+  const [seenFixture, setSeenFixture] = useState(fixtureEpoch);
+  tracker.current.sync(text);
+  if (seenFixture !== fixtureEpoch) {
+    setSeenFixture(fixtureEpoch);
+    setGeneration(generation + 1);
+    setAtStart(true);
   }
 
   const onChange = useCallback(
     (event: NativeSyntheticEvent<TextInputChangeEventData>) => {
-      const next = event.nativeEvent.text;
-      if (next === handled.current) {
-        return;
-      }
-      handled.current = next;
-      const edit = deriveReplacement(accepted.current, next, selection.current);
+      const edit = tracker.current.receive(
+        event.nativeEvent.text,
+        selection.current
+      );
       if (edit) {
         onReplace(edit);
       }
+      deliveryCheck.current?.();
     },
     [onReplace]
   );
@@ -136,13 +128,20 @@ export const BufferTextInput = ({
   const onSelection = useCallback(
     (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
       selection.current = event.nativeEvent.selection;
+      const { start, end } = event.nativeEvent.selection;
+      if (atStart && (start !== 0 || end !== 0)) {
+        setAtStart(false);
+      }
       onSelectionChange?.(event.nativeEvent.selection);
     },
-    [onSelectionChange]
+    [atStart, onSelectionChange]
   );
 
   return (
     <AppTextInput
+      ref={input}
+      key={generation}
+      selection={atStart ? START : undefined}
       testID="buffer-document"
       multiline
       scrollEnabled
@@ -156,25 +155,49 @@ export const BufferTextInput = ({
       style={[
         styles.input,
         textStyle,
-        { color: bufferTokens.colors.humanText, paddingTop: topInset },
+        { color: bufferTokens.colors.humanText },
+        topLayout(headerHeight, topGap),
       ]}
     >
-      {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
-      {runs.map((run, index) => (
-        <Text
-          key={index}
-          style={
-            run.author === 'model'
-              ? { color: bufferTokens.colors.modelText }
-              : undefined
-          }
-        >
-          {run.text}
-        </Text>
-      ))}
+      {variant === 'plain' ? text : null}
+      {variant === 'single' ? <Text key="single">{text}</Text> : null}
+      {variant === 'spans' ? <AuthorRuns runs={runs} /> : null}
     </AppTextInput>
   );
 };
+
+const AuthorRuns = ({ runs }: { readonly runs: readonly AuthorshipRun[] }) => (
+  <>
+    {runs.length === 0 ? <Text key="empty">{''}</Text> : null}
+    {runs.map((run, index) => (
+      <Text
+        key={index}
+        style={
+          run.author === 'model'
+            ? { color: bufferTokens.colors.modelText }
+            : undefined
+        }
+      >
+        {run.text}
+      </Text>
+    ))}
+  </>
+);
+
+/**
+ * Where the first line starts. On iOS the native text view is a scroll view
+ * and UIKit insets it by the header whenever its frame overlaps the bar and the
+ * text is taller than the view: padding for the header too would leave a
+ * header-high blank gap above a long document (and a short one would jump when
+ * it grew past a screen). So there the view's frame starts below the header and
+ * only the gap is padding, which leaves UIKit no inset to add. Android pads.
+ */
+const topLayout = (headerHeight: number, topGap: number): TextStyle =>
+  Platform.OS === 'ios'
+    ? { marginTop: headerHeight, paddingTop: topGap }
+    : { paddingTop: headerHeight + topGap };
+
+const START = { start: 0, end: 0 } as const;
 
 const styles = StyleSheet.create({
   input: {
