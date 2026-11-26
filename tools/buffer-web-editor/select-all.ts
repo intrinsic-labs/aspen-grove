@@ -1,4 +1,4 @@
-import { EditorState, type Extension } from '@codemirror/state';
+import { EditorState, Transaction, type Extension } from '@codemirror/state';
 
 /**
  * Android's select-all arrives as a DOM selection change that CodeMirror
@@ -13,7 +13,11 @@ export const keepViewportOnSelectAll = (): Extension =>
       !transaction.scrollIntoView ||
       transaction.docChanged ||
       !transaction.selection ||
-      !transaction.isUserEvent('select')
+      !transaction.isUserEvent('select') ||
+      // History's own selection undo carries its private annotation; a
+      // replacement spec would drop it and break the history stack.
+      transaction.isUserEvent('select.undo') ||
+      transaction.isUserEvent('select.redo')
     ) {
       return transaction;
     }
@@ -25,9 +29,13 @@ export const keepViewportOnSelectAll = (): Extension =>
     if (!covers(transaction.state) || covers(transaction.startState)) {
       return transaction;
     }
+    const addToHistory = transaction.annotation(Transaction.addToHistory);
     return {
       selection: transaction.selection,
-      userEvent: 'select',
+      userEvent: transaction.annotation(Transaction.userEvent),
       scrollIntoView: false,
+      ...(addToHistory === undefined
+        ? {}
+        : { annotations: Transaction.addToHistory.of(addToHistory) }),
     };
   });

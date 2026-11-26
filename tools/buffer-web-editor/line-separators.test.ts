@@ -123,4 +123,25 @@ describe('CRLF through the page', () => {
     expect(checkpoint.modelRanges).toEqual([[4, 8]]);
     expect(state.doc.toString()).toBe('ab\ncd\nef');
   });
+
+  it('a drag-move inside the page keeps its CRLF', () => {
+    const start = open('AB\r\nCD|XY');
+    // CodeMirror's drop: the dragged text leaves through the output filter and
+    // comes back through the input filter, then one deletion plus one insertion.
+    const raw = copy(start.update({ selection: { anchor: 0, head: 5 } }).state);
+    let text = raw;
+    for (const filter of start.facet(EditorView.clipboardInputFilter)) {
+      text = filter(text, start);
+    }
+    const moved = start.update({
+      changes: [
+        { from: 0, to: 5 },
+        { from: 8, insert: text },
+      ],
+      userEvent: 'move.drop',
+    });
+
+    expect(raw).toBe('AB\r\nCD');
+    expect(host(moved.state)).toBe('|XYAB\r\nCD');
+  });
 });

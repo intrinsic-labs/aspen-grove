@@ -71,17 +71,20 @@ const rememberPaste = (text: string): string => {
   return pastedRaw === undefined ? text : text.replace(NORMALIZE, '\n');
 };
 
-/** A paste's breaks at their positions after it, for a one-change transaction. */
+/** A paste's or drop's breaks at their positions after it, for a transaction with one insertion. */
 const pasteBreaks = (transaction: Transaction): Break[] => {
   const raw = pastedRaw;
   pastedRaw = undefined;
   if (raw === undefined) {
     return [];
   }
+  // A drag-move is a deletion plus one insertion: only the insertion counts.
   const inserts: [number, string][] = [];
-  transaction.changes.iterChanges((_from, _to, fromB, _toB, inserted) =>
-    inserts.push([fromB, inserted.toString()])
-  );
+  transaction.changes.iterChanges((_from, _to, fromB, _toB, inserted) => {
+    if (inserted.length > 0) {
+      inserts.push([fromB, inserted.toString()]);
+    }
+  });
   if (inserts.length !== 1 || inserts[0][1] !== raw.replace(NORMALIZE, '\n')) {
     return [];
   }
