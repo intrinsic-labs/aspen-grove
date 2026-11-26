@@ -25,6 +25,8 @@ type BufferEditorSurfaceProps = {
   /** Where the shared prefix ends and the current ending begins. */
   readonly seam: number;
   readonly composition: CompositionControl;
+  /** The native input's IME composing state, for the composition barrier. */
+  readonly onComposition: (composing: boolean) => void;
   readonly textStyle: TextStyle;
   readonly headerHeight: number;
   readonly topGap: number;
@@ -45,6 +47,7 @@ export const BufferEditorSurface = ({
   runs,
   seam,
   composition,
+  onComposition,
   textStyle,
   headerHeight,
   topGap,
@@ -71,6 +74,8 @@ export const BufferEditorSurface = ({
       editable
       variant={variant}
       fixtureEpoch={fixtureEpoch}
+      composition={composition}
+      onComposition={onComposition}
       textStyle={textStyle}
       headerHeight={headerHeight}
       topGap={topGap}

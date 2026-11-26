@@ -132,6 +132,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           runs={previewRuns(preview)}
           seam={runsLength(preview.prefix)}
           composition={composition}
+          onComposition={barrier.observe}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}

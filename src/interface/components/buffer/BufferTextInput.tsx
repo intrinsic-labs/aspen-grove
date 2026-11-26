@@ -12,6 +12,8 @@ import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import type { PreviewEdit, PreviewRun } from './buffer-preview';
 import type { BufferSelection } from './derive-replacement';
+import type { CompositionControl } from './android/buffer-web-editor-props';
+import { useNativeComposition } from './ios/useNativeComposition';
 import { createChangeTracker } from './native-change-tracker';
 
 /**
@@ -30,6 +32,10 @@ type BufferTextInputProps = {
   readonly variant?: BufferRenderVariant;
   /** Counts fixture loads; a new one starts a fresh input at the top. */
   readonly fixtureEpoch?: number;
+  /** Where the input registers how to end an IME composition (stable). */
+  readonly composition: CompositionControl;
+  /** The input's IME composing state (iOS marked text). */
+  readonly onComposition: (composing: boolean) => void;
   readonly textStyle: TextStyle;
   /** The translucent header's height: the document starts below it. */
   readonly headerHeight: number;
@@ -53,6 +59,8 @@ export const BufferTextInput = ({
   editable,
   variant = 'spans',
   fixtureEpoch = 0,
+  composition,
+  onComposition,
   textStyle,
   headerHeight,
   topGap,
@@ -61,6 +69,7 @@ export const BufferTextInput = ({
   onSelectionChange,
 }: BufferTextInputProps) => {
   const selection = useRef<BufferSelection | null>(null);
+  useNativeComposition(composition, onComposition);
   const tracker = useRef(createChangeTracker(text));
   // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
   // native input with its caret pinned to the start until the user moves it:
