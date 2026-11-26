@@ -12,6 +12,8 @@ export type MockConfig = {
   readonly words: number;
   /** The model the server lists and answers for. */
   readonly modelId: string;
+  /** A loaded base model: answers `POST /v1/completions` only (chat gets 404). */
+  readonly baseModelId: string;
   /** Listed too, but every completion on it answers 404. */
   readonly missingModelId: string;
   /** Every Nth completion request fails (0: never). */
@@ -67,6 +69,7 @@ export const parseConfig = (args: readonly string[]): MockConfig => {
       slow: { type: 'boolean', default: false },
       words: { type: 'string', default: '60' },
       model: { type: 'string', default: 'mock-model' },
+      'base-model': { type: 'string', default: 'mock-base' },
       'missing-model': { type: 'string', default: 'mock-missing' },
       'fail-every': { type: 'string', default: '0' },
       'fail-in-burst': { type: 'string', default: '0' },
@@ -84,6 +87,7 @@ export const parseConfig = (args: readonly string[]): MockConfig => {
     pace: values.slow ? SLOW_PACE : toPositive('pace', values.pace as string),
     words: toInt('words', values.words as string, 1),
     modelId: values.model as string,
+    baseModelId: values['base-model'] as string,
     missingModelId: values['missing-model'] as string,
     failEvery: toInt('fail-every', values['fail-every'] as string, 0),
     failInBurst: toInt('fail-in-burst', values['fail-in-burst'] as string, 0),

@@ -14,8 +14,16 @@ import {
   type ServerResponse,
 } from 'node:http';
 import type { MockConfig } from './config.ts';
+import { readBody, sendJson, sleep, type Log } from './http-helpers.ts';
+import { createRequestTracker } from './request-tracker.ts';
+import { handleTextCompletion } from './text-route.ts';
 import { planRequest, type RequestPlan } from './failure-plan.ts';
-import { errorPayload, modelsPayload, usageFor } from './payloads.ts';
+import {
+  BASE_MODEL_NAME,
+  errorPayload,
+  modelsPayload,
+  usageFor,
+} from './payloads.ts';
 import { lastMessageText, replyTokens } from './reply-text.ts';
 import { requestSummary } from './request-summary.ts';
 import { isTitleRequest, titleText } from './title-request.ts';
@@ -28,42 +36,13 @@ type ChatBody = {
   readonly temperature?: unknown;
 };
 
-type Log = (line: string) => void;
-
-const sendJson = (
-  res: ServerResponse,
-  status: number,
-  body: unknown,
-  headers: Record<string, string> = {}
-): void => {
-  res.writeHead(status, { 'Content-Type': 'application/json', ...headers });
-  res.end(JSON.stringify(body));
-};
-
-const readBody = (req: IncomingMessage): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
-  });
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
  * Local protocol fixtures for LM Studio chat, Anthropic Messages and OpenAI Responses.
  * All share deterministic replies, pacing and failure plans; direct-wire owns framing.
  */
 export const createMockServer = (config: MockConfig, log: Log): Server => {
-  let requestCount = 0;
-  let active = 0;
-  // Completion requests open now, and how many have arrived since the last
-  // moment none were: a burst is one set of parallel cards. Counted on
-  // arrival, before the body is read, so positions follow the order the
-  // app opened its requests (bodies can finish arriving in another order).
-  let openCompletions = 0;
-  let burstSize = 0;
+  // One count for every completion route: chat, and the base-model text one.
+  const tracker = createRequestTracker();
   const tokenMs = 1000 / config.pace;
 
   const streamReply = async (
@@ -106,14 +85,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         : req.url?.split('?')[0] === '/v1/responses'
           ? 'openai'
           : 'chat';
-    const number = ++requestCount;
-    const id = `mock-${number}`;
-    burstSize = openCompletions === 0 ? 1 : burstSize + 1;
-    const arrival = burstSize;
-    openCompletions += 1;
-    res.on('close', () => {
-      openCompletions -= 1;
-    });
+    const { number, id, arrival } = tracker.arrive(res);
     let body: ChatBody;
     try {
       body = normalizeBody(
@@ -134,7 +106,7 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
     const burstPosition = stream ? arrival : undefined;
     const plan = planRequest(config, number, model, burstPosition);
     const started = Date.now();
-    active += 1;
+    const active = tracker.begin();
     const burst = burstPosition ? ` burst=${burstPosition}` : '';
     log(
       `#${number} start ${stream ? 'stream' : 'plain'} model=${model} plan=${plan.kind} active=${active}${burst} ${requestSummary(body)}`
@@ -227,10 +199,10 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         }
       }
     } finally {
-      active -= 1;
+      tracker.end();
     }
     log(
-      `#${number} end ${result} in ${Date.now() - started}ms active=${active}`
+      `#${number} end ${result} in ${Date.now() - started}ms active=${tracker.activeCount()}`
     );
   };
 
@@ -241,7 +213,10 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
       sendJson(
         res,
         200,
-        modelsPayload([config.modelId], [config.missingModelId])
+        modelsPayload(
+          [config.modelId, { key: config.baseModelId, name: BASE_MODEL_NAME }],
+          [config.missingModelId]
+        )
       );
       return;
     }
@@ -262,6 +237,19 @@ export const createMockServer = (config: MockConfig, log: Log): Server => {
         ),
         has_more: false,
       });
+      return;
+    }
+    if (req.method === 'POST' && path === '/v1/completions') {
+      handleTextCompletion({ req, res, config, tracker, log }).catch(
+        (error: unknown) => {
+          log(`text handler error: ${String(error)}`);
+          if (!res.headersSent) {
+            sendJson(res, 500, errorPayload('Mock server error.'));
+          } else {
+            res.destroy();
+          }
+        }
+      );
       return;
     }
     if (
