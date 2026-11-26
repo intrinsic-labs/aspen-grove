@@ -29,6 +29,7 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
 # It opens on its leaf, where the sibling is, with the original text.
 - assertVisible:
     id: buffer-document
@@ -106,6 +107,7 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
 - assertVisible:
     id: buffer-document
     text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
@@ -124,6 +126,7 @@ env:
     commands:
       - tapOn:
           point: '12%,21%'
+- runFlow: ../nudge-buffer-caret.yaml
 - waitForAnimationToEnd
 - assertVisible:
     id: buffer-version-control
@@ -132,6 +135,7 @@ env:
 - tapOn:
     id: buffer-version-prev
 - waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 1 of 2'
 - assertVisible:
     id: buffer-document
@@ -142,6 +146,7 @@ env:
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 2 of 2'
 - assertVisible:
     id: buffer-document
@@ -166,6 +171,7 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
 - assertVisible:
     id: buffer-document
     text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
@@ -182,6 +188,7 @@ env:
     commands:
       - tapOn:
           point: '12%,21%'
+- runFlow: ../nudge-buffer-caret.yaml
 - waitForAnimationToEnd
 - assertVisible: 'Version 2 of 2'
 - takeScreenshot: 11-version-after-relaunch
@@ -192,10 +199,12 @@ env:
 - tapOn:
     id: buffer-version-prev
 - waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 1 of 2'
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 2 of 2'
 - runFlow:
     when:
