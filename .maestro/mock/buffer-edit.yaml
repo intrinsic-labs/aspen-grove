@@ -135,27 +135,30 @@ env:
 - tapOn:
     id: buffer-version-prev
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
-- assertVisible: 'Version 1 of 2'
+# The text is read before the caret goes back into the word: a caret inside a
+# word splits it in the WebView's text, which no whole-sentence match survives.
 - assertVisible:
     id: buffer-document
     text: '.*had fogged\. Snow was still falling on the yard\. Gulls wheeled\.'
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 1 of 2'
 - takeScreenshot: 08-original-version
 
 # 6. And back to the edit.
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
-- assertVisible: 'Version 2 of 2'
 - assertVisible:
     id: buffer-document
     text: '.*had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 2 of 2'
 - takeScreenshot: 09-edit-again
 
 # 7. Relaunch (keeping data) and reopen: the same text and version. The
-# keyboard is already down here (the pill taps closed it), and on Android the
-# back key that dismisses a keyboard would leave the screen, so go straight back.
+# caret was put back in the word (keyboard up), so the keyboard goes first: on
+# Android its dismissal is the back key, which would otherwise be eaten here.
+- runFlow: ../dismiss-buffer-keyboard.yaml
 - runFlow: ../go-back.yaml
 - extendedWaitUntil:
     visible:
