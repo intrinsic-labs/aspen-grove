@@ -14,8 +14,12 @@ import { messageFontFamily } from '@/interface/ui/value-objects/fonts';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
 import { BufferFixtureControls } from './BufferFixtureControls';
+import { BufferChoicePill } from './BufferChoicePill';
+import { BufferDocumentNotice } from './BufferDocumentNotice';
 import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferDocStats } from './BufferDocStats';
+import { pillChoice } from './buffer-choice-pill';
+import { useBufferDocument } from './useBufferDocument';
 import { useBufferPreview } from './useBufferPreview';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
 import type { CompositionControl } from './composition-barrier';
@@ -41,10 +45,11 @@ type BufferScreenProps = {
 const { layout, control, bar } = bufferTokens;
 
 /**
- * A buffer-mode tree: continuous prose, no message boundaries. In this
- * developer preview the text lives in memory only (nothing typed here is
- * saved yet), and an empty buffer can load a review sample: a human opening,
- * two model endings and a human word inside model text.
+ * A buffer-mode tree: continuous prose, no message boundaries. It opens on
+ * the tree's real passages; typing is kept as a draft and saved by `commit()`
+ * or a switch (see `useBufferDocument`). An empty buffer can instead load a
+ * review fixture (a sample, or a long document), which stays in memory and
+ * never touches the database.
  */
 export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const navigation = useNavigation();
@@ -81,6 +86,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     () => createCompositionBarrier({ requestEnd: () => composition.end() }),
     [composition]
   );
+  // The real document by default; a fixture link switches to the preview.
+  const [fixture, setFixture] = useState(false);
+  const real = useBufferDocument(tree, barrier, !fixture);
+  const previewFeed = useBufferPreview(barrier);
   const {
     doc: preview,
     setDoc: setPreview,
@@ -90,7 +99,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     sink,
     receipt,
     clearReceipt,
-  } = useBufferPreview(barrier);
+  } = fixture ? previewFeed : real;
   const onSelectSibling = useCallback(
     (index: number) =>
       barrier.run(() => {
@@ -105,12 +114,13 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     (next: PreviewDocument) =>
       barrier.run(() => {
         barrier.reset();
-        setPreview(next);
+        setFixture(true);
+        previewFeed.setDoc(next);
         setEpoch((value) => value + 1);
         setFixtureEpoch((value) => value + 1);
         clearReceipt();
       }),
-    [barrier, clearReceipt, setPreview]
+    [barrier, clearReceipt, previewFeed]
   );
 
   const { text, runs } = useMemo(
@@ -118,6 +128,9 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     [preview.index]
   );
   const count = siblingCount(preview);
+  const pill = fixture ? undefined : pillChoice(real.choices);
+  const showFixtures =
+    text.length === 0 && (fixture || real.status !== 'loading');
 
   return (
     <AppScreen testID="buffer-screen" style={styles.screen}>
@@ -125,7 +138,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
         <BufferEditorSurface
           engine={engine}
           variant={variant}
-          epoch={epoch}
+          epoch={fixture ? epoch : real.epoch}
           fixtureEpoch={fixtureEpoch}
           text={text}
           runs={runs}
@@ -142,6 +155,13 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
         {engine === 'web' ? (
           <BufferDocStats length={text.length} receipt={receipt} />
         ) : null}
+        {fixture ? null : (
+          <BufferDocumentNotice
+            error={real.notice}
+            recovery={real.recovery}
+            onDismissRecovery={real.dismissRecovery}
+          />
+        )}
         {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
             an input accessory bar breaks double-tap word selection, so the
             empty band around the pill puts the keyboard away on a tap, as
@@ -158,14 +178,16 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
             },
           ]}
         >
-          {count > 1 ? (
+          {pill ? (
+            <BufferChoicePill choice={pill} onSwitch={real.switchTo} />
+          ) : fixture && count > 1 ? (
             <BufferSiblingControl
               index={preview.selected}
               count={count}
               label={`Branch ${preview.selected + 1} of ${count}`}
               onSelect={onSelectSibling}
             />
-          ) : text.length === 0 ? (
+          ) : showFixtures ? (
             <BufferFixtureControls
               variant={variant}
               engine={engine}

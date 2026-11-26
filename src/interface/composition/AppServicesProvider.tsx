@@ -1,3 +1,5 @@
+import { OpenBufferDocumentUseCase } from '@application/use-cases/OpenBufferDocumentUseCase';
+import { StoreBufferDraftUseCase } from '@application/use-cases/StoreBufferDraftUseCase';
 import { SwitchBufferPathUseCase } from '@application/use-cases/SwitchBufferPathUseCase';
 import {
   BufferCommands,
@@ -94,6 +96,8 @@ export type AppServices = {
   readonly useCases: {
     readonly commitBufferChangesUseCase: CommitBufferChangesUseCase;
     readonly switchBufferPathUseCase: SwitchBufferPathUseCase;
+    readonly openBufferDocumentUseCase: OpenBufferDocumentUseCase;
+    readonly storeBufferDraftUseCase: StoreBufferDraftUseCase;
     readonly createBufferLoomTreeUseCase: CreateBufferLoomTreeUseCase;
     readonly createDialogueLoomTreeUseCase: CreateDialogueLoomTreeUseCase;
     readonly createSharedAgentUseCase: CreateSharedAgentUseCase;
@@ -183,6 +187,17 @@ const buildAppServices = (): AppServices => {
   const useCases = {
     commitBufferChangesUseCase: new CommitBufferChangesUseCase(bufferCommands),
     switchBufferPathUseCase: new SwitchBufferPathUseCase(bufferCommands),
+    openBufferDocumentUseCase: new OpenBufferDocumentUseCase({
+      treeRepo: repositories.treeRepo,
+      groveRepo: repositories.groveRepo,
+      nodeRepo: repositories.nodeRepo,
+      edgeRepo: repositories.edgeRepo,
+      pathRepo: repositories.pathRepo,
+      bufferDraftStore: repositories.bufferDraftStore,
+    }),
+    storeBufferDraftUseCase: new StoreBufferDraftUseCase(
+      repositories.bufferDraftStore
+    ),
     createBufferLoomTreeUseCase: new CreateBufferLoomTreeUseCase({
       groveRepository: repositories.groveRepo,
       agentRepository: repositories.agentRepo,

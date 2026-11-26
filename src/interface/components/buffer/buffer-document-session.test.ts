@@ -1,6 +1,4 @@
 import type { ULID } from '@domain/value-objects';
-// This integration suite drives the application through its real persistence ports.
-// eslint-disable-next-line boundaries/element-types
 import { bufferOpenFixture } from '@infrastructure/persistence/watermelon/repositories/buffer-open-fixture';
 import { StoreBufferDraftUseCase } from '@application/use-cases/StoreBufferDraftUseCase';
 import {
