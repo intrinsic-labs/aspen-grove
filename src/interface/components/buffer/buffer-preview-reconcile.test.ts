@@ -61,14 +61,13 @@ describe('native undo restores the previous string and colors', () => {
     const e = editor(samplePreview());
     const original = e.text;
     const before = e.runs;
-    const at = original.indexOf('Nobody');
     e.native(original, caret(0));
     e.native(original.replace('lay quiet', 'lay hushed'), {
       start: original.indexOf('quiet'),
       end: original.indexOf('quiet') + 5,
     });
     expect(e.runs).not.toEqual(before);
-    e.native(original, caret(at));
+    e.native(original, caret(original.indexOf('quiet') + 6));
     expect(e.runs).toEqual(before);
   });
 

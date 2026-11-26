@@ -27,12 +27,11 @@ import {
 } from './buffer-preview-fixture';
 import {
   documentEnds,
-  documentRuns,
-  documentText,
   selectSibling,
   siblingCount,
   type PreviewDocument,
 } from './buffer-preview-document';
+import { materialize } from '@application/services/buffer/document-ranges';
 import { samplePreview } from './buffer-preview-sample';
 
 type BufferScreenProps = {
@@ -114,7 +113,10 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     [barrier, clearReceipt, setPreview]
   );
 
-  const text = documentText(preview);
+  const { text, runs } = useMemo(
+    () => materialize(preview.index),
+    [preview.index]
+  );
   const count = siblingCount(preview);
 
   return (
@@ -126,7 +128,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           epoch={epoch}
           fixtureEpoch={fixtureEpoch}
           text={text}
-          runs={documentRuns(preview)}
+          runs={runs}
           ends={documentEnds(preview)}
           composition={composition}
           onComposition={onComposition}

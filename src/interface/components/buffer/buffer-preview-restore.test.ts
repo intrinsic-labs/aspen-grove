@@ -2,7 +2,11 @@ import {
   type OwnerLayout,
   advanceLayout,
 } from '@application/services/buffer/owner-layout';
-import { modelRangesOf } from './android/web-editor-protocol';
+import {
+  type ChangesMessage,
+  modelRangesOf,
+} from './android/web-editor-protocol';
+import { reduceSession, startSession } from './android/web-editor-session';
 import {
   applyEdits,
   documentEnds,
@@ -12,7 +16,12 @@ import {
   previewDocument,
   selectSibling,
 } from './buffer-preview-document';
-import { adopt, relabel, runsFromRanges } from './buffer-preview-restore';
+import {
+  adopt,
+  applyPageChanges,
+  relabel,
+  runsFromRanges,
+} from './buffer-preview-restore';
 import { samplePreview } from './buffer-preview-sample';
 
 describe('runsFromRanges', () => {
@@ -68,6 +77,60 @@ describe('relabel', () => {
       { author: 'human', text: 'f' },
     ]);
     expect(documentEnds(relabelled)).toEqual([2, 4, 6]);
+  });
+});
+
+describe('a page undo through the session', () => {
+  it('restores the previous string and the colors it had', () => {
+    const sample = samplePreview();
+    const text = documentText(sample);
+    const at = text.indexOf('quiet');
+    const gone = 'quiet under it,';
+    const page = (
+      prev: number,
+      replacements: { from: number; to: number; insert: string }[],
+      modelRanges?: [number, number][]
+    ): ChangesMessage => ({
+      type: 'changes',
+      epoch: 1,
+      prevRevision: prev,
+      revision: prev + 1,
+      replacements,
+      selection: { anchor: 0, head: at },
+      composing: false,
+      ...(modelRanges ? { modelRanges } : {}),
+    });
+    const messages = [
+      page(0, [{ from: at, to: at + gone.length, insert: '' }]),
+      // The page's undo: the text returns with the exact model ranges.
+      page(
+        1,
+        [{ from: at, to: at, insert: gone }],
+        modelRangesOf(documentRuns(sample)) as [number, number][]
+      ),
+    ];
+    let session = startSession(1);
+    let doc = sample;
+    for (const message of messages) {
+      const step = reduceSession(session, message);
+      session = step.state;
+      for (const action of step.actions) {
+        if (action.type === 'apply') {
+          doc = applyPageChanges(
+            doc,
+            action.replacements,
+            action.caret,
+            action.modelRanges
+          );
+        }
+      }
+      if (message.revision === 1) {
+        expect(documentText(doc)).toBe(text.replace(gone, ''));
+      }
+    }
+    expect(documentText(doc)).toBe(text);
+    expect(documentRuns(doc)).toEqual(documentRuns(sample));
+    expect(documentEnds(doc)).toEqual(documentEnds(sample));
   });
 });
 

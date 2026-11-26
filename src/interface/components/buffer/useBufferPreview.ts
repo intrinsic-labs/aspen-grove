@@ -10,7 +10,7 @@ import {
   noteSelection,
 } from './buffer-preview-document';
 import { flushReconcile } from './buffer-preview-reconcile';
-import { adopt, relabel } from './buffer-preview-restore';
+import { adopt, applyPageChanges } from './buffer-preview-restore';
 import type { BufferSelection } from './derive-replacement';
 import type { CompositionBarrier } from './composition-barrier';
 
@@ -27,10 +27,11 @@ export const useBufferPreview = (barrier: CompositionBarrier) => {
   const [receipt, setReceipt] = useState<AppliedReceipt | null>(null);
 
   const onReplace = useCallback(
-    (edit: Replacement) =>
-      setDoc((current) =>
-        applyEdits(current, [edit], { composing: barrier.isComposing() })
-      ),
+    (edit: Replacement) => {
+      // Read now: an updater runs later, and twice under StrictMode.
+      const composing = barrier.isComposing();
+      setDoc((current) => applyEdits(current, [edit], { composing }));
+    },
     [barrier]
   );
   const onSelection = useCallback(
@@ -51,13 +52,9 @@ export const useBufferPreview = (barrier: CompositionBarrier) => {
   const sink = useMemo<WebEditorSink>(
     () => ({
       onChanges: (replacements, caret, modelRanges) =>
-        setDoc((current) => {
-          const next = applyEdits(current, replacements, {
-            caret,
-            exactColors: true,
-          });
-          return modelRanges ? relabel(next, modelRanges) : next;
-        }),
+        setDoc((current) =>
+          applyPageChanges(current, replacements, caret, modelRanges)
+        ),
       onAdopt: (text, ranges, layout, caret) =>
         setDoc((current) => adopt(current, text, ranges, layout, caret)),
       onApplied: (applied) => {

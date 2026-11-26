@@ -5,6 +5,7 @@
  * the passages' text where the reducer put it. Colors only ever come from
  * the page's ranges here; nothing is diffed and nothing goes back to the page.
  */
+import type { Replacement } from '@application/services/buffer/apply-replacement';
 import {
   type Author,
   type AuthorshipRun,
@@ -21,6 +22,7 @@ import type { ModelRange } from './android/web-editor-protocol';
 import {
   PREFIX_ID,
   type PreviewDocument,
+  applyEdits,
   endingId,
 } from './buffer-preview-document';
 
@@ -79,6 +81,21 @@ export const relabel = (
       tail: runsOfOwner({ kind: 'tail' }, startOf({ kind: 'tail' })),
     }),
   };
+};
+
+/**
+ * One accepted page transaction: its replacements in one `applyReplacements`
+ * call, then, for undo and redo, the exact colors the page restored. The
+ * page's colors are authoritative, so nothing is reconciled here.
+ */
+export const applyPageChanges = (
+  doc: PreviewDocument,
+  replacements: readonly Replacement[],
+  caret: number,
+  modelRanges?: readonly ModelRange[]
+): PreviewDocument => {
+  const next = applyEdits(doc, replacements, { caret, exactColors: true });
+  return modelRanges ? relabel(next, modelRanges) : next;
 };
 
 /**
