@@ -115,7 +115,7 @@ const receiveCheckpoint = (
             type: 'applied',
             revision: message.revision,
             head: message.selection.head,
-            composing: false,
+            composing: message.composing,
           },
         ],
       };

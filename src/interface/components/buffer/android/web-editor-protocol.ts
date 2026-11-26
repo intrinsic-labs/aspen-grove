@@ -109,6 +109,8 @@ export type CheckpointMessage = {
   /** The seam as the page tracked it (see `LoadMessage.seam`). */
   readonly seam: number;
   readonly selection: Selection;
+  /** Whether an IME composition is still active when the checkpoint is taken. */
+  readonly composing: boolean;
 };
 
 /**
@@ -200,7 +202,8 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
     typeof m.text === 'string' &&
     isRanges(m.modelRanges) &&
     Number.isInteger(m.seam) &&
-    isSelection(m.selection)
+    isSelection(m.selection) &&
+    typeof m.composing === 'boolean'
   ) {
     return m as unknown as CheckpointMessage;
   }

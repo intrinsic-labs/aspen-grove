@@ -62,6 +62,7 @@ describe('reduceSession', () => {
       modelRanges: [[0, 3]],
       seam: 4,
       selection: { anchor: 10, head: 10 },
+      composing: false,
     };
     const resumed = reduceSession(gap, checkpoint);
     expect(resumed.state).toEqual({
@@ -100,8 +101,29 @@ describe('reduceSession', () => {
         modelRanges: [],
         seam: 0,
         selection: { anchor: 0, head: 0 },
+        composing: false,
       }).actions
     ).toEqual([]);
+  });
+
+  it('keeps a checkpoint taken mid-composition composing', () => {
+    const gap = reduceSession(startSession(1), changes(2)).state;
+    const resumed = reduceSession(gap, {
+      type: 'checkpoint',
+      epoch: 1,
+      revision: 3,
+      text: 'かあ',
+      modelRanges: [],
+      seam: 0,
+      selection: { anchor: 2, head: 2 },
+      composing: true,
+    });
+    expect(resumed.actions[2]).toEqual({
+      type: 'applied',
+      revision: 3,
+      head: 2,
+      composing: true,
+    });
   });
 
   it('passes the composing flag and the caret through', () => {

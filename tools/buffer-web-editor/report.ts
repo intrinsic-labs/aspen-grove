@@ -48,5 +48,6 @@ export const checkpointOf = (
     modelRanges: view.state.field(modelRangesField),
     seam,
     selection: { anchor, head },
+    composing: view.composing,
   };
 };
