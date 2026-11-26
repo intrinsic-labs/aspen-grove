@@ -1,5 +1,9 @@
 import type { ULID } from '@domain/value-objects';
 import type { computeHumanContentHash } from '../content-hash-service';
+import type { BufferPathAction } from './resolve-buffer-path';
+
+/** A version or branch switch; `open` is a plain commit. */
+export type BufferSwitchAction = Exclude<BufferPathAction, { kind: 'open' }>;
 
 export interface BufferDraft {
   /** The single path whose sequence, cursor and selections may change. */
@@ -24,6 +28,11 @@ export interface BufferDraft {
   readonly edits: readonly { readonly nodeId: ULID; readonly text: string }[];
   /** Literal uncommitted text following the old leaf. */
   readonly workingTail: string;
+  /**
+   * The switch this operation performs, if any. It travels with the draft so
+   * a recovered draft replays the same command after a lost acknowledgement.
+   */
+  readonly action?: BufferSwitchAction;
 }
 
 /** Fallback reservations must return the same value for the same operation/key on replay. */

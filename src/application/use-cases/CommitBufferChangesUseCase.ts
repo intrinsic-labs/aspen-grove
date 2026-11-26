@@ -48,10 +48,9 @@ export class BufferCommands {
   private readonly pending = new Map<ULID, Promise<unknown>>();
   constructor(private readonly repos: Dependencies) {}
 
-  execute(
-    input: BufferCommandInput,
-    action: BufferPathAction
-  ): Promise<ResolvedBufferPath> {
+  /** Runs the draft's own command: its switch if it carries one, else a commit. */
+  execute(input: BufferCommandInput): Promise<ResolvedBufferPath> {
+    const action: BufferPathAction = input.draft.action ?? { kind: 'open' };
     const previous = this.pending.get(input.treeId) ?? Promise.resolve();
     const next = previous
       .catch(() => undefined)
@@ -130,9 +129,13 @@ export class BufferCommands {
   }
 }
 
+/**
+ * Commits a draft. A recovered draft that carries a switch replays that
+ * switch, so retrying any stored draft repeats exactly what was asked.
+ */
 export class CommitBufferChangesUseCase {
   constructor(private readonly commands: BufferCommands) {}
   execute(input: BufferCommandInput): Promise<ResolvedBufferPath> {
-    return this.commands.execute(input, { kind: 'open' });
+    return this.commands.execute(input);
   }
 }

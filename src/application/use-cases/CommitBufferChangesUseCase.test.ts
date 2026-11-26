@@ -122,3 +122,15 @@ test('branch switch commits the old tail before selecting the sibling', async ()
   expect(tail?.metadata.buffer?.creationParentId).toBe(f.child);
   expect(tail?.content).toEqual({ type: 'text', text: draft.workingTail });
 });
+
+test('a recovered switch draft replays the switch after a lost acknowledgement', async () => {
+  const f = await bufferFixture();
+  const action = { kind: 'version', position: 0, nodeId: f.root } as const;
+  const draft = { ...(await f.draft()), action };
+  const switched = await f.switchPath.execute({ ...f, draft, action });
+  // The acknowledgement is lost: recovery commits the stored draft again.
+  const replayed = await f.commit.execute({ ...f, draft });
+  expect(replayed.nodeIds).toEqual(switched.nodeIds);
+  expect(replayed.nodeIds).toEqual([f.root, f.child]);
+  expect(await f.sequence()).toEqual([f.root, f.child]);
+});
