@@ -178,7 +178,7 @@ Base error type for all provider errors.
 
 ## Provider Adapters
 
-Four adapters implement the interface (`src/infrastructure/llm/`). Direct-provider routing and catalogs are implemented; connection and model-picker screens are a separate UI task. `RoutableProvider` enumerates backend adapters; `SelectableProvider` still enumerates the existing picker choices.
+Four adapters implement the interface (`src/infrastructure/llm/`). Settings → Connections has a key section per hosted provider (save, test, replace, remove), and the Provider and model pickers list Anthropic and OpenAI once a key is stored. `RoutableProvider` enumerates backend adapters and `SelectableProvider` the pickable providers; today they are the same four. `KeyedProvider` is the hosted three (OpenRouter, Anthropic, OpenAI).
 
 ### OpenRouterAdapter
 
@@ -319,10 +319,10 @@ Models are fetched, not persisted, so users get new models without app updates.
   Chat Completions-only variants, plus o1-pro/o3-pro which do not stream. New unknown families can still be addressed by ID.
   Both return the existing `OpenRouterCatalogModel` shape with native IDs and text
   modalities; absent prices or limits remain unknown. Changing the key or endpoint clears
-  the cache. The UI task must wire these methods into the model browser and connection tests.
+  the cache. The model browser and the key sections' "Test Key" call these methods: a key is tested by `initialize` then `fetchModels()`. A development build can replace an adapter's completion URL (and so its catalog origin) with `EXPO_PUBLIC_ANTHROPIC_ENDPOINT` or `EXPO_PUBLIC_OPENAI_ENDPOINT`, applied when the adapter is constructed; release builds refuse the variables.
 - Users can always type a model identifier by hand
 
-The existing agent editor's model picker (`useModelPickerData`) reads OpenRouter and LM Studio.
+The agent editor's and a tree's model pickers (`useModelPickerData`) read all four.
 
 ---
 

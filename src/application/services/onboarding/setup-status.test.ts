@@ -4,7 +4,7 @@ import { assessSetupStatus, type SetupFacts } from './setup-status';
 const base: SetupFacts = {
   sharedModelAgentCount: 1,
   defaultAgentProvider: 'openrouter',
-  hasOpenRouterKey: true,
+  hasDefaultProviderKey: true,
 };
 
 describe('assessSetupStatus', () => {
@@ -14,7 +14,7 @@ describe('assessSetupStatus', () => {
         ...base,
         sharedModelAgentCount: 0,
         defaultAgentProvider: null,
-        hasOpenRouterKey: true,
+        hasDefaultProviderKey: true,
       })
     ).toBe('first-run');
   });
@@ -31,7 +31,7 @@ describe('assessSetupStatus', () => {
   });
 
   it('is no-key when the default agent is on OpenRouter and no key is stored', () => {
-    expect(assessSetupStatus({ ...base, hasOpenRouterKey: false })).toBe(
+    expect(assessSetupStatus({ ...base, hasDefaultProviderKey: false })).toBe(
       'no-key'
     );
   });
@@ -41,10 +41,26 @@ describe('assessSetupStatus', () => {
       assessSetupStatus({
         ...base,
         defaultAgentProvider: 'lmstudio',
-        hasOpenRouterKey: false,
+        hasDefaultProviderKey: false,
       })
     ).toBe('ready');
   });
+
+  it.each(['anthropic', 'openai'])(
+    'is no-key when the default agent is on %s and its key is missing',
+    (defaultAgentProvider) => {
+      expect(
+        assessSetupStatus({
+          ...base,
+          defaultAgentProvider,
+          hasDefaultProviderKey: false,
+        })
+      ).toBe('no-key');
+      expect(assessSetupStatus({ ...base, defaultAgentProvider })).toBe(
+        'ready'
+      );
+    }
+  );
 
   it('is ready with an OpenRouter agent and a key', () => {
     expect(assessSetupStatus(base)).toBe('ready');

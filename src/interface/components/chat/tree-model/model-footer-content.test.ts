@@ -15,7 +15,7 @@ describe('modelFooterContent', () => {
           id: 'openai/gpt-4o',
           label: 'GPT-4o',
           description: 'A model.',
-          openRouter: {
+          catalog: {
             id: 'openai/gpt-4o',
             displayName: 'GPT-4o',
             contextLength: 128000,

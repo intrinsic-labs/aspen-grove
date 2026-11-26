@@ -4,6 +4,7 @@ import {
   type SelectableProvider,
 } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
+import { useConnectedProviders } from '../../models/useConnectedProviders';
 import { useModelPickerData } from '../../models/useModelPickerData';
 import { catalogModelForId } from '../../models/catalog-model-for-id';
 import { modelChoiceChanges } from './model-choice';
@@ -35,6 +36,7 @@ export const useTreeModelSettings = (treeId: ULID | undefined) => {
   const agentProvider =
     model && isSelectableProvider(model.provider) ? model.provider : null;
   const provider = pendingProvider ?? agentProvider ?? 'openrouter';
+  const providers = useConnectedProviders(agentProvider);
   const picker = useModelPickerData(provider);
   const listReady = picker.settledFor === provider && !picker.error;
   const modelId = pendingProvider ? null : (model?.id ?? null);
@@ -112,6 +114,7 @@ export const useTreeModelSettings = (treeId: ULID | undefined) => {
     error: treeModel.error,
     hasAgent: agent !== null,
     provider,
+    providers,
     chooseProvider: (next: SelectableProvider) =>
       setPendingProvider(next === agentProvider && agent ? null : next),
     modelId,

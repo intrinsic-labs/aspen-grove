@@ -40,7 +40,7 @@ const build = (input: {
         return preferences;
       },
     },
-    hasOpenRouterKey: async () => input.hasKey,
+    hasProviderKey: async () => input.hasKey,
   });
 };
 

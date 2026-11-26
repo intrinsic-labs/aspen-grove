@@ -9,11 +9,13 @@ import {
 } from '@/interface/ui/components/form';
 import { splitModelName } from './model-info-format';
 import type { ModelOption } from './model-options';
-import { PROVIDER_OPTIONS } from './provider-default-model';
+import { providerOptions } from './provider-options';
 
 type ProviderModelSectionProps = {
   readonly header?: string;
   readonly provider: SelectableProvider;
+  /** The providers the Provider menu offers (the connected ones). */
+  readonly providers: readonly SelectableProvider[];
   readonly onChangeProvider: (provider: SelectableProvider) => void;
   /** The chosen model's id, without the provider. */
   readonly modelId: string | null;
@@ -22,7 +24,7 @@ type ProviderModelSectionProps = {
   /** LM Studio's models, for its menu. */
   readonly options: readonly ModelOption[];
   readonly onChooseLmStudioModel: (id: string) => void;
-  /** OpenRouter's Model row pushes the model browser. */
+  /** Every provider but LM Studio: the Model row pushes the model browser. */
   readonly onOpenModelBrowser: () => void;
   readonly footer?: ReactNode;
   readonly style?: StyleProp<ViewStyle>;
@@ -46,11 +48,12 @@ const lmStudioItems = (
 
 /** The Model row's value: OpenRouter's name without its maker, else the id. */
 const modelLabel = (
+  provider: SelectableProvider,
   selected: ModelOption | undefined,
   modelId: string | null
 ): string | undefined => {
-  if (selected?.openRouter) {
-    return splitModelName(selected.openRouter).title;
+  if (provider === 'openrouter' && selected?.catalog) {
+    return splitModelName(selected.catalog).title;
   }
   return selected?.label ?? modelId ?? undefined;
 };
@@ -59,12 +62,14 @@ const modelLabel = (
  * Provider and Model, as Latent Spaces' tree Model Settings lays them out
  * (TreeModelSettingsView.swift:73-143): the Provider menu picker, then
  * Model. OpenRouter's Model pushes the model browser
- * (`.pickerStyle(.navigationLink)`); LM Studio's short list is a menu.
+ * (`.pickerStyle(.navigationLink)`), as do Anthropic's and OpenAI's lists;
+ * LM Studio's short list is a menu.
  * Shared by a tree's Model Settings and the agent editor.
  */
 export const ProviderModelSection = ({
   header,
   provider,
+  providers,
   onChangeProvider,
   modelId,
   selected,
@@ -80,14 +85,14 @@ export const ProviderModelSection = ({
       testID={`${testIDPrefix}-provider`}
       title="Provider"
       value={provider}
-      options={PROVIDER_OPTIONS}
+      options={providerOptions(providers)}
       onChange={onChangeProvider}
     />
-    {provider === 'openrouter' ? (
+    {provider !== 'lmstudio' ? (
       <FormLinkRow
         testID={`${testIDPrefix}-model`}
         title="Model"
-        value={modelLabel(selected, modelId) ?? 'Choose'}
+        value={modelLabel(provider, selected, modelId) ?? 'Choose'}
         onPress={onOpenModelBrowser}
       />
     ) : (

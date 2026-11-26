@@ -13,11 +13,15 @@ export type Provider =
   | 'local'
   | 'custom';
 
-/** Providers exposed by the current UI; direct-provider screens are separate work. */
-export type SelectableProvider = 'openrouter' | 'lmstudio';
+/** Providers a user can pick for a tree or an agent. */
+export type SelectableProvider =
+  'openrouter' | 'anthropic' | 'openai' | 'lmstudio';
 
+/** In the order Settings and the pickers list them. */
 export const SELECTABLE_PROVIDERS: readonly SelectableProvider[] = [
   'openrouter',
+  'anthropic',
+  'openai',
   'lmstudio',
 ] as const;
 
@@ -26,12 +30,19 @@ export const isSelectableProvider = (
 ): value is SelectableProvider =>
   SELECTABLE_PROVIDERS.includes(value as SelectableProvider);
 
-/** Backend routing can be enabled before a provider's picker/connection UI. */
-export type RoutableProvider = SelectableProvider | 'anthropic' | 'openai';
-export const ROUTABLE_PROVIDERS: readonly RoutableProvider[] = [
-  ...SELECTABLE_PROVIDERS,
-  'anthropic',
-  'openai',
-];
+/** Providers that have an adapter. Today these are the selectable ones. */
+export type RoutableProvider = SelectableProvider;
+export const ROUTABLE_PROVIDERS: readonly RoutableProvider[] =
+  SELECTABLE_PROVIDERS;
 export const isRoutableProvider = (value: string): value is RoutableProvider =>
   ROUTABLE_PROVIDERS.includes(value as RoutableProvider);
+
+/** Hosted providers, each reached with an API key the user stores. */
+export type KeyedProvider = 'openrouter' | 'anthropic' | 'openai';
+export const KEYED_PROVIDERS: readonly KeyedProvider[] = [
+  'openrouter',
+  'anthropic',
+  'openai',
+] as const;
+export const isKeyedProvider = (value: string): value is KeyedProvider =>
+  KEYED_PROVIDERS.includes(value as KeyedProvider);

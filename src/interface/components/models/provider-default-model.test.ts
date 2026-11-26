@@ -52,4 +52,43 @@ describe('providerDefaultModel', () => {
       })
     ).toBe('warm');
   });
+
+  describe.each(['anthropic', 'openai'] as const)('on %s', (provider) => {
+    const models = [
+      {
+        id: 'old',
+        label: 'Old',
+        catalog: { id: 'old', displayName: 'Old', created: 100 },
+      },
+      {
+        id: 'new',
+        label: 'New',
+        catalog: { id: 'new', displayName: 'New', created: 200 },
+      },
+      {
+        id: 'mid',
+        label: 'Mid',
+        catalog: { id: 'mid', displayName: 'Mid', created: 150 },
+      },
+    ];
+
+    it("takes the default agent's model when it is listed", () => {
+      expect(
+        providerDefaultModel(provider, models, { provider, id: 'old' })
+      ).toBe('old');
+    });
+
+    it("takes the newest listed model when the default agent isn't on it", () => {
+      expect(
+        providerDefaultModel(provider, models, {
+          provider: 'openrouter',
+          id: 'x/y',
+        })
+      ).toBe('new');
+    });
+
+    it('takes none while nothing is listed', () => {
+      expect(providerDefaultModel(provider, [], null)).toBeNull();
+    });
+  });
 });

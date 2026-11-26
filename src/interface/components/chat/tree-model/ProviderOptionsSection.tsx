@@ -36,6 +36,7 @@ export const ProviderOptionsSection = ({
       />
     }
     provider={settings.provider}
+    providers={settings.providers}
     onChangeProvider={settings.chooseProvider}
     modelId={settings.modelId}
     selected={settings.selected}

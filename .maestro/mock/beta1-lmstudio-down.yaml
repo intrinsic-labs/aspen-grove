@@ -33,9 +33,16 @@ env:
 - takeScreenshot: es-08-chat-lmstudio-unreachable
 - tapOn:
     id: chat-error-action
+# The Connections sheet opens on its list; LM Studio's row leads to its server.
 - extendedWaitUntil:
     visible:
-      id: connections-openrouter-edit
+      id: connections-row-lmstudio
+    timeout: 10000
+- tapOn:
+    id: connections-row-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: connections-provider-screen
     timeout: 10000
 - scrollUntilVisible:
     element:

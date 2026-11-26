@@ -1,3 +1,3 @@
-import OpenRouterModelListScreen from '@interface/components/chat/tree-model/OpenRouterModelListScreen';
+import TreeModelListScreen from '@interface/components/chat/tree-model/TreeModelListScreen';
 
-export default OpenRouterModelListScreen;
+export default TreeModelListScreen;

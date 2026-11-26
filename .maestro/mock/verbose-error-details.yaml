@@ -33,6 +33,12 @@ env:
     visible:
       id: settings-connections-screen
     timeout: 10000
+- tapOn:
+    id: connections-row-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: connections-provider-screen
+    timeout: 10000
 - scrollUntilVisible:
     element:
       id: connections-lmstudio-test
@@ -73,6 +79,12 @@ env:
 - tapOn:
     id: keyboard.toolbar.done
 - waitForAnimationToEnd
+# Back out of LM Studio's screen, then the list.
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings-connections-screen
+    timeout: 10000
 - runFlow: ../go-back.yaml
 - extendedWaitUntil:
     visible:

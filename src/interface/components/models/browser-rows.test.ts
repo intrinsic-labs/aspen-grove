@@ -4,7 +4,7 @@ import type { ModelOption } from './model-options';
 const option = (id: string, displayName: string): ModelOption => ({
   id,
   label: displayName,
-  openRouter: {
+  catalog: {
     id,
     displayName,
     contextLength: 200_000,

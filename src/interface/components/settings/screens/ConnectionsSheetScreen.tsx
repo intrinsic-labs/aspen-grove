@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { FormSheetHeader } from '@/interface/ui/components/form';
 import { AppScreen } from '@/interface/ui/value-objects';
-import ConnectionsSettingsScreen from './ConnectionsSettingsScreen';
+import { ConnectionsListScreen } from './ConnectionsListScreen';
 
 /**
- * Settings → Connections as a sheet over the current screen, for the
+ * Settings → Connections (the provider list) as a sheet over the current screen, for the
  * "Add key" and "Open Connections" actions on Home, Loom Trees and a failed
  * generation. It closes back to where the user was, so a tree stays open.
  * Its bar is a sheet's: the title with a glass Done capsule.
@@ -22,7 +22,7 @@ const ConnectionsSheetScreen = () => {
           testID: 'connections-sheet-done',
         }}
       />
-      <ConnectionsSettingsScreen />
+      <ConnectionsListScreen scope="sheet" />
     </AppScreen>
   );
 };

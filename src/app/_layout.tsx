@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { AppBootstrapGate, AppServicesProvider } from '@interface/composition';
 import { settingsScreenOptions } from '@interface/components/settings/settings-screen-options';
+import { connectionProviderTitle } from '@interface/components/settings/connections/connection-provider';
 import { VoiceModeProvider } from '@interface/components/voice';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 
@@ -74,11 +75,23 @@ const RootLayout = () => {
                     options={settingsScreenOptions(colors.primary, 'Agents')}
                   />
                   <Stack.Screen
-                    name="settings/connections"
+                    name="settings/connections/index"
                     options={settingsScreenOptions(
                       colors.primary,
                       'Connections'
                     )}
+                  />
+                  <Stack.Screen
+                    name="settings/connections/[provider]"
+                    options={({ route }) =>
+                      settingsScreenOptions(
+                        colors.primary,
+                        connectionProviderTitle(
+                          (route.params as { provider?: string } | undefined)
+                            ?.provider
+                        )
+                      )
+                    }
                   />
                   <Stack.Screen
                     name="tree/[treeId]"

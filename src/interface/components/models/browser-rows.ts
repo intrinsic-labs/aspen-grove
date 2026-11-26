@@ -9,17 +9,26 @@ export type BrowserRow = {
   readonly meta?: string;
 };
 
-/** What a row shows: OpenRouter's name split from its author, and figures. */
+/**
+ * What a row shows: OpenRouter's name split from its author, and figures.
+ * Anthropic's and OpenAI's own lists name no author in the model's name, so
+ * the option carries it.
+ */
 export const toBrowserRow = (option: ModelOption): BrowserRow => {
-  if (!option.openRouter) {
-    return { id: option.id, title: option.label, meta: option.detail };
+  if (!option.catalog || option.author) {
+    return {
+      id: option.id,
+      title: option.label,
+      author: option.author,
+      meta: option.detail,
+    };
   }
-  const { title, author } = splitModelName(option.openRouter);
+  const { title, author } = splitModelName(option.catalog);
   return {
     id: option.id,
     title,
     author,
-    meta: formatRowMeta(option.openRouter) || undefined,
+    meta: formatRowMeta(option.catalog) || undefined,
   };
 };
 
