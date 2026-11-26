@@ -8,7 +8,9 @@ import type {
 import { mapSeamThrough } from '../../src/interface/components/buffer/android/web-editor-seam';
 import { listen, post } from './bridge';
 import { authorMarks } from './marks';
+import { breaksField, lineSeparators } from './line-separators';
 import { changesOf, checkpointOf } from './report';
+import { restoreSeparators, splitSeparators, toPageOffset } from './separators';
 import { applyStyle } from './theme';
 
 let view: EditorView | undefined;
@@ -34,7 +36,7 @@ const logSettled = (editor: EditorView): void => {
     const text = editor.state.doc.toString();
     const bursts = (text.match(/burst\d\d /g) ?? []).length;
     console.log(
-      `AGBUF page epoch=${epoch} rev=${revision} acked=${acknowledged} len=${text.length} head=${head} bursts=${bursts} before=${JSON.stringify(
+      `AGBUF page epoch=${epoch} rev=${revision} acked=${acknowledged} len=${text.length} hostlen=${restoreSeparators(text, editor.state.field(breaksField)).length} head=${head} bursts=${bursts} before=${JSON.stringify(
         text.slice(Math.max(0, head - 60), head)
       )}`
     );
@@ -53,16 +55,23 @@ const reportComposition = (editor: EditorView): void => {
   }, COMPOSITION_SETTLE_MS);
 };
 
-const create = (message: LoadMessage): EditorView =>
-  new EditorView({
+const create = (message: LoadMessage): EditorView => {
+  // The page shows LF only; the host's separators ride in the break map.
+  const { text, breaks } = splitSeparators(message.text);
+  const modelRanges = message.modelRanges.map(
+    ([from, to]) =>
+      [toPageOffset(breaks, from), toPageOffset(breaks, to)] as const
+  );
+  return new EditorView({
     parent: document.getElementById('editor') as HTMLElement,
     state: EditorState.create({
-      doc: message.text,
+      doc: text,
       extensions: [
         history(),
         keymap.of(historyKeymap),
         EditorView.lineWrapping,
-        authorMarks(message.modelRanges),
+        lineSeparators(breaks),
+        authorMarks(modelRanges),
         placeholder(message.style.placeholder),
         EditorView.domEventObservers({
           compositionend: (_event, editor) => reportComposition(editor),
@@ -86,6 +95,7 @@ const create = (message: LoadMessage): EditorView =>
       ],
     }),
   });
+};
 
 /** A fresh editor per load: no history, selection or marks carry over. */
 const load = (message: LoadMessage): void => {
