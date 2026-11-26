@@ -92,7 +92,7 @@ test('changed text after a committed operation takes a new operation id', async 
     graph,
     path,
     text({ workingTail: ' different' }),
-    options({ previous: first, isCommitted: (op) => op === head })
+    options({ previous: first, isCommitted: (op: string) => op === head })
   );
   expect(next.operationId).not.toBe(first.operationId);
   expect(next.nodeIds.some((id) => first.nodeIds.includes(id))).toBe(false);
