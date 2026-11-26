@@ -137,9 +137,16 @@ describe('parseEditorMessage', () => {
       revision: 9,
       text: 'abc',
       modelRanges: [[0, 2]],
+      seam: 1,
       selection: { anchor: 3, head: 3 },
     };
     expect(parseEditorMessage(JSON.stringify(checkpoint))).toEqual(checkpoint);
+    const composition = { type: 'composition', epoch: 1, composing: false };
+    expect(parseEditorMessage(JSON.stringify(composition))).toEqual(composition);
+    expect(
+      parseEditorMessage('{"type":"composition","epoch":1,"composing":"no"}')
+    ).toBeNull();
+    expect(parseEditorMessage(JSON.stringify({ ...checkpoint, seam: undefined }))).toBeNull();
   });
 
   it('rejects malformed input', () => {

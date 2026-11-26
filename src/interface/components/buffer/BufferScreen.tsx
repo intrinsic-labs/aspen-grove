@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   KeyboardAvoidingView,
@@ -18,6 +18,8 @@ import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferDocStats } from './BufferDocStats';
 import { useBufferWebSink } from './useBufferWebSink';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
+import type { CompositionControl } from './android/buffer-web-editor-props';
+import { createCompositionBarrier } from './composition-barrier';
 import type { BufferRenderVariant } from './BufferTextInput';
 import {
   paragraphStressPreview,
@@ -28,6 +30,7 @@ import {
   emptyPreview,
   previewRuns,
   previewText,
+  runsLength,
   samplePreview,
   selectPreviewSibling,
   siblingCount,
@@ -81,26 +84,37 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     (edit: PreviewEdit) => setPreview((state) => applyPreviewEdit(state, edit)),
     []
   );
+  // A document load waits for an IME composition to end (see the barrier).
+  const composition = useRef<CompositionControl>({ end: () => {} }).current;
+  const barrier = useMemo(
+    () => createCompositionBarrier({ requestEnd: () => composition.end() }),
+    [composition]
+  );
   const { sink, receipt, clearReceipt } = useBufferWebSink(
     setPreview,
-    onReplace
+    onReplace,
+    barrier
   );
   const onSelectSibling = useCallback(
-    (index: number) => {
-      setPreview((state) => selectPreviewSibling(state, index));
-      setEpoch((value) => value + 1);
-      clearReceipt();
-    },
-    [clearReceipt]
+    (index: number) =>
+      barrier.run(() => {
+        barrier.reset();
+        setPreview((state) => selectPreviewSibling(state, index));
+        setEpoch((value) => value + 1);
+        clearReceipt();
+      }),
+    [barrier, clearReceipt]
   );
   const load = useCallback(
-    (next: PreviewState) => {
-      setPreview(next);
-      setEpoch((value) => value + 1);
-      setFixtureEpoch((value) => value + 1);
-      clearReceipt();
-    },
-    [clearReceipt]
+    (next: PreviewState) =>
+      barrier.run(() => {
+        barrier.reset();
+        setPreview(next);
+        setEpoch((value) => value + 1);
+        setFixtureEpoch((value) => value + 1);
+        clearReceipt();
+      }),
+    [barrier, clearReceipt]
   );
 
   const text = previewText(preview);
@@ -116,6 +130,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           fixtureEpoch={fixtureEpoch}
           text={text}
           runs={previewRuns(preview)}
+          seam={runsLength(preview.prefix)}
+          composition={composition}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}

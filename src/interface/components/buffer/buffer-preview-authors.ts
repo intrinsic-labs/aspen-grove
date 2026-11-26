@@ -1,5 +1,4 @@
 import {
-  applyPreviewEdit,
   coalesce,
   previewText,
   runsLength,
@@ -54,35 +53,25 @@ export const relabelPreview = (
 };
 
 /**
- * Resumes from a page checkpoint: one edit turns the host's text into the
- * page's (the common prefix and suffix are kept), then the page's authorship
- * is applied. Sibling structure survives because this is an ordinary edit.
+ * Resumes from a page checkpoint. The page tracked the seam through every
+ * edit it made, so the text is split there: what is before it is the shared
+ * prefix, what is after it is the current ending. Neither side can absorb
+ * the other's text, however the missed edits changed lengths on either side.
+ * The sibling endings not shown stay as they are.
  */
 export const adoptCheckpoint = (
   state: PreviewState,
   text: string,
-  ranges: readonly ModelRange[]
+  ranges: readonly ModelRange[],
+  seam: number
 ): PreviewState => {
-  const before = previewText(state);
-  let head = 0;
-  const limit = Math.min(before.length, text.length);
-  while (head < limit && before[head] === text[head]) {
-    head += 1;
-  }
-  let tail = 0;
-  while (
-    tail < limit - head &&
-    before[before.length - 1 - tail] === text[text.length - 1 - tail]
-  ) {
-    tail += 1;
-  }
-  const edited =
-    before === text
-      ? state
-      : applyPreviewEdit(state, {
-          start: head,
-          end: before.length - tail,
-          inserted: text.slice(head, text.length - tail),
-        });
-  return relabelPreview(edited, ranges);
+  const runs = runsFromRanges(text, ranges);
+  const at = Math.min(Math.max(seam, 0), text.length);
+  return {
+    ...state,
+    prefix: sliceRuns(runs, 0, at),
+    suffixes: state.suffixes.map((suffix, i) =>
+      i === state.index ? sliceRuns(runs, at, Number.POSITIVE_INFINITY) : suffix
+    ),
+  };
 };

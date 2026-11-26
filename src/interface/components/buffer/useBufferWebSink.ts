@@ -9,11 +9,9 @@ import type {
   AppliedReceipt,
   WebEditorSink,
 } from './android/buffer-web-editor-props';
-import {
-  adoptCheckpoint,
-  relabelPreview,
-} from './buffer-preview-authors';
+import { adoptCheckpoint, relabelPreview } from './buffer-preview-authors';
 import type { PreviewEdit, PreviewState } from './buffer-preview';
+import type { CompositionBarrier } from './composition-barrier';
 
 /**
  * What the screen applies from the web editor, as one stable object (the
@@ -21,7 +19,8 @@ import type { PreviewEdit, PreviewState } from './buffer-preview';
  */
 export const useBufferWebSink = (
   setPreview: Dispatch<SetStateAction<PreviewState>>,
-  onReplace: (edit: PreviewEdit) => void
+  onReplace: (edit: PreviewEdit) => void,
+  barrier: CompositionBarrier
 ) => {
   const [receipt, setReceipt] = useState<AppliedReceipt | null>(null);
   const sink = useMemo<WebEditorSink>(
@@ -29,11 +28,15 @@ export const useBufferWebSink = (
       onReplace,
       onModelRanges: (ranges) =>
         setPreview((state) => relabelPreview(state, ranges)),
-      onAdopt: (text, ranges) =>
-        setPreview((state) => adoptCheckpoint(state, text, ranges)),
-      onApplied: setReceipt,
+      onAdopt: (text, ranges, seam) =>
+        setPreview((state) => adoptCheckpoint(state, text, ranges, seam)),
+      onApplied: (applied) => {
+        setReceipt(applied);
+        barrier.observe(applied.composing);
+      },
+      onComposition: barrier.observe,
     }),
-    [onReplace, setPreview]
+    [onReplace, setPreview, barrier]
   );
   const clearReceipt = useCallback(() => setReceipt(null), []);
   return { sink, receipt, clearReceipt };

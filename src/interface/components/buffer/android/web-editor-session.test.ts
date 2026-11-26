@@ -60,6 +60,7 @@ describe('reduceSession', () => {
       revision: 4,
       text: 'whole text',
       modelRanges: [[0, 3]],
+      seam: 4,
       selection: { anchor: 10, head: 10 },
     };
     const resumed = reduceSession(gap, checkpoint);
@@ -72,6 +73,7 @@ describe('reduceSession', () => {
       type: 'adopt',
       text: 'whole text',
       modelRanges: [[0, 3]],
+      seam: 4,
     });
     expect(reduceSession(resumed.state, changes(3)).actions).toEqual([
       { type: 'ack', revision: 4 },
@@ -96,6 +98,7 @@ describe('reduceSession', () => {
         revision: 5,
         text: 'old',
         modelRanges: [],
+        seam: 0,
         selection: { anchor: 0, head: 0 },
       }).actions
     ).toEqual([]);
@@ -120,5 +123,19 @@ describe('reduceSession', () => {
       changes(0, { modelRanges: [[2, 5]] })
     );
     expect(step.actions[0]).toMatchObject({ modelRanges: [[2, 5]] });
+  });
+
+  it('reports a composition that ended without an edit', () => {
+    const state = startSession(1);
+    expect(
+      reduceSession(state, { type: 'composition', epoch: 1, composing: false })
+    ).toEqual({
+      state,
+      actions: [{ type: 'composition', composing: false }],
+    });
+    expect(
+      reduceSession(state, { type: 'composition', epoch: 0, composing: false })
+        .actions
+    ).toEqual([]);
   });
 });
