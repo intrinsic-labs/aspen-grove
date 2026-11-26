@@ -25,6 +25,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 
 # A typing burst: every character arrives, none twice.
 - tapOn:
@@ -79,6 +84,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 - tapOn:
     id: buffer-load-sample
 - assertVisible:
@@ -117,6 +127,11 @@ appId: com.intrinsiclabs.aspengrove
     visible:
       id: buffer-screen
     timeout: 15000
+- repeat:
+    times: ${ENGINE_TAPS || 0}
+    commands:
+      - tapOn:
+          id: buffer-engine
 - tapOn:
     id: buffer-load-stress
 - waitForAnimationToEnd

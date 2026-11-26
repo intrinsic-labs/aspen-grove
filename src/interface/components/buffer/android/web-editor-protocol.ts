@@ -4,7 +4,9 @@ import type { PreviewEdit, PreviewRun } from '../buffer-preview';
  * The messages between the React Native host and the CodeMirror page, and the
  * pure range arithmetic both sides share. Offsets are UTF-16 code units, the
  * unit CodeMirror counts in and native selection reports. The whole text
- * crosses the bridge once per load (`load`); typing sends only replacements.
+ * crosses the bridge once per load (`load`), or when the host asks for a
+ * checkpoint after a revision gap; typing sends only replacements and the
+ * host answers with acknowledgements, never text.
  */
 
 /** Everything the page needs to draw itself, passed on load. */
@@ -36,7 +38,23 @@ export type LoadMessage = {
   readonly style: WebEditorStyle;
 };
 
-export type HostMessage = LoadMessage;
+/** The host applied everything up to `revision`; it carries no text. */
+export type AckMessage = {
+  readonly type: 'ack';
+  readonly epoch: number;
+  readonly revision: number;
+};
+
+/** The host saw a revision gap and wants the page's whole state. */
+export type CheckpointRequestMessage = {
+  readonly type: 'checkpointRequest';
+  readonly epoch: number;
+};
+
+export type HostMessage =
+  | LoadMessage
+  | AckMessage
+  | CheckpointRequestMessage;
 
 /** `[from, to)` of the pre-edit document becomes `insert`. */
 export type Replacement = {
@@ -45,18 +63,40 @@ export type Replacement = {
   readonly insert: string;
 };
 
+export type Selection = { readonly anchor: number; readonly head: number };
+
+export type ChangesMessage = {
+  readonly type: 'changes';
+  readonly epoch: number;
+  /** The revision this edit builds on; a mismatch at the host is a gap. */
+  readonly prevRevision: number;
+  /** Counts edits since the load; `prevRevision + 1`. */
+  readonly revision: number;
+  /** In document order, all against the pre-edit document. */
+  readonly replacements: readonly Replacement[];
+  readonly selection: Selection;
+  readonly composing: boolean;
+  /**
+   * The exact model ranges after the edit, sent only for undo and redo:
+   * restored text is not new typing, so it keeps the authorship it had.
+   */
+  readonly modelRanges?: readonly ModelRange[];
+};
+
+/** The page's full state at `revision`, sent when the host asks. */
+export type CheckpointMessage = {
+  readonly type: 'checkpoint';
+  readonly epoch: number;
+  readonly revision: number;
+  readonly text: string;
+  readonly modelRanges: readonly ModelRange[];
+  readonly selection: Selection;
+};
+
 export type EditorMessage =
   | { readonly type: 'ready' }
-  | {
-      readonly type: 'changes';
-      readonly epoch: number;
-      /** Counts changes since the load, so a gap would be visible. */
-      readonly revision: number;
-      /** In document order, all against the pre-edit document. */
-      readonly replacements: readonly Replacement[];
-      readonly selection: { readonly anchor: number; readonly head: number };
-      readonly composing: boolean;
-    };
+  | ChangesMessage
+  | CheckpointMessage;
 
 export const encodeHostMessage = (message: HostMessage): string =>
   JSON.stringify(message);
@@ -74,6 +114,27 @@ const isReplacement = (value: unknown): value is Replacement => {
   );
 };
 
+const isRange = (value: unknown): value is ModelRange =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  Number.isInteger(value[0]) &&
+  Number.isInteger(value[1]) &&
+  value[0] >= 0 &&
+  value[1] >= value[0];
+
+const isRanges = (value: unknown): value is readonly ModelRange[] =>
+  Array.isArray(value) && value.every(isRange);
+
+const isSelection = (value: unknown): value is Selection => {
+  const s = value as Selection | null;
+  return (
+    typeof s === 'object' &&
+    s !== null &&
+    Number.isInteger(s.anchor) &&
+    Number.isInteger(s.head)
+  );
+};
+
 /** The page's message, or null for anything malformed (never trusted). */
 export const parseEditorMessage = (raw: string): EditorMessage | null => {
   let data: unknown;
@@ -82,21 +143,35 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
   } catch {
     return null;
   }
-  const message = data as Partial<EditorMessage> | null;
-  if (message?.type === 'ready') {
+  const m = data as Record<string, unknown> | null;
+  if (typeof m !== 'object' || m === null) {
+    return null;
+  }
+  if (m.type === 'ready') {
     return { type: 'ready' };
   }
   if (
-    message?.type === 'changes' &&
-    Number.isInteger(message.epoch) &&
-    Number.isInteger(message.revision) &&
-    Array.isArray(message.replacements) &&
-    message.replacements.every(isReplacement) &&
-    message.selection !== undefined &&
-    Number.isInteger(message.selection.anchor) &&
-    Number.isInteger(message.selection.head)
+    m.type === 'changes' &&
+    Number.isInteger(m.epoch) &&
+    Number.isInteger(m.prevRevision) &&
+    Number.isInteger(m.revision) &&
+    Array.isArray(m.replacements) &&
+    m.replacements.every(isReplacement) &&
+    isSelection(m.selection) &&
+    typeof m.composing === 'boolean' &&
+    (m.modelRanges === undefined || isRanges(m.modelRanges))
   ) {
-    return message as EditorMessage;
+    return m as unknown as ChangesMessage;
+  }
+  if (
+    m.type === 'checkpoint' &&
+    Number.isInteger(m.epoch) &&
+    Number.isInteger(m.revision) &&
+    typeof m.text === 'string' &&
+    isRanges(m.modelRanges) &&
+    isSelection(m.selection)
+  ) {
+    return m as unknown as CheckpointMessage;
   }
   return null;
 };

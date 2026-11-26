@@ -12,8 +12,9 @@ import {
   encodeHostMessage,
   modelRangesOf,
   parseEditorMessage,
-  replacementsToEdits,
+  type HostMessage,
 } from './web-editor-protocol';
+import { useEditorSession } from './useEditorSession';
 import { webEditorStyle } from './web-editor-style';
 
 /** The page is loaded from this base so its fonts come from the app's assets. */
@@ -29,9 +30,10 @@ const allowNavigation = (request: WebViewNavigation): boolean =>
  * The Android writing surface: one CodeMirror 6 editor in a WebView. It loads
  * a document per epoch (the text and its author ranges cross the bridge once)
  * and answers with the replacements the user typed; nothing else crosses
- * while typing, and the page is never handed text back. The component is
- * memoized on `epoch` and styling, so a host re-render per keystroke does not
- * reach the WebView. Style is sent with each load; a later style change
+ * while typing, and the page is never handed text back (the host only
+ * acknowledges revisions, see useEditorSession). The component is memoized on
+ * `epoch` and the sink, so a host re-render per keystroke does not reach the
+ * WebView. Style is sent with each load; a later style change
  * takes effect at the next one.
  */
 const Editor = ({
@@ -42,7 +44,7 @@ const Editor = ({
   headerHeight,
   topGap,
   placeholder = '',
-  onReplace,
+  sink,
 }: BufferWebEditorProps) => {
   const webView = useRef<WebView>(null);
   const ready = useRef(false);
@@ -51,18 +53,20 @@ const Editor = ({
   const style = useRef(webEditorStyle(textStyle, headerHeight, topGap, placeholder));
   style.current = webEditorStyle(textStyle, headerHeight, topGap, placeholder);
 
+  const send = useCallback((message: HostMessage) => {
+    webView.current?.postMessage(encodeHostMessage(message));
+  }, []);
+
   const load = useCallback(() => {
     const document = latest.current;
-    webView.current?.postMessage(
-      encodeHostMessage({
-        type: 'load',
-        epoch: document.epoch,
-        text: document.text,
-        modelRanges: modelRangesOf(document.runs),
-        style: style.current,
-      })
-    );
-  }, []);
+    send({
+      type: 'load',
+      epoch: document.epoch,
+      text: document.text,
+      modelRanges: modelRangesOf(document.runs),
+      style: style.current,
+    });
+  }, [send]);
 
   useEffect(() => {
     if (ready.current) {
@@ -70,17 +74,19 @@ const Editor = ({
     }
   }, [epoch, load]);
 
+  const receive = useEditorSession(epoch, sink, send);
+
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {
       const message = parseEditorMessage(event.nativeEvent.data);
       if (message?.type === 'ready') {
         ready.current = true;
         load();
-      } else if (message?.type === 'changes' && message.epoch === epoch) {
-        replacementsToEdits(message.replacements).forEach(onReplace);
+      } else if (message) {
+        receive(message);
       }
     },
-    [epoch, load, onReplace]
+    [load, receive]
   );
 
   return (
@@ -105,7 +111,7 @@ const Editor = ({
 export const BufferWebEditor = memo(
   Editor,
   (before, after) =>
-    before.epoch === after.epoch && before.onReplace === after.onReplace
+    before.epoch === after.epoch && before.sink === after.sink
 );
 
 const styles = StyleSheet.create({

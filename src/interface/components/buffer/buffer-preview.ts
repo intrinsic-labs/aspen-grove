@@ -62,11 +62,11 @@ export const samplePreview = (): PreviewState => ({
   index: 0,
 });
 
-const runsLength = (runs: readonly PreviewRun[]): number =>
+export const runsLength = (runs: readonly PreviewRun[]): number =>
   runs.reduce((total, run) => total + run.text.length, 0);
 
 /** Adjacent runs by one author become one; empty runs vanish. */
-const coalesce = (runs: readonly PreviewRun[]): readonly PreviewRun[] =>
+export const coalesce = (runs: readonly PreviewRun[]): readonly PreviewRun[] =>
   runs.reduce<PreviewRun[]>((merged, run) => {
     if (run.text.length === 0) {
       return merged;
@@ -83,7 +83,7 @@ const coalesce = (runs: readonly PreviewRun[]): readonly PreviewRun[] =>
     return merged;
   }, []);
 
-const sliceRuns = (
+export const sliceRuns = (
   runs: readonly PreviewRun[],
   from: number,
   to: number
