@@ -12,7 +12,7 @@ import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import type { PreviewEdit, PreviewRun } from './buffer-preview';
 import type { BufferSelection } from './derive-replacement';
-import type { CompositionControl } from './android/buffer-web-editor-props';
+import type { CompositionControl } from './composition-barrier';
 import { useNativeComposition } from './ios/useNativeComposition';
 import { createChangeTracker } from './native-change-tracker';
 

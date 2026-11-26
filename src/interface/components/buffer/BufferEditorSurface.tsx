@@ -1,10 +1,8 @@
 import { Platform, type TextStyle } from 'react-native';
 import { BufferWebEditor } from './android/BufferWebEditor';
 import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
-import type {
-  CompositionControl,
-  WebEditorSink,
-} from './android/buffer-web-editor-props';
+import type { WebEditorSink } from './android/buffer-web-editor-props';
+import type { CompositionControl } from './composition-barrier';
 import type { PreviewEdit, PreviewRun } from './buffer-preview';
 
 /** Which editor draws the document. `web` exists on Android only. */

@@ -12,6 +12,14 @@
  * the action run after `fallbackMs`, so it is never lost.
  * Latest wins: a newer action replaces one still held.
  */
+/**
+ * The editor's side of the barrier: each engine (the Android page, the iOS
+ * native input) sets `end` on mount to commit its composition.
+ */
+export type CompositionControl = {
+  end: () => void;
+};
+
 export type CompositionBarrierOptions = {
   readonly fallbackMs?: number;
   /** Asks the editor to commit and end its composition, and then report. */

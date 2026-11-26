@@ -1,4 +1,4 @@
-import type { CompositionControl } from '../android/buffer-web-editor-props';
+import type { CompositionControl } from '../composition-barrier';
 import {
   COMPOSITION_CHANGE_EVENT,
   type BufferCompositionNative,

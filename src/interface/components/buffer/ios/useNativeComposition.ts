@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { CompositionControl } from '../android/buffer-web-editor-props';
+import type { CompositionControl } from '../composition-barrier';
 import { bindNativeComposition } from './bind-native-composition';
 import { bufferCompositionNative } from './buffer-composition-native';
 
