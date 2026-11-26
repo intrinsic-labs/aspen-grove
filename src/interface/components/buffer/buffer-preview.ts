@@ -14,7 +14,7 @@ import {
   coalesce,
   runsLength,
   sliceRuns,
-} from '../../../application/services/buffer/authorship-runs';
+} from '@application/services/buffer/authorship-runs';
 
 export type PreviewAuthor = Author;
 

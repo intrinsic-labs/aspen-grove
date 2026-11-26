@@ -1,4 +1,3 @@
-import { afterEach, beforeEach } from '@jest/globals';
 import type { AuthorshipRun } from './authorship-runs';
 import {
   type BufferDocument,
@@ -8,7 +7,11 @@ import {
   materialize,
 } from './document-ranges';
 
-/** Test data shared by the buffer reducer suites; nothing here ships. */
+/**
+ * Test data shared by the buffer reducer suites; nothing here ships. The
+ * cluster strings are the ones the 1c editor suites use. `useSegmenter` relies
+ * on Jest's globals.
+ */
 export const model = (text: string): AuthorshipRun => ({
   author: 'model',
   text,

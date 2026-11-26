@@ -205,6 +205,11 @@ const matchGraphemes = (
  * ancestor's text could match in several places the earliest place in the
  * current text wins. Only the common prefix is trimmed, never the suffix,
  * because trimming the suffix would prefer the rightmost match on a tie.
+ *
+ * Exact up to MAX_DIFF_CELLS table cells (a model passage of 200 output
+ * tokens is about a thousand graphemes, far under it). Past that the diff
+ * degrades to common ends, so everything between the first and last change
+ * reads as the human's; Myers' O(ND) diff would keep it exact.
  */
 export const reconcileWithAncestor = (
   ancestorText: string,

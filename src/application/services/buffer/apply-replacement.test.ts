@@ -215,6 +215,12 @@ describe('applyReplacements', () => {
         { start: 4, end: 8, inserted: '' },
       ])
     ).toThrow(RangeError);
+    for (const edits of [
+      [insert(4, 'a'), { start: 4, end: 7, inserted: '' }],
+      [{ start: 4, end: 7, inserted: '' }, insert(4, 'a')],
+    ]) {
+      expect(() => applyReplacements(story(), edits)).toThrow(RangeError);
+    }
     const clamped = applyReplacements(indexOf([passage('a', human('ab'))]), [
       { start: -5, end: -1, inserted: '>' },
       { start: 9, end: 99, inserted: '<' },
@@ -228,6 +234,73 @@ describe('applyReplacements', () => {
     expect(result.index.document).toEqual(before.document);
     expect(result.touched).toEqual([]);
     expect(result.affinity).toEqual(B);
+  });
+});
+
+// The seam scenarios of the 1c editor suites (buffer-editor-stress), as the
+// replacements the change tracker derives for them.
+describe('the 1c seam scenarios', () => {
+  it('a mid-word autocorrect keeps the model words around it', () => {
+    const start = indexOf([passage('a', model('The quikc brown fox'))]);
+    const { index } = applyReplacements(start, [
+      { start: 7, end: 9, inserted: 'ck ' },
+    ]);
+    expect(materialize(index).text).toBe('The quick  brown fox');
+    expect(pairs(index)).toEqual([
+      ['model', 'The qui'],
+      ['human', 'ck '],
+      ['model', ' brown fox'],
+    ]);
+  });
+
+  it('an autocorrect reaching across a human/model seam leaves a clean seam', () => {
+    const start = indexOf([
+      passage('a', human('We wnt')),
+      passage('b', model(' home now.')),
+    ]);
+    const { index } = applyReplacements(start, [
+      { start: 4, end: 6, inserted: 'ent' },
+    ]);
+    expect(pairs(index)).toEqual([
+      ['human', 'We went'],
+      ['model', ' home now.'],
+    ]);
+    expect(rangeOf(index, { kind: 'passage', id: 'b' })).toEqual({
+      owner: { kind: 'passage', id: 'b' },
+      start: 7,
+      end: 17,
+    });
+  });
+
+  it('a paste over a selection across the seam belongs to the prefix owner', () => {
+    const prefix = 'The snow had been falling since dawn. ';
+    const start = indexOf([
+      passage('a', human(prefix)),
+      passage('b', model('By evening the whole town lay quiet.')),
+    ]);
+    const seam = prefix.length;
+    const { index } = applyReplacements(start, [
+      { start: seam - 5, end: seam + 8, inserted: ' PASTED ' },
+    ]);
+    expect(pairs(index)).toEqual([
+      ['human', `${prefix.slice(0, seam - 5)} PASTED `],
+      ['model', 'ng the whole town lay quiet.'],
+    ]);
+  });
+
+  it('a paste ending exactly on the seam does not recolor the model text', () => {
+    const prefix = 'The snow had been falling since dawn. ';
+    const start = indexOf([
+      passage('a', human(prefix)),
+      passage('b', model('By evening.')),
+    ]);
+    const { index } = applyReplacements(start, [
+      { start: 4, end: prefix.length, inserted: 'X' },
+    ]);
+    expect(pairs(index)).toEqual([
+      ['human', 'The X'],
+      ['model', 'By evening.'],
+    ]);
   });
 });
 

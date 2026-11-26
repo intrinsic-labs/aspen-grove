@@ -162,15 +162,27 @@ describe.each(SEGMENTER_PATHS)(
       expect(reconcileWithAncestor('', 'abc')).toEqual([human('abc')]);
     });
 
-    it('is deterministic and fast for a long passage with a few edits', () => {
-      const base = Array.from({ length: 1500 }, (_, i) => `word${i}`).join(' ');
-      const edited = base
-        .replace('word700', 'CHANGED')
-        .replace('word1200 ', '');
-      const first = reconcileWithAncestor(base, edited);
-      expect(reconcileWithAncestor(base, edited)).toEqual(first);
-      expect(runsText(first)).toBe(edited);
-      expect(first.filter((run) => run.author === 'human')).toHaveLength(1);
+    it('is exact for a passage of a thousand graphemes with a few edits', () => {
+      const base = Array.from({ length: 230 }, (_, i) => `w${i}`).join(' ');
+      expect(base.length).toBeGreaterThan(900);
+      const edited = base.replace('w70', 'CHANGED').replace('w120 ', '');
+      const runs = reconcileWithAncestor(base, edited);
+      expect(reconcileWithAncestor(base, edited)).toEqual(runs);
+      expect(runsText(runs)).toBe(edited);
+      expect(runs.filter((run) => run.author === 'human')).toEqual([
+        human('CHANGED'),
+      ]);
+    });
+
+    it('past the size cap degrades to common ends, never to wrong text', () => {
+      const base = Array.from({ length: 3000 }, (_, i) => `w${i}`).join(' ');
+      const edited = base.replace('w10 ', 'NEW ').replace('w2900 ', '');
+      const runs = reconcileWithAncestor(base, edited);
+      expect(runsText(runs)).toBe(edited);
+      expect(runs[0]).toEqual(model('w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 '));
+      // Between the changes everything reads as the human's.
+      expect(runs.some((run) => run.author === 'human')).toBe(true);
+      expect(runs[runs.length - 1]?.author).toBe('model');
     });
   }
 );

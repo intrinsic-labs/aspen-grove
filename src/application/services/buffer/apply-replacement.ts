@@ -54,7 +54,11 @@ const descending = (
   placed.sort((a, b) => b.start - a.start || b.order - a.order);
   placed.forEach((current, i) => {
     const higher = placed[i - 1];
-    if (higher && current.end > higher.start) {
+    const sharesStart =
+      higher !== undefined &&
+      current.start === higher.start &&
+      (current.end > current.start || higher.end > higher.start);
+    if (higher && (current.end > higher.start || sharesStart)) {
       throw new RangeError(
         `Replacements overlap: [${current.start}, ${current.end}) and ` +
           `[${higher.start}, ${higher.end})`
@@ -83,7 +87,7 @@ const keyOf = (owner: RangeOwner): string =>
  *   cluster the cluster is recolored human afterwards.
  *
  * Replacements must not overlap (an insertion at the start of a deletion is
- * one replacement, not two); overlapping ones throw a RangeError. Offsets
+ * one replacement, not two, whichever is listed first); overlapping ones throw a RangeError. Offsets
  * outside the document are clamped.
  */
 export const applyReplacements = (
