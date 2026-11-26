@@ -81,11 +81,20 @@ To enable system context in Buffer Mode, set `LoomTree.bufferModeSystemContext` 
 
 ### Assembly Steps
 
-1. Traverse the active path (with version resolution per [Buffer Mode spec](./buffer-mode.md))
-2. Filter out excluded nodes
-3. Concatenate all node content as continuous text
-4. Append working buffer (uncommitted text)
-5. Estimate tokens and apply truncation if needed
+Implemented by `assembleBufferContext` (`src/application/services/buffer/`).
+
+1. Traverse the active path (with version resolution per [Buffer Mode spec](./buffer-mode.md)). Only `continuation` edges are followed, so annotation nodes never appear.
+2. Filter out nodes with `metadata.excluded` or `metadata.pruned`. Nodes with no text (such as the invisible empty root) contribute nothing and take no protected slot. Text nodes give their text, mixed nodes the concatenation of their text blocks, image and audio nodes nothing.
+3. Concatenate the remaining node text exactly once and verbatim. No whitespace, labels, markdown rendering, caret marker or assistant template is added.
+4. Append the working buffer (uncommitted text) verbatim.
+5. If a prefix was explicitly opted in (`includeSystemPrefix`) and is non-empty, put it first followed by one blank line (`"\n\n"`). Otherwise there is no prefix. Default agent instructions are never added.
+6. Estimate tokens with the existing `estimateTokens` and truncate if needed.
+
+The prompt budget is `maxContextTokens - max(maxTokens, 1024)`: the output reserve is the requested length, and at least the 1024-token default.
+
+### Buffer Truncation
+
+If the whole prompt exceeds the budget, one contiguous run of whole nodes is removed from the middle and replaced by a single marker, the exact string `"\n\n[... part of the document omitted ...]\n\n"`. The first four and last four eligible nodes, the prefix, the working buffer and the marker are protected; as many nodes after the first four as fit are kept, and the count of dropped nodes is returned as `droppedNodeCount` so it can be shown before sending, outside the document. A node is never split. If the protected parts alone exceed the budget (including a document of eight or fewer nodes that does not fit), assembly throws `ContextAssemblyError`: `systemContextTooLong` when the prefix alone is too long, `contextExceedsLimit` otherwise. The two strings above are the only bytes assembly ever adds.
 
 ---
 
