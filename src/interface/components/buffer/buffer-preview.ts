@@ -5,14 +5,20 @@
  *
  * A document is a shared prefix plus one of several alternative endings (the
  * siblings). All offsets are UTF-16 code units, the unit native selection
- * reports. Phase 2 replaces this with the production edit reducer.
+ * reports. Phase 2 replaces this with the production edit reducer; run
+ * slicing and coalescing already live with it, in the application layer.
  */
-export type PreviewAuthor = 'human' | 'model';
+import {
+  type Author,
+  type AuthorshipRun,
+  coalesce,
+  runsLength,
+  sliceRuns,
+} from '@application/services/buffer/authorship-runs';
 
-export type PreviewRun = {
-  readonly author: PreviewAuthor;
-  readonly text: string;
-};
+export type PreviewAuthor = Author;
+
+export type PreviewRun = AuthorshipRun;
 
 export type PreviewState = {
   readonly prefix: readonly PreviewRun[];
@@ -62,48 +68,7 @@ export const samplePreview = (): PreviewState => ({
   index: 0,
 });
 
-export const runsLength = (runs: readonly PreviewRun[]): number =>
-  runs.reduce((total, run) => total + run.text.length, 0);
-
-/** Adjacent runs by one author become one; empty runs vanish. */
-export const coalesce = (runs: readonly PreviewRun[]): readonly PreviewRun[] =>
-  runs.reduce<PreviewRun[]>((merged, run) => {
-    if (run.text.length === 0) {
-      return merged;
-    }
-    const last = merged[merged.length - 1];
-    if (last && last.author === run.author) {
-      merged[merged.length - 1] = {
-        author: last.author,
-        text: last.text + run.text,
-      };
-    } else {
-      merged.push(run);
-    }
-    return merged;
-  }, []);
-
-export const sliceRuns = (
-  runs: readonly PreviewRun[],
-  from: number,
-  to: number
-): PreviewRun[] => {
-  const out: PreviewRun[] = [];
-  let offset = 0;
-  for (const run of runs) {
-    const runStart = offset;
-    offset += run.text.length;
-    const start = Math.max(from, runStart);
-    const end = Math.min(to, offset);
-    if (start < end) {
-      out.push({
-        author: run.author,
-        text: run.text.slice(start - runStart, end - runStart),
-      });
-    }
-  }
-  return out;
-};
+export { coalesce, runsLength, sliceRuns };
 
 /** Replaces `[start, end)` in `runs`; the inserted text is the human's. */
 const replaceRuns = (

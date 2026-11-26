@@ -1,5 +1,5 @@
 import type { PreviewEdit } from './buffer-preview';
-import { isClusterBoundary } from './text-boundaries';
+import { isClusterBoundary } from '@application/services/buffer/text-boundaries';
 
 export type BufferSelection = { readonly start: number; readonly end: number };
 
