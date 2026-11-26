@@ -5,6 +5,7 @@ export const COMPOSITION_CHANGE_EVENT = 'onCompositionChange';
 
 /** The local module in `modules/buffer-composition` (iOS only). */
 export interface BufferCompositionNative {
+  currentText(): Promise<string | null>;
   addListener(
     event: typeof COMPOSITION_CHANGE_EVENT,
     listener: (event: { readonly composing: boolean }) => void

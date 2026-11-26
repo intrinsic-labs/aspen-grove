@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   type NativeSyntheticEvent,
   Platform,
@@ -7,6 +7,7 @@ import {
   type TextInputChangeEventData,
   type TextInputSelectionChangeEventData,
   type TextStyle,
+  type TextInput,
 } from 'react-native';
 import { AppTextInput } from '@/interface/ui/components/AppTextInput';
 import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
@@ -14,7 +15,10 @@ import type { Replacement } from '@application/services/buffer/apply-replacement
 import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
 import type { BufferSelection } from './derive-replacement';
 import type { CompositionControl } from './composition-barrier';
+import { editorUnavailable } from './composition-barrier';
 import { useNativeComposition } from './ios/useNativeComposition';
+import { bufferCompositionNative } from './ios/buffer-composition-native';
+import { waitForNativeText } from './wait-for-native-text';
 import { createChangeTracker } from './native-change-tracker';
 
 /**
@@ -69,9 +73,30 @@ export const BufferTextInput = ({
   onReplace,
   onSelectionChange,
 }: BufferTextInputProps) => {
+  const input = useRef<TextInput>(null);
+  const tracker = useRef(createChangeTracker(text));
+  const deliveryCheck = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    composition.settle = () => {
+      if (
+        Platform.OS !== 'ios' ||
+        !input.current ||
+        !bufferCompositionNative?.currentText
+      )
+        return editorUnavailable();
+      input.current.setNativeProps({ editable: false });
+      return waitForNativeText(
+        bufferCompositionNative.currentText(),
+        () => tracker.current.lastText(),
+        deliveryCheck
+      );
+    };
+    return () => {
+      composition.settle = editorUnavailable;
+    };
+  }, [composition]);
   const selection = useRef<BufferSelection | null>(null);
   useNativeComposition(composition, onComposition);
-  const tracker = useRef(createChangeTracker(text));
   // A document loaded wholesale (a fixture, not a sibling switch) gets a fresh
   // native input with its caret pinned to the start until the user moves it:
   // Android otherwise keeps the end of the new text in view. The screen says
@@ -95,6 +120,7 @@ export const BufferTextInput = ({
       if (edit) {
         onReplace(edit);
       }
+      deliveryCheck.current?.();
     },
     [onReplace]
   );
@@ -113,6 +139,7 @@ export const BufferTextInput = ({
 
   return (
     <AppTextInput
+      ref={input}
       key={generation}
       selection={atStart ? START : undefined}
       testID="buffer-document"

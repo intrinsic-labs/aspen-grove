@@ -109,7 +109,11 @@ const receiveCheckpoint = (
   message.revision < state.revision
     ? none(state)
     : {
-        state: { ...state, revision: message.revision, awaitingCheckpoint: false },
+        state: {
+          ...state,
+          revision: message.revision,
+          awaitingCheckpoint: false,
+        },
         actions: [
           {
             type: 'adopt',
@@ -137,6 +141,8 @@ export const reduceSession = (
     return none(state);
   }
   switch (message.type) {
+    case 'settled':
+      return none(state);
     case 'changes':
       return receiveChanges(state, message);
     case 'checkpoint':

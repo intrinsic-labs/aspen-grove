@@ -19,12 +19,7 @@ import {
 } from '@application/services/buffer/document-ranges';
 import type { OwnerLayout } from '@application/services/buffer/owner-layout';
 import type { ModelRange } from './android/web-editor-protocol';
-import {
-  PREFIX_ID,
-  type PreviewDocument,
-  applyEdits,
-  endingId,
-} from './buffer-preview-document';
+import { type PreviewDocument, applyEdits } from './buffer-preview-document';
 
 /** `text` as author runs: the ranges are the model's, the rest is human. */
 export const runsFromRanges = (
@@ -101,8 +96,8 @@ export const applyPageChanges = (
 /**
  * Resumes from a page checkpoint. The page tracked the owner boundaries
  * through every edit with the host's own planner (`advanceLayout`), so the
- * text is split where the reducer would have split it: the prefix, the
- * selected ending and the tail each keep exactly their stretch, however the
+ * text is split where the reducer would have split it: each passage and
+ * the tail keep exactly their stretch, however the
  * missed edits changed lengths, and left affinity carries over. The sibling
  * endings not shown stay as they are.
  */
@@ -116,30 +111,26 @@ export const adopt = (
   const runs = runsFromRanges(text, ranges);
   const clamp = (value: number | undefined) =>
     Math.min(Math.max(value ?? text.length, 0), text.length);
-  const prefixEnd = clamp(layout.ends[0]);
-  const endingEnd = Math.max(
-    prefixEnd,
-    layout.ends.length > 2 ? clamp(layout.ends[1]) : text.length
-  );
-  const selectedId = endingId(doc.selected);
-  const holdOwner: RangeOwner | undefined =
-    layout.hold === undefined
-      ? undefined
-      : layout.hold === 0
-        ? { kind: 'passage', id: PREFIX_ID }
-        : layout.hold === 1
-          ? { kind: 'passage', id: selectedId }
-          : { kind: 'tail' };
+  let start = 0;
+  const passages = doc.index.document.passages.map((passage, i) => {
+    const end = Math.max(start, clamp(layout.ends[i]));
+    const restored = { ...passage, runs: sliceRuns(runs, start, end) };
+    start = end;
+    return restored;
+  });
+  const held = layout.hold === undefined ? undefined : passages[layout.hold];
   return {
     ...doc,
     index: indexDocument({
-      passages: [
-        { id: PREFIX_ID, runs: sliceRuns(runs, 0, prefixEnd) },
-        { id: selectedId, runs: sliceRuns(runs, prefixEnd, endingEnd) },
-      ],
-      tail: sliceRuns(runs, endingEnd, Number.POSITIVE_INFINITY),
+      passages,
+      tail: sliceRuns(runs, start, clamp(layout.ends[passages.length])),
     }),
-    hold: holdOwner,
+    hold:
+      layout.hold === undefined
+        ? undefined
+        : held
+          ? { kind: 'passage', id: held.id }
+          : { kind: 'tail' },
     caret,
     drift: undefined,
   };

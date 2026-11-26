@@ -17,6 +17,7 @@ const fakeNative = (wasComposing = true) => {
       listener = next;
       return { remove };
     },
+    currentText: async () => null,
     endComposition,
   };
   return { native, emit: (composing: boolean) => listener({ composing }), remove, endComposition };

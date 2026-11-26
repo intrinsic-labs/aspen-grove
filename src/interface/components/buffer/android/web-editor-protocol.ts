@@ -32,6 +32,7 @@ export type ModelRange = readonly [number, number];
 
 export type LoadMessage = {
   readonly type: 'load';
+  readonly readOnly: boolean;
   /** Identifies this document load; edits from an older epoch are ignored. */
   readonly epoch: number;
   readonly text: string;
@@ -68,7 +69,25 @@ export type EndCompositionMessage = {
   readonly epoch: number;
 };
 
+export type SettleMessage = {
+  readonly type: 'settle';
+  readonly epoch: number;
+  readonly requestId: number;
+};
+export type SettledMessage = {
+  readonly type: 'settled';
+  readonly epoch: number;
+  readonly requestId: number;
+  readonly revision: number;
+};
+
 export type HostMessage =
+  | SettleMessage
+  | {
+      readonly type: 'readOnly';
+      readonly epoch: number;
+      readonly readOnly: boolean;
+    }
   | LoadMessage
   | AckMessage
   | CheckpointRequestMessage
@@ -140,6 +159,7 @@ export type SelectionMessage = {
 };
 
 export type EditorMessage =
+  | SettledMessage
   | { readonly type: 'ready' }
   | SelectionMessage
   | ChangesMessage
@@ -202,6 +222,16 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
   const m = data as Record<string, unknown> | null;
   if (typeof m !== 'object' || m === null) {
     return null;
+  }
+  if (
+    m.type === 'settled' &&
+    Number.isSafeInteger(m.requestId) &&
+    Number.isSafeInteger(m.epoch) &&
+    typeof m.revision === 'number' &&
+    Number.isSafeInteger(m.revision) &&
+    m.revision >= 0
+  ) {
+    return m as unknown as SettledMessage;
   }
   if (m.type === 'ready') {
     return { type: 'ready' };

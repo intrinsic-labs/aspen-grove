@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: 7d321640ba1ff1cf1b9371eac3d41fa52c5acbf6
+revision: 8b98def2e056b6164eb8e8a5ae29ea9a3085d8a6
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -1130,7 +1130,7 @@ dialogue.
   `default_model_agent_id`), `paths`, `path_nodes`, `path_states` (`mode: buffer`) via the
   Watermelon repositories
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
-- **Notes:** Not ephemeral: an empty buffer stays in Recents. Titled "Untitled Buffer".
+- **Notes:** The buffer reopens on its real rows (see `buffer.editor`). Not ephemeral: an empty buffer stays in Recents. Titled "Untitled Buffer".
   Home lists buffer trees only in the preview. The dialogue chat adopts a default model agent
   on open, so `TreeModeScreen` never gives it a buffer tree.
 
@@ -1138,7 +1138,9 @@ dialogue.
 - **ID:** `buffer.editor`
 - **Purpose:** The writing surface of a buffer: one document in the reading face, human text in
   the usual foreground and model text in a muted blue, with text typed into a model passage
-  reading as the human's. In the developer preview the text lives in memory only.
+  reading as the human's. A buffer tree opens on its real passages (the owner's stored path), and
+  typing is kept as a draft that survives a crash; an explicit commit or a version or branch switch
+  saves it as versions. A fixture link loads an in-memory review document instead.
 - **Where:** Route `tree/[treeId]` for a buffer-mode tree (`TreeModeScreen`), under the
   transparent header titled with the tree's title. A natively scrolling multiline input fills
   the screen; a band under it, above the keyboard and safe area, holds the floating branch pill
@@ -1150,10 +1152,11 @@ dialogue.
   fills the review sample (a human opening, two model endings, a human word inside model text).
 - **Requires:** The buffer preview switch. No model, no key.
 - **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-5k`, `buffer-load-10k`, `buffer-load-20k`, `buffer-load-stress` (the 30k one), `buffer-load-paragraphs` (the same 30k as real paragraphs), `buffer-variant`, `buffer-engine` (Android only: native input or the CodeMirror WebView; developer-preview speed experiment, default native), `buffer-doc-stats` (web engine only: a transparent receipt `len=<full length> head=<caret> rev=<last applied revision>`, for Maestro or adb), the last three only while the document is empty; on the web engine `buffer-document` is the editor's contenteditable and `buffer-web-editor` its WebView
-- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/BufferEditorSurface.tsx`, `src/interface/components/buffer/ios/bind-native-composition.ts`, `src/interface/components/buffer/ios/useNativeComposition.ts`, `src/interface/components/buffer/ios/buffer-composition-native.ts`, `modules/buffer-composition/`, `src/interface/components/buffer/android/BufferWebEditor.android.tsx`, `src/interface/components/buffer/android/BufferWebEditor.tsx`, `src/interface/components/buffer/android/buffer-web-editor-props.ts`, `src/interface/components/buffer/android/web-editor-protocol.ts`, `src/interface/components/buffer/android/web-editor-session.ts`, `src/interface/components/buffer/android/useEditorSession.ts`, `src/interface/components/buffer/android/web-editor-style.ts`, `src/interface/components/buffer/BufferDocStats.tsx`, `src/interface/components/buffer/buffer-preview-restore.ts`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/buffer-preview-reconcile.ts`, `src/interface/components/buffer/buffer-preview-composition.ts`, `src/interface/components/buffer/buffer-preview-sample.ts`, `src/interface/components/buffer/useBufferPreview.ts`, `src/application/services/buffer/document-ranges.ts`, `src/application/services/buffer/apply-replacement.ts`, `src/application/services/buffer/owner-layout.ts`, `src/application/services/buffer/ancestor-authorship.ts`, `src/application/services/buffer/myers-diff.ts`, `src/application/services/buffer/text-tokens.ts`, `src/interface/components/buffer/composition-barrier.ts`, `src/interface/components/buffer/android/web-editor-html.generated.ts`, `tools/buffer-web-editor/main.ts`, `tools/buffer-web-editor/model-ranges.ts`, `tools/buffer-web-editor/marks.ts`, `tools/buffer-web-editor/report.ts`, `tools/buffer-web-editor/separators.ts`, `tools/buffer-web-editor/line-separators.ts`, `tools/buffer-web-editor/select-all.ts`, `tools/buffer-web-editor/bridge.ts` (page source; npm run build:buffer-editor regenerates the HTML), `src/interface/components/buffer/derive-replacement.ts`, `src/application/services/buffer/text-boundaries.ts`, `src/application/services/buffer/authorship-runs.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
-- **Backend:** none yet — in-memory review fixture on the document-range reducer; nothing typed is written to WatermelonDB
+- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/BufferEditorSurface.tsx`, `src/interface/components/buffer/ios/bind-native-composition.ts`, `src/interface/components/buffer/ios/useNativeComposition.ts`, `src/interface/components/buffer/ios/buffer-composition-native.ts`, `modules/buffer-composition/`, `src/interface/components/buffer/android/BufferWebEditor.android.tsx`, `src/interface/components/buffer/android/BufferWebEditor.tsx`, `src/interface/components/buffer/android/buffer-web-editor-props.ts`, `src/interface/components/buffer/android/web-editor-protocol.ts`, `src/interface/components/buffer/android/web-editor-session.ts`, `src/interface/components/buffer/android/useEditorSession.ts`, `src/interface/components/buffer/android/web-editor-style.ts`, `src/interface/components/buffer/BufferDocStats.tsx`, `src/interface/components/buffer/buffer-preview-restore.ts`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/buffer-preview-reconcile.ts`, `src/interface/components/buffer/buffer-preview-composition.ts`, `src/interface/components/buffer/buffer-preview-sample.ts`, `src/interface/components/buffer/useBufferPreview.ts`, `src/interface/components/buffer/useBufferEditorFeed.ts`, `src/interface/components/buffer/useBufferDocument.ts`, `src/interface/components/buffer/useBufferDraftLifecycle.ts`, `src/interface/components/buffer/buffer-document-session.ts`, `src/interface/components/buffer/buffer-draft-saver.ts`, `src/interface/components/buffer/buffer-passages-document.ts`, `src/interface/components/buffer/BufferDocumentNotice.tsx`, `src/application/use-cases/OpenBufferDocumentUseCase.ts`, `src/application/use-cases/StoreBufferDraftUseCase.ts`, `src/application/services/buffer/draft-from-document.ts`, `src/application/services/buffer/reserve-buffer-draft.ts`, `src/application/services/buffer/settle-stored-draft.ts`, `src/application/services/buffer/document-ranges.ts`, `src/application/services/buffer/apply-replacement.ts`, `src/application/services/buffer/owner-layout.ts`, `src/application/services/buffer/ancestor-authorship.ts`, `src/application/services/buffer/myers-diff.ts`, `src/application/services/buffer/text-tokens.ts`, `src/interface/components/buffer/composition-barrier.ts`, `src/interface/components/buffer/android/web-editor-html.generated.ts`, `tools/buffer-web-editor/main.ts`, `tools/buffer-web-editor/model-ranges.ts`, `tools/buffer-web-editor/marks.ts`, `tools/buffer-web-editor/report.ts`, `tools/buffer-web-editor/separators.ts`, `tools/buffer-web-editor/line-separators.ts`, `tools/buffer-web-editor/select-all.ts`, `tools/buffer-web-editor/bridge.ts` (page source; npm run build:buffer-editor regenerates the HTML), `src/interface/components/buffer/derive-replacement.ts`, `src/application/services/buffer/text-boundaries.ts`, `src/application/services/buffer/authorship-runs.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
+- **Backend:** WatermelonDB, through `OpenBufferDocumentUseCase` (open), `CommitBufferChangesUseCase` and `SwitchBufferPathUseCase` (save) and `StoreBufferDraftUseCase` (the draft in `localStorage`). The fixtures (sample, stress) stay in memory on the document-range reducer and never touch the database.
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
-- **Notes:** The input's value is its children (colored `<Text>` runs); each native change is
+- **Notes:** Real rows: the document is the stored path's passages, `Passage.id` the node id, model nodes model runs, an edit of model text colored against that model text. Typing is stored as a draft after a ~500 ms pause and when the app backgrounds; neither, nor dismissing the keyboard, writes a version. On open a stored draft is replayed through its own command (a lost acknowledgement comes back already applied and clears); one that cannot be replayed stays stored and shows "Copy unsaved text" and "Discard" (`buffer-recovery`, `buffer-recovery-copy`, `buffer-recovery-discard`) above the pill, and a failed save shows `buffer-commit-error`. `commit()` (exposed by `useBufferDocument` for back interception) is explicit; nothing commits on unmount.
+  The input's value is its children (colored `<Text>` runs); each native change is
   reported as a `{start, end, inserted}` replacement (`deriveReplacement`) against the last
   accepted string, using the observed selection to place repeated text and common ends for an
   autocorrect, widened to whole grapheme clusters so a surrogate pair or emoji is never split.
@@ -1200,13 +1203,14 @@ dialogue.
   next, a mono "Branch 1 of 2" label, a swipe on the label, and increment/decrement for
   screen readers. Switching replaces the ending and keeps the shared opening.
 - **Where:** Buffer screen, a floating pill centered in the band under the document (never full
-  width, a gap above the keyboard or bottom safe area), shown once the document has two or more
-  endings (the preview sample has two).
+  width, a gap above the keyboard or bottom safe area). On a real document it shows at the passage
+  holding the caret: the branches there when that position has more than one child family. The
+  preview sample's two endings show it too.
 - **Reach:** Preview build → `buffer.create` → `buffer-load-sample` → `buffer-branch-next`.
 - **Requires:** The buffer preview switch; a buffer with siblings (the sample).
 - **Selector:** working — `buffer-branch-control`, `buffer-branch-dots`, `buffer-branch-prev`, `buffer-branch-next`, `buffer-branch-value` (the label text)
-- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/branch-dots.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/composition-barrier.ts`
-- **Backend:** none yet — fixture siblings in memory
+- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/branch-dots.ts`, `src/interface/components/buffer/BufferChoicePill.tsx`, `src/interface/components/buffer/buffer-choice-pill.ts`, `src/application/services/buffer/buffer-choices.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/composition-barrier.ts`
+- **Backend:** WatermelonDB for a real document (`describeBufferChoices` lists the sibling families; tapping one calls `switchTo` with its `branch` action, which commits the typing and switches in one command); fixture siblings in memory for the sample
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
 - **Notes:** Accessibility: one adjustable element, label "Branch", value "Branch 1 of 2", hint "Swipe up or down to switch to another ending of this text" (the chevrons are not separate stops).
   Look (mockup `03-branches-pill`): a 36 pt pill in the raised dark fill with a soft
@@ -1214,6 +1218,18 @@ dialogue.
   label and one dot per sibling, the current one green, at most 7 dots (a window that follows
   the current sibling). Pressing it while an IME composition is active waits for the composition to end (see `buffer.editor`). The control is one adjustable accessibility element; its prev/next
   buttons are hidden from accessibility. Every value is in `tokens/buffer.ts`.
+
+### Version control
+- **ID:** `buffer.versions`
+- **Purpose:** Switches between the saved versions of the passage holding the caret (the original and each edit of it): previous and next, a mono "Version 1 of 3" label, a swipe, and increment/decrement for screen readers. Typing is committed with the switch, so going back to the original and forward again keeps both.
+- **Where:** Buffer screen, the same pill as `buffer.siblings`, shown on a real document when the caret's position has more than one version the previous passage reaches and no more than one branch.
+- **Reach:** Preview build → `buffer.create` → type into an earlier passage, leave or background the app, reopen (the stored draft replays and commits it as a version) → place the caret in that passage → `buffer-version-prev` / `buffer-version-next`. Nothing in the UI calls `commit()` yet.
+- **Requires:** The buffer preview switch; a buffer tree with an edited passage.
+- **Selector:** working — `buffer-version-control`, `buffer-version-dots`, `buffer-version-prev`, `buffer-version-next`, `buffer-version-value` (the label text)
+- **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/BufferChoicePill.tsx`, `src/interface/components/buffer/buffer-choice-pill.ts`, `src/application/services/buffer/buffer-choices.ts`, `src/application/use-cases/SwitchBufferPathUseCase.ts`, `src/interface/components/buffer/buffer-document-session.ts`
+- **Backend:** WatermelonDB: `describeBufferChoices` lists the versions of the family the previous node reaches, oldest first; a switch is one `version` action through `SwitchBufferPathUseCase`, which rewrites the path, cursor and selections together
+- **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Notes:** The same control as `buffer.siblings`, with accessibility label "Version". When a position has both branches and versions, the branches show and its versions are not offered (an open design question).
 
 ## Node sheet
 

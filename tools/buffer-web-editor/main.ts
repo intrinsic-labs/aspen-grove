@@ -1,9 +1,10 @@
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { history, historyKeymap } from '@codemirror/commands';
 import {
   type HostMessage,
   type LoadMessage,
+  type SettleMessage,
   toReplacements,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
 import {
@@ -23,7 +24,14 @@ import {
   toHostOffset,
   toPageOffset,
 } from './separators';
+import { settleComposition } from './settle-composition';
 import { applyStyle } from './theme';
+
+const editability = new Compartment();
+const editorAccess = (readOnly: boolean) => [
+  EditorState.readOnly.of(readOnly),
+  EditorView.editable.of(!readOnly),
+];
 
 let view: EditorView | undefined;
 /** Names the load in progress; host messages for another epoch are dropped. */
@@ -82,6 +90,7 @@ const create = (message: LoadMessage): EditorView => {
     state: EditorState.create({
       doc: text,
       extensions: [
+        editability.of(editorAccess(message.readOnly)),
         history(),
         keymap.of(historyKeymap),
         EditorView.lineWrapping,
@@ -135,6 +144,7 @@ const load = (message: LoadMessage): void => {
   diagnostics = message.style.diagnostics;
   // A reload must not take the keyboard down: the new editor keeps the focus.
   const hadFocus = view?.hasFocus ?? false;
+  pendingLock = undefined;
   view?.destroy();
   epoch = message.epoch;
   revision = 0;
@@ -146,11 +156,75 @@ const load = (message: LoadMessage): void => {
   }
 };
 
+// CodeMirror drains pending DOM mutations before its scheduled measurement.
+// The update listener posts each resulting transaction synchronously.
+const flush = (editor: EditorView) =>
+  new Promise<void>((resolve) =>
+    editor.requestMeasure({ read: () => resolve() })
+  );
+
+const endComposition = (editor: EditorView) => {
+  const hadFocus = editor.hasFocus;
+  editor.contentDOM.blur();
+  if (hadFocus) editor.focus();
+  reportComposition(editor);
+};
+
+// Both host messages share the lock so either may arrive first during an IME edit.
+let pendingLock: Promise<boolean> | undefined;
+const setReadOnly = (
+  editor: EditorView,
+  readOnly: boolean
+): Promise<boolean> => {
+  const configure = (locked: boolean) =>
+    editor.dispatch({
+      effects: editability.reconfigure(editorAccess(locked)),
+    });
+  if (!readOnly) {
+    pendingLock = undefined;
+    if (editor.state.readOnly) configure(false);
+    return Promise.resolve(false);
+  }
+  if (pendingLock) return pendingLock;
+  // The operation can be superseded by an unlock or a new document.
+  const current = (): boolean => view === editor && pendingLock === lock;
+  const lock: Promise<boolean> = Promise.resolve()
+    .then(() =>
+      settleComposition({
+        current,
+        composing: () => editor.compositionStarted,
+        end: () => endComposition(editor),
+        flush: () => flush(editor),
+        lock: async () => {
+          if (editor.state.readOnly) return;
+          await flush(editor);
+          if (current() && !editor.compositionStarted) configure(true);
+        },
+      })
+    )
+    .finally(() => {
+      if (current()) pendingLock = undefined;
+    });
+  pendingLock = lock;
+  return lock;
+};
+
+const settlePage = async (editor: EditorView, request: SettleMessage) => {
+  const settled = await setReadOnly(editor, true);
+  if (settled && view === editor && editor.state.readOnly) {
+    post({ type: 'settled', epoch, requestId: request.requestId, revision });
+  }
+};
+
 const receive = (message: HostMessage): void => {
   if (message.type === 'load') {
     load(message);
   } else if (message.epoch !== epoch || !view) {
     return;
+  } else if (message.type === 'readOnly') {
+    void setReadOnly(view, message.readOnly);
+  } else if (message.type === 'settle') {
+    void settlePage(view, message);
   } else if (message.type === 'ack') {
     acknowledged = Math.max(acknowledged, message.revision);
   } else if (message.type === 'checkpointRequest') {
@@ -158,12 +232,7 @@ const receive = (message: HostMessage): void => {
   } else if (message.type === 'endComposition') {
     // Blurring commits the composing text through the IME; focusing again
     // keeps the keyboard up and the caret where it was. The answer follows.
-    const hadFocus = view.hasFocus;
-    view.contentDOM.blur();
-    if (hadFocus) {
-      view.focus();
-    }
-    reportComposition(view);
+    endComposition(view);
   }
 };
 

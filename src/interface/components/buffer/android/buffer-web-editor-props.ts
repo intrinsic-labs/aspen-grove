@@ -42,6 +42,7 @@ export type AppliedReceipt = {
 
 export type BufferWebEditorProps = {
   /** Identifies a document load: the editor reloads when it changes. */
+  readonly readOnly: boolean;
   readonly epoch: number;
   /** The document as of `epoch`; read on load only, never per keystroke. */
   readonly text: string;

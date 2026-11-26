@@ -15,6 +15,7 @@ export const hasWebEngine = Platform.OS === 'android';
 
 type BufferEditorSurfaceProps = {
   readonly engine: BufferEngine;
+  readonly readOnly: boolean;
   readonly variant: BufferRenderVariant;
   /** Counts document loads; the web editor reloads when it changes. */
   readonly epoch: number;
@@ -42,6 +43,7 @@ const PLACEHOLDER = 'Start writing';
 /** The writing surface: the native multiline input, or CodeMirror on Android. */
 export const BufferEditorSurface = ({
   engine,
+  readOnly,
   variant,
   epoch,
   fixtureEpoch,
@@ -60,6 +62,7 @@ export const BufferEditorSurface = ({
   hasWebEngine && engine === 'web' ? (
     <BufferWebEditor
       epoch={epoch}
+      readOnly={readOnly}
       text={text}
       runs={runs}
       ends={ends}
@@ -74,7 +77,7 @@ export const BufferEditorSurface = ({
     <BufferTextInput
       text={text}
       runs={runs}
-      editable
+      editable={!readOnly}
       variant={variant}
       fixtureEpoch={fixtureEpoch}
       composition={composition}
