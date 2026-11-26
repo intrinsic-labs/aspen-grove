@@ -61,7 +61,10 @@ describe('select-all keeps the viewport', () => {
       userEvent: 'select',
       scrollIntoView: true,
     }).state;
-    state = state.update({ selection: { anchor: 2 }, userEvent: 'select' }).state;
+    state = state.update({
+      selection: { anchor: 2 },
+      userEvent: 'select',
+    }).state;
 
     expect(run(undoSelection)).toBe(true);
     expect(state.selection.main.from).toBe(0);
