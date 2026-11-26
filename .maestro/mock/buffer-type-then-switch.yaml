@@ -16,7 +16,6 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
-- runFlow: ../scroll-buffer-top.yaml
 
 # Make a saved version: change "fogged" to "misted", go back (saves), reopen.
 - runFlow:
@@ -51,7 +50,6 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
-- runFlow: ../scroll-buffer-top.yaml
 
 # Caret into the edited word: the pill shows its versions.
 - runFlow:
@@ -66,7 +64,6 @@ env:
     commands:
       - tapOn:
           point: '12%,21%'
-- runFlow: ../nudge-buffer-caret.yaml
 - waitForAnimationToEnd
 - assertVisible: 'Version 2 of 2'
 
@@ -82,20 +79,17 @@ env:
     text: '.*had fogged\. Snow.*'
 - takeScreenshot: 02-original-version
 # The typing was saved as a new version (3 of 3) when the pill was tapped.
-# Step forward past the edit to it: the word is there. Android's web editor
-# drops the pill when a switch reloads the page (the caret goes to the end of
-# the text), so the caret goes back on the word after each switch.
-- runFlow: ../tap-buffer-word.yaml
+# Step forward past the edit to it: the word is there. The pill stays on the
+# switched passage through each reload, so one tap steps each time with no
+# re-tap of the text between.
 - assertVisible: 'Version 1 of 3'
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 2 of 3'
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
 - assertNotVisible: '.*timed out.*'
 - assertVisible: 'Version 3 of 3'
 - assertVisible:

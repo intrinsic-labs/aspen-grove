@@ -53,10 +53,20 @@ export const useBufferDocument = (
   tree: LoomTree,
   barrier: CompositionBarrier,
   enabled: boolean,
-  editor: Pick<CompositionControl, 'settle'>
+  editor: Pick<CompositionControl, 'settle'>,
+  webEditor = false
 ) => {
   const { useCases } = useAppServices();
-  const feed = useBufferEditorFeed(barrier, emptyPreview);
+  const [caret, setCaret] = useState<number>();
+  const caretRef = useRef<number | undefined>(undefined);
+  const [loadCaret, setLoadCaret] = useState<number>();
+  const [switchPosition, setSwitchPosition] = useState<number>();
+  const moveCaret = useCallback((offset: number) => {
+    caretRef.current = offset;
+    setCaret(offset);
+    setSwitchPosition(undefined);
+  }, []);
+  const feed = useBufferEditorFeed(barrier, emptyPreview, moveCaret);
   const { latest, setDoc, doc } = feed;
   const session = useMemo(
     () =>
@@ -76,9 +86,7 @@ export const useBufferDocument = (
   const [choices, setChoices] = useState<readonly BufferPositionChoices[]>([]);
   const [commitError, setCommitError] = useState<string | null>(null);
   const [recovery, setRecovery] = useState<BufferRecovery | null>(null);
-  const [caret, setCaret] = useState<number | undefined>();
   // A command is running (or the document is loading): the draft waits.
-  const caretRef = useRef<number | undefined>(undefined);
   const busy = useRef(true);
   const inflight = useRef<Promise<boolean> | null>(null);
 
@@ -98,12 +106,22 @@ export const useBufferDocument = (
       setDoc(snapshot ? rebaseTyping(reloaded, snapshot, current) : reloaded);
       if (!typedSince) setEpoch((value) => value + 1);
       setChoices(opened.choices);
-      // The native caret does not move, so the pill must stay where it was.
-      const kept = caretOnReload(caretRef.current, reloaded, switchedPosition);
+      const command = snapshot !== undefined || switchedPosition !== undefined;
+      const switchedRange =
+        switchedPosition === undefined
+          ? undefined
+          : reloaded.index.ranges[switchedPosition];
+      let kept = caretOnReload(caretRef.current, reloaded, switchedPosition);
+      if (webEditor) {
+        kept = command ? (switchedRange?.start ?? kept ?? 0) : undefined;
+      }
+      if (!typedSince) setLoadCaret(kept);
+      // An empty version shares its start with the next passage.
+      setSwitchPosition(webEditor ? switchedPosition : undefined);
       caretRef.current = kept;
       setCaret(kept);
     },
-    [barrier, latest, setDoc]
+    [barrier, latest, setDoc, webEditor]
   );
 
   useEffect(() => {
@@ -231,14 +249,18 @@ export const useBufferDocument = (
   const onSelection = useCallback(
     (selection: BufferSelection) => {
       feed.onSelection(selection);
-      caretRef.current = selection.start;
-      setCaret(selection.start);
+      moveCaret(selection.start);
     },
-    [feed]
+    [feed, moveCaret]
   );
   const position = useMemo(
-    () => passageIndexAt(doc, caret ?? doc.caret ?? doc.index.length),
-    [doc, caret]
+    () =>
+      switchPosition ??
+      passageIndexAt(
+        doc,
+        caret ?? doc.caret ?? (webEditor ? 0 : doc.index.length)
+      ),
+    [doc, caret, switchPosition, webEditor]
   );
 
   return {
@@ -246,6 +268,7 @@ export const useBufferDocument = (
     onSelection,
     status,
     epoch,
+    loadCaret,
     /** What the pill can offer at the passage holding the caret. */
     choices: choices[position] ?? choices[choices.length - 1],
     commit,

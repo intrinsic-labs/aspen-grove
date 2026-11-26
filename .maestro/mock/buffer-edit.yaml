@@ -29,13 +29,29 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
-- runFlow: ../scroll-buffer-top.yaml
 # It opens on its leaf, where the sibling is, with the original text.
 - assertVisible:
     id: buffer-document
     text: 'The kettle was already warm when I came down, and the window over the sink had fogged\. Snow was still falling on the yard\.'
-- assertVisible: 'Branch 1 of 2'
 - takeScreenshot: 02-opened
+# Android opens with the caret at the start (the human opening, no pill). iOS
+# opens with it at the end, on the sibling position.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible: 'Branch 1 of 2'
+# A tap moves the pill, with nothing typed: a word of the last passage shows its
+# choices; a word of an earlier passage ("fogged") shows its versions once edited.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '55%,21%'
+      - waitForAnimationToEnd
+      - assertVisible: 'Branch 1 of 2'
+      - takeScreenshot: 02b-pill-after-tap-last-passage
 
 # Android keeps its caret where the last edit left it, so a tap in empty space
 # does not move it to the end. There the tail goes first: a tap right of the
@@ -107,7 +123,6 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
-- runFlow: ../scroll-buffer-top.yaml
 - assertVisible:
     id: buffer-document
     text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
@@ -126,7 +141,6 @@ env:
     commands:
       - tapOn:
           point: '12%,21%'
-- runFlow: ../nudge-buffer-caret.yaml
 - waitForAnimationToEnd
 - assertVisible:
     id: buffer-version-control
@@ -140,7 +154,6 @@ env:
 - assertVisible:
     id: buffer-document
     text: '.*had fogged\. Snow was still falling on the yard\. Gulls wheeled\.'
-- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 1 of 2'
 - takeScreenshot: 08-original-version
 
@@ -151,14 +164,18 @@ env:
 - assertVisible:
     id: buffer-document
     text: '.*had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
-- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 2 of 2'
 - takeScreenshot: 09-edit-again
 
-# 7. Relaunch (keeping data) and reopen: the same text and version. The
-# caret was put back in the word (keyboard up), so the keyboard goes first: on
-# Android its dismissal is the back key, which would otherwise be eaten here.
-- runFlow: ../dismiss-buffer-keyboard.yaml
+# 7. Relaunch (keeping data) and reopen: the same text and version. iOS keeps
+# the keyboard up through a switch, so it goes first. Android's is already down
+# after a switch (the editor reloads), and its dismissal is the back key, which
+# would leave the screen.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../dismiss-buffer-keyboard.yaml
 - runFlow: ../go-back.yaml
 - extendedWaitUntil:
     visible:
@@ -174,7 +191,6 @@ env:
       id: buffer-screen
     timeout: 15000
 - waitForAnimationToEnd
-- runFlow: ../scroll-buffer-top.yaml
 - assertVisible:
     id: buffer-document
     text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
@@ -191,7 +207,6 @@ env:
     commands:
       - tapOn:
           point: '12%,21%'
-- runFlow: ../nudge-buffer-caret.yaml
 - waitForAnimationToEnd
 - assertVisible: 'Version 2 of 2'
 - takeScreenshot: 11-version-after-relaunch
@@ -202,12 +217,10 @@ env:
 - tapOn:
     id: buffer-version-prev
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 1 of 2'
 - tapOn:
     id: buffer-version-next
 - waitForAnimationToEnd
-- runFlow: ../tap-buffer-word.yaml
 - assertVisible: 'Version 2 of 2'
 - runFlow:
     when:
@@ -223,7 +236,32 @@ env:
           point: '96%,25%'
 - inputText: ' Calm.'
 - waitForAnimationToEnd
+- takeScreenshot: 12-typed-after-switch
+# The word saves: leave (back commits) and reopen. Android's WebView does not
+# refresh its accessibility text while the keyboard is up after a switch, so
+# the text is read from the reopened document.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: ../dismiss-buffer-keyboard.yaml
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 15000
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
 - assertVisible:
     id: buffer-document
     text: '.*Gulls wheeled\. Calm\.'
-- takeScreenshot: 12-typed-after-switch
+- takeScreenshot: 13-typed-word-saved

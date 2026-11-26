@@ -62,12 +62,25 @@ appId: com.intrinsiclabs.aspengrove
 - takeScreenshot: 03-word-selected
 - inputText: 'slow'
 - waitForAnimationToEnd
+# Android's WebView exposes a composing word to accessibility only once the
+# composition ends, so the keyboard goes first and the text is read after.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+      - waitForAnimationToEnd
 - assertVisible:
     id: buffer-document
     text: 'The slow brown fox jumps over the lazy dog, again and again\. Pack my box with five dozen liquor jugs\. Done 😀 ok 👍🏽 end\.'
 
 # The review sample: a model word replaced by typing over its selection.
-- runFlow: dismiss-buffer-keyboard.yaml
+# (Android's keyboard is already down.)
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: dismiss-buffer-keyboard.yaml
 - runFlow: go-back.yaml
 - extendedWaitUntil:
     visible:
@@ -99,13 +112,25 @@ appId: com.intrinsiclabs.aspengrove
           point: '14%,18%'
 - inputText: 'night'
 - waitForAnimationToEnd
+# Android's WebView exposes a composing word to accessibility only once the
+# composition ends, so the keyboard goes first and the text is read after.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+      - waitForAnimationToEnd
 - assertVisible:
     id: buffer-document
     text: 'The snow had been falling since dawn\. By night the whole town.*'
 - takeScreenshot: 05-model-word-replaced
 
 # The 30,000-character fixture: reopen into it from a fresh buffer.
-- runFlow: dismiss-buffer-keyboard.yaml
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: dismiss-buffer-keyboard.yaml
 - runFlow: go-back.yaml
 - extendedWaitUntil:
     visible:

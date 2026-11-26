@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: f57ec50dfbd777b23218d9f0dff35bff83c663eb
+revision: 05361297b82f1eac71d85df3882962eefdb29cff
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -1186,7 +1186,7 @@ dialogue.
   (`stressPreview(length)`, the same text cut off at 5, 10, 20 or 30 thousand characters);
   the Mode link switches the render variant (`BufferRenderVariant`: colored runs, one uncolored
   child, or a bare string) to price the spans against the length. Visual decisions: `docs/architecture/specs/buffer-mode.md`. Flows:
-  `.maestro/mock/buffer-edit.yaml` (with `.maestro/import-buffer-fixture.yaml` and `.maestro/fixtures/buffer-versions.openloom`; Android helpers `scroll-buffer-top.yaml`, `tap-buffer-word.yaml`, `nudge-buffer-caret.yaml`), `.maestro/mock/buffer-type-then-switch.yaml`, `.maestro/mock/buffer-gboard-composing.yaml` (Android: a composing word saved by an immediate pill tap), `.maestro/buffer-editor-preview.yaml`, `.maestro/buffer-editor-stress.yaml` (with
+  `.maestro/mock/buffer-edit.yaml` (with `.maestro/import-buffer-fixture.yaml` and `.maestro/fixtures/buffer-versions.openloom`; on Android it opens at the top, a tap moves the pill with nothing typed, and the pill stays on the switched passage, so the flow needs no helpers), `.maestro/mock/buffer-type-then-switch.yaml`, `.maestro/mock/buffer-gboard-composing.yaml` (Android: a composing word saved by an immediate pill tap), `.maestro/buffer-editor-preview.yaml`, `.maestro/buffer-editor-stress.yaml` (on Android it closes the keyboard before reading a typed word: the WebView's accessibility text lags while Gboard is composing; with
   `buffer-stress-scroll-edits.yaml`, Android only), `.maestro/buffer-editor-burst-setup.yaml` (`-e LOAD_ID`, `-e VARIANT_TAPS`, `-e RELEASE_BUILD`) +
   `buffer-editor-burst.yaml` (200-character burst for traces), `.maestro/dismiss-buffer-keyboard.yaml`;
   `-e ENGINE_TAPS=1` runs the preview and stress flows on the web engine. The web editor loads a
