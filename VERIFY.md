@@ -453,7 +453,22 @@ mock/beta1-empty-states on a Pixel 10 AVD (API 37, arm64).
 -list-avds`? Create it in Android Studio's Device Manager (Pixel 10, the API 37.1 Google Play
 16 KB arm64 image, named `Pixel_10`), or with the SDK command-line tools:
 `avdmanager create avd -n Pixel_10 -d pixel_10 -k "system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a"`. Gradle needs **JDK 21, Android Studio's bundled one**, not Homebrew's
-openjdk (a newer major version); Maestro keeps using Homebrew's. In the shell that builds:
+openjdk (a newer major version); Maestro keeps using Homebrew's.
+
+**On the company Mac, which AVD to lease.** Agents get emulators through the runtime's device
+lease, never by booting one (the boot step below is for a machine of your own).
+- **`AG_Routine_API35`** (API 35, `google_apis`, about 2.5 GB guest RAM). Use it for routine
+  checks: `smoke`, the `mock/` flows (`buffer-edit`, `buffer-type-then-switch`,
+  `direct-providers`, the beta1 flows), `buffer-editor-preview` and `buffer-editor-stress`.
+- **`Pixel_10`** (API 37, about 4 GB). Use it only where its Play image matters:
+  - `mock/buffer-gboard-composing.yaml`, since `google_apis` images ship without Gboard;
+  - IME, composition and WebView-version checks;
+  - a check that names API 37.
+- Run one heavy build or one Maestro suite at a time. `flock` isn't installed on that Mac,
+  so take the shared lock with Python:
+  `python3 -c 'import fcntl,subprocess,sys; f=open("/tmp/ag-heavy.lock","w"); fcntl.flock(f,fcntl.LOCK_EX); sys.exit(subprocess.call(sys.argv[1:]))' <command…>`.
+
+In the shell that builds:
 
 ```sh
 export ANDROID_HOME=$HOME/Library/Android/sdk; export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"   # adb, emulator
