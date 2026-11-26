@@ -14,6 +14,8 @@ export const bufferTokens = {
     modelText: '#9EC3EE',
     placeholder: 'rgba(235, 235, 245, 0.3)',
     background: systemColors.black,
+    // The developer-preview receipt text: present for Maestro, not for the eye.
+    receipt: '#060606',
   },
   layout: {
     // Generous margins and leading: reading, not messaging.
