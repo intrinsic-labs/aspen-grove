@@ -9,6 +9,7 @@ import { mapSeamThrough } from '../../src/interface/components/buffer/android/we
 import { listen, post } from './bridge';
 import { authorMarks } from './marks';
 import { breaksField, lineSeparators } from './line-separators';
+import { keepViewportOnSelectAll } from './select-all';
 import { changesOf, checkpointOf } from './report';
 import { restoreSeparators, splitSeparators, toPageOffset } from './separators';
 import { applyStyle } from './theme';
@@ -71,6 +72,7 @@ const create = (message: LoadMessage): EditorView => {
         keymap.of(historyKeymap),
         EditorView.lineWrapping,
         lineSeparators(breaks),
+        keepViewportOnSelectAll(),
         authorMarks(modelRanges),
         placeholder(message.style.placeholder),
         EditorView.domEventObservers({
