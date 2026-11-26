@@ -1,0 +1,15 @@
+# Android only: a reopened real document in the CodeMirror WebView can open
+# scrolled to its caret (the end of the text), with the first lines under the
+# header. Drag the page down so taps by position and screenshots see the
+# document from its top. A document that is already at its top does not move.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - swipe:
+          start: '50%,18%'
+          end: '50%,60%'
+          duration: 300
+      - waitForAnimationToEnd

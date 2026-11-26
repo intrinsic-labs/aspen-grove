@@ -115,6 +115,16 @@ export class BufferDocumentSession {
     });
   }
 
+  /**
+   * Whether `document` holds typing that is not a saved version. A recovery
+   * draft waiting for the user is already in the store, so it is not "unsaved".
+   */
+  isDirty(document: BufferDocument): boolean {
+    const opened = this.current;
+    if (!opened || this.recovering) return false;
+    return draftFromDocument(opened, document, { keepEmpty: false }) !== null;
+  }
+
   /** Commits the typing as new versions. Nothing typed commits nothing. */
   commit(document: BufferDocument): Promise<BufferCommandResult> {
     return this.enqueue(() => this.command(document));

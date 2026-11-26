@@ -20,6 +20,7 @@ import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferDocStats } from './BufferDocStats';
 import { pillChoice } from './buffer-choice-pill';
 import { useBufferDocument } from './useBufferDocument';
+import { useBufferLeaveGuard } from './useBufferLeaveGuard';
 import { useBufferPreview } from './useBufferPreview';
 import {
   BufferEditorSurface,
@@ -101,6 +102,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   // Android real documents always use CodeMirror. The engine selector controls fixtures only.
   const engine = fixture ? fixtureEngine : hasWebEngine ? 'web' : 'native';
   const real = useBufferDocument(tree, barrier, !fixture, composition);
+  useBufferLeaveGuard({ dirty: real.dirty, commit: real.commit });
   const previewFeed = useBufferPreview(barrier);
   const {
     doc: preview,
@@ -166,7 +168,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           onSelection={onSelection}
           sink={sink}
         />
-        {engine === 'web' ? (
+        {/* The measurement receipt belongs to fixture runs, never a real document. */}
+        {fixture && engine === 'web' ? (
           <BufferDocStats length={text.length} receipt={receipt} />
         ) : null}
         {fixture ? null : (

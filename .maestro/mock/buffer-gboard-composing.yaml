@@ -1,0 +1,110 @@
+# Gboard check (Android): type a partial word so Gboard is still composing it
+# (underlined suggestion), then tap the version pill at once. The composed word
+# must be saved; step forward to the newest version to see it.
+# Derived from buffer-type-then-switch.yaml. Manual-check flow: type a word, then tap the version pill at once.
+# The word must be saved in the version that was left; switching back shows it.
+# Same prerequisites as buffer-edit.yaml (preview Metro bundle, fixture on device).
+appId: com.intrinsiclabs.aspengrove
+env:
+  TREE_FILE: buffer-versions.openloom
+---
+- runFlow: ../open-app.yaml
+- runFlow: ../skip-onboarding.yaml
+- assertVisible:
+    id: home-welcome
+- runFlow: ../import-buffer-fixture.yaml
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
+
+# Make a saved version: change "fogged" to "misted", go back (saves), reopen.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+      - waitForAnimationToEnd
+      - doubleTapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+      - waitForAnimationToEnd
+      - longPressOn:
+          point: '12%,21%'
+- inputText: 'misted'
+- waitForAnimationToEnd
+- runFlow: ../dismiss-buffer-keyboard.yaml
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 15000
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
+
+# Caret into the edited word: the pill shows its versions.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '18%,21%'
+- runFlow: ../nudge-buffer-caret.yaml
+- waitForAnimationToEnd
+- assertVisible: 'Version 2 of 2'
+
+# Type, and tap the pill at once (no wait between).
+# A space commits, then 'ca' stays a composing word (Gboard underlines it and
+# offers can/call/cat) right after "misted".
+- inputText: ' ca'
+- takeScreenshot: 00-composing
+- tapOn:
+    id: buffer-version-prev
+- takeScreenshot: 01-just-switched
+- waitForAnimationToEnd
+- assertNotVisible: '.*timed out.*'
+- assertVisible:
+    id: buffer-document
+    text: '.*had fogged\. Snow.*'
+- takeScreenshot: 02-original-version
+# The typing was saved as a new version (3 of 3) when the pill was tapped.
+# Step forward past the edit to it: the word is there. Android's web editor
+# drops the pill when a switch reloads the page (the caret goes to the end of
+# the text), so the caret goes back on the word after each switch.
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 1 of 3'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 2 of 3'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
+- assertNotVisible: '.*timed out.*'
+- assertVisible: 'Version 3 of 3'
+- assertVisible:
+    id: buffer-document
+    text: '.*misted ca.*'
+- takeScreenshot: 03-word-kept

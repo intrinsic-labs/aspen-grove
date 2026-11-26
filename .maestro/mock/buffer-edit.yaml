@@ -1,0 +1,229 @@
+# Buffer editing on real rows, no key and no model: import the buffer-versions
+# fixture (a human opening, two model passages, a sibling at the last position),
+# change a word in an earlier passage, type a tail, go back (which saves
+# through the back interception), reopen from Recents, switch to the original
+# version with the version pill, switch back, relaunch and reopen.
+# Needs a Metro bundle made with EXPO_PUBLIC_BUFFER_PREVIEW=1 (see
+# buffer-editor-preview.yaml) and the fixture on the device:
+#   iOS: copy .maestro/fixtures/buffer-versions.openloom into the simulator's
+#        Files ("On My iPhone"), as VERIFY.md describes for the perf flows.
+#   Android: adb -s "$SERIAL" push .maestro/fixtures/buffer-versions.openloom /sdcard/Download/
+#   maestro --device "$DEVICE" test -e METRO_PORT=8081 .maestro/mock/buffer-edit.yaml --test-output-dir "$SHOTS"
+# The mock server is not used. Screenshots are named for what they show.
+appId: com.intrinsiclabs.aspengrove
+env:
+  TREE_FILE: buffer-versions.openloom
+---
+- runFlow: ../open-app.yaml
+- runFlow: ../skip-onboarding.yaml
+- assertVisible:
+    id: home-welcome
+
+# 1. Import the fixture: a buffer tree in Recents.
+- runFlow: ../import-buffer-fixture.yaml
+- assertVisible: 'Buffer versions sample.*'
+- takeScreenshot: 01-home-imported
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
+# It opens on its leaf, where the sibling is, with the original text.
+- assertVisible:
+    id: buffer-document
+    text: 'The kettle was already warm when I came down, and the window over the sink had fogged\. Snow was still falling on the yard\.'
+- assertVisible: 'Branch 1 of 2'
+- takeScreenshot: 02-opened
+
+# Android keeps its caret where the last edit left it, so a tap in empty space
+# does not move it to the end. There the tail goes first: a tap right of the
+# last word puts the caret at the end of the text.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '96%,21%'
+      - inputText: ' Gulls wheeled.'
+      - waitForAnimationToEnd
+
+# 2. A word in an earlier passage ("fogged", in the first model passage); the
+# word is selected by a double tap and typing replaces it. The pill follows the
+# caret to that passage.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+      - waitForAnimationToEnd
+      - doubleTapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+      - waitForAnimationToEnd
+      - longPressOn:
+          point: '12%,21%'
+- inputText: 'misted'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*had misted\. Snow was still falling on the yard\.( Gulls wheeled\.)?'
+- takeScreenshot: 03-word-edited
+# A tail (iOS): a tap in the empty space under the text puts the caret at the end.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '50%,45%'
+      - inputText: ' Gulls wheeled.'
+      - waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
+- takeScreenshot: 04-tail-typed
+
+# 3. Back saves: the keyboard goes away, the back control commits, Home shows.
+- runFlow: ../dismiss-buffer-keyboard.yaml
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 15000
+- assertVisible: 'Buffer versions sample.*'
+- takeScreenshot: 05-home-after-back
+
+# 4. Reopen from Recents: the edit is there.
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
+- assertVisible:
+    id: buffer-document
+    text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
+- takeScreenshot: 06-reopened-edit
+
+# 5. The version pill: tap the edited word, step to the original.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+- runFlow: ../nudge-buffer-caret.yaml
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-version-control
+- assertVisible: 'Version 2 of 2'
+- takeScreenshot: 07-version-pill
+- tapOn:
+    id: buffer-version-prev
+- waitForAnimationToEnd
+# The text is read before the caret goes back into the word: a caret inside a
+# word splits it in the WebView's text, which no whole-sentence match survives.
+- assertVisible:
+    id: buffer-document
+    text: '.*had fogged\. Snow was still falling on the yard\. Gulls wheeled\.'
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 1 of 2'
+- takeScreenshot: 08-original-version
+
+# 6. And back to the edit.
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 2 of 2'
+- takeScreenshot: 09-edit-again
+
+# 7. Relaunch (keeping data) and reopen: the same text and version. The
+# caret was put back in the word (keyboard up), so the keyboard goes first: on
+# Android its dismissal is the back key, which would otherwise be eaten here.
+- runFlow: ../dismiss-buffer-keyboard.yaml
+- runFlow: ../go-back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-welcome
+    timeout: 15000
+- runFlow: ../relaunch-app.yaml
+# Onboarding was skipped, not finished, so a new launch shows it again.
+- runFlow: ../skip-onboarding.yaml
+- assertVisible: 'Buffer versions sample.*'
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow: ../scroll-buffer-top.yaml
+- assertVisible:
+    id: buffer-document
+    text: 'The kettle was already warm when I came down, and the window over the sink had misted\. Snow was still falling on the yard\. Gulls wheeled\.'
+- takeScreenshot: 10-after-relaunch
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '12%,24%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '12%,21%'
+- runFlow: ../nudge-buffer-caret.yaml
+- waitForAnimationToEnd
+- assertVisible: 'Version 2 of 2'
+- takeScreenshot: 11-version-after-relaunch
+
+# 8. Typing still works after a save and a switch: step the pill to the other
+# version and back, tap into the text and type a word. The editor must take the
+# keyboard again (it is read-only while a switch runs) and show the word.
+- tapOn:
+    id: buffer-version-prev
+- waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 1 of 2'
+- tapOn:
+    id: buffer-version-next
+- waitForAnimationToEnd
+- runFlow: ../tap-buffer-word.yaml
+- assertVisible: 'Version 2 of 2'
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: '50%,45%'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: '96%,25%'
+- inputText: ' Calm.'
+- waitForAnimationToEnd
+- assertVisible:
+    id: buffer-document
+    text: '.*Gulls wheeled\. Calm\.'
+- takeScreenshot: 12-typed-after-switch
