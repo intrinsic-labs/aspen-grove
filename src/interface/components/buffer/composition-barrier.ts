@@ -5,14 +5,15 @@
  * it drops the candidate or splits it. Platform-neutral: the Android page
  * reports `composing` and the iOS input can feed the same `observe`.
  *
- * An action waits until the editor says composition ended. After `timeoutMs`
- * the barrier asks the editor to end it (`requestEnd`); the editor answers
- * with its composing state. Only if that answer never comes (a dead page)
- * does the action run after another `timeoutMs`, so it is never lost.
+ * The action is the user's intent, so a composing editor is asked to commit
+ * at once (`requestEnd`) and the action runs on its answer. Gboard keeps the
+ * word being typed in composition, so waiting for the user to finish would
+ * stall every tap after typing. Only if no answer comes (a dead page) does
+ * the action run after `fallbackMs`, so it is never lost.
  * Latest wins: a newer action replaces one still held.
  */
 export type CompositionBarrierOptions = {
-  readonly timeoutMs?: number;
+  readonly fallbackMs?: number;
   /** Asks the editor to commit and end its composition, and then report. */
   readonly requestEnd: () => void;
   /** Injectable timers for tests. */
@@ -30,10 +31,11 @@ export type CompositionBarrier = {
   readonly isComposing: () => boolean;
 };
 
-export const COMPOSITION_TIMEOUT_MS = 1500;
+/** How long the editor has to answer a request to end its composition. */
+export const COMPOSITION_FALLBACK_MS = 400;
 
 export const createCompositionBarrier = ({
-  timeoutMs = COMPOSITION_TIMEOUT_MS,
+  fallbackMs = COMPOSITION_FALLBACK_MS,
   requestEnd,
   setTimer = (callback, ms) => setTimeout(callback, ms),
   clearTimer = (handle) =>
@@ -71,12 +73,11 @@ export const createCompositionBarrier = ({
         action();
         return;
       }
+      const asked = held !== undefined;
       held = action;
-      if (timer === undefined) {
-        timer = setTimer(() => {
-          requestEnd();
-          timer = setTimer(release, timeoutMs);
-        }, timeoutMs);
+      if (!asked) {
+        requestEnd();
+        timer = setTimer(release, fallbackMs);
       }
     },
     reset: () => {

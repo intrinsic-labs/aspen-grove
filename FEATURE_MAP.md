@@ -1176,9 +1176,9 @@ dialogue.
   host relabels from the exact ranges the page sends. The page also tracks the seam (end of the
   shared prefix) through every edit and a checkpoint returns it, so adoption never moves
   branch-local text into the prefix. A composition barrier (`composition-barrier.ts`,
-  platform-neutral) holds a sibling switch or fixture load while the IME is composing; after 1.5 s
-  it sends `endComposition` (the page blurs, which commits) and runs the load on the page's
-  `composition` status. `buffer-doc-stats` is hidden from TalkBack. The native input starts afresh on an explicit
+  platform-neutral) holds a sibling switch or fixture load while the IME is composing: it sends
+  `endComposition` at once (the page blurs and refocuses, which commits and keeps the keyboard up),
+  runs the load on the page's `composition` status, or after 400 ms if none comes. `buffer-doc-stats` is hidden from TalkBack. The native input starts afresh on an explicit
   `fixtureEpoch`, not a first-character guess.
 
 ### Branch control

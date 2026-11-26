@@ -42,64 +42,53 @@ describe('composition barrier', () => {
     expect(action).toHaveBeenCalledTimes(1);
   });
 
-  it('holds an action while composing and releases it on commit', () => {
+  it('asks the editor to end its composition at once and runs on its answer', () => {
     const { barrier, clock, requestEnd } = setup();
     const action = jest.fn();
     barrier.observe(true);
     barrier.run(action);
-    clock.advance(1000);
+    expect(requestEnd).toHaveBeenCalledTimes(1);
     expect(action).not.toHaveBeenCalled();
+    clock.advance(100);
     barrier.observe(false);
     expect(action).toHaveBeenCalledTimes(1);
     clock.advance(5000);
-    expect(requestEnd).not.toHaveBeenCalled();
     expect(action).toHaveBeenCalledTimes(1);
-  });
-
-  it('asks the editor to end the composition after the timeout, then runs on its answer', () => {
-    const { barrier, clock, requestEnd } = setup();
-    const action = jest.fn();
-    barrier.observe(true);
-    barrier.run(action);
-    clock.advance(1499);
-    expect(requestEnd).not.toHaveBeenCalled();
-    clock.advance(1);
     expect(requestEnd).toHaveBeenCalledTimes(1);
-    expect(action).not.toHaveBeenCalled();
-    barrier.observe(false);
-    expect(action).toHaveBeenCalledTimes(1);
   });
 
-  it('still runs if the editor never answers the request', () => {
+  it('runs the action after the fallback if the editor never answers', () => {
     const { barrier, clock } = setup();
     const action = jest.fn();
     barrier.observe(true);
     barrier.run(action);
-    clock.advance(3000);
+    clock.advance(399);
+    expect(action).not.toHaveBeenCalled();
+    clock.advance(1);
     expect(action).toHaveBeenCalledTimes(1);
   });
 
-  it('lets the latest action win and runs it once', () => {
-    const { barrier } = setup();
+  it('lets the latest action win, asks once and runs it once', () => {
+    const { barrier, requestEnd } = setup();
     const first = jest.fn();
     const second = jest.fn();
     barrier.observe(true);
     barrier.run(first);
     barrier.run(second);
+    expect(requestEnd).toHaveBeenCalledTimes(1);
     barrier.observe(false);
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
 
   it('forgets a held action and composing state on reset', () => {
-    const { barrier, clock, requestEnd } = setup();
+    const { barrier, clock } = setup();
     const action = jest.fn();
     barrier.observe(true);
     barrier.run(action);
     barrier.reset();
     clock.advance(5000);
     expect(action).not.toHaveBeenCalled();
-    expect(requestEnd).not.toHaveBeenCalled();
     expect(barrier.isComposing()).toBe(false);
   });
 });

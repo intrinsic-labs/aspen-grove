@@ -91,12 +91,17 @@ const create = (message: LoadMessage): EditorView =>
 const load = (message: LoadMessage): void => {
   applyStyle(message.style);
   diagnostics = message.style.diagnostics;
+  // A reload must not take the keyboard down: the new editor keeps the focus.
+  const hadFocus = view?.hasFocus ?? false;
   view?.destroy();
   epoch = message.epoch;
   revision = 0;
   acknowledged = 0;
   seam = message.seam;
   view = create(message);
+  if (hadFocus) {
+    view.focus();
+  }
 };
 
 const receive = (message: HostMessage): void => {
@@ -109,8 +114,13 @@ const receive = (message: HostMessage): void => {
   } else if (message.type === 'checkpointRequest') {
     post(checkpointOf(view, epoch, revision, seam));
   } else if (message.type === 'endComposition') {
-    // Blurring commits the composing text through the IME; the answer follows.
+    // Blurring commits the composing text through the IME; focusing again
+    // keeps the keyboard up and the caret where it was. The answer follows.
+    const hadFocus = view.hasFocus;
     view.contentDOM.blur();
+    if (hadFocus) {
+      view.focus();
+    }
     reportComposition(view);
   }
 };
