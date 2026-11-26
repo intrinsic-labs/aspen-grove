@@ -90,3 +90,24 @@ export const rebaseTyping = (
   );
   return edit ? applyEdits(reloaded, [edit]) : reloaded;
 };
+
+/**
+ * Where the caret is after the document is reloaded, so the pill stays on
+ * the passage it was switching. A commit leaves the text as it was, so the
+ * offset stays. A switch replaces the passage at `position`: the offset is
+ * kept inside that passage's new text. (Ending at its last character keeps
+ * it clear of the seam, where the right-hand passage would own it.)
+ */
+export const caretOnReload = (
+  offset: number | undefined,
+  reloaded: PreviewDocument,
+  position?: number
+): number | undefined => {
+  if (offset === undefined) return undefined;
+  const length = reloaded.index.length;
+  if (position === undefined) return Math.min(offset, length);
+  const range = reloaded.index.ranges[position];
+  if (!range) return Math.min(offset, length);
+  const last = Math.max(range.start, range.end - 1);
+  return Math.min(Math.max(offset, range.start), last);
+};

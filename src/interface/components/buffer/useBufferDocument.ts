@@ -10,6 +10,7 @@ import {
   type BufferRecovery,
 } from './buffer-document-session';
 import {
+  caretOnReload,
   passageIndexAt,
   previewFromPassages,
   rebaseTyping,
@@ -56,11 +57,16 @@ export const useBufferDocument = (
   const [recovery, setRecovery] = useState<BufferRecovery | null>(null);
   const [caret, setCaret] = useState<number | undefined>();
   // A command is running (or the document is loading): the draft waits.
+  const caretRef = useRef<number | undefined>(undefined);
   const busy = useRef(true);
   const inflight = useRef<Promise<boolean> | null>(null);
 
   const show = useCallback(
-    (opened: OpenedBufferDocument, rebaseOn?: typeof doc) => {
+    (
+      opened: OpenedBufferDocument,
+      rebaseOn?: typeof doc,
+      switchedPosition?: number
+    ) => {
       const snapshot = rebaseOn;
       const reloaded = previewFromPassages(opened.passages);
       const current = latest();
@@ -71,7 +77,10 @@ export const useBufferDocument = (
       setDoc(snapshot ? rebaseTyping(reloaded, snapshot, current) : reloaded);
       if (!typedSince) setEpoch((value) => value + 1);
       setChoices(opened.choices);
-      setCaret(undefined);
+      // The native caret does not move, so the pill must stay where it was.
+      const kept = caretOnReload(caretRef.current, reloaded, switchedPosition);
+      caretRef.current = kept;
+      setCaret(kept);
     },
     [barrier, latest, setDoc]
   );
@@ -114,7 +123,8 @@ export const useBufferDocument = (
       command: (
         document: ReturnType<typeof latest>['index']['document']
       ) => Promise<BufferCommandResult>,
-      keepsText: boolean
+      keepsText: boolean,
+      switchedPosition?: number
     ): Promise<boolean> => {
       if (inflight.current) return inflight.current;
       if (!enabled || status !== 'ready') return Promise.resolve(false);
@@ -132,7 +142,11 @@ export const useBufferDocument = (
           if (result.kind === 'done') {
             // Only a commit leaves the text as it was, so only it can take on
             // what was typed meanwhile; a switch replaces the text under it.
-            show(result.opened, keepsText ? snapshot : undefined);
+            show(
+              result.opened,
+              keepsText ? snapshot : undefined,
+              switchedPosition
+            );
             setCommitError(null);
           }
           return true;
@@ -158,7 +172,11 @@ export const useBufferDocument = (
   );
   const switchTo = useCallback(
     (action: BufferSwitchAction) =>
-      run((document) => session.switchTo(document, action), false),
+      run(
+        (document) => session.switchTo(document, action),
+        false,
+        action.position
+      ),
     [run, session]
   );
   const dismissRecovery = useCallback(async () => {
@@ -169,6 +187,7 @@ export const useBufferDocument = (
   const onSelection = useCallback(
     (selection: BufferSelection) => {
       feed.onSelection(selection);
+      caretRef.current = selection.start;
       setCaret(selection.start);
     },
     [feed]

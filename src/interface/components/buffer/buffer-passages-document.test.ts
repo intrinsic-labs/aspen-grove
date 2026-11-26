@@ -1,6 +1,7 @@
 import { id } from '@application/services/buffer/buffer-graph-fixtures';
 import { documentText, applyEdits } from './buffer-preview-document';
 import {
+  caretOnReload,
   passageIndexAt,
   previewFromPassages,
   rebaseTyping,
@@ -61,4 +62,26 @@ test('typing after a snapshot is carried onto the reloaded document', () => {
   const rebased = rebaseTyping(reloaded, snapshot, current);
   expect(documentText(rebased)).toBe(documentText(current));
   expect(rebaseTyping(reloaded, snapshot, snapshot)).toBe(reloaded);
+});
+
+test('after a switch the caret stays in the passage that was switched', () => {
+  const before = previewFromPassages(passages);
+  const inMiddle = 10;
+  expect(passageIndexAt(before, inMiddle)).toBe(1);
+
+  // The middle passage comes back shorter, then longer, then empty.
+  for (const text of ['Sea.', 'The sea was calm, and then it was not.', '']) {
+    const reloaded = previewFromPassages([
+      passages[0],
+      { ...passages[1], text },
+      passages[2],
+    ]);
+    const kept = caretOnReload(inMiddle, reloaded, 1);
+    // Without this the pill would fall back to the leaf and vanish.
+    expect(passageIndexAt(reloaded, kept as number)).toBe(text ? 1 : 2);
+    expect(kept).toBeLessThanOrEqual(reloaded.index.length);
+  }
+  expect(caretOnReload(undefined, before, 1)).toBeUndefined();
+  expect(caretOnReload(inMiddle, before)).toBe(inMiddle);
+  expect(caretOnReload(999, before)).toBe(before.index.length);
 });

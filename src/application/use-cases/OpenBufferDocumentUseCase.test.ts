@@ -130,3 +130,26 @@ test('a conflicted draft is kept and offered for recovery', async () => {
     (await f.open.execute({ treeId: f.treeId })).storedDraft?.draft.workingTail
   ).toBe(' typed on an old screen');
 });
+
+// Known 4b gap, pinned until it is fixed: when the stored rows stop short of a
+// leaf, open resolves (and the editor shows) a longer path, but the planner and
+// the writer disagree about what `expectedSequence` is, so nothing can commit.
+test.failing(
+  'a stored sequence that open extends can still be committed',
+  async () => {
+    const f = await bufferOpenFixture();
+    const leaf = await f.addNode('Unlinked from the stored rows.', {
+      parents: [f.root],
+    });
+    const opened = await f.open.execute({ treeId: f.treeId });
+    expect(opened.sequence).toEqual([f.root, leaf]);
+    expect(opened.issues.map((issue) => issue.kind)).toContain(
+      'sequence-extended'
+    );
+    expect(await f.sequence()).toEqual([f.root]);
+    const draft = await typedDraft(opened);
+    await expect(
+      f.commit.execute({ treeId: f.treeId, pathId: f.pathId, draft })
+    ).resolves.toBeDefined();
+  }
+);

@@ -1223,7 +1223,7 @@ dialogue.
 - **ID:** `buffer.versions`
 - **Purpose:** Switches between the saved versions of the passage holding the caret (the original and each edit of it): previous and next, a mono "Version 1 of 3" label, a swipe, and increment/decrement for screen readers. Typing is committed with the switch, so going back to the original and forward again keeps both.
 - **Where:** Buffer screen, the same pill as `buffer.siblings`, shown on a real document when the caret's position has more than one version the previous passage reaches and no more than one branch.
-- **Reach:** Preview build → `buffer.create` → type, `commit()` an edit of an earlier passage (or import a tree with edits) → place the caret in that passage → `buffer-version-prev` / `buffer-version-next`.
+- **Reach:** Preview build → `buffer.create` → type into an earlier passage, leave or background the app, reopen (the stored draft replays and commits it as a version) → place the caret in that passage → `buffer-version-prev` / `buffer-version-next`. Nothing in the UI calls `commit()` yet.
 - **Requires:** The buffer preview switch; a buffer tree with an edited passage.
 - **Selector:** working — `buffer-version-control`, `buffer-version-dots`, `buffer-version-prev`, `buffer-version-next`, `buffer-version-value` (the label text)
 - **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/BufferChoicePill.tsx`, `src/interface/components/buffer/buffer-choice-pill.ts`, `src/application/services/buffer/buffer-choices.ts`, `src/application/use-cases/SwitchBufferPathUseCase.ts`, `src/interface/components/buffer/buffer-document-session.ts`
