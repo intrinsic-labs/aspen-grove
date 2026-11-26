@@ -1,0 +1,41 @@
+# Imports `.maestro/fixtures/buffer-versions.openloom` (-e TREE_FILE) from Home.
+# -e TREE_CELL is where the fixture's cell sits in the picker on iOS (its
+# name cannot be tapped by text): the first cell, `18%,30%`, by default.
+# iOS: the cell is tapped (the search `import-tree.yaml` types does not take
+# in this picker, so it is not used). Android: the picker
+# is searched, as `import-tree.yaml` does, so that file is run.
+appId: com.intrinsiclabs.aspengrove
+---
+- runFlow:
+    when:
+      platform: Android
+    file: import-tree.yaml
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow: open-home-menu.yaml
+      - tapOn: Import OpenLoom Tree
+      - waitForAnimationToEnd
+      # The picker reopens where it was last left (a folder of another app
+      # after an earlier run), so go to the root of "On My iPhone" first: the
+      # Browse tab twice reaches the locations list.
+      - tapOn: Browse
+      - waitForAnimationToEnd
+      - tapOn: Browse
+      - waitForAnimationToEnd
+      - tapOn: On My iPhone
+      - waitForAnimationToEnd
+      # The first tap on the picker's cell can be lost while it settles.
+      - repeat:
+          times: 4
+          while:
+            notVisible: 'Import complete'
+          commands:
+            - tapOn:
+                point: ${TREE_CELL || '18%,30%'}
+            - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: 'Import complete'
+          timeout: 60000
+      - tapOn: OK
