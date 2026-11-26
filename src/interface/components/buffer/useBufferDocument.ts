@@ -211,6 +211,13 @@ export const useBufferDocument = (
       ),
     [run, session]
   );
+  /** Typing on screen that is not yet a saved version. */
+  const document = doc.index.document;
+  const dirty = useMemo(
+    () => enabled && status === 'ready' && session.isDirty(document),
+    // `epoch` follows every reload, which moves what counts as saved.
+    [enabled, status, session, document, epoch]
+  );
   const dismissRecovery = useCallback(async () => {
     try {
       await session.dismissRecovery();
@@ -242,6 +249,7 @@ export const useBufferDocument = (
     /** What the pill can offer at the passage holding the caret. */
     choices: choices[position] ?? choices[choices.length - 1],
     commit,
+    dirty,
     switchTo,
     /** A failed open or save, as one line for the screen. */
     notice:
