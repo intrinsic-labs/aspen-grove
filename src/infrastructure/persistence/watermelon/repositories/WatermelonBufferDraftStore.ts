@@ -4,6 +4,25 @@ import type { BufferDraft } from '@application/services/buffer/buffer-draft';
 import type { ULID } from '@domain/value-objects';
 import { Path } from '../model/Path';
 
+/** Key-order-independent JSON, so equal drafts compare equal however built. */
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(
+          Object.entries(v as Record<string, unknown>).sort(([a], [b]) =>
+            a < b ? -1 : a > b ? 1 : 0
+          )
+        )
+      : v
+  );
+
+/**
+ * The snapshot a command was built from. The switch it carries is part of
+ * the command, not of the typing, so a stored draft saved before the switch
+ * was chosen still matches the command that committed it.
+ */
+const typingOf = ({ action: _action, ...typing }: BufferDraft) => typing;
+
 export const bufferDraftKey = (treeId: string, pathId: string) =>
   `buffer.draft.${treeId}.${pathId}`;
 
@@ -49,7 +68,11 @@ export class WatermelonBufferDraftStore implements IBufferDraftStore {
       const key = bufferDraftKey(treeId, pathId);
       if (expected) {
         const stored = await this.db.localStorage.get<BufferDraft>(key);
-        if (JSON.stringify(stored) !== JSON.stringify(expected)) return;
+        if (
+          !stored ||
+          canonical(typingOf(stored)) !== canonical(typingOf(expected))
+        )
+          return;
       }
       await this.db.localStorage.remove(key);
     });

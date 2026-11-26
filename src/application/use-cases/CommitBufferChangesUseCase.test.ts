@@ -139,10 +139,24 @@ test('a stored switch matches the same switch written in another key order', asy
   const f = await bufferFixture();
   const stored = { nodeId: f.root, position: 0, kind: 'version' } as const;
   const draft = { ...(await f.draft()), action: stored };
+  await f.bufferDraftStore.put(draft);
   const result = await f.switchPath.execute({
     ...f,
     draft,
     action: { kind: 'version', position: 0, nodeId: f.root },
   });
   expect(result.nodeIds).toEqual([f.root, f.child]);
+  expect(await f.bufferDraftStore.get(f.treeId, f.pathId, [], 0)).toBeNull();
+});
+
+test('a switch clears the draft that was saved before the switch was chosen', async () => {
+  const f = await bufferFixture();
+  const draft = await f.draft();
+  await f.bufferDraftStore.put(draft);
+  await f.switchPath.execute({
+    ...f,
+    draft,
+    action: { kind: 'version', position: 0, nodeId: f.root },
+  });
+  expect(await f.bufferDraftStore.get(f.treeId, f.pathId, [], 0)).toBeNull();
 });
