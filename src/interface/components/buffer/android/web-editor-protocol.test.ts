@@ -1,10 +1,11 @@
-import { applyPreviewEdit, samplePreview, previewText } from '../buffer-preview';
+import { applyEdits, documentText } from '../buffer-preview-document';
+import { samplePreview } from '../buffer-preview-sample';
 import {
   mapModelRanges,
   mapModelRangesThrough,
   modelRangesOf,
   parseEditorMessage,
-  replacementsToEdits,
+  toReplacements,
   type ModelRange,
 } from './web-editor-protocol';
 
@@ -67,41 +68,24 @@ describe('mapModelRanges', () => {
 });
 
 describe('replacements', () => {
-  it('apply as sequential edits that land the same text', () => {
+  it('map to the reducer’s, every one against the pre-edit document', () => {
     const replacements = [
       { from: 2, to: 4, insert: 'XYZ' },
       { from: 10, to: 10, insert: '!' },
     ];
-    const source = 'abcdefghijklmnop';
-    const edits = replacementsToEdits(replacements);
-    expect(edits).toEqual([
+    expect(toReplacements(replacements)).toEqual([
       { start: 2, end: 4, inserted: 'XYZ' },
-      { start: 11, end: 11, inserted: '!' },
+      { start: 10, end: 10, inserted: '!' },
     ]);
-    const direct = replacements
-      .slice()
-      .reverse()
-      .reduce(
-        (text, r) => text.slice(0, r.from) + r.insert + text.slice(r.to),
-        source
-      );
-    const sequential = edits.reduce(
-      (text, e) => text.slice(0, e.start) + e.inserted + text.slice(e.end),
-      source
-    );
-    expect(sequential).toBe(direct);
   });
 
   it('keep the host model in step with the page, authorship included', () => {
     const state = samplePreview();
-    const text = previewText(state);
+    const text = documentText(state);
     const at = text.indexOf('lamps');
     const replacements = [{ from: at, to: at, insert: 'typed ' }];
-    const next = replacementsToEdits(replacements).reduce(
-      applyPreviewEdit,
-      state
-    );
-    expect(previewText(next)).toBe(
+    const next = applyEdits(state, toReplacements(replacements));
+    expect(documentText(next)).toBe(
       text.slice(0, at) + 'typed ' + text.slice(at)
     );
     const before = modelRangesOf([
@@ -137,17 +121,27 @@ describe('parseEditorMessage', () => {
       revision: 9,
       text: 'abc',
       modelRanges: [[0, 2]],
-      seam: 1,
+      ends: [1, 3, 3],
+      hold: 0,
       selection: { anchor: 3, head: 3 },
       composing: false,
     };
     expect(parseEditorMessage(JSON.stringify(checkpoint))).toEqual(checkpoint);
+    const selection = {
+      type: 'selection',
+      epoch: 1,
+      selection: { anchor: 2, head: 5 },
+    };
+    expect(parseEditorMessage(JSON.stringify(selection))).toEqual(selection);
+    expect(
+      parseEditorMessage('{"type":"selection","epoch":1,"selection":{"anchor":2}}')
+    ).toBeNull();
     const composition = { type: 'composition', epoch: 1, composing: false };
     expect(parseEditorMessage(JSON.stringify(composition))).toEqual(composition);
     expect(
       parseEditorMessage('{"type":"composition","epoch":1,"composing":"no"}')
     ).toBeNull();
-    expect(parseEditorMessage(JSON.stringify({ ...checkpoint, seam: undefined }))).toBeNull();
+    expect(parseEditorMessage(JSON.stringify({ ...checkpoint, ends: undefined }))).toBeNull();
     expect(parseEditorMessage(JSON.stringify({ ...checkpoint, composing: undefined }))).toBeNull();
   });
 

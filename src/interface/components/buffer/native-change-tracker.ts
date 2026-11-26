@@ -1,4 +1,4 @@
-import type { PreviewEdit } from './buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
 import { type BufferSelection, deriveReplacement } from './derive-replacement';
 
 /**
@@ -24,7 +24,7 @@ export type ChangeTracker = {
   readonly receive: (
     next: string,
     selection: BufferSelection | null
-  ) => PreviewEdit | null;
+  ) => Replacement | null;
 };
 
 export const createChangeTracker = (initial: string): ChangeTracker => {

@@ -1,4 +1,5 @@
-import type { PreviewEdit, PreviewRun } from '../buffer-preview';
+import type { Replacement as HostReplacement } from '@application/services/buffer/apply-replacement';
+import type { AuthorshipRun } from '@application/services/buffer/authorship-runs';
 
 /**
  * The messages between the React Native host and the CodeMirror page, and the
@@ -36,11 +37,12 @@ export type LoadMessage = {
   readonly text: string;
   readonly modelRanges: readonly ModelRange[];
   /**
-   * Where the shared prefix ends and the current sibling ending begins. The
-   * page keeps it through every edit so a checkpoint can say which side of
-   * the seam each character belongs to.
+   * Where each owner of the document ends: the shared prefix, the current
+   * sibling ending, then the tail (the document's length). The page keeps
+   * them through every edit with the host's own planner, so a checkpoint
+   * says which owner each character belongs to.
    */
-  readonly seam: number;
+  readonly ends: readonly number[];
   readonly style: WebEditorStyle;
 };
 
@@ -106,8 +108,10 @@ export type CheckpointMessage = {
   readonly revision: number;
   readonly text: string;
   readonly modelRanges: readonly ModelRange[];
-  /** The seam as the page tracked it (see `LoadMessage.seam`). */
-  readonly seam: number;
+  /** The owner boundaries as the page tracked them (see `LoadMessage.ends`). */
+  readonly ends: readonly number[];
+  /** The owner that kept left affinity, as an index into `ends`, if any. */
+  readonly hold?: number;
   readonly selection: Selection;
   /** Whether an IME composition is still active when the checkpoint is taken. */
   readonly composing: boolean;
@@ -124,8 +128,20 @@ export type CompositionMessage = {
   readonly composing: boolean;
 };
 
+/**
+ * The user moved the caret or selection without editing. Left affinity
+ * belongs to a caret that has not moved, so the host drops it, as the page
+ * already has. Sent once per hold, only while an owner holds it.
+ */
+export type SelectionMessage = {
+  readonly type: 'selection';
+  readonly epoch: number;
+  readonly selection: Selection;
+};
+
 export type EditorMessage =
   | { readonly type: 'ready' }
+  | SelectionMessage
   | ChangesMessage
   | CheckpointMessage
   | CompositionMessage;
@@ -156,6 +172,14 @@ const isRange = (value: unknown): value is ModelRange =>
 
 const isRanges = (value: unknown): value is readonly ModelRange[] =>
   Array.isArray(value) && value.every(isRange);
+
+const isEnds = (value: unknown): value is readonly number[] =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  value.every(
+    (end, i) =>
+      Number.isInteger(end) && end >= 0 && (i === 0 || end >= value[i - 1])
+  );
 
 const isSelection = (value: unknown): value is Selection => {
   const s = value as Selection | null;
@@ -201,11 +225,19 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
     Number.isInteger(m.revision) &&
     typeof m.text === 'string' &&
     isRanges(m.modelRanges) &&
-    Number.isInteger(m.seam) &&
+    isEnds(m.ends) &&
+    (m.hold === undefined || Number.isInteger(m.hold)) &&
     isSelection(m.selection) &&
     typeof m.composing === 'boolean'
   ) {
     return m as unknown as CheckpointMessage;
+  }
+  if (
+    m.type === 'selection' &&
+    Number.isInteger(m.epoch) &&
+    isSelection(m.selection)
+  ) {
+    return m as unknown as SelectionMessage;
   }
   if (
     m.type === 'composition' &&
@@ -218,7 +250,7 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
 };
 
 /** Author runs as the model-authored ranges the page marks. */
-export const modelRangesOf = (runs: readonly PreviewRun[]): ModelRange[] => {
+export const modelRangesOf = (runs: readonly AuthorshipRun[]): ModelRange[] => {
   const ranges: ModelRange[] = [];
   let offset = 0;
   for (const run of runs) {
@@ -232,20 +264,18 @@ export const modelRangesOf = (runs: readonly PreviewRun[]): ModelRange[] => {
 };
 
 /**
- * Replacements against one pre-edit document as sequential edits: each
- * `start`/`end` is in the document after the earlier edits were applied,
- * which is what `applyPreviewEdit` expects.
+ * The page's replacements as the reducer's: `[from, to)` of the pre-edit
+ * document becomes `insert`, every one measured against that same document,
+ * which is what `applyReplacements` takes.
  */
-export const replacementsToEdits = (
+export const toReplacements = (
   replacements: readonly Replacement[]
-): PreviewEdit[] => {
-  let shift = 0;
-  return replacements.map(({ from, to, insert }) => {
-    const edit = { start: from + shift, end: to + shift, inserted: insert };
-    shift += insert.length - (to - from);
-    return edit;
-  });
-};
+): HostReplacement[] =>
+  replacements.map(({ from, to, insert }) => ({
+    start: from,
+    end: to,
+    inserted: insert,
+  }));
 
 /**
  * Moves model ranges through one replacement. Text typed inside a model

@@ -1,5 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
-import { applyPreviewEdit, previewRuns, previewText } from './buffer-preview';
+import {
+  applyEdits,
+  documentRuns as previewRuns,
+  documentText as previewText,
+} from './buffer-preview-document';
 import {
   STRESS_FIXTURE_LENGTH,
   STRESS_FIXTURE_SIZES,
@@ -37,7 +41,7 @@ describe('stress fixture', () => {
     for (const where of ['top', 'middle', 'end']) {
       const { length } = previewText(next);
       const at = where === 'top' ? 0 : where === 'end' ? length : length >> 1;
-      next = applyPreviewEdit(next, { start: at, end: at, inserted: '§' });
+      next = applyEdits(next, [{ start: at, end: at, inserted: '§' }]);
     }
     expect(previewText(next)).toHaveLength(STRESS_FIXTURE_LENGTH + 3);
     expect(previewText(next).startsWith('§Paragraph')).toBe(true);

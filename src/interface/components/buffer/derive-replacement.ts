@@ -1,4 +1,4 @@
-import type { PreviewEdit } from './buffer-preview';
+import type { Replacement } from '@application/services/buffer/apply-replacement';
 import { isClusterBoundary } from '@application/services/buffer/text-boundaries';
 
 export type BufferSelection = { readonly start: number; readonly end: number };
@@ -7,7 +7,7 @@ const rawReplacement = (
   previous: string,
   next: string,
   selection: BufferSelection | null
-): PreviewEdit | null => {
+): Replacement | null => {
   if (previous === next) {
     return null;
   }
@@ -42,7 +42,7 @@ const rawReplacement = (
 };
 
 /** The smallest single replacement turning `previous` into `next`. */
-const diffReplacement = (previous: string, next: string): PreviewEdit => {
+const diffReplacement = (previous: string, next: string): Replacement => {
   let prefix = 0;
   const shortest = Math.min(previous.length, next.length);
   while (prefix < shortest && previous[prefix] === next[prefix]) {
@@ -70,8 +70,8 @@ const diffReplacement = (previous: string, next: string): PreviewEdit => {
 const widenToClusters = (
   previous: string,
   next: string,
-  edit: PreviewEdit
-): PreviewEdit => {
+  edit: Replacement
+): Replacement => {
   let { start, end } = edit;
   let nextEnd = start + edit.inserted.length;
   while (
@@ -122,7 +122,7 @@ export const deriveReplacement = (
   previous: string,
   next: string,
   selection: BufferSelection | null
-): PreviewEdit | null => {
+): Replacement | null => {
   const edit = rawReplacement(previous, next, selection);
   return edit ? widenToClusters(previous, next, edit) : null;
 };

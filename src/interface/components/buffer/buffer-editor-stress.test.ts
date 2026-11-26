@@ -1,12 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 import {
-  applyPreviewEdit,
+  applyEdits,
+  documentRuns as previewRuns,
+  documentText as previewText,
   emptyPreview,
-  previewRuns,
-  previewText,
-  samplePreview,
-  type PreviewState,
-} from './buffer-preview';
+  previewDocument,
+  type PreviewDocument as PreviewState,
+} from './buffer-preview-document';
+import { samplePreview } from './buffer-preview-sample';
+
+const applyPreviewEdit = (
+  doc: PreviewState,
+  edit: { start: number; end: number; inserted: string }
+) => applyEdits(doc, [edit]);
 import type { BufferSelection } from './derive-replacement';
 import { createChangeTracker } from './native-change-tracker';
 
@@ -54,11 +60,12 @@ const sample = () => editor(samplePreview());
 
 describe('mid-word autocorrect', () => {
   it('rewrites a typed word and keeps the model words around it', () => {
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: 'The quikc brown fox' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: 'The quikc brown fox' }]],
+      })
+    );
     // Space typed after "quikc": autocorrect makes it "quick" plus the space.
     e.native('The quick  brown fox', caret(9));
     expect(e.runs).toEqual([
@@ -81,11 +88,12 @@ describe('mid-word autocorrect', () => {
   });
 
   it('autocorrect reaching across a human/model seam leaves a clean seam', () => {
-    const e = editor({
-      prefix: [{ author: 'human', text: 'We wnt' }],
-      suffixes: [[{ author: 'model', text: ' home now.' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [{ author: 'human', text: 'We wnt' }],
+        endings: [[{ author: 'model', text: ' home now.' }]],
+      })
+    );
     // "wnt" becomes "went"; the model's text is untouched.
     e.native('We went home now.', caret(6));
     expect(e.text).toBe('We went home now.');
@@ -137,11 +145,12 @@ describe('a paste over a selection across a human/model seam', () => {
 
 describe('CJK marked text', () => {
   it('follows pinyin composition and commits one human run', () => {
-    const e = editor({
-      prefix: [{ author: 'human', text: 'Hi ' }],
-      suffixes: [[{ author: 'model', text: ' there.' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [{ author: 'human', text: 'Hi ' }],
+        endings: [[{ author: 'model', text: ' there.' }]],
+      })
+    );
     // Marked text: each keystroke rewrites the marked range.
     e.native('Hi n there.', caret(3));
     e.native('Hi ni there.', caret(4));
@@ -157,11 +166,12 @@ describe('CJK marked text', () => {
   });
 
   it('composes inside a model run without recoloring it', () => {
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: 'abcdef' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: 'abcdef' }]],
+      })
+    );
     e.native('abcnxdef', caret(3));
     e.native('abcnixdef'.replace('nix', 'ni'), caret(4));
     e.native('abc你def', caret(5));
@@ -186,11 +196,12 @@ describe('CJK marked text', () => {
 
 describe('emoji and combining marks', () => {
   const mid = () =>
-    editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: 'ab' }]],
-      index: 0,
-    });
+    editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: 'ab' }]],
+      })
+    );
 
   it('inserts an emoji (a surrogate pair) as one human run', () => {
     const e = mid();
@@ -210,11 +221,12 @@ describe('emoji and combining marks', () => {
   });
 
   it('replacing an emoji by one sharing its high surrogate never splits a pair', () => {
-    const e = editor({
-      prefix: [{ author: 'human', text: 'x' }],
-      suffixes: [[{ author: 'model', text: '😀y' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [{ author: 'human', text: 'x' }],
+        endings: [[{ author: 'model', text: '😀y' }]],
+      })
+    );
     // U+1F600 -> U+1F601 differ only in the low surrogate.
     e.native('x😁y', null);
     expect(e.text).toBe('x😁y');
@@ -227,11 +239,12 @@ describe('emoji and combining marks', () => {
   });
 
   it('a skin-tone change stays one cluster', () => {
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: '👍🏽!' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: '👍🏽!' }]],
+      })
+    );
     e.native('👍🏿!', null);
     expect(e.text).toBe('👍🏿!');
     for (const [, text] of e.runs) {
@@ -244,21 +257,23 @@ describe('emoji and combining marks', () => {
 
   it('deleting a ZWJ family removes the cluster, nothing else', () => {
     const family = '👨‍👩‍👧';
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: `a${family}b` }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: `a${family}b` }]],
+      })
+    );
     e.native('ab', caret(1 + family.length));
     expect(e.runs).toEqual([['model', 'ab']]);
   });
 
   it('a combining accent changed in place replaces its base too', () => {
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: 'café!' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: 'café!' }]],
+      })
+    );
     // acute -> grave: the cluster is rewritten, not just its mark.
     e.native('cafè!', null);
     expect(e.text).toBe('cafè!');
@@ -271,11 +286,12 @@ describe('emoji and combining marks', () => {
   });
 
   it('typing a combining mark after a model letter makes the cluster human', () => {
-    const e = editor({
-      prefix: [],
-      suffixes: [[{ author: 'model', text: 'cafe!' }]],
-      index: 0,
-    });
+    const e = editor(
+      previewDocument({
+        prefix: [],
+        endings: [[{ author: 'model', text: 'cafe!' }]],
+      })
+    );
     e.native('café!', caret(4));
     expect(e.runs).toEqual([
       ['model', 'caf'],
@@ -404,11 +420,12 @@ describe('Android event order: the selection may already be the new caret', () =
 
   it('a repeated letter keeps text exact whichever caret is held', () => {
     for (const held of [caret(1), caret(2), caret(5)]) {
-      const e = editor({
-        prefix: [],
-        suffixes: [[{ author: 'model', text: 'aaa' }]],
-        index: 0,
-      });
+      const e = editor(
+        previewDocument({
+          prefix: [],
+          endings: [[{ author: 'model', text: 'aaa' }]],
+        })
+      );
       e.native('aaaa', held);
       expect(e.text).toBe('aaaa');
       expect(e.runs.map((r) => r[1]).join('')).toBe('aaaa');

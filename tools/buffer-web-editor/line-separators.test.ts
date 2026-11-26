@@ -117,7 +117,7 @@ describe('CRLF through the page', () => {
     const raw = 'ab\r\ncd\r\nef';
     const state = open(raw, [[3, 6]]); // page cd + LF, host cd + CRLF
     const view = { state, composing: false } as unknown as EditorView;
-    const checkpoint = checkpointOf(view, 1, 0, 3);
+    const checkpoint = checkpointOf(view, 1, 0, { ends: [3, 11, 11] });
 
     expect(checkpoint.text).toBe(raw);
     expect(checkpoint.modelRanges).toEqual([[4, 8]]);

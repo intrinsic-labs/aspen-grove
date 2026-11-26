@@ -5,6 +5,7 @@ import type {
   ModelRange,
   Replacement,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
+import type { OwnerLayout } from '../../src/application/services/buffer/owner-layout';
 import { breaksField } from './line-separators';
 import { modelRangesField } from './model-ranges';
 import { restoreSeparators, toHostOffset, type Break } from './separators';
@@ -70,7 +71,7 @@ export const checkpointOf = (
   view: EditorView,
   epoch: number,
   revision: number,
-  seam: number
+  layout: OwnerLayout
 ): CheckpointMessage => {
   const { anchor, head } = view.state.selection.main;
   const breaks = view.state.field(breaksField);
@@ -80,7 +81,8 @@ export const checkpointOf = (
     revision,
     text: restoreSeparators(view.state.doc.toString(), breaks),
     modelRanges: hostRanges(view.state.field(modelRangesField), breaks),
-    seam,
+    ends: layout.ends,
+    ...(layout.hold === undefined ? {} : { hold: layout.hold }),
     selection: {
       anchor: toHostOffset(breaks, anchor),
       head: toHostOffset(breaks, head),
