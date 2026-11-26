@@ -1,11 +1,18 @@
 import type { BufferMutation } from '@application/repositories/core/IBufferMutationRepository';
-import type { Edge, EdgeSource, Node, TextContent } from '@domain/entities';
+import type {
+  Edge,
+  EdgeSource,
+  Node,
+  PathSelection,
+  TextContent,
+} from '@domain/entities';
 import { createLocalId, type ULID } from '@domain/value-objects';
 import type { BufferDraft, BufferEditPorts } from './buffer-draft';
 import { indexBufferGraph, type BufferGraph } from './buffer-graph';
 import {
   resolveBufferPath,
   type ResolvedBufferPath,
+  type BufferPathAction,
 } from './resolve-buffer-path';
 
 import { bufferPassageText } from './buffer-passage-text';
@@ -24,6 +31,19 @@ export async function planBufferEdit(
   draft: BufferDraft,
   ports: BufferEditPorts
 ): Promise<BufferMutation> {
+  return (
+    await planBufferCommand(graph, path, draft, ports, [], { kind: 'open' })
+  ).mutation;
+}
+
+export async function planBufferCommand(
+  graph: BufferGraph,
+  path: ResolvedBufferPath,
+  draft: BufferDraft,
+  ports: BufferEditPorts,
+  selections: readonly PathSelection[],
+  action: BufferPathAction
+): Promise<{ mutation: BufferMutation; result: ResolvedBufferPath }> {
   const {
     treeId,
     ownerAgentId,
@@ -202,7 +222,13 @@ export async function planBufferEdit(
   const resolved = resolveBufferPath(updated, sequence, [], { kind: 'open' });
   if (!sameSequence(sequence, resolved.nodeIds))
     throw new Error('Buffer mutation would change the intended path');
-  return {
+  const result =
+    action.kind === 'open'
+      ? resolved
+      : resolveBufferPath(updated, sequence, selections, action);
+  if (result.issues.some((issue) => issue.kind === 'action-rejected'))
+    throw new Error('Invalid buffer switch');
+  const mutation: BufferMutation = {
     operationId,
     treeId,
     ownerAgentId,
@@ -213,11 +239,12 @@ export async function planBufferEdit(
     nodeInserts,
     edgeInserts,
     sourceAdditions,
-    sequence,
-    cursor: resolved.leafId,
-    selectionUpserts: resolved.selections.map((selection) => ({
+    sequence: result.nodeIds,
+    cursor: result.leafId,
+    selectionUpserts: result.selections.map((selection) => ({
       ...selection,
       pathId,
     })),
   };
+  return { mutation, result };
 }
