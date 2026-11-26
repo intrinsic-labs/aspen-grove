@@ -18,7 +18,7 @@ import { BufferSiblingControl } from './BufferSiblingControl';
 import { BufferDocStats } from './BufferDocStats';
 import { useBufferWebSink } from './useBufferWebSink';
 import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
-import type { CompositionControl } from './android/buffer-web-editor-props';
+import type { CompositionControl } from './composition-barrier';
 import { createCompositionBarrier } from './composition-barrier';
 import type { BufferRenderVariant } from './BufferTextInput';
 import {
@@ -132,6 +132,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           runs={previewRuns(preview)}
           seam={runsLength(preview.prefix)}
           composition={composition}
+          onComposition={barrier.observe}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}

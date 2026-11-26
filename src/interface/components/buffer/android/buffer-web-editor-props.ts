@@ -1,6 +1,7 @@
 import type { TextStyle } from 'react-native';
 import type { PreviewEdit, PreviewRun } from '../buffer-preview';
 import type { ModelRange } from './web-editor-protocol';
+import type { CompositionControl } from '../composition-barrier';
 
 /** What the host applies from the page; one stable object per screen. */
 export type WebEditorSink = {
@@ -27,10 +28,6 @@ export type AppliedReceipt = {
   readonly composing: boolean;
 };
 
-/** The editor's side of the composition barrier: set by the editor on mount. */
-export type CompositionControl = {
-  end: () => void;
-};
 
 export type BufferWebEditorProps = {
   /** Identifies a document load: the editor reloads when it changes. */

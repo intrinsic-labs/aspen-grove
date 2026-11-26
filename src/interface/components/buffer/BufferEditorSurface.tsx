@@ -1,10 +1,8 @@
 import { Platform, type TextStyle } from 'react-native';
 import { BufferWebEditor } from './android/BufferWebEditor';
 import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
-import type {
-  CompositionControl,
-  WebEditorSink,
-} from './android/buffer-web-editor-props';
+import type { WebEditorSink } from './android/buffer-web-editor-props';
+import type { CompositionControl } from './composition-barrier';
 import type { PreviewEdit, PreviewRun } from './buffer-preview';
 
 /** Which editor draws the document. `web` exists on Android only. */
@@ -25,6 +23,8 @@ type BufferEditorSurfaceProps = {
   /** Where the shared prefix ends and the current ending begins. */
   readonly seam: number;
   readonly composition: CompositionControl;
+  /** The native input's IME composing state, for the composition barrier. */
+  readonly onComposition: (composing: boolean) => void;
   readonly textStyle: TextStyle;
   readonly headerHeight: number;
   readonly topGap: number;
@@ -45,6 +45,7 @@ export const BufferEditorSurface = ({
   runs,
   seam,
   composition,
+  onComposition,
   textStyle,
   headerHeight,
   topGap,
@@ -71,6 +72,8 @@ export const BufferEditorSurface = ({
       editable
       variant={variant}
       fixtureEpoch={fixtureEpoch}
+      composition={composition}
+      onComposition={onComposition}
       textStyle={textStyle}
       headerHeight={headerHeight}
       topGap={topGap}

@@ -1,7 +1,7 @@
 ---
 feature-map: 1
 root: .
-revision: fe9a70b9af5734665cf0bc42e5f24562c5391c46
+revision: 6edcfedd02a78a2236535a7ec1da194f5ddb1933
 reconciled: 2026-11-10
 ---
 # Aspen Grove feature map
@@ -1150,7 +1150,7 @@ dialogue.
   fills the review sample (a human opening, two model endings, a human word inside model text).
 - **Requires:** The buffer preview switch. No model, no key.
 - **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-5k`, `buffer-load-10k`, `buffer-load-20k`, `buffer-load-stress` (the 30k one), `buffer-load-paragraphs` (the same 30k as real paragraphs), `buffer-variant`, `buffer-engine` (Android only: native input or the CodeMirror WebView; developer-preview speed experiment, default native), `buffer-doc-stats` (web engine only: a transparent receipt `len=<full length> head=<caret> rev=<last applied revision>`, for Maestro or adb), the last three only while the document is empty; on the web engine `buffer-document` is the editor's contenteditable and `buffer-web-editor` its WebView
-- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/BufferEditorSurface.tsx`, `src/interface/components/buffer/android/BufferWebEditor.android.tsx`, `src/interface/components/buffer/android/BufferWebEditor.tsx`, `src/interface/components/buffer/android/buffer-web-editor-props.ts`, `src/interface/components/buffer/android/web-editor-protocol.ts`, `src/interface/components/buffer/android/web-editor-session.ts`, `src/interface/components/buffer/android/useEditorSession.ts`, `src/interface/components/buffer/android/web-editor-style.ts`, `src/interface/components/buffer/useBufferWebSink.ts`, `src/interface/components/buffer/BufferDocStats.tsx`, `src/interface/components/buffer/buffer-preview-authors.ts`, `src/interface/components/buffer/composition-barrier.ts`, `src/interface/components/buffer/android/web-editor-seam.ts`, `src/interface/components/buffer/android/web-editor-html.generated.ts`, `tools/buffer-web-editor/main.ts`, `tools/buffer-web-editor/model-ranges.ts`, `tools/buffer-web-editor/marks.ts`, `tools/buffer-web-editor/report.ts`, `tools/buffer-web-editor/bridge.ts` (page source; npm run build:buffer-editor regenerates the HTML), `src/interface/components/buffer/derive-replacement.ts`, `src/interface/components/buffer/text-boundaries.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
+- **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/BufferEditorSurface.tsx`, `src/interface/components/buffer/ios/bind-native-composition.ts`, `src/interface/components/buffer/ios/useNativeComposition.ts`, `src/interface/components/buffer/ios/buffer-composition-native.ts`, `modules/buffer-composition/`, `src/interface/components/buffer/android/BufferWebEditor.android.tsx`, `src/interface/components/buffer/android/BufferWebEditor.tsx`, `src/interface/components/buffer/android/buffer-web-editor-props.ts`, `src/interface/components/buffer/android/web-editor-protocol.ts`, `src/interface/components/buffer/android/web-editor-session.ts`, `src/interface/components/buffer/android/useEditorSession.ts`, `src/interface/components/buffer/android/web-editor-style.ts`, `src/interface/components/buffer/useBufferWebSink.ts`, `src/interface/components/buffer/BufferDocStats.tsx`, `src/interface/components/buffer/buffer-preview-authors.ts`, `src/interface/components/buffer/composition-barrier.ts`, `src/interface/components/buffer/android/web-editor-seam.ts`, `src/interface/components/buffer/android/web-editor-html.generated.ts`, `tools/buffer-web-editor/main.ts`, `tools/buffer-web-editor/model-ranges.ts`, `tools/buffer-web-editor/marks.ts`, `tools/buffer-web-editor/report.ts`, `tools/buffer-web-editor/bridge.ts` (page source; npm run build:buffer-editor regenerates the HTML), `src/interface/components/buffer/derive-replacement.ts`, `src/interface/components/buffer/text-boundaries.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
 - **Backend:** none yet — in-memory review fixture; nothing typed is written to WatermelonDB
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
 - **Notes:** The input's value is its children (colored `<Text>` runs); each native change is
@@ -1178,7 +1178,15 @@ dialogue.
   branch-local text into the prefix. A composition barrier (`composition-barrier.ts`,
   platform-neutral) holds a sibling switch or fixture load while the IME is composing: it sends
   `endComposition` at once (the page blurs and refocuses, which commits and keeps the keyboard up),
-  runs the load on the page's `composition` status, or after 400 ms if none comes. `buffer-doc-stats` is hidden from TalkBack. The native input starts afresh on an explicit
+  runs the load on the page's `composition` status, or after 400 ms if none comes. `buffer-doc-stats` is hidden from TalkBack. On iOS the same barrier is fed by the local
+  Expo module `modules/buffer-composition`, which reports `markedTextRange != nil` of the
+  `buffer-document` text view (UITextView notifications, plus a 100 ms poll while marked, since
+  UIKit posts nothing when kana are confirmed unchanged) and ends a composition with
+  `unmarkText` (the keyboard stays up). React Native 0.86 already skips `attributedText` writes
+  while text is marked when the text is the same, so recolors never land on marked text; what it
+  could not stop is a load with different text, which tore the composition down and dropped the
+  candidate. The module is the only way to know (RN exposes no marked state). `buffer-doc-stats`
+  does not render on iOS (web engine only). The native input starts afresh on an explicit
   `fixtureEpoch`, not a first-character guess.
 
 ### Branch control
@@ -1195,7 +1203,8 @@ dialogue.
 - **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/branch-dots.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview.ts`, `src/interface/components/buffer/composition-barrier.ts`
 - **Backend:** none yet — fixture siblings in memory
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
-- **Notes:** Look (mockup `03-branches-pill`): a 36 pt pill in the raised dark fill with a soft
+- **Notes:** Accessibility: one adjustable element, label "Branch", value "Branch 1 of 2", hint "Swipe up or down to switch to another ending of this text" (the chevrons are not separate stops).
+  Look (mockup `03-branches-pill`): a 36 pt pill in the raised dark fill with a soft
   shadow, gold chevrons (grey when there is no previous or next), a JetBrains Mono "Branch 1 of 3"
   label and one dot per sibling, the current one green, at most 7 dots (a window that follows
   the current sibling). Pressing it while an IME composition is active waits for the composition to end (see `buffer.editor`). The control is one adjustable accessibility element; its prev/next

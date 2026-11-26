@@ -56,6 +56,7 @@ export const BufferSiblingControl = ({
       accessibilityRole="adjustable"
       accessibilityLabel="Branch"
       accessibilityValue={{ text: label }}
+      accessibilityHint="Swipe up or down to switch to another ending of this text"
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === 'increment') next();
