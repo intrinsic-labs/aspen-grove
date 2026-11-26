@@ -8,8 +8,9 @@ import {
   applyEdits,
   emptyPreview,
   noteSelection,
+  releaseHold,
 } from './buffer-preview-document';
-import { flushReconcile } from './buffer-preview-reconcile';
+import { observeComposition } from './buffer-preview-composition';
 import { adopt, applyPageChanges } from './buffer-preview-restore';
 import type { BufferSelection } from './derive-replacement';
 import type { CompositionBarrier } from './composition-barrier';
@@ -41,12 +42,7 @@ export const useBufferPreview = (barrier: CompositionBarrier) => {
   );
   // Recoloring held back by a composition runs when it ends.
   const onComposition = useCallback(
-    (composing: boolean) => {
-      barrier.observe(composing);
-      if (!composing) {
-        setDoc(flushReconcile);
-      }
-    },
+    (composing: boolean) => observeComposition(barrier, setDoc, composing),
     [barrier]
   );
   const sink = useMemo<WebEditorSink>(
@@ -61,6 +57,7 @@ export const useBufferPreview = (barrier: CompositionBarrier) => {
         setReceipt(applied);
         barrier.observe(applied.composing);
       },
+      onCaretMoved: () => setDoc(releaseHold),
       onComposition: barrier.observe,
     }),
     [barrier]

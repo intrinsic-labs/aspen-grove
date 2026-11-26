@@ -6,6 +6,7 @@ import {
   emptyPreview,
   noteSelection,
   prefixLength,
+  releaseHold,
   selectSibling as selectPreviewSibling,
   siblingCount,
 } from './buffer-preview-document';
@@ -228,6 +229,15 @@ describe('left affinity', () => {
     expect(doc.index.document.passages[0].runs).toEqual([
       { author: 'human', text: 'NOP' },
     ]);
+  });
+
+  it('is cleared when the Android page reports the caret moved', () => {
+    const doc = releaseHold(emptied());
+    expect(doc.hold).toBeUndefined();
+    const typed = applyEdits(doc, [{ start: 0, end: 0, inserted: 'N' }]);
+    expect(typed.index.document.passages[0].runs).toEqual([]);
+    // Nothing held: nothing to release.
+    expect(releaseHold(doc)).toBe(doc);
   });
 
   it('is cleared by a range selection', () => {

@@ -128,8 +128,20 @@ export type CompositionMessage = {
   readonly composing: boolean;
 };
 
+/**
+ * The user moved the caret or selection without editing. Left affinity
+ * belongs to a caret that has not moved, so the host drops it, as the page
+ * already has. Sent once per hold, only while an owner holds it.
+ */
+export type SelectionMessage = {
+  readonly type: 'selection';
+  readonly epoch: number;
+  readonly selection: Selection;
+};
+
 export type EditorMessage =
   | { readonly type: 'ready' }
+  | SelectionMessage
   | ChangesMessage
   | CheckpointMessage
   | CompositionMessage;
@@ -219,6 +231,13 @@ export const parseEditorMessage = (raw: string): EditorMessage | null => {
     typeof m.composing === 'boolean'
   ) {
     return m as unknown as CheckpointMessage;
+  }
+  if (
+    m.type === 'selection' &&
+    Number.isInteger(m.epoch) &&
+    isSelection(m.selection)
+  ) {
+    return m as unknown as SelectionMessage;
   }
   if (
     m.type === 'composition' &&

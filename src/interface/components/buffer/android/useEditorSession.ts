@@ -66,6 +66,9 @@ export const useEditorSession = (
         case 'applied':
           sink.onApplied(action);
           break;
+        case 'caretMoved':
+          sink.onCaretMoved();
+          break;
         case 'composition':
           sink.onComposition(action.composing);
           break;

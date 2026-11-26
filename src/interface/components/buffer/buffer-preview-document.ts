@@ -191,6 +191,12 @@ export const noteSelection = (
   return { ...doc, hold: undefined, drift: undefined };
 };
 
+/** The caret moved on purpose (the page said so): nothing keeps affinity. */
+export const releaseHold = (doc: PreviewDocument): PreviewDocument =>
+  doc.hold === undefined && doc.drift === undefined
+    ? doc
+    : { ...doc, hold: undefined, drift: undefined };
+
 /**
  * Switches to another ending; the prefix, and any edit to it, stays. Text
  * typed at the end belongs to the ending it followed, so it joins that

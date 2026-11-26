@@ -150,6 +150,18 @@ describe('reduceSession', () => {
     expect(step.actions[0]).toMatchObject({ modelRanges: [[2, 5]] });
   });
 
+  it('tells the host the caret moved, and drops one from another epoch', () => {
+    const state = startSession(1);
+    const moved = { anchor: 3, head: 3 };
+    expect(
+      reduceSession(state, { type: 'selection', epoch: 1, selection: moved })
+    ).toEqual({ state, actions: [{ type: 'caretMoved' }] });
+    expect(
+      reduceSession(state, { type: 'selection', epoch: 0, selection: moved })
+        .actions
+    ).toEqual([]);
+  });
+
   it('reports a composition that ended without an edit', () => {
     const state = startSession(1);
     expect(

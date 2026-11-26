@@ -127,6 +127,15 @@ describe('parseEditorMessage', () => {
       composing: false,
     };
     expect(parseEditorMessage(JSON.stringify(checkpoint))).toEqual(checkpoint);
+    const selection = {
+      type: 'selection',
+      epoch: 1,
+      selection: { anchor: 2, head: 5 },
+    };
+    expect(parseEditorMessage(JSON.stringify(selection))).toEqual(selection);
+    expect(
+      parseEditorMessage('{"type":"selection","epoch":1,"selection":{"anchor":2}}')
+    ).toBeNull();
     const composition = { type: 'composition', epoch: 1, composing: false };
     expect(parseEditorMessage(JSON.stringify(composition))).toEqual(composition);
     expect(

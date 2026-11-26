@@ -41,6 +41,7 @@ export type SessionAction =
   | { readonly type: 'ack'; readonly revision: number }
   | { readonly type: 'requestCheckpoint' }
   | { readonly type: 'composition'; readonly composing: boolean }
+  | { readonly type: 'caretMoved' }
   | {
       readonly type: 'applied';
       readonly revision: number;
@@ -140,6 +141,8 @@ export const reduceSession = (
       return receiveChanges(state, message);
     case 'checkpoint':
       return receiveCheckpoint(state, message);
+    case 'selection':
+      return { state, actions: [{ type: 'caretMoved' }] };
     case 'composition':
       return {
         state,

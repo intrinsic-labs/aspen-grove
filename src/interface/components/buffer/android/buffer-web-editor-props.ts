@@ -24,6 +24,8 @@ export type WebEditorSink = {
     layout: OwnerLayout,
     caret: number
   ) => void;
+  /** The user moved the caret without editing: no owner keeps left affinity. */
+  readonly onCaretMoved: () => void;
   /** The page's composing state changed without an edit (a composition ended). */
   readonly onComposition: (composing: boolean) => void;
   /** An edit or checkpoint was applied; for measurement receipts. */

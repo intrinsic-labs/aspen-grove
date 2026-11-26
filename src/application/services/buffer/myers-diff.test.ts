@@ -74,4 +74,14 @@ describe('matchTokens', () => {
     expect(matches[51]).toBe(51);
     expect(matches.slice(1, 51).every((m) => m < 0)).toBe(true);
   });
+
+  it('never matches one ancestor token twice when the bound is exceeded', () => {
+    // The common prefix takes ancestor 0; the fallback must stay in the middle.
+    const ancestor = ['x', 'x', 'x'];
+    const current = ['x', 'z', 'x', 'x', 'x'];
+    const matches = Array.from(matchTokens(ancestor, current, 1));
+    const used = matches.filter((at) => at >= 0);
+    expect(new Set(used).size).toBe(used.length);
+    expect(matches).toEqual([0, -1, -1, 1, 2]);
+  });
 });

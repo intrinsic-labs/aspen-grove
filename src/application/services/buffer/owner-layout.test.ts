@@ -1,7 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 import { applyReplacements, type Replacement } from './apply-replacement';
 import { human, indexOf, model, passage } from './document-fixtures';
-import { type OwnerLayout, advanceLayout, keepsHold } from './owner-layout';
+import {
+  type OwnerLayout,
+  advanceLayout,
+  keepsHold,
+  movesCaret,
+  releaseHold,
+} from './owner-layout';
 import { type DocumentIndex, type RangeOwner } from './document-ranges';
 
 const rep = (start: number, end: number, inserted: string): Replacement => ({
@@ -117,5 +123,38 @@ describe('advanceLayout matches the reducer', () => {
       expect(page.ends).toEqual(host.index.ranges.map((range) => range.end));
       expect(page.hold).toBe(ownerIndex(host.index, host.hold));
     }
+  });
+
+  it('drops affinity when the caret goes away and comes back, in both', () => {
+    const { index, layout } = start();
+    // Backspace the whole prefix: the emptied prefix keeps left affinity at 0.
+    const afterHost = hostStep({ index }, [rep(0, 7, '')], 0);
+    let page = advanceLayout(layout, [rep(0, 7, '')], 0);
+    expect(page.hold).toBe(0);
+    // The user taps elsewhere (a selection, no edit), then back at the start.
+    expect(movesCaret(page, { anchor: 9, head: 9 })).toBe(true);
+    page = releaseHold(page);
+    const host = { ...afterHost, hold: undefined };
+    // Typing at the old caret now goes to the ending, not the emptied prefix.
+    const typed = [rep(0, 0, 'N')];
+    const pageAfter = advanceLayout(page, typed, 1);
+    expect(pageAfter.ends[0]).toBe(0);
+    expect(pageAfter.ends).toEqual(
+      hostStep(host, typed, 1).index.ranges.map((range) => range.end)
+    );
+    // Without the move it would have gone to the prefix, as before.
+    expect(
+      advanceLayout(advanceLayout(layout, [rep(0, 7, '')], 0), typed, 1).ends[0]
+    ).toBe(1);
+  });
+
+  it('counts only the collapsed caret our own edit left as no move', () => {
+    const held: OwnerLayout = { ends: [0, 4], hold: 0, caret: 3 };
+    expect(movesCaret(held, { anchor: 3, head: 3 })).toBe(false);
+    expect(movesCaret(held, { anchor: 3, head: 2 })).toBe(true);
+    expect(movesCaret(held, { anchor: 1, head: 1 })).toBe(true);
+    expect(movesCaret({ ends: [0, 4], caret: 3 }, { anchor: 1, head: 1 })).toBe(
+      false
+    );
   });
 });

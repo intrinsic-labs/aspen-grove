@@ -53,6 +53,24 @@ export const keepsHold = (
   caret !== undefined &&
   replacements.some((edit) => edit.start === caret || edit.end === caret);
 
+/**
+ * Whether a selection with no edit is the user moving the caret: anything but
+ * the collapsed caret our own last edit left. Only then does it matter, and
+ * only while some owner holds left affinity.
+ */
+export const movesCaret = (
+  layout: OwnerLayout,
+  selection: { readonly anchor: number; readonly head: number }
+): boolean =>
+  layout.hold !== undefined &&
+  !(selection.anchor === selection.head && selection.head === layout.caret);
+
+/** The layout once the caret has moved on purpose: no owner holds affinity. */
+export const releaseHold = (layout: OwnerLayout): OwnerLayout => ({
+  ...layout,
+  hold: undefined,
+});
+
 /** The layout after one transaction, measured against the old layout. */
 export const advanceLayout = (
   layout: OwnerLayout,

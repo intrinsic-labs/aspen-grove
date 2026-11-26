@@ -9,13 +9,20 @@ import {
 import {
   type OwnerLayout,
   advanceLayout,
+  movesCaret,
+  releaseHold,
 } from '../../src/application/services/buffer/owner-layout';
 import { listen, post } from './bridge';
 import { authorMarks } from './marks';
 import { breaksField, lineSeparators } from './line-separators';
 import { keepViewportOnSelectAll } from './select-all';
 import { changesOf, checkpointOf } from './report';
-import { restoreSeparators, splitSeparators, toPageOffset } from './separators';
+import {
+  restoreSeparators,
+  splitSeparators,
+  toHostOffset,
+  toPageOffset,
+} from './separators';
 import { applyStyle } from './theme';
 
 let view: EditorView | undefined;
@@ -103,6 +110,18 @@ const create = (message: LoadMessage): EditorView => {
             );
             revision += 1;
             logSettled(update.view);
+          } else if (update.selectionSet) {
+            const { anchor, head } = update.state.selection.main;
+            const breaks = update.state.field(breaksField);
+            const selection = {
+              anchor: toHostOffset(breaks, anchor),
+              head: toHostOffset(breaks, head),
+            };
+            // A caret the user moved: tell the host, and drop affinity here too.
+            if (movesCaret(layout, selection)) {
+              layout = releaseHold(layout);
+              post({ type: 'selection', epoch, selection });
+            }
           }
         }),
       ],

@@ -81,7 +81,7 @@ export const matchTokens = (
   );
   const width = 2 * edits + 1;
   if (edits < 0 || (a.length + 1) * width > MAX_BAND_CELLS) {
-    return endsOnly(ancestor, current, matches);
+    return endsOnly(ancestor, current, matches, head);
   }
   // table[i * width + k + edits] is the longest common subsequence of a[i..]
   // and b[i - k..], for the diagonals k = i - j within the band.
@@ -122,14 +122,18 @@ export const matchTokens = (
   return matches;
 };
 
-/** The fallback: tokens common to both ends, nothing between. */
+/**
+ * The fallback: the common suffix of the unmatched middle, nothing between.
+ * `head` tokens at the start are already matched and are not reused.
+ */
 const endsOnly = (
   ancestor: readonly string[],
   current: readonly string[],
-  matches: Int32Array
+  matches: Int32Array,
+  head: number
 ): Int32Array => {
   let tail = 0;
-  const free = Math.min(ancestor.length, current.length);
+  const free = Math.min(ancestor.length, current.length) - head;
   while (
     tail < free &&
     matches[current.length - 1 - tail] < 0 &&
