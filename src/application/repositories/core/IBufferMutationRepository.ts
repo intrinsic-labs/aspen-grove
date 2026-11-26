@@ -8,6 +8,7 @@ export interface BufferMutation {
   readonly ownerAgentId: ULID;
   readonly operationId: ULID;
   readonly expectedRevision: number;
+  /** The path's durable rows before the write; may be shorter than the resolved path. */
   readonly expectedSequence: readonly ULID[];
   readonly createdAt: Date;
   readonly nodeInserts: readonly Node[];

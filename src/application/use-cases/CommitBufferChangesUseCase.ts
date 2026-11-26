@@ -122,7 +122,12 @@ export class BufferCommands {
       selections,
       action
     );
-    if ((await bufferMutationRepo.apply(mutation)) === 'stale')
+    // The writer's precondition is the durable rows, which can be shorter than
+    // the path open resolved (a stored sequence that stops short of a leaf).
+    const durable = replay
+      ? mutation
+      : { ...mutation, expectedSequence: rows.map((row) => row.nodeId) };
+    if ((await bufferMutationRepo.apply(durable)) === 'stale')
       throw new Error('Stale buffer mutation');
     await bufferDraftStore.remove(treeId, pathId, draft);
     return result;
