@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src file:; img-src data:">
+<style>
+@font-face { font-family: 'Cardo-Regular'; src: url('fonts/Cardo-Regular.ttf'); }
+@font-face { font-family: 'JetBrainsMono-Regular'; src: url('fonts/JetBrainsMono-Regular.ttf'); }
+@font-face { font-family: 'Glass_TTY_VT220'; src: url('fonts/Glass_TTY_VT220.ttf'); }
+html, body, #editor { height: 100%; margin: 0; background: var(--background, #000); }
+body { overflow: hidden; -webkit-tap-highlight-color: transparent; }
+#editor .cm-editor { height: 100%; background: var(--background, #000); color: var(--human, #fff); }
+#editor .cm-editor.cm-focused { outline: none; }
+#editor .cm-scroller { overflow: auto; font-family: var(--font, serif); font-size: var(--size, 17px); line-height: var(--leading, 1.6); }
+#editor .cm-content { padding: var(--pad-top, 0) var(--pad-x, 24px) var(--pad-bottom, 24px); caret-color: var(--human, #fff); }
+#editor .cm-line { padding: 0; }
+#editor .cm-placeholder { color: var(--placeholder, #888); }
+#editor .ag-model { color: var(--model, #9ec3ee); }
+#editor .cm-cursor { border-left-color: var(--human, #fff); }
+</style>
+</head>
+<body>
+<div id="editor"></div>
+<script>/*BUNDLE*/</script>
+</body>
+</html>

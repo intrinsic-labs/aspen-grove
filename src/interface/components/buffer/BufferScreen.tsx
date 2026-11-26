@@ -15,8 +15,12 @@ import { bufferTokens } from '@/interface/ui/value-objects/tokens/buffer';
 import { useDialogueDisplayPreferences } from '../chat/useDialogueDisplayPreferences';
 import { BufferFixtureControls } from './BufferFixtureControls';
 import { BufferSiblingControl } from './BufferSiblingControl';
-import { BufferTextInput, type BufferRenderVariant } from './BufferTextInput';
-import { stressPreview } from './buffer-preview-fixture';
+import { BufferEditorSurface, type BufferEngine } from './BufferEditorSurface';
+import type { BufferRenderVariant } from './BufferTextInput';
+import {
+  paragraphStressPreview,
+  stressPreview,
+} from './buffer-preview-fixture';
 import {
   applyPreviewEdit,
   emptyPreview,
@@ -26,6 +30,7 @@ import {
   selectPreviewSibling,
   siblingCount,
   type PreviewEdit,
+  type PreviewState,
 } from './buffer-preview';
 
 type BufferScreenProps = {
@@ -51,6 +56,9 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   });
   const [preview, setPreview] = useState(emptyPreview);
   const [variant, setVariant] = useState<BufferRenderVariant>('spans');
+  const [engine, setEngine] = useState<BufferEngine>('native');
+  // Counts wholesale document loads (fixture, sibling switch) for the web editor.
+  const [epoch, setEpoch] = useState(0);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: tree.title ?? 'Buffer' });
@@ -70,10 +78,16 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
     []
   );
   const onSelectSibling = useCallback(
-    (index: number) =>
-      setPreview((state) => selectPreviewSibling(state, index)),
+    (index: number) => {
+      setPreview((state) => selectPreviewSibling(state, index));
+      setEpoch((value) => value + 1);
+    },
     []
   );
+  const load = useCallback((next: PreviewState) => {
+    setPreview(next);
+    setEpoch((value) => value + 1);
+  }, []);
 
   const text = previewText(preview);
   const count = siblingCount(preview);
@@ -81,15 +95,15 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   return (
     <AppScreen testID="buffer-screen" style={styles.screen}>
       <KeyboardAvoidingView behavior="padding" style={styles.screen} enabled>
-        <BufferTextInput
+        <BufferEditorSurface
+          engine={engine}
+          variant={variant}
+          epoch={epoch}
           text={text}
           runs={previewRuns(preview)}
-          editable
-          variant={variant}
           textStyle={textStyle}
           headerHeight={headerHeight}
           topGap={layout.topGap}
-          placeholder="Start writing"
           onReplace={onReplace}
         />
         {/* A multiline input has no `keyboardDismissMode` (a ScrollView prop), and
@@ -118,9 +132,12 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           ) : text.length === 0 ? (
             <BufferFixtureControls
               variant={variant}
-              onLoadSample={() => setPreview(samplePreview())}
-              onLoadStress={(length) => setPreview(stressPreview(length))}
+              engine={engine}
+              onLoadSample={() => load(samplePreview())}
+              onLoadStress={(length) => load(stressPreview(length))}
+              onLoadParagraphs={() => load(paragraphStressPreview())}
               onVariant={setVariant}
+              onEngine={setEngine}
             />
           ) : null}
         </Pressable>
