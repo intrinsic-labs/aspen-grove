@@ -168,7 +168,8 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
           onSelection={onSelection}
           sink={sink}
         />
-        {engine === 'web' ? (
+        {/* The measurement receipt belongs to fixture runs, never a real document. */}
+        {fixture && engine === 'web' ? (
           <BufferDocStats length={text.length} receipt={receipt} />
         ) : null}
         {fixture ? null : (
