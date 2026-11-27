@@ -16,7 +16,10 @@ export type OpenRouterApiModel = {
   readonly architecture?: {
     readonly input_modalities?: readonly string[] | null;
     readonly output_modalities?: readonly string[] | null;
+    readonly instruct_type?: string | null;
   } | null;
+  readonly hugging_face_id?: string | null;
+  readonly endpoints?: readonly string[] | null;
   readonly top_provider?: {
     readonly max_completion_tokens?: number | null;
   } | null;
@@ -81,6 +84,9 @@ export const normalizeOpenRouterModel = (
     created: api.created ?? undefined,
     inputModalities: nonEmpty(api.architecture?.input_modalities),
     outputModalities: nonEmpty(api.architecture?.output_modalities),
+    weightIdentity: api.hugging_face_id || undefined,
+    instructType: api.architecture?.instruct_type,
+    endpoints: nonEmpty(api.endpoints),
     supportedParameters: nonEmpty(api.supported_parameters),
     knowledgeCutoff: api.knowledge_cutoff || undefined,
     aliasOf: api.alias_target?.slug || undefined,

@@ -13,8 +13,13 @@ import type {
 /**
  * Convert raw API model to normalized model representation.
  */
-const normalizeModel = (apiModel: LMStudioApiModel): LMStudioModel => ({
+const normalizeModel = (
+  apiModel: LMStudioApiModel,
+  connectionEndpoint: string
+): LMStudioModel => ({
   id: apiModel.key,
+  publisher: apiModel.publisher,
+  connectionEndpoint,
   displayName: apiModel.display_name,
   type: apiModel.type,
   state: apiModel.loaded_instances.length > 0 ? 'loaded' : 'not-loaded',
@@ -84,7 +89,7 @@ export const fetchLMStudioModels = async (input: {
     // Filter to only LLM models (not embedding models) and normalize
     const models = apiModels
       .filter((m) => m.type === 'llm')
-      .map(normalizeModel);
+      .map((model) => normalizeModel(model, endpoint));
 
     return models.slice().sort(compareLMStudioModels);
   } catch (error) {
