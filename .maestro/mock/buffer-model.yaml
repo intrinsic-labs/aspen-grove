@@ -37,5 +37,6 @@ env:
 - extendedWaitUntil:
     visible:
       id: buffer-model-button
-      text: 'Writing fixture \(base\)'
+      # The button's accessibility label is "Model, <name>", so match the tail.
+      text: '.*Writing fixture \(base\)'
     timeout: 10000
