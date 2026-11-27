@@ -23,6 +23,8 @@ export type ModelBrowserRowProps = {
   readonly first: boolean;
   readonly last: boolean;
   readonly onOpen: (id: string) => void;
+  /** Whether a tap opens the model's page (a chevron says so); default true. */
+  readonly opensPage?: boolean;
   readonly testID: string;
 };
 
@@ -41,6 +43,7 @@ export const ModelBrowserRow = memo(function ModelBrowserRow({
   first,
   last,
   onOpen,
+  opensPage = true,
   testID,
 }: ModelBrowserRowProps) {
   const colors = useFormColors();
@@ -83,11 +86,13 @@ export const ModelBrowserRow = memo(function ModelBrowserRow({
             color={loomUiTokens.colors.accentColor}
           />
         ) : null}
-        <Ionicons
-          name="chevron-forward"
-          size={form.linkChevronSize}
-          color={form.colors.tertiaryLabel}
-        />
+        {opensPage ? (
+          <Ionicons
+            name="chevron-forward"
+            size={form.linkChevronSize}
+            color={form.colors.tertiaryLabel}
+          />
+        ) : null}
       </FormRow>
       {last ? null : (
         <View

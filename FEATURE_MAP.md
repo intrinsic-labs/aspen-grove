@@ -1010,7 +1010,7 @@ stays until the user makes one.
   `GET /v1/models` through `fetchModels()`; the choice through
   `UpdateTreeModelSettingsUseCase`
 - **Status:** live
-- **Notes:** Flow: `.maestro/mock/tree-model-browser.yaml`.
+- **Notes:** Rows keep their chevron here, since a tap opens the model's page (the buffer's picker hides it). Flow: `.maestro/mock/tree-model-browser.yaml`.
 
 ### Model page
 - **ID:** `models.detail`
@@ -1235,21 +1235,23 @@ dialogue.
   preserving the tree's current output-token cap (or starting it at 50 tokens). The provider is
   chosen explicitly; direct Anthropic and OpenAI adapters and arbitrary custom ids are never offered.
 - **Where:** Route `tree/[treeId]/buffer-model`, titled "Model", pushed from the buffer header's
-  trailing model-name action. A provider card precedes the shared searchable model list.
+  trailing "Model" action (plain text: a model name there truncated the title). A provider card,
+  whose footer reads "Using <model>." for the tree's eligible choice, precedes the shared
+  searchable model list; its rows carry no chevron because a tap picks rather than opens.
 - **Reach:** Preview build → open a buffer → `buffer-model-button` →
   `buffer-model-provider-<provider>` → `buffer-model-option-<model id>`.
 - **Requires:** The buffer preview switch and a connected base-capable provider: an OpenRouter key
   or a configured LM Studio server. The initial verified OpenRouter registry is empty; the local
   mock fixture exposes `mock-base` only from a loopback LM Studio connection.
 - **Selector:** working — `buffer-model-button`, `buffer-model-screen`, providers `buffer-model-provider-<provider>`, `buffer-model-refresh`, rows `buffer-model-option-<model id>`, `buffer-model-empty`, `buffer-model-error`; the native header search field has no testID
-- **Code:** `src/app/tree/*/buffer-model.tsx`, `src/app/_layout.tsx`, `src/interface/components/buffer/BufferModelScreen.tsx`, `src/interface/components/buffer/BufferModelButton.tsx`, `src/interface/components/buffer/useBufferModel.ts`, `src/interface/components/buffer/buffer-model-providers.ts`, `src/interface/components/buffer/buffer-model-options.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-options.ts`, `src/application/services/llm/base-model-eligibility.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`
+- **Code:** `src/app/tree/*/buffer-model.tsx`, `src/app/_layout.tsx`, `src/interface/components/buffer/BufferModelScreen.tsx`, `src/interface/components/buffer/BufferModelButton.tsx`, `src/interface/components/buffer/useBufferModel.ts`, `src/interface/components/buffer/buffer-model-providers.ts`, `src/interface/components/buffer/buffer-model-options.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/model-options.ts`, `src/application/services/llm/base-model-eligibility.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` through the v4
   cached catalog, or LM Studio `GET <endpoint>/api/v1/models`; selection writes the tree-owned
   `agents.model_ref` and max-token configuration plus `loom_trees.default_model_agent_id` through
   `UpdateTreeModelSettingsUseCase`
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
-- **Notes:** Missing checkpoint evidence is a normal empty list, not an error. A load failure has
-  Retry; no connected provider links to Settings → Connections. A tap selects directly and returns
+- **Notes:** Missing checkpoint evidence is a normal empty list, not an error. A load failure shows
+  its message under the provider card, and Refresh Models retries; no connected provider links to Settings → Connections. A tap selects directly and returns
   to the buffer rather than opening a model detail page. Flow: `.maestro/mock/buffer-model.yaml`.
 
 ### Branch control

@@ -44,9 +44,21 @@ env:
     id: buffer-model-option-mock-model
 - tapOn:
     id: buffer-model-option-mock-base
+# Choosing returns to the buffer; reopening shows the choice.
 - extendedWaitUntil:
     visible:
-      id: buffer-model-button
-      # The button's accessibility label is "Model, <name>", so match the tail.
-      text: '.*Writing fixture \(base\)'
+      id: buffer-screen
+    timeout: 10000
+- waitForAnimationToEnd
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: buffer-model-screen
+    commands:
+      - tapOn:
+          id: buffer-model-button
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: 'Using Writing fixture \(base\)\.'
     timeout: 10000

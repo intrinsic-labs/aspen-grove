@@ -49,7 +49,10 @@ const BufferModelScreen = () => {
   }
 
   const providerSection = (
-    <FormSection header="Provider">
+    <FormSection
+      header="Provider"
+      footer={model.selectedName ? `Using ${model.selectedName}.` : undefined}
+    >
       {model.providers.map((provider) => (
         <FormCheckRow
           key={provider}
@@ -69,9 +72,7 @@ const BufferModelScreen = () => {
   );
 
   const status = model.error ? (
-    <FormSection testID="buffer-model-error" footer={model.error}>
-      <FormButtonRow title="Retry" onPress={() => void model.refresh()} />
-    </FormSection>
+    <FormSection testID="buffer-model-error" footer={model.error} />
   ) : !model.loading && model.options.length === 0 ? (
     <FormSection
       testID="buffer-model-empty"
@@ -89,6 +90,7 @@ const BufferModelScreen = () => {
       error={null}
       currentId={model.currentId}
       onOpen={select}
+      rowsOpenPage={false}
       header={providerSection}
       emptyComponent={status}
     />

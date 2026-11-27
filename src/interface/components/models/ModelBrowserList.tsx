@@ -42,6 +42,8 @@ export type ModelBrowserListProps = {
   readonly header?: ReactElement | null;
   /** Replaces the list's normal loading/error/empty message. */
   readonly emptyComponent?: ReactElement | null;
+  /** False when a row's tap picks the model instead of opening its page. */
+  readonly rowsOpenPage?: boolean;
   /** Override when the enclosing feature owns the screen-level selector. */
   readonly screenTestID?: string;
 };
@@ -64,6 +66,7 @@ export const ModelBrowserList = ({
   header,
   emptyComponent,
   screenTestID,
+  rowsOpenPage = true,
 }: ModelBrowserListProps) => {
   const navigation = useNavigation();
   const colors = useFormColors();
@@ -136,6 +139,7 @@ export const ModelBrowserList = ({
             first={index === 0}
             last={index === rows.length - 1}
             onOpen={onOpen}
+            opensPage={rowsOpenPage}
           />
         )}
         ListEmptyComponent={

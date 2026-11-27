@@ -19,12 +19,19 @@ appId: com.intrinsiclabs.aspengrove
       - waitForAnimationToEnd
       # The picker reopens where it was last left (a folder of another app
       # after an earlier run), so go to the root of "On My iPhone" first: the
-      # Browse tab twice reaches the locations list.
-      - tapOn: Browse
+      # Browse tab twice reaches the locations list. When it opens on "On My
+      # iPhone" already there is no Browse tab, so each step is optional.
+      - tapOn:
+          text: Browse
+          optional: true
       - waitForAnimationToEnd
-      - tapOn: Browse
+      - tapOn:
+          text: Browse
+          optional: true
       - waitForAnimationToEnd
-      - tapOn: On My iPhone
+      - tapOn:
+          text: On My iPhone
+          optional: true
       - waitForAnimationToEnd
       # The first tap on the picker's cell can be lost while it settles.
       - repeat:

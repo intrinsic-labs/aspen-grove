@@ -47,7 +47,6 @@ import {
 import { materialize } from '@application/services/buffer/document-ranges';
 import { samplePreview } from './buffer-preview-sample';
 import { BufferModelButton } from './BufferModelButton';
-import { useBufferModel } from './useBufferModel';
 
 type BufferScreenProps = {
   readonly tree: LoomTree;
@@ -78,7 +77,6 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const [epoch, setEpoch] = useState(0);
   // Counts fixture loads only; the native input starts afresh on one.
   const [fixtureEpoch, setFixtureEpoch] = useState(0);
-  const bufferModel = useBufferModel(tree.id);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -86,7 +84,6 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
       headerRightContainerStyle: { paddingRight: 6 },
       headerRight: () => (
         <BufferModelButton
-          label={bufferModel.selectedName ?? 'Model'}
           onPress={() =>
             router.push({
               pathname: '/tree/[treeId]/buffer-model',
@@ -96,7 +93,7 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
         />
       ),
     });
-  }, [bufferModel.selectedName, navigation, router, tree.id, tree.title]);
+  }, [navigation, router, tree.id, tree.title]);
 
   const textStyle = useMemo(
     () => ({
