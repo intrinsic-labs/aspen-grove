@@ -110,6 +110,10 @@ const RootLayout = () => {
                       headerShown: false,
                     }}
                   />
+                  <Stack.Screen
+                    name="tree/[treeId]/buffer-model"
+                    options={settingsScreenOptions(colors.primary, 'Model')}
+                  />
                   {/* The tree's Model Settings and its pages, pushed as
                       Latent Spaces pushes them (ToolbarMenu.swift:34-38). */}
                   <Stack.Screen

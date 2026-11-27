@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -18,7 +18,7 @@ import { loomUiTokens } from '@/interface/ui/value-objects/loom-ui-tokens';
 import { textInputTint } from '@/interface/ui/value-objects/text-input-tint';
 import { browserRows } from './browser-rows';
 import { customModelIdentifier } from './model-option-filter';
-import type { BrowsableProvider } from './browsable-provider';
+import type { SelectableProvider } from '@domain/entities';
 import type { ModelOption } from './model-options';
 import { ModelBrowserRow } from './ModelBrowserRow';
 
@@ -26,7 +26,7 @@ const form = loomUiTokens.settingsForm;
 
 export type ModelBrowserListProps = {
   /** Whose models are listed. */
-  readonly provider: BrowsableProvider;
+  readonly provider: SelectableProvider;
   readonly options: readonly ModelOption[];
   readonly loading: boolean;
   readonly error: string | null;
@@ -35,9 +35,17 @@ export type ModelBrowserListProps = {
   /** A row's tap: open that model's page. */
   readonly onOpen: (id: string) => void;
   /** Use a typed id the provider doesn't list (it may be newer than the list). */
-  readonly onUseCustom: (id: string) => void;
+  readonly onUseCustom?: (id: string) => void;
   /** Ids: `<prefix>-list-screen`, `<prefix>-list`, `<prefix>-option-<id>`. */
   readonly testIDPrefix: string;
+  /** Content before the optional custom-id row and model card. */
+  readonly header?: ReactElement | null;
+  /** Replaces the list's normal loading/error/empty message. */
+  readonly emptyComponent?: ReactElement | null;
+  /** False when a row's tap picks the model instead of opening its page. */
+  readonly rowsOpenPage?: boolean;
+  /** Override when the enclosing feature owns the screen-level selector. */
+  readonly screenTestID?: string;
 };
 
 /**
@@ -55,6 +63,10 @@ export const ModelBrowserList = ({
   onOpen,
   onUseCustom,
   testIDPrefix,
+  header,
+  emptyComponent,
+  screenTestID,
+  rowsOpenPage = true,
 }: ModelBrowserListProps) => {
   const navigation = useNavigation();
   const colors = useFormColors();
@@ -74,13 +86,14 @@ export const ModelBrowserList = ({
   }, [navigation]);
 
   const rows = useMemo(() => browserRows(options, search), [options, search]);
-  const custom = loading
-    ? null
-    : customModelIdentifier(provider, search, options);
+  const custom =
+    !onUseCustom || loading
+      ? null
+      : customModelIdentifier(provider, search, options);
 
   return (
     <AppScreen
-      testID={`${testIDPrefix}-list-screen`}
+      testID={screenTestID ?? `${testIDPrefix}-list-screen`}
       style={{ backgroundColor: colors.page }}
     >
       <FlatList
@@ -93,18 +106,26 @@ export const ModelBrowserList = ({
         contentContainerStyle={styles.content}
         initialNumToRender={14}
         ListHeaderComponent={
-          custom ? (
-            <FormSection style={styles.customSection}>
-              <FormRow
-                testID={`${testIDPrefix}-custom`}
-                onPress={() => onUseCustom(custom)}
-                accessibilityLabel={`Use ${custom}`}
-              >
-                <Text numberOfLines={1} style={[formText.accent, styles.grow]}>
-                  Use “{custom}” as a model id
-                </Text>
-              </FormRow>
-            </FormSection>
+          header || custom ? (
+            <>
+              {header ? <View style={styles.header}>{header}</View> : null}
+              {custom ? (
+                <FormSection style={styles.customSection}>
+                  <FormRow
+                    testID={`${testIDPrefix}-custom`}
+                    onPress={() => onUseCustom?.(custom)}
+                    accessibilityLabel={`Use ${custom}`}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[formText.accent, styles.grow]}
+                    >
+                      Use “{custom}” as a model id
+                    </Text>
+                  </FormRow>
+                </FormSection>
+              ) : null}
+            </>
           ) : null
         }
         renderItem={({ item, index }) => (
@@ -118,10 +139,12 @@ export const ModelBrowserList = ({
             first={index === 0}
             last={index === rows.length - 1}
             onOpen={onOpen}
+            opensPage={rowsOpenPage}
           />
         )}
         ListEmptyComponent={
-          loading ? (
+          emptyComponent ??
+          (loading ? (
             <ActivityIndicator style={styles.status} />
           ) : (
             <View style={styles.status}>
@@ -129,7 +152,7 @@ export const ModelBrowserList = ({
                 {error ?? (custom ? null : 'No models match.')}
               </Text>
             </View>
-          )
+          ))
         }
       />
     </AppScreen>
@@ -141,6 +164,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: form.sectionInset,
     paddingTop: form.sectionGap / 2,
     paddingBottom: form.sectionGap,
+  },
+  header: {
+    marginBottom: form.sectionGap,
   },
   customSection: {
     marginTop: 0,

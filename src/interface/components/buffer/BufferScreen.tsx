@@ -5,6 +5,7 @@ import {
   useKeyboardState,
 } from 'react-native-keyboard-controller';
 import { useHeaderHeight, useNavigation } from 'expo-router/react-navigation';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LoomTree } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
@@ -45,6 +46,7 @@ import {
 } from './buffer-preview-document';
 import { materialize } from '@application/services/buffer/document-ranges';
 import { samplePreview } from './buffer-preview-sample';
+import { BufferModelButton } from './BufferModelButton';
 
 type BufferScreenProps = {
   readonly tree: LoomTree;
@@ -61,6 +63,7 @@ const { layout, control, bar } = bufferTokens;
  */
 export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const navigation = useNavigation();
+  const router = useRouter();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
@@ -76,8 +79,21 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const [fixtureEpoch, setFixtureEpoch] = useState(0);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: tree.title ?? 'Buffer' });
-  }, [navigation, tree.title]);
+    navigation.setOptions({
+      title: tree.title ?? 'Buffer',
+      headerRightContainerStyle: { paddingRight: 6 },
+      headerRight: () => (
+        <BufferModelButton
+          onPress={() =>
+            router.push({
+              pathname: '/tree/[treeId]/buffer-model',
+              params: { treeId: tree.id },
+            })
+          }
+        />
+      ),
+    });
+  }, [navigation, router, tree.id, tree.title]);
 
   const textStyle = useMemo(
     () => ({
