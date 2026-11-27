@@ -16,7 +16,8 @@ import {
 } from './web-editor-protocol';
 import { editorUnavailable } from '../composition-barrier';
 import { useEditorSession } from './useEditorSession';
-import { webEditorStyle } from './web-editor-style';
+import { bufferWebEditorPropsEqual } from './buffer-web-editor-equality';
+import { webEditorStyle, webEditorStylesEqual } from './web-editor-style';
 
 /** The page is loaded from this base so its fonts come from the app's assets. */
 const BASE_URL = 'file:///android_asset/';
@@ -33,9 +34,9 @@ const allowNavigation = (request: WebViewNavigation): boolean =>
  * and answers with the replacements the user typed; nothing else crosses
  * while typing, and the page is never handed text back (the host only
  * acknowledges revisions, see useEditorSession). The component is memoized on
- * `epoch` and the sink, so a host re-render per keystroke does not reach the
- * WebView. Style is sent with each load; a later style change
- * takes effect at the next one.
+ * the document boundary and rendered style values, so a host re-render per
+ * keystroke does not reach the WebView. Later style changes cross separately
+ * and leave the page's document state alone.
  */
 const Editor = ({
   epoch,
@@ -55,10 +56,15 @@ const Editor = ({
   const ready = useRef(false);
   const latest = useRef({ epoch, text, runs, ends, readOnly, caret });
   latest.current = { epoch, text, runs, ends, readOnly, caret };
-  const style = useRef(
-    webEditorStyle(textStyle, headerHeight, topGap, placeholder)
+  const currentStyle = webEditorStyle(
+    textStyle,
+    headerHeight,
+    topGap,
+    placeholder
   );
-  style.current = webEditorStyle(textStyle, headerHeight, topGap, placeholder);
+  const style = useRef(currentStyle);
+  const sentStyle = useRef<typeof currentStyle | undefined>(undefined);
+  style.current = currentStyle;
 
   const send = useCallback((message: HostMessage) => {
     webView.current?.postMessage(encodeHostMessage(message));
@@ -66,6 +72,7 @@ const Editor = ({
 
   const load = useCallback(() => {
     const document = latest.current;
+    sentStyle.current = style.current;
     send({
       type: 'load',
       epoch: document.epoch,
@@ -83,6 +90,16 @@ const Editor = ({
       load();
     }
   }, [epoch, load]);
+
+  useEffect(() => {
+    if (
+      ready.current &&
+      !webEditorStylesEqual(sentStyle.current, currentStyle)
+    ) {
+      sentStyle.current = currentStyle;
+      send({ type: 'style', style: currentStyle });
+    }
+  }, [currentStyle, send]);
 
   const { receive, settle } = useEditorSession(epoch, sink, send);
   useEffect(() => {
@@ -133,10 +150,7 @@ const Editor = ({
 
 export const BufferWebEditor = memo(
   Editor,
-  (before, after) =>
-    before.epoch === after.epoch &&
-    before.readOnly === after.readOnly &&
-    before.sink === after.sink
+  bufferWebEditorPropsEqual
 );
 
 const styles = StyleSheet.create({

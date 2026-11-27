@@ -33,6 +33,12 @@ const editorAccess = (readOnly: boolean) => [
   EditorView.editable.of(!readOnly),
 ];
 
+const presentation = new Compartment();
+const editorPresentation = (style: LoadMessage['style']) => [
+  placeholder(style.placeholder),
+  EditorView.scrollMargins.of(() => ({ top: style.paddingTop })),
+];
+
 let view: EditorView | undefined;
 /** Names the load in progress; host messages for another epoch are dropped. */
 let epoch = -1;
@@ -108,7 +114,7 @@ const create = (message: LoadMessage): EditorView => {
         lineSeparators(breaks),
         keepViewportOnSelectAll(),
         authorMarks(modelRanges),
-        placeholder(message.style.placeholder),
+        presentation.of(editorPresentation(message.style)),
         EditorView.domEventObservers({
           compositionend: (_event, editor) => reportComposition(editor),
         }),
@@ -170,6 +176,15 @@ const load = (message: LoadMessage): void => {
   if (hadFocus) {
     view.focus();
   }
+};
+
+/** Reconfigures presentation only: document, selection, history and IME stay put. */
+const setStyle = (editor: EditorView, style: LoadMessage['style']): void => {
+  applyStyle(style);
+  diagnostics = style.diagnostics;
+  editor.dispatch({
+    effects: presentation.reconfigure(editorPresentation(style)),
+  });
 };
 
 // CodeMirror drains pending DOM mutations before its scheduled measurement.
@@ -235,6 +250,8 @@ const settlePage = async (editor: EditorView, request: SettleMessage) => {
 const receive = (message: HostMessage): void => {
   if (message.type === 'load') {
     load(message);
+  } else if (message.type === 'style') {
+    if (view) setStyle(view, message.style);
   } else if (message.epoch !== epoch || !view) {
     return;
   } else if (message.type === 'readOnly') {
