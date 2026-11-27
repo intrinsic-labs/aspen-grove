@@ -34,3 +34,22 @@ export const webEditorStyle = (
   placeholder,
   diagnostics: isBufferPreviewEnabled(),
 });
+
+/** Presentation messages are suppressed when every rendered value is equal. */
+export const webEditorStylesEqual = (
+  before: WebEditorStyle | undefined,
+  after: WebEditorStyle
+): boolean =>
+  before !== undefined &&
+  before.fontFamily === after.fontFamily &&
+  before.fontSize === after.fontSize &&
+  before.lineHeight === after.lineHeight &&
+  before.paddingTop === after.paddingTop &&
+  before.paddingHorizontal === after.paddingHorizontal &&
+  before.paddingBottom === after.paddingBottom &&
+  before.humanColor === after.humanColor &&
+  before.modelColor === after.modelColor &&
+  before.placeholderColor === after.placeholderColor &&
+  before.backgroundColor === after.backgroundColor &&
+  before.placeholder === after.placeholder &&
+  before.diagnostics === after.diagnostics;

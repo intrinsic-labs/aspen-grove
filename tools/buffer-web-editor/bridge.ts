@@ -2,6 +2,7 @@ import type {
   EditorMessage,
   HostMessage,
 } from '../../src/interface/components/buffer/android/web-editor-protocol';
+import { parseHostMessage } from '../../src/interface/components/buffer/android/web-editor-host-message';
 
 declare global {
   interface Window {
@@ -22,11 +23,8 @@ export const listen = (handler: (message: HostMessage) => void): void => {
     if (typeof data !== 'string') {
       return;
     }
-    try {
-      handler(JSON.parse(data) as HostMessage);
-    } catch {
-      // ignored
-    }
+    const message = parseHostMessage(data);
+    if (message) handler(message);
   };
   document.addEventListener('message', receive);
   window.addEventListener('message', receive);
