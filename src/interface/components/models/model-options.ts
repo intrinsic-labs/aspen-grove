@@ -3,6 +3,7 @@ import {
   type OpenRouterCatalogModel,
 } from '@application/services/llm';
 import type { SelectableProvider } from '@domain/entities';
+import type { LMStudioModel } from '@infrastructure/llm';
 import type { AppServices } from '@interface/composition';
 import { formatRowMeta, formatTokensCompact } from './model-info-format';
 import { PROVIDER_LABELS } from './provider-options';
@@ -36,7 +37,7 @@ const formatContext = (contextLength?: number): string | null =>
 const joinDetail = (parts: readonly (string | null)[]): string | undefined =>
   parts.filter(Boolean).join(' · ') || undefined;
 
-const toCatalogOption = (
+export const catalogModelOption = (
   model: OpenRouterCatalogModel,
   author?: string
 ): ModelOption => ({
@@ -47,6 +48,17 @@ const toCatalogOption = (
   detail: formatRowMeta(model) || undefined,
   author,
   catalog: model,
+});
+
+export const lmStudioModelOption = (model: LMStudioModel): ModelOption => ({
+  id: model.id,
+  label: model.displayName,
+  maxOutputTokens: model.maxContextLength,
+  detail: joinDetail([
+    formatContext(model.maxContextLength),
+    model.paramsString ?? null,
+  ]),
+  loaded: model.state === 'loaded',
 });
 
 /**
@@ -64,7 +76,7 @@ export const fetchModelOptions = async (
 ): Promise<readonly ModelOption[]> => {
   if (provider === 'openrouter') {
     const models = await adapters.openRouterCatalog.getModels({ forceRefresh });
-    return models.map((model) => toCatalogOption(model));
+    return models.map((model) => catalogModelOption(model));
   }
   if (provider === 'anthropic' || provider === 'openai') {
     const apiKey = (
@@ -80,7 +92,7 @@ export const fetchModelOptions = async (
     await adapter.initialize({ apiKey });
     const models = await adapter.fetchModels();
     return models.map((model) =>
-      toCatalogOption(model, PROVIDER_LABELS[provider])
+      catalogModelOption(model, PROVIDER_LABELS[provider])
     );
   }
   const models = await adapters.providerRegistry
@@ -88,14 +100,5 @@ export const fetchModelOptions = async (
     .fetchModels();
   return models
     .filter((model) => model.type === 'llm')
-    .map((model) => ({
-      id: model.id,
-      label: model.displayName,
-      maxOutputTokens: model.maxContextLength,
-      detail: joinDetail([
-        formatContext(model.maxContextLength),
-        model.paramsString ?? null,
-      ]),
-      loaded: model.state === 'loaded',
-    }));
+    .map(lmStudioModelOption);
 };
