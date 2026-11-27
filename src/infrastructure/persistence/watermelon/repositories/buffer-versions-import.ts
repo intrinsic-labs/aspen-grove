@@ -43,6 +43,7 @@ export const importBufferVersions = async () => {
   const treeId = result.trees[0].treeId;
 
   const open = new OpenBufferDocumentUseCase({
+    activeBufferDraws: f.activeBufferDraws,
     treeRepo,
     groveRepo: {
       findById: async (id: ULID) =>

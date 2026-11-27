@@ -10,8 +10,10 @@ import type {
 } from '@application/repositories/core/IBufferMutationRepository';
 import { verifyModelNodeProvenance } from '@application/services/provenance';
 import type { ULID } from '@domain/value-objects';
+import type { ActiveBufferDraws } from './active-buffer-draws';
 
 type Dependencies = {
+  readonly activeBufferDraws: ActiveBufferDraws;
   readonly bufferMutationRepository: IBufferMutationRepository;
   readonly nodeRepository: Pick<
     INodeRepository,
@@ -71,7 +73,7 @@ export const repairPendingBufferGeneration = async (
     treeId,
     pathId
   );
-  if (!intent) return;
+  if (!intent || deps.activeBufferDraws.isActive(intent.drawId)) return;
   await deps.bufferMutationRepository.completeGeneration(
     intent,
     await savedSlots(intent, deps)

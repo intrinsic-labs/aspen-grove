@@ -28,6 +28,7 @@ import {
 import { prepareModelContinuationEvidence } from '@application/services/prepare-model-continuation-evidence';
 import { verifyModelNodeProvenance } from '@application/services/provenance';
 import type { BufferDraft } from '@application/services/buffer/buffer-draft';
+import type { ActiveBufferDraws } from '@application/services/buffer/active-buffer-draws';
 import { createULID, type ULID } from '@domain/value-objects';
 
 export type GenerateBufferContinuationsInput = {
@@ -48,6 +49,7 @@ export type GenerateBufferContinuationsResult = {
 
 export type GenerateBufferContinuationsDependencies =
   PrepareBufferGenerationDependencies & {
+    readonly activeBufferDraws: ActiveBufferDraws;
     readonly bufferMutationRepository: IBufferMutationRepository;
     readonly nodeRepository: PrepareBufferGenerationDependencies['nodeRepository'] &
       Pick<INodeRepository, 'getAllLocalIds' | 'findById'>;
@@ -99,41 +101,54 @@ export class GenerateBufferContinuationsUseCase {
     assertInput(input.count, input.maxTokens);
     if (input.signal?.aborted) throw new Error('Buffer generation cancelled.');
     const prepared = await prepareBufferGeneration(input, this.deps);
-    const begun = await this.deps.bufferMutationRepository.beginGeneration(
-      prepared.intent
-    );
-    if (begun !== 'started') {
-      throw new Error('A buffer generation is already active or became stale.');
-    }
-
-    const slots = await runContinuationSlots({
-      count: input.count,
-      llmProvider: prepared.llmProvider,
-      request: prepared.request,
-      signal: input.signal,
-      retry: this.deps.retry,
-      onSlotEvent: input.onSlotEvent,
-      persist: (slot, completion) =>
-        this.persistSlot(prepared, slot, completion),
-    });
-    const saved = slots.flatMap<BufferSavedGenerationSlot>((outcome) => {
-      if (
-        outcome.type !== 'done' &&
-        outcome.type !== 'interrupted' &&
-        !(outcome.type === 'cancelled' && outcome.saved)
-      ) {
-        return [];
+    this.deps.activeBufferDraws.begin(prepared.intent.drawId);
+    try {
+      const begun = await this.deps.bufferMutationRepository.beginGeneration(
+        prepared.intent
+      );
+      if (begun !== 'started') {
+        throw new Error(
+          'A buffer generation is already active or became stale.'
+        );
       }
-      const value = outcome.type === 'cancelled' ? outcome.saved : outcome;
-      return value
-        ? [{ slot: outcome.slot, nodeId: value.nodeId, edgeId: value.edgeId! }]
-        : [];
-    });
-    await this.deps.bufferMutationRepository.completeGeneration(
-      prepared.intent,
-      saved
-    );
-    return { sourceNodeId: prepared.sourceNode.id, slots };
+
+      const slots = await runContinuationSlots({
+        count: input.count,
+        llmProvider: prepared.llmProvider,
+        request: prepared.request,
+        signal: input.signal,
+        retry: this.deps.retry,
+        onSlotEvent: input.onSlotEvent,
+        persist: (slot, completion) =>
+          this.persistSlot(prepared, slot, completion),
+      });
+      const saved = slots.flatMap<BufferSavedGenerationSlot>((outcome) => {
+        if (
+          outcome.type !== 'done' &&
+          outcome.type !== 'interrupted' &&
+          !(outcome.type === 'cancelled' && outcome.saved)
+        ) {
+          return [];
+        }
+        const value = outcome.type === 'cancelled' ? outcome.saved : outcome;
+        return value
+          ? [
+              {
+                slot: outcome.slot,
+                nodeId: value.nodeId,
+                edgeId: value.edgeId!,
+              },
+            ]
+          : [];
+      });
+      await this.deps.bufferMutationRepository.completeGeneration(
+        prepared.intent,
+        saved
+      );
+      return { sourceNodeId: prepared.sourceNode.id, slots };
+    } finally {
+      this.deps.activeBufferDraws.end(prepared.intent.drawId);
+    }
   }
 
   private async persistSlot(

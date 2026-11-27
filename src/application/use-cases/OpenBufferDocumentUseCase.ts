@@ -29,6 +29,7 @@ import {
 import type { Node, PathSelection } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
 import { repairPendingBufferGeneration } from '@application/services/buffer/repair-pending-buffer-generation';
+import type { ActiveBufferDraws } from '@application/services/buffer/active-buffer-draws';
 
 /** One resolved version on the path, as the editor shows it. */
 export type OpenedPassage = {
@@ -63,6 +64,7 @@ export type OpenedBufferDocument = {
 };
 
 export type OpenBufferDocumentDependencies = {
+  activeBufferDraws: ActiveBufferDraws;
   treeRepo: ILoomTreeRepository;
   groveRepo: IGroveRepository;
   nodeRepo: INodeRepository;
@@ -109,6 +111,7 @@ export class OpenBufferDocumentUseCase {
     if (!path) throw new Error('Buffer tree has no path for its owner');
 
     await repairPendingBufferGeneration(treeId, path.id, {
+      activeBufferDraws: this.repos.activeBufferDraws,
       bufferMutationRepository: this.repos.bufferMutationRepo,
       nodeRepository: nodeRepo,
       edgeRepository: edgeRepo,

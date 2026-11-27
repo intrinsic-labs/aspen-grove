@@ -45,6 +45,7 @@ import {
   ProviderRegistry,
 } from '@infrastructure/llm';
 import { ReadAloudService } from '@application/services/speech';
+import { ActiveBufferDraws } from '@application/services/buffer/active-buffer-draws';
 import { runStartupOrchestrator } from '@infrastructure/bootstrap';
 import database from '@infrastructure/persistence/watermelon/index.native';
 import { subscribeToDatabaseSetupError } from '@infrastructure/persistence/watermelon/setup-error';
@@ -198,10 +199,12 @@ const buildAppServices = (): AppServices => {
   });
 
   const bufferCommands = new BufferCommands(repositories);
+  const activeBufferDraws = new ActiveBufferDraws();
   const useCases = {
     commitBufferChangesUseCase: new CommitBufferChangesUseCase(bufferCommands),
     switchBufferPathUseCase: new SwitchBufferPathUseCase(bufferCommands),
     openBufferDocumentUseCase: new OpenBufferDocumentUseCase({
+      activeBufferDraws,
       treeRepo: repositories.treeRepo,
       groveRepo: repositories.groveRepo,
       nodeRepo: repositories.nodeRepo,
@@ -271,6 +274,7 @@ const buildAppServices = (): AppServices => {
         modelOutputLimits,
       }),
     generateBufferContinuationsUseCase: new GenerateBufferContinuationsUseCase({
+      activeBufferDraws,
       commitBufferChangesUseCase: new CommitBufferChangesUseCase(
         bufferCommands
       ),

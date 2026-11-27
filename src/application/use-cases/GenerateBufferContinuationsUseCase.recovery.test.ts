@@ -3,6 +3,61 @@ import { verifyModelNodeProvenance } from '@application/services/provenance';
 import { createULID } from '@domain/value-objects';
 import { bufferGenerationFixture } from './GenerateBufferContinuationsUseCase.test-fixture';
 
+const nextTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
+const deferred = () => {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+};
+
+test('reopen leaves a live draw pending so its settling slot lands', async () => {
+  const gate = deferred();
+  const f = await bufferGenerationFixture([
+    { text: 'settled after reopen', wait: gate.promise },
+  ]);
+  const running = f.generate.execute({
+    treeId: f.treeId,
+    pathId: f.pathId,
+    ownerAgentId: f.ownerAgentId,
+    draft: await f.draft('source'),
+    count: 1,
+    maxTokens: 10,
+  });
+  await nextTurn();
+  expect(f.provider.started).toBe(1);
+  const pending = await f.bufferMutationRepo.findPendingGeneration(
+    f.treeId,
+    f.pathId
+  );
+  expect(pending).not.toBeNull();
+  expect(f.activeBufferDraws.isActive(pending!.drawId)).toBe(true);
+
+  const openedWhileStreaming = await f.open.execute({ treeId: f.treeId });
+  expect(openedWhileStreaming.passages.at(-1)?.text).toBe('source');
+  expect(
+    await f.bufferMutationRepo.findPendingGeneration(f.treeId, f.pathId)
+  ).toEqual(pending);
+
+  gate.resolve();
+  const result = await running;
+  const slot = result.slots[0];
+  if (slot.type !== 'done') throw new Error('Expected a saved slot');
+  await expect(
+    verifyModelNodeProvenance({
+      nodeId: slot.nodeId,
+      nodeRepository: f.nodeRepo,
+      edgeRepository: f.edgeRepo,
+      rawApiResponseRepository: f.rawApiResponseRepo,
+    })
+  ).resolves.toMatchObject({ isValid: true });
+  expect((await f.open.execute({ treeId: f.treeId })).sequence.at(-1)).toBe(
+    slot.nodeId
+  );
+  expect(f.activeBufferDraws.isActive(pending!.drawId)).toBe(false);
+});
+
 test('reopen repairs saved activation without re-running inference', async () => {
   const f = await bufferGenerationFixture([{ text: 'saved once' }]);
   const complete = jest

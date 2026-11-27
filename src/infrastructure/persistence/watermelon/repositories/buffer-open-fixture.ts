@@ -11,6 +11,7 @@ import {
 } from '@application/use-cases/CommitBufferChangesUseCase';
 import { CreateBufferLoomTreeUseCase } from '@application/use-cases/CreateBufferLoomTreeUseCase';
 import { OpenBufferDocumentUseCase } from '@application/use-cases/OpenBufferDocumentUseCase';
+import { ActiveBufferDraws } from '@application/services/buffer/active-buffer-draws';
 import { SwitchBufferPathUseCase } from '@application/use-cases/SwitchBufferPathUseCase';
 import { bufferTestDatabase } from './buffer-test-database';
 import { WatermelonBufferDraftStore } from './WatermelonBufferDraftStore';
@@ -65,7 +66,9 @@ export async function bufferOpenFixture() {
     bufferDraftStore,
     bufferMutationRepo,
   });
+  const activeBufferDraws = new ActiveBufferDraws();
   const open = new OpenBufferDocumentUseCase({
+    activeBufferDraws,
     treeRepo,
     groveRepo: groveRepo as never,
     nodeRepo,
@@ -134,6 +137,7 @@ export async function bufferOpenFixture() {
     pathRepo,
     bufferDraftStore,
     bufferMutationRepo,
+    activeBufferDraws,
     rawApiResponseRepo,
     commit: new CommitBufferChangesUseCase(commands),
     switchPath: new SwitchBufferPathUseCase(commands),

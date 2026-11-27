@@ -133,6 +133,7 @@ export const bufferGenerationFixture = async (
   });
   const provider = new ScriptedTextProvider(scripts);
   const generate = new GenerateBufferContinuationsUseCase({
+    activeBufferDraws: f.activeBufferDraws,
     commitBufferChangesUseCase: f.commit,
     bufferMutationRepository: f.bufferMutationRepo,
     treeRepository: f.treeRepo,

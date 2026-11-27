@@ -24,6 +24,7 @@ test('four concurrent literal streams settle independently with exact evidence',
     { fail: 'before' },
   ];
   const f = await bufferGenerationFixture(scripts);
+  const begin = jest.spyOn(f.bufferMutationRepo, 'beginGeneration');
   const draft = await f.draft('Exact prompt ');
   const result = await f.generate.execute({
     treeId: f.treeId,
@@ -77,6 +78,9 @@ test('four concurrent literal streams settle independently with exact evidence',
       })
     ).resolves.toMatchObject({ isValid: true, parentNodeCount: 1 });
   }
+  expect(f.activeBufferDraws.isActive(begin.mock.calls[0][0].drawId)).toBe(
+    false
+  );
 });
 
 test('failed persisted verification removes only that slot', async () => {
@@ -128,6 +132,7 @@ test('all slots fail and keep the committed human tail', async () => {
     { fail: 'before' },
     { fail: 'before' },
   ]);
+  const begin = jest.spyOn(f.bufferMutationRepo, 'beginGeneration');
   const result = await f.generate.execute({
     treeId: f.treeId,
     pathId: f.pathId,
@@ -143,6 +148,9 @@ test('all slots fail and keep the committed human tail', async () => {
     type: 'text',
     text: 'kept tail',
   });
+  expect(f.activeBufferDraws.isActive(begin.mock.calls[0][0].drawId)).toBe(
+    false
+  );
 });
 
 test('a retryable failure after a delta is never retried', async () => {
@@ -210,6 +218,7 @@ test('cancellation after a delta saves the literal partial', async () => {
   const f = await bufferGenerationFixture([
     { text: ' partial ', wait: gate.promise },
   ]);
+  const begin = jest.spyOn(f.bufferMutationRepo, 'beginGeneration');
   const running = f.generate.execute({
     treeId: f.treeId,
     pathId: f.pathId,
@@ -231,6 +240,9 @@ test('cancellation after a delta saves the literal partial', async () => {
     type: 'text',
     text: ' partial ',
   });
+  expect(f.activeBufferDraws.isActive(begin.mock.calls[0][0].drawId)).toBe(
+    false
+  );
 });
 
 test('slot order survives out-of-order completion', async () => {
