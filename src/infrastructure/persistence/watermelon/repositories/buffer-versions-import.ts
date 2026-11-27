@@ -43,6 +43,7 @@ export const importBufferVersions = async () => {
   const treeId = result.trees[0].treeId;
 
   const open = new OpenBufferDocumentUseCase({
+    activeBufferDraws: f.activeBufferDraws,
     treeRepo,
     groveRepo: {
       findById: async (id: ULID) =>
@@ -52,6 +53,8 @@ export const importBufferVersions = async () => {
     edgeRepo: f.edgeRepo,
     pathRepo: f.pathRepo,
     bufferDraftStore: new WatermelonBufferDraftStore(f.db),
+    bufferMutationRepo: f.bufferMutationRepo,
+    rawApiResponseRepo: f.rawApiResponseRepo,
   });
   return { f, open, treeId, treeRepo };
 };

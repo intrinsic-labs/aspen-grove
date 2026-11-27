@@ -1,4 +1,5 @@
 import { bufferDraftKey } from './WatermelonBufferDraftStore';
+import { bufferGenerationKey } from './WatermelonBufferGenerationRepository';
 import type { Collection, Database } from '@nozbe/watermelondb';
 import { Q } from '@nozbe/watermelondb';
 import type {
@@ -128,6 +129,9 @@ export class WatermelonPathRepository implements IPathRepository {
         await this.deletePathDependents(id);
         await this.db.localStorage.remove(
           bufferDraftKey(path.loomTreeId, path.id)
+        );
+        await this.db.localStorage.remove(
+          bufferGenerationKey(path.loomTreeId, path.id)
         );
         await path.destroyPermanently();
         return true;

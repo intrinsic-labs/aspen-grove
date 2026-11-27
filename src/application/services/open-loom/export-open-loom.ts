@@ -7,6 +7,7 @@ import type {
   RawApiResponse,
 } from '@domain/entities';
 import { computeSha256Hash } from '@application/services/content-hash-service';
+import { modelProvenanceParentIds } from '@application/services/buffer/buffer-provenance-parents';
 import {
   OPEN_LOOM_FORMAT,
   OPEN_LOOM_VERSION,
@@ -174,15 +175,21 @@ export const buildOpenLoomDocument = async (
   const includeBookmarks = options.includeBookmarks ?? true;
   const includeSystemNodeContent = options.includeSystemNodeContent ?? true;
 
-  // Parent hashes come from each node's incoming continuation edge sources.
+  // Parent hashes follow the same signed-parent rule as provenance verification.
   const parentHashesByNodeId = new Map<string, string[]>();
   const nodesById = new Map(input.nodes.map((node) => [node.id, node]));
   for (const edge of input.edges) {
     if (edge.edgeType !== 'continuation') {
       continue;
     }
-    const hashes = edge.sources
-      .map((source) => nodesById.get(source.nodeId)?.contentHash)
+    const targetNode = nodesById.get(edge.targetNodeId);
+    if (!targetNode) continue;
+    const parentIds = modelProvenanceParentIds(
+      targetNode,
+      edge.sources.map((source) => source.nodeId)
+    );
+    const hashes = parentIds
+      .map((parentId) => nodesById.get(parentId)?.contentHash)
       .filter((hash): hash is Node['contentHash'] => Boolean(hash));
     parentHashesByNodeId.set(edge.targetNodeId, hashes);
   }

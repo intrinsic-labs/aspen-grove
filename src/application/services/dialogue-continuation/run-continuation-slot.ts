@@ -1,7 +1,7 @@
 import {
   collectCompletion,
   LlmProviderError,
-  type CompletionRequest,
+  type ProviderRequest,
   type CompletionResponse,
   type ILlmProvider,
   type RetryOptions,
@@ -17,7 +17,7 @@ export type RunContinuationSlotInput = {
   readonly slot: ContinuationSlot;
   readonly llmProvider: ILlmProvider;
   /** The request for this slot alone, carrying this slot's abort signal. */
-  readonly request: CompletionRequest;
+  readonly request: ProviderRequest;
   readonly retry?: RetryOptions;
   /** Saves a finished (or partial) completion as a model node. */
   readonly persist: (

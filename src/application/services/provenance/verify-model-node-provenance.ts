@@ -8,6 +8,7 @@ import {
   computeSha256Hash,
 } from '@application/services/content-hash-service';
 import type { ContentHash, ULID } from '@domain/value-objects';
+import { modelProvenanceParentIds } from '@application/services/buffer/buffer-provenance-parents';
 
 export type ModelNodeProvenanceStatus =
   | 'valid'
@@ -15,13 +16,20 @@ export type ModelNodeProvenanceStatus =
   | 'notModelNode'
   | 'missingRawApiResponse'
   | 'missingParentNode'
+  | 'creationParentMismatch'
   | 'hashMismatch';
 
 export type VerifyModelNodeProvenanceInput = {
   readonly nodeId: ULID;
   readonly nodeRepository: Pick<INodeRepository, 'findById'>;
-  readonly edgeRepository: Pick<IEdgeRepository, 'findContinuationsByTargetNodeId'>;
-  readonly rawApiResponseRepository: Pick<IRawApiResponseRepository, 'findByNodeId'>;
+  readonly edgeRepository: Pick<
+    IEdgeRepository,
+    'findContinuationsByTargetNodeId'
+  >;
+  readonly rawApiResponseRepository: Pick<
+    IRawApiResponseRepository,
+    'findByNodeId'
+  >;
 };
 
 export type ModelNodeProvenanceVerificationResult = {
@@ -36,7 +44,10 @@ export type ModelNodeProvenanceVerificationResult = {
   readonly missingParentNodeIds?: readonly ULID[];
 };
 
-const buildRawResponseBytes = (responseHeaders: string, responseBody: string): string => {
+const buildRawResponseBytes = (
+  responseHeaders: string,
+  responseBody: string
+): string => {
   return `${responseHeaders}\n\n${responseBody}`;
 };
 
@@ -81,9 +92,20 @@ export const verifyModelNodeProvenance = async (
     };
   }
 
-  const parentNodeIds = continuationEdges.flatMap((edge) =>
+  const edgeParentNodeIds = continuationEdges.flatMap((edge) =>
     edge.sources.map((source) => source.nodeId)
   );
+  const creationParentId = node.metadata.buffer?.creationParentId;
+  if (creationParentId && !edgeParentNodeIds.includes(creationParentId)) {
+    return {
+      isValid: false,
+      status: 'creationParentMismatch',
+      nodeId: node.id,
+      rawApiResponseId: rawApiResponse.id,
+      storedContentHash: node.contentHash,
+    };
+  }
+  const parentNodeIds = modelProvenanceParentIds(node, edgeParentNodeIds);
 
   const parentNodes = await Promise.all(
     parentNodeIds.map((parentNodeId) =>

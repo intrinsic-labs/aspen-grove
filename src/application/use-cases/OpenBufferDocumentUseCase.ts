@@ -4,11 +4,13 @@ import type {
   ILoomTreeRepository,
   INodeRepository,
   IPathRepository,
+  IRawApiResponseRepository,
 } from '@application/repositories';
 import type {
   IBufferDraftStore,
   StoredBufferDraft,
 } from '@application/repositories/core/IBufferDraftStore';
+import type { IBufferMutationRepository } from '@application/repositories/core/IBufferMutationRepository';
 import {
   describeBufferChoices,
   type BufferPositionChoices,
@@ -26,6 +28,8 @@ import {
 } from '@application/services/buffer/resolve-buffer-path';
 import type { Node, PathSelection } from '@domain/entities';
 import type { ULID } from '@domain/value-objects';
+import { repairPendingBufferGeneration } from '@application/services/buffer/repair-pending-buffer-generation';
+import type { ActiveBufferDraws } from '@application/services/buffer/active-buffer-draws';
 
 /** One resolved version on the path, as the editor shows it. */
 export type OpenedPassage = {
@@ -60,12 +64,15 @@ export type OpenedBufferDocument = {
 };
 
 export type OpenBufferDocumentDependencies = {
+  activeBufferDraws: ActiveBufferDraws;
   treeRepo: ILoomTreeRepository;
   groveRepo: IGroveRepository;
   nodeRepo: INodeRepository;
   edgeRepo: IEdgeRepository;
   pathRepo: IPathRepository;
   bufferDraftStore: IBufferDraftStore;
+  bufferMutationRepo: IBufferMutationRepository;
+  rawApiResponseRepo: Pick<IRawApiResponseRepository, 'findByNodeId'>;
 };
 
 /** The earliest model-authored ancestor along `editedFrom`, if the node is an edit. */
@@ -100,8 +107,18 @@ export class OpenBufferDocumentUseCase {
     if (!tree || tree.mode !== 'buffer') throw new Error('Not a buffer tree');
     const grove = await groveRepo.findById(tree.groveId);
     if (!grove) throw new Error('Buffer tree has no grove');
-    const path = await pathRepo.findByTreeAndOwner(treeId, grove.ownerAgentId);
+    let path = await pathRepo.findByTreeAndOwner(treeId, grove.ownerAgentId);
     if (!path) throw new Error('Buffer tree has no path for its owner');
+
+    await repairPendingBufferGeneration(treeId, path.id, {
+      activeBufferDraws: this.repos.activeBufferDraws,
+      bufferMutationRepository: this.repos.bufferMutationRepo,
+      nodeRepository: nodeRepo,
+      edgeRepository: edgeRepo,
+      rawApiResponseRepository: this.repos.rawApiResponseRepo,
+    });
+    path = await pathRepo.findById(path.id);
+    if (!path) throw new Error('Buffer tree path disappeared during recovery');
 
     const [nodes, edges, rows, selections] = await Promise.all([
       nodeRepo.findByLoomTreeId(treeId, true),

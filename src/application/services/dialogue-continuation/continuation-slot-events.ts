@@ -11,6 +11,8 @@ export type ContinuationSlot = number;
 /** A saved model node and the evidence stored with it. */
 export type PersistedContinuation = {
   readonly nodeId: ULID;
+  /** Present for buffer slots, whose activation selects this exact edge. */
+  readonly edgeId?: ULID;
   readonly rawApiResponseId?: ULID;
   readonly finishReason: CompletionResponse['finishReason'];
   readonly usage?: CompletionResponse['usage'];
@@ -70,7 +72,6 @@ export type ContinuationSlotOutcome =
   | ContinuationSlotCancelled;
 
 export type ContinuationSlotEvent =
-  | ContinuationSlotDelta
-  | ContinuationSlotOutcome;
+  ContinuationSlotDelta | ContinuationSlotOutcome;
 
 export type ContinuationSlotListener = (event: ContinuationSlotEvent) => void;

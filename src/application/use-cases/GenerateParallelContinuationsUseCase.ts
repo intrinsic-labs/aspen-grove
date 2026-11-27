@@ -8,14 +8,11 @@ import type {
 } from '@application/repositories';
 import { createVerifiedModelContinuationNode } from '@application/services/create-verified-model-continuation-node';
 import {
-  createSerialQueue,
   isValidContinuationCount,
-  linkAbortSignals,
   MAX_PARALLEL_CONTINUATIONS,
   MIN_PARALLEL_CONTINUATIONS,
   prepareDialogueContinuation,
-  runContinuationSlot,
-  type ContinuationSlotEvent,
+  runContinuationSlots,
   type ContinuationSlotListener,
   type ContinuationSlotOutcome,
   type DialogueContinuationTarget,
@@ -86,16 +83,6 @@ const assertCount = (count: number): void => {
 };
 
 /** A listener that throws must not break the slot that called it. */
-const toSafeListener =
-  (listener?: ContinuationSlotListener): ContinuationSlotListener =>
-  (event: ContinuationSlotEvent) => {
-    try {
-      listener?.(event);
-    } catch {
-      // Rendering problems belong to the caller, not to generation.
-    }
-  };
-
 /**
  * Starts N continuations from one dialogue node at once and saves each as a
  * sibling model node under it.
@@ -121,32 +108,16 @@ export class GenerateParallelContinuationsUseCase {
   ): Promise<GenerateParallelContinuationsResult> {
     assertCount(input.count);
     const prepared = await prepareDialogueContinuation(input, this.deps);
-    const emit = toSafeListener(input.onSlotEvent);
-    const persistInTurn = createSerialQueue();
-
-    const slots = await Promise.all(
-      Array.from({ length: input.count }, async (_, slot) => {
-        const linked = linkAbortSignals([
-          input.signal,
-          input.slotSignals?.[slot],
-        ]);
-        try {
-          const outcome = await runContinuationSlot({
-            slot,
-            llmProvider: prepared.llmProvider,
-            request: { ...prepared.request, signal: linked.signal },
-            retry: this.deps.retry,
-            persist: (completion) =>
-              persistInTurn(() => this.persist(input, prepared, completion)),
-            emit,
-          });
-          emit(outcome);
-          return outcome;
-        } finally {
-          linked.dispose();
-        }
-      })
-    );
+    const slots = await runContinuationSlots({
+      count: input.count,
+      llmProvider: prepared.llmProvider,
+      request: prepared.request,
+      signal: input.signal,
+      slotSignals: input.slotSignals,
+      retry: this.deps.retry,
+      onSlotEvent: input.onSlotEvent,
+      persist: (_slot, completion) => this.persist(input, prepared, completion),
+    });
 
     if (slots.some(hasSavedNode)) {
       await this.deps.loomTreeRepository.touchLastMessage(
