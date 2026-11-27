@@ -10,3 +10,4 @@ export * from './provider-error-copy';
 export * from './lmstudio-unreachable-copy';
 export * from './missing-provider-key-error';
 export * from './openrouter-catalog-model';
+export * from './base-model-eligibility';

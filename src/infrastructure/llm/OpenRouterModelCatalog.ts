@@ -4,12 +4,12 @@ import {
   type OpenRouterCatalogModel,
 } from './openrouter/catalog';
 
-// v3 adds what a model's detail page shows (pricing beyond prompt and
-// completion, modalities, parameters, dates); older caches lack it.
-const CACHE_KEY = 'openrouter_model_catalog_v3';
+// v4 adds positive base-model evidence (weight identity and routes).
+const CACHE_KEY = 'openrouter_model_catalog_v4';
 const STALE_CACHE_KEYS = [
   'openrouter_model_catalog_v1',
   'openrouter_model_catalog_v2',
+  'openrouter_model_catalog_v3',
 ] as const;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 

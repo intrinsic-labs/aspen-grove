@@ -12,7 +12,10 @@ describe('normalizeOpenRouterModel', () => {
       architecture: {
         input_modalities: ['text', 'image'],
         output_modalities: ['text'],
+        instruct_type: null,
       },
+      hugging_face_id: 'anthropic/claude-example-1',
+      endpoints: ['/api/v1/chat/completions', '/api/v1/completions'],
       top_provider: { max_completion_tokens: 64000 },
       pricing: {
         prompt: '0.000003',
@@ -32,6 +35,9 @@ describe('normalizeOpenRouterModel', () => {
       knowledgeCutoff: '2026-03-01',
       inputModalities: ['text', 'image'],
       outputModalities: ['text'],
+      weightIdentity: 'anthropic/claude-example-1',
+      instructType: null,
+      endpoints: ['/api/v1/chat/completions', '/api/v1/completions'],
       maxCompletionTokens: 64000,
       promptPricePerMTokens: 3,
       completionPricePerMTokens: 15,

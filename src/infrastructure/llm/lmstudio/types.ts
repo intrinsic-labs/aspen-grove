@@ -57,6 +57,9 @@ export type LMStudioApiModel = {
  */
 export type LMStudioModel = {
   readonly id: string;
+  readonly publisher: string;
+  /** Server origin that supplied this identity; used to isolate test fixtures. */
+  readonly connectionEndpoint: string;
   readonly displayName: string;
   readonly type: 'llm' | 'embedding';
   readonly state: LMStudioModelState;

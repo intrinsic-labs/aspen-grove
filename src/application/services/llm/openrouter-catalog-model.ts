@@ -34,6 +34,12 @@ export type OpenRouterCatalogModel = {
   /** `architecture.input_modalities`, e.g. `text`, `image`, `file`. */
   readonly inputModalities?: readonly string[];
   readonly outputModalities?: readonly string[];
+  /** The upstream checkpoint identity (`hugging_face_id`) when supplied. */
+  readonly weightIdentity?: string;
+  /** OpenRouter's prompt format hint; absence does not prove a base model. */
+  readonly instructType?: string | null;
+  /** Routes the catalog explicitly reports for this model. */
+  readonly endpoints?: readonly string[];
   /** Request parameters the model accepts, e.g. `temperature`, `tools`. */
   readonly supportedParameters?: readonly string[];
   /** `YYYY-MM-DD`, when OpenRouter knows it. */
