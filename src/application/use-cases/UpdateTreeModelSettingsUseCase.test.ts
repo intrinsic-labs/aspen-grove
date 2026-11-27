@@ -230,7 +230,7 @@ describe('UpdateTreeModelSettingsUseCase', () => {
     expect(created).toHaveLength(1);
   });
 
-  it('makes an agent for a tree that has none, once a model is chosen', async () => {
+  it('base selected on tree with no previous agent', async () => {
     const { useCase, trees } = build({
       agents: [],
       trees: [makeTree(treeId)],
@@ -242,10 +242,14 @@ describe('UpdateTreeModelSettingsUseCase', () => {
 
     const result = await useCase.execute({
       treeId,
-      changes: { modelRef: mockRef },
+      changes: { modelRef: mockRef, useMaxTokens: true, maxTokens: 50 },
     });
     expect(result.agent.name).toBe('mock-model');
     expect(result.agent.ownerTreeId).toBe(treeId);
+    expect(result.agent.configuration).toMatchObject({
+      useMaxTokens: true,
+      maxTokens: 50,
+    });
     expect(trees.get(treeId)?.defaultModelAgentId).toBe(result.agent.id);
   });
 

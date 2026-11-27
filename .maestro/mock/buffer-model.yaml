@@ -1,0 +1,41 @@
+# The buffer's base-model browser, against the mock LM Studio connection.
+# setup.yaml configures and tests LM Studio at MOCK_URL on both platforms;
+# the imported buffer fixture supplies a stable buffer tree with no model.
+# Stage buffer-versions.openloom as described by buffer-edit.yaml, then run:
+#   maestro test -e MOCK_URL=http://localhost:1235 .maestro/mock/buffer-model.yaml
+appId: com.intrinsiclabs.aspengrove
+env:
+  MOCK_URL: ${MOCK_URL || 'http://localhost:1235'}
+  TREE_FILE: buffer-versions.openloom
+---
+- runFlow: setup.yaml
+- runFlow: ../go-home.yaml
+- runFlow: ../import-buffer-fixture.yaml
+- tapOn: 'Buffer versions sample.*'
+- extendedWaitUntil:
+    visible:
+      id: buffer-screen
+    timeout: 15000
+
+- tapOn:
+    id: buffer-model-button
+- extendedWaitUntil:
+    visible:
+      id: buffer-model-screen
+    timeout: 10000
+- tapOn:
+    id: buffer-model-provider-lmstudio
+- extendedWaitUntil:
+    visible:
+      id: buffer-model-option-mock-base
+    timeout: 10000
+- assertVisible: 'Writing fixture \(base\)'
+- assertNotVisible:
+    id: buffer-model-option-mock-model
+- tapOn:
+    id: buffer-model-option-mock-base
+- extendedWaitUntil:
+    visible:
+      id: buffer-model-button
+      text: 'Writing fixture \(base\)'
+    timeout: 10000

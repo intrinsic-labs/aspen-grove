@@ -5,6 +5,7 @@ import {
   useKeyboardState,
 } from 'react-native-keyboard-controller';
 import { useHeaderHeight, useNavigation } from 'expo-router/react-navigation';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LoomTree } from '@domain/entities';
 import { useAppServices } from '@interface/composition';
@@ -45,6 +46,8 @@ import {
 } from './buffer-preview-document';
 import { materialize } from '@application/services/buffer/document-ranges';
 import { samplePreview } from './buffer-preview-sample';
+import { BufferModelButton } from './BufferModelButton';
+import { useBufferModel } from './useBufferModel';
 
 type BufferScreenProps = {
   readonly tree: LoomTree;
@@ -61,6 +64,7 @@ const { layout, control, bar } = bufferTokens;
  */
 export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const navigation = useNavigation();
+  const router = useRouter();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
@@ -74,10 +78,25 @@ export const BufferScreen = ({ tree }: BufferScreenProps) => {
   const [epoch, setEpoch] = useState(0);
   // Counts fixture loads only; the native input starts afresh on one.
   const [fixtureEpoch, setFixtureEpoch] = useState(0);
+  const bufferModel = useBufferModel(tree.id);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: tree.title ?? 'Buffer' });
-  }, [navigation, tree.title]);
+    navigation.setOptions({
+      title: tree.title ?? 'Buffer',
+      headerRightContainerStyle: { paddingRight: 6 },
+      headerRight: () => (
+        <BufferModelButton
+          label={bufferModel.selectedName ?? 'Model'}
+          onPress={() =>
+            router.push({
+              pathname: '/tree/[treeId]/buffer-model',
+              params: { treeId: tree.id },
+            })
+          }
+        />
+      ),
+    });
+  }, [bufferModel.selectedName, navigation, router, tree.id, tree.title]);
 
   const textStyle = useMemo(
     () => ({
