@@ -20,6 +20,7 @@ import { WatermelonLoomTreeRepository } from './WatermelonLoomTreeRepository';
 import { WatermelonNodeRepository } from './WatermelonNodeRepository';
 import { WatermelonPathRepository } from './WatermelonPathRepository';
 import { WatermelonPathStateRepository } from './WatermelonPathStateRepository';
+import { WatermelonRawApiResponseRepository } from './WatermelonRawApiResponseRepository';
 
 /**
  * Test helper: a buffer tree made by the real `CreateBufferLoomTreeUseCase`
@@ -38,6 +39,7 @@ export async function bufferOpenFixture() {
   const pathRepo = new WatermelonPathRepository(db);
   const bufferDraftStore = new WatermelonBufferDraftStore(db);
   const bufferMutationRepo = new WatermelonBufferMutationRepository(db);
+  const rawApiResponseRepo = new WatermelonRawApiResponseRepository(db);
   const groveRepo = {
     findById: async (id: ULID) =>
       id === groveId ? ({ id, ownerAgentId } as Grove) : null,
@@ -70,6 +72,8 @@ export async function bufferOpenFixture() {
     edgeRepo,
     pathRepo,
     bufferDraftStore,
+    bufferMutationRepo,
+    rawApiResponseRepo,
   });
   let clock = Date.now() - 100_000;
 
@@ -126,8 +130,11 @@ export async function bufferOpenFixture() {
     ownerAgentId,
     nodeRepo,
     edgeRepo,
+    treeRepo,
     pathRepo,
     bufferDraftStore,
+    bufferMutationRepo,
+    rawApiResponseRepo,
     commit: new CommitBufferChangesUseCase(commands),
     switchPath: new SwitchBufferPathUseCase(commands),
     open,

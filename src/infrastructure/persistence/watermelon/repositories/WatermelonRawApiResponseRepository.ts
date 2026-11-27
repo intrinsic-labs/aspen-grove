@@ -14,22 +14,25 @@ import type {
 import { createULID, type ULID } from '@domain/value-objects';
 
 import RawApiResponseModel from '../model/RawApiResponse';
-import { isPlainObject, isRecordNotFoundError, toOptionalString } from './helpers';
+import {
+  isPlainObject,
+  isRecordNotFoundError,
+  toOptionalString,
+} from './helpers';
 
 const GZIP: CompressionType = 'gzip';
 const NONE: CompressionType = 'none';
 
 /** WatermelonDB implementation of `IRawApiResponseRepository`. */
-export class WatermelonRawApiResponseRepository
-  implements IRawApiResponseRepository
-{
+export class WatermelonRawApiResponseRepository implements IRawApiResponseRepository {
   private readonly db: Database;
   private readonly rawApiResponses: Collection<RawApiResponseModel>;
   private readonly now: () => Date;
 
   constructor(database: Database, now: () => Date = () => new Date()) {
     this.db = database;
-    this.rawApiResponses = this.db.get<RawApiResponseModel>('raw_api_responses');
+    this.rawApiResponses =
+      this.db.get<RawApiResponseModel>('raw_api_responses');
     this.now = now;
   }
 
@@ -88,25 +91,9 @@ export class WatermelonRawApiResponseRepository
 
       const id = createULID();
       const createdAt = this.now();
-      const responseBody = compressPayload(input.responseBody);
-      const responseHeaders = compressPayload(input.responseHeaders);
-      const tokenUsage = sanitizeTokenUsageForStorage(input.tokenUsage);
-
-      const model = await this.rawApiResponses.create((record) => {
-        record._raw.id = id;
-        record.nodeId = input.nodeId;
-        record.provider = input.provider;
-        record.requestId = input.requestId ?? null;
-        record.modelIdentifier = input.modelIdentifier;
-        record.responseBody = responseBody;
-        record.responseHeaders = responseHeaders;
-        record.requestTimestamp = input.requestTimestamp;
-        record.responseTimestamp = input.responseTimestamp;
-        record.latencyMs = input.latencyMs;
-        record.tokenUsage = tokenUsage;
-        record.compressionType = GZIP;
-        record.createdAt = createdAt;
-      });
+      const model = await this.rawApiResponses.create((record) =>
+        writeRawApiResponseFields(record, input, id, createdAt)
+      );
 
       return this.toDomain(model);
     });
@@ -153,7 +140,10 @@ export class WatermelonRawApiResponseRepository
       requestId: toOptionalString(model.requestId),
       modelIdentifier: model.modelIdentifier,
       responseBody: decompressPayload(model.responseBody, compressionType),
-      responseHeaders: decompressPayload(model.responseHeaders, compressionType),
+      responseHeaders: decompressPayload(
+        model.responseHeaders,
+        compressionType
+      ),
       requestTimestamp: model.requestTimestamp,
       responseTimestamp: model.responseTimestamp,
       latencyMs: model.latencyMs,
@@ -169,7 +159,10 @@ const compressPayload = (value: string): string => {
   return fromByteArray(compressedBytes);
 };
 
-const decompressPayload = (value: string, compressionType: CompressionType): string => {
+const decompressPayload = (
+  value: string,
+  compressionType: CompressionType
+): string => {
   if (compressionType === NONE) {
     return value;
   }
@@ -178,7 +171,9 @@ const decompressPayload = (value: string, compressionType: CompressionType): str
   return ungzip(compressedBytes, { to: 'string' });
 };
 
-const readCompressionType = (raw: string | null | undefined): CompressionType => {
+const readCompressionType = (
+  raw: string | null | undefined
+): CompressionType => {
   return raw === NONE ? NONE : GZIP;
 };
 
@@ -195,6 +190,28 @@ const sanitizeTokenUsageForStorage = (
   raw: unknown
 ): RawApiResponseModel['tokenUsage'] => {
   return parseTokenUsage(raw);
+};
+
+/** Shared by the ordinary repository create and buffer's atomic slot batch. */
+export const writeRawApiResponseFields = (
+  record: RawApiResponseModel,
+  input: CreateRawApiResponseInput,
+  id: ULID,
+  createdAt: Date
+): void => {
+  record._raw.id = id;
+  record.nodeId = input.nodeId;
+  record.provider = input.provider;
+  record.requestId = input.requestId ?? null;
+  record.modelIdentifier = input.modelIdentifier;
+  record.responseBody = compressPayload(input.responseBody);
+  record.responseHeaders = compressPayload(input.responseHeaders);
+  record.requestTimestamp = input.requestTimestamp;
+  record.responseTimestamp = input.responseTimestamp;
+  record.latencyMs = input.latencyMs;
+  record.tokenUsage = sanitizeTokenUsageForStorage(input.tokenUsage);
+  record.compressionType = GZIP;
+  record.createdAt = createdAt;
 };
 
 const parseTokenUsage = (raw: unknown): TokenUsage | null => {

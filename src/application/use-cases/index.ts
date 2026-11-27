@@ -8,6 +8,7 @@ export * from './ExportPathMarkdownUseCase';
 export * from './ImportLoomTreeUseCase';
 export * from './GenerateDialogueContinuationUseCase';
 export * from './GenerateParallelContinuationsUseCase';
+export * from './GenerateBufferContinuationsUseCase';
 export * from './GenerateTreeTitleUseCase';
 export * from './TitleTreeFromFirstMessageUseCase';
 export * from './GetSetupStatusUseCase';

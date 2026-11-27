@@ -8,6 +8,7 @@ export const provenanceStatusLabel: Record<ModelNodeProvenanceStatus, string> =
     notModelNode: 'Not a model node',
     missingRawApiResponse: 'No raw API response stored',
     missingParentNode: 'Missing parent node(s)',
+    creationParentMismatch: 'Creation parent mismatch',
     hashMismatch: 'HASH MISMATCH — content does not match evidence',
   };
 

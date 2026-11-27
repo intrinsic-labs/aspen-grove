@@ -1,6 +1,15 @@
-import { describe, expect, it } from '@jest/globals';
-import { computeModelContentHash, computeSha256Hash } from '@application/services/content-hash-service';
-import type { Edge, Node, RawApiResponse } from '@domain/entities';
+import { describe, expect, it, jest } from '@jest/globals';
+import {
+  computeModelContentHash,
+  computeSha256Hash,
+} from '@application/services/content-hash-service';
+import * as hashService from '@application/services/content-hash-service';
+import type {
+  BufferNodeInfo,
+  Edge,
+  Node,
+  RawApiResponse,
+} from '@domain/entities';
 import type { ContentHash, ULID } from '@domain/value-objects';
 import { verifyModelNodeProvenance } from './verify-model-node-provenance';
 
@@ -12,6 +21,7 @@ const createNode = (input: {
   authorAgentId: ULID;
   contentHash: ContentHash;
   text: string;
+  buffer?: BufferNodeInfo;
 }): Node => ({
   id: input.id,
   localId: `${input.id.slice(0, 8)}` as Node['localId'],
@@ -25,6 +35,7 @@ const createNode = (input: {
     bookmarked: false,
     pruned: false,
     excluded: false,
+    ...(input.buffer ? { buffer: input.buffer } : {}),
   },
 });
 
@@ -44,8 +55,10 @@ describe('verifyModelNodeProvenance', () => {
       text: 'Parent',
     });
 
-    const responseHeaders = 'x-request-id: req_123\ncontent-type: application/json';
-    const responseBody = '{"id":"resp_123","choices":[{"message":{"content":"Hello"}}]}';
+    const responseHeaders =
+      'x-request-id: req_123\ncontent-type: application/json';
+    const responseBody =
+      '{"id":"resp_123","choices":[{"message":{"content":"Hello"}}]}';
     const rawResponseHash = await computeSha256Hash(
       `${responseHeaders}\n\n${responseBody}`
     );
@@ -139,5 +152,116 @@ describe('verifyModelNodeProvenance', () => {
     expect(result.isValid).toBe(false);
     expect(result.status).toBe('missingRawApiResponse');
   });
-});
 
+  it('uses the immutable buffer creation parent and rejects tampered evidence or membership', async () => {
+    const sha = jest
+      .spyOn(hashService, 'computeSha256Hash')
+      .mockImplementation(async (payload) => payload as ContentHash);
+    const modelHash = jest
+      .spyOn(hashService, 'computeModelContentHash')
+      .mockImplementation(
+        async (_content, parents, _createdAt, _author, raw) =>
+          `${parents.join(',')}|${raw}` as ContentHash
+      );
+    const originalId = '01KBUFFERPARENT000000000000' as ULID;
+    const editedId = '01KBUFFEREDITED000000000000' as ULID;
+    const modelId = '01KBUFFERMODEL0000000000000' as ULID;
+    const agentId = '01KBUFFERAGENT0000000000000' as ULID;
+    const originalHash = '1'.repeat(64) as ContentHash;
+    const editedHash = '2'.repeat(64) as ContentHash;
+    const headers = 'x-request-id: buffer';
+    const body = '{"text":"child"}';
+    const rawHash = await computeSha256Hash(`${headers}\n\n${body}`);
+    const contentHash = await computeModelContentHash(
+      { type: 'text', text: 'child' },
+      [originalHash],
+      now,
+      agentId,
+      rawHash
+    );
+    const nodes = new Map<ULID, Node>([
+      [
+        originalId,
+        createNode({
+          id: originalId,
+          authorType: 'human',
+          authorAgentId: agentId,
+          contentHash: originalHash,
+          text: 'original',
+        }),
+      ],
+      [
+        editedId,
+        createNode({
+          id: editedId,
+          authorType: 'human',
+          authorAgentId: agentId,
+          contentHash: editedHash,
+          text: 'edited twice',
+        }),
+      ],
+      [
+        modelId,
+        createNode({
+          id: modelId,
+          authorType: 'model',
+          authorAgentId: agentId,
+          contentHash,
+          text: 'child',
+          buffer: { creationParentId: originalId, drawId: modelId, slot: 0 },
+        }),
+      ],
+    ]);
+    const edge: Edge = {
+      id: '01KBUFFEREDGE00000000000000' as ULID,
+      loomTreeId: nodes.get(modelId)!.loomTreeId,
+      sources: [originalId, editedId].map((nodeId) => ({
+        nodeId,
+        role: 'primary' as const,
+      })),
+      targetNodeId: modelId,
+      edgeType: 'continuation',
+      createdAt: now,
+    };
+    const raw: RawApiResponse = {
+      id: '01KBUFFERRAW000000000000000' as ULID,
+      nodeId: modelId,
+      provider: 'lmstudio',
+      modelIdentifier: 'base',
+      responseBody: body,
+      responseHeaders: headers,
+      requestTimestamp: now,
+      responseTimestamp: now,
+      latencyMs: 10,
+      compressionType: 'gzip',
+      createdAt: now,
+    };
+    const verify = (candidateEdge: Edge, candidateRaw: RawApiResponse = raw) =>
+      verifyModelNodeProvenance({
+        nodeId: modelId,
+        nodeRepository: { findById: async (id) => nodes.get(id) ?? null },
+        edgeRepository: {
+          findContinuationsByTargetNodeId: async () => [candidateEdge],
+        },
+        rawApiResponseRepository: {
+          findByNodeId: async () => candidateRaw,
+        },
+      });
+
+    await expect(verify(edge)).resolves.toMatchObject({
+      isValid: true,
+      parentNodeCount: 1,
+    });
+    await expect(
+      verify(edge, { ...raw, responseBody: '{"tampered":true}' })
+    ).resolves.toMatchObject({ isValid: false, status: 'hashMismatch' });
+    await expect(
+      verify({ ...edge, sources: edge.sources.slice(1) })
+    ).resolves.toMatchObject({
+      isValid: false,
+      status: 'creationParentMismatch',
+    });
+    sha.mockRestore();
+    modelHash.mockRestore();
+  });
+});

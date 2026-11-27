@@ -9,14 +9,18 @@ import { Edge, EdgeSource } from '../model/Edge';
 import { Path } from '../model/Path';
 import { loadBufferPathRows, prepareBufferPath } from './prepare-buffer-path';
 import { prepareBufferRecords } from './prepare-buffer-records';
+import { WatermelonBufferGenerationRepository } from './WatermelonBufferGenerationRepository';
 
 const same = (left: readonly string[], right: readonly string[]) =>
   left.length === right.length &&
   left.every((id, index) => id === right[index]);
 const unique = (ids: readonly string[]) => new Set(ids).size === ids.length;
-
 export class WatermelonBufferMutationRepository implements IBufferMutationRepository {
-  constructor(private readonly db: Database) {}
+  private readonly generation: WatermelonBufferGenerationRepository;
+
+  constructor(private readonly db: Database) {
+    this.generation = new WatermelonBufferGenerationRepository(db);
+  }
 
   apply(plan: BufferMutation): ReturnType<IBufferMutationRepository['apply']> {
     const db = this.db;
@@ -203,4 +207,24 @@ export class WatermelonBufferMutationRepository implements IBufferMutationReposi
       return 'applied';
     });
   }
+
+  beginGeneration: IBufferMutationRepository['beginGeneration'] = (intent) =>
+    this.generation.beginGeneration(intent);
+
+  findPendingGeneration: IBufferMutationRepository['findPendingGeneration'] = (
+    treeId,
+    pathId
+  ) => this.generation.findPendingGeneration(treeId, pathId);
+
+  persistGenerationSlot: IBufferMutationRepository['persistGenerationSlot'] = (
+    write
+  ) => this.generation.persistGenerationSlot(write);
+
+  rollbackGenerationSlot: IBufferMutationRepository['rollbackGenerationSlot'] =
+    (input) => this.generation.rollbackGenerationSlot(input);
+
+  completeGeneration: IBufferMutationRepository['completeGeneration'] = (
+    intent,
+    slots
+  ) => this.generation.completeGeneration(intent, slots);
 }

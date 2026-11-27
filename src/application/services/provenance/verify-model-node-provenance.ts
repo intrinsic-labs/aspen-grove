@@ -15,13 +15,20 @@ export type ModelNodeProvenanceStatus =
   | 'notModelNode'
   | 'missingRawApiResponse'
   | 'missingParentNode'
+  | 'creationParentMismatch'
   | 'hashMismatch';
 
 export type VerifyModelNodeProvenanceInput = {
   readonly nodeId: ULID;
   readonly nodeRepository: Pick<INodeRepository, 'findById'>;
-  readonly edgeRepository: Pick<IEdgeRepository, 'findContinuationsByTargetNodeId'>;
-  readonly rawApiResponseRepository: Pick<IRawApiResponseRepository, 'findByNodeId'>;
+  readonly edgeRepository: Pick<
+    IEdgeRepository,
+    'findContinuationsByTargetNodeId'
+  >;
+  readonly rawApiResponseRepository: Pick<
+    IRawApiResponseRepository,
+    'findByNodeId'
+  >;
 };
 
 export type ModelNodeProvenanceVerificationResult = {
@@ -36,7 +43,10 @@ export type ModelNodeProvenanceVerificationResult = {
   readonly missingParentNodeIds?: readonly ULID[];
 };
 
-const buildRawResponseBytes = (responseHeaders: string, responseBody: string): string => {
+const buildRawResponseBytes = (
+  responseHeaders: string,
+  responseBody: string
+): string => {
   return `${responseHeaders}\n\n${responseBody}`;
 };
 
@@ -81,9 +91,24 @@ export const verifyModelNodeProvenance = async (
     };
   }
 
-  const parentNodeIds = continuationEdges.flatMap((edge) =>
+  const edgeParentNodeIds = continuationEdges.flatMap((edge) =>
     edge.sources.map((source) => source.nodeId)
   );
+  const creationParentId = node.metadata.buffer?.creationParentId;
+  if (creationParentId && !edgeParentNodeIds.includes(creationParentId)) {
+    return {
+      isValid: false,
+      status: 'creationParentMismatch',
+      nodeId: node.id,
+      rawApiResponseId: rawApiResponse.id,
+      storedContentHash: node.contentHash,
+    };
+  }
+  // Buffer edges deliberately name every equivalent version as a source, but
+  // the immutable signature uses the one version selected at generation time.
+  const parentNodeIds = creationParentId
+    ? [creationParentId]
+    : edgeParentNodeIds;
 
   const parentNodes = await Promise.all(
     parentNodeIds.map((parentNodeId) =>

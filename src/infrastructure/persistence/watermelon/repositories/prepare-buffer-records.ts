@@ -1,10 +1,15 @@
 import type { Database, Model } from '@nozbe/watermelondb';
-import type { BufferMutation } from '@application/repositories/core/IBufferMutationRepository';
+import type {
+  BufferGenerationSlotWrite,
+  BufferMutation,
+} from '@application/repositories/core/IBufferMutationRepository';
 import type { EdgeSource } from '@domain/entities';
 import { createULID } from '@domain/value-objects';
 import { Edge, EdgeSource as Source } from '../model/Edge';
 import Node from '../model/Node';
+import RawApiResponse from '../model/RawApiResponse';
 import { writeNodeFields } from './write-node-fields';
+import { writeRawApiResponseFields } from './WatermelonRawApiResponseRepository';
 
 export function prepareBufferRecords(
   db: Database,
@@ -47,5 +52,46 @@ export function prepareBufferRecords(
   }
   for (const addition of plan.sourceAdditions)
     records.push(source(addition.edgeId, addition.source));
+  return records;
+}
+
+/** All immutable evidence for one generated buffer slot, in one DB batch. */
+export function prepareBufferGenerationSlot(
+  db: Database,
+  write: BufferGenerationSlotWrite,
+  rawApiResponseId: ReturnType<typeof createULID>,
+  createdAt: Date
+): Model[] {
+  const { node, edge, rawApiResponse } = write;
+  const records: Model[] = [
+    db
+      .get<Node>('nodes')
+      .prepareCreate((row) => writeNodeFields(row, node, node.id)),
+    db.get<Edge>('edges').prepareCreate((row) => {
+      row._raw.id = edge.id;
+      row.loomTreeId = edge.loomTreeId;
+      row.targetNodeId = edge.targetNodeId;
+      row.edgeType = edge.edgeType;
+      row.createdAt = edge.createdAt;
+    }),
+    ...edge.sources.map((value) =>
+      db.get<Source>('edge_sources').prepareCreate((row) => {
+        row._raw.id = createULID();
+        row.edgeId = edge.id;
+        row.sourceNodeId = value.nodeId;
+        row.role = value.role;
+      })
+    ),
+    db
+      .get<RawApiResponse>('raw_api_responses')
+      .prepareCreate((row) =>
+        writeRawApiResponseFields(
+          row,
+          rawApiResponse,
+          rawApiResponseId,
+          createdAt
+        )
+      ),
+  ];
   return records;
 }

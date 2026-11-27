@@ -26,6 +26,7 @@ import {
   ExportLoomTreeUseCase,
   ExportPathMarkdownUseCase,
   GenerateDialogueContinuationUseCase,
+  GenerateBufferContinuationsUseCase,
   GenerateParallelContinuationsUseCase,
   GenerateTreeTitleUseCase,
   TitleTreeFromFirstMessageUseCase,
@@ -64,7 +65,10 @@ import {
 import { ExpoSecureCredentialStore } from '@infrastructure/security';
 import { ExpoSpeechSynthesizer } from '@infrastructure/speech';
 import { parseULID, type ULID } from '@domain/value-objects';
-import { findProviderApiKey } from '@/interface/components/chat/provider-key';
+import {
+  findProviderApiKey,
+  getProviderApiKey,
+} from '@/interface/components/chat/provider-key';
 import { directProviderEndpoint } from './direct-provider-endpoints';
 import { useAspenGroveTheme } from '@/interface/hooks/useAspenGroveTheme';
 import { AppText } from '@/interface/ui/value-objects';
@@ -107,6 +111,7 @@ export type AppServices = {
     readonly exportLoomTreeUseCase: ExportLoomTreeUseCase;
     readonly exportPathMarkdownUseCase: ExportPathMarkdownUseCase;
     readonly generateDialogueContinuationUseCase: GenerateDialogueContinuationUseCase;
+    readonly generateBufferContinuationsUseCase: GenerateBufferContinuationsUseCase;
     readonly generateParallelContinuationsUseCase: GenerateParallelContinuationsUseCase;
     readonly generateTreeTitleUseCase: GenerateTreeTitleUseCase;
     readonly titleTreeFromFirstMessageUseCase: TitleTreeFromFirstMessageUseCase;
@@ -203,6 +208,8 @@ const buildAppServices = (): AppServices => {
       edgeRepo: repositories.edgeRepo,
       pathRepo: repositories.pathRepo,
       bufferDraftStore: repositories.bufferDraftStore,
+      bufferMutationRepo: repositories.bufferMutationRepo,
+      rawApiResponseRepo: repositories.rawApiResponseRepo,
     }),
     storeBufferDraftUseCase: new StoreBufferDraftUseCase(
       repositories.bufferDraftStore
@@ -263,6 +270,46 @@ const buildAppServices = (): AppServices => {
         providerRegistry: adapters.providerRegistry,
         modelOutputLimits,
       }),
+    generateBufferContinuationsUseCase: new GenerateBufferContinuationsUseCase({
+      commitBufferChangesUseCase: new CommitBufferChangesUseCase(
+        bufferCommands
+      ),
+      bufferMutationRepository: repositories.bufferMutationRepo,
+      treeRepository: repositories.treeRepo,
+      agentRepository: repositories.agentRepo,
+      nodeRepository: repositories.nodeRepo,
+      edgeRepository: repositories.edgeRepo,
+      pathRepository: repositories.pathRepo,
+      rawApiResponseRepository: repositories.rawApiResponseRepo,
+      providerRegistry: adapters.providerRegistry,
+      modelOutputLimits,
+      findBaseModel: async (provider, modelIdentifier) => {
+        if (provider === 'openrouter') {
+          return (
+            (await adapters.openRouterCatalog.getModels()).find(
+              (model) => model.id === modelIdentifier
+            ) ?? null
+          );
+        }
+        if (provider === 'lmstudio') {
+          return (
+            (
+              await adapters.providerRegistry.getLMStudioAdapter().fetchModels()
+            ).find((model) => model.id === modelIdentifier) ?? null
+          );
+        }
+        return null;
+      },
+      resolveProviderConnection: async (provider) => ({
+        apiKey: await getProviderApiKey(adapters.credentialStore, provider),
+        ...(provider === 'lmstudio'
+          ? {
+              endpoint: (await repositories.userPreferencesRepo.get())
+                .lmstudioSettings.endpoint,
+            }
+          : {}),
+      }),
+    }),
     switchDialoguePathUseCase: new SwitchDialoguePathUseCase({
       pathRepository: repositories.pathRepo,
       pathStateRepository: repositories.pathStateRepo,

@@ -52,6 +52,8 @@ export const importBufferVersions = async () => {
     edgeRepo: f.edgeRepo,
     pathRepo: f.pathRepo,
     bufferDraftStore: new WatermelonBufferDraftStore(f.db),
+    bufferMutationRepo: f.bufferMutationRepo,
+    rawApiResponseRepo: f.rawApiResponseRepo,
   });
   return { f, open, treeId, treeRepo };
 };
