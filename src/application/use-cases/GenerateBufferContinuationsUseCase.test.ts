@@ -204,6 +204,35 @@ test('stream deltas write no nodes before settlement', async () => {
   expect(after.filter((node) => node.metadata.buffer?.drawId)).toHaveLength(1);
 });
 
+test('cancellation after a delta saves the literal partial', async () => {
+  const gate = deferred();
+  const abort = new AbortController();
+  const f = await bufferGenerationFixture([
+    { text: ' partial ', wait: gate.promise },
+  ]);
+  const running = f.generate.execute({
+    treeId: f.treeId,
+    pathId: f.pathId,
+    ownerAgentId: f.ownerAgentId,
+    draft: await f.draft('prompt'),
+    count: 1,
+    maxTokens: 10,
+    signal: abort.signal,
+  });
+  await nextTurn();
+  abort.abort();
+  gate.resolve();
+  const result = await running;
+  expect(result.slots[0]).toMatchObject({ type: 'cancelled', slot: 0 });
+  const saved =
+    result.slots[0].type === 'cancelled' ? result.slots[0].saved : undefined;
+  expect(saved).toBeDefined();
+  expect((await f.nodeRepo.findById(saved!.nodeId, true))?.content).toEqual({
+    type: 'text',
+    text: ' partial ',
+  });
+});
+
 test('slot order survives out-of-order completion', async () => {
   const gates = [deferred(), deferred(), deferred()];
   const f = await bufferGenerationFixture(

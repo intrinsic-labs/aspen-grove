@@ -71,14 +71,17 @@ export class ScriptedTextProvider implements ILlmProvider {
       if (script.text) yield { type: 'text', content: script.text };
       await script.wait;
       if (script.fail === 'after') throw retryableFailure();
+      const interruption = request.signal?.aborted
+        ? ('cancelled' as const)
+        : script.interruption;
       const headers = `{"slot":${index}}`;
       const body = `{"text":${JSON.stringify(script.text ?? '')}}`;
       const rawBytes = `${headers}\n\n${body}`;
       yield {
         type: 'done',
         content: script.text ?? '',
-        finishReason: script.interruption ? 'error' : 'stop',
-        interruptedReason: script.interruption,
+        finishReason: interruption ? 'error' : 'stop',
+        interruptedReason: interruption,
         rawResponse: {
           rawBytes,
           rawBytesHash: await computeSha256Hash(rawBytes),
