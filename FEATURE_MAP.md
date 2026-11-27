@@ -495,7 +495,8 @@ stays until the user makes one.
 ### Compose and send
 - **ID:** `chat.composer`
 - **Purpose:** Types a message and sends it. The model's reply streams in under it, and both
-  are saved as nodes on the active path.
+  are saved as nodes on the active path. Base-model catalog eligibility is separate and does
+  not change dialogue routing or its model lists.
 - **Where:** A sticky composer at the bottom of the Dialogue screen. The send button sits at
   the right of the input. Messages scroll on under the composer (its field's material blurs
   them), but an opaque band (`chat-composer-bottom-band`) fills everything below the field,
@@ -989,7 +990,9 @@ stays until the user makes one.
   opens the model's page (`models.detail`), whose "Use This Model" chooses it. A search that
   matches no listed id offers "Use “<id>” as a model id" (`tree-model-custom`), for a model
   newer than the cached catalog or the provider's list. The same browser serves the agent editor
-  (`settings.agents.model-picker`).
+  (`settings.agents.model-picker`). OpenRouter catalog rows also retain route and checkpoint
+  identity evidence for the later buffer-only base-model selector; that evidence does not filter
+  this dialogue list.
 - **Where:** Pushed from Model Settings' Model row while the provider is OpenRouter,
   Anthropic or OpenAI; titled "Model".
 - **Reach:** P2 → `chat-menu-button` → "Model" → (Provider: OpenRouter, Anthropic or OpenAI)
@@ -997,7 +1000,7 @@ stays until the user makes one.
 - **Requires:** OpenRouter: the catalog (a network connection, or a cached copy). Anthropic
   or OpenAI: its key (`settings.connections.anthropic`) and a network connection.
 - **Selector:** working — `tree-model-list-screen`, `tree-model-list`, rows `tree-model-option-<model id>`, `tree-model-custom`; the search field is the native header search bar (no testID; tap its "Search models" placeholder)
-- **Code:** `src/interface/components/chat/tree-model/TreeModelListScreen.tsx`, `src/interface/components/chat/tree-model/useTreeModelChoice.ts`, `src/interface/components/models/browsable-provider.ts`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/browser-rows.ts`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/app/tree/*/model/models.tsx`
+- **Code:** `src/interface/components/chat/tree-model/TreeModelListScreen.tsx`, `src/interface/components/chat/tree-model/useTreeModelChoice.ts`, `src/interface/components/models/browsable-provider.ts`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/ModelBrowserRow.tsx`, `src/interface/components/models/browser-rows.ts`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/application/services/llm/base-model-eligibility.ts`, `src/infrastructure/llm/openrouter/catalog-normalize.ts`, `src/app/tree/*/model/models.tsx`
 - **Backend:** The OpenRouter catalog (as above), or Anthropic's or OpenAI's authenticated
   `GET /v1/models` through `fetchModels()`; the choice through
   `UpdateTreeModelSettingsUseCase`
@@ -1024,7 +1027,7 @@ stays until the user makes one.
 - **Selector:** working — `model-detail-screen`, `model-detail-scroll`, `model-detail-title`, `model-detail-author`, `model-detail-description`, `model-detail-context`, `model-detail-max-output`, `model-detail-pricing`, `model-detail-parameters`, `model-detail-created`, `model-detail-link`, `model-detail-use`
 - **Code:** `src/interface/components/models/ModelDetailView.tsx`, `src/interface/components/models/ScrollBottomFade.tsx`, `src/interface/components/models/ModelDetailHero.tsx`, `src/interface/components/models/ModelDetailSections.tsx`, `src/interface/components/models/ModelInfoRow.tsx`, `src/interface/components/models/ModelParameterChips.tsx`, `src/interface/components/models/useCatalogModel.ts`, `src/interface/components/models/model-info-format.ts`, `src/interface/components/models/model-price-format.ts`, `src/interface/components/chat/tree-model/TreeModelDetailScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/application/services/llm/openrouter-catalog-model.ts`, `src/infrastructure/llm/openrouter/catalog-normalize.ts`, `src/app/tree/*/model/detail.tsx`, `src/app/agent-editor/detail.tsx`
 - **Backend:** The cached OpenRouter catalog (`GET https://openrouter.ai/api/v1/models`, no
-  key; WatermelonDB local key `openrouter_model_catalog_v3`, 24 h), or Anthropic's or
+  key; WatermelonDB local key `openrouter_model_catalog_v4`, 24 h), or Anthropic's or
   OpenAI's authenticated list (in memory); the choice through
   `UpdateTreeModelSettingsUseCase` (tree) or the agent editor's save
 - **Status:** live
@@ -1397,7 +1400,8 @@ dialogue.
   footer shows the model id in bold and its description. A new provider starts on its
   default model (onboarding's first template on OpenRouter; the newest listed model on
   Anthropic and OpenAI once the list arrives; on LM Studio the first loaded model once the
-  list arrives, never one the server lists but hasn't loaded).
+  list arrives, never one the server lists but hasn't loaded). The normal picker remains
+  unfiltered while the catalog carries exact base-model evidence for the later buffer picker.
 - **Where:** The agent editor's Model section; the browser and a model's page push inside
   the editor's sheet (routes `agent-editor/models`, `agent-editor/detail`). Onboarding's
   LM Studio model (`LmStudioModelSection`) reads the same lists through
@@ -1408,9 +1412,9 @@ dialogue.
   their key (`settings.connections.anthropic`, `settings.connections.openai`) and network.
   LM Studio: a reachable endpoint (set in `settings.connections.lmstudio`).
 - **Selector:** working — `agent-editor-provider` and `agent-editor-model` (menu rows; LM Studio's model is a menu row too), `agent-editor-model-list-screen`, `agent-editor-model-list`, rows `agent-editor-model-option-<model id>`, `agent-editor-model-custom`, `agent-editor-model-error`; the search field is the native header search bar (tap its "Search models" placeholder); Provider and LM Studio model menu items none — native context menu item; reach via a tap on `agent-editor-provider` or `agent-editor-model`
-- **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/interface/components/models/provider-options.ts`, `src/interface/components/models/useConnectedProviders.ts`, `src/interface/components/models/browsable-provider.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
+- **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/interface/components/models/provider-options.ts`, `src/interface/components/models/useConnectedProviders.ts`, `src/interface/components/models/browsable-provider.ts`, `src/application/services/llm/base-model-eligibility.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` (cached for
-  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`, its
+  24 h under `openrouter_model_catalog_v4`); LM Studio `GET <endpoint>/api/v1/models`, its
   models ordered loaded first, then by display name (`lmstudio/model-order.ts`). Anthropic and OpenAI: their authenticated `GET /v1/models` through the adapter's
   `fetchModels()` after `initialize` with the stored key, returning
   `OpenRouterCatalogModel[]`.
@@ -1570,6 +1574,8 @@ dialogue.
 - **Selector:** working — `connections-provider-screen`, `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
 - **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
+  Its normalized rows retain the native `publisher`, key and supplying endpoint so a later
+  buffer picker can verify exact base artifacts without changing this connection screen.
   Base-model text requests use `POST <endpoint>/v1/completions` (`lmstudio/text-transport.ts`;
   no screen sends one yet). Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
