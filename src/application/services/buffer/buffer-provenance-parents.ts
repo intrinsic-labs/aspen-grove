@@ -16,3 +16,12 @@ export const bufferContinuationParents = (
   }
   return parents;
 };
+
+/** Parent ids committed to by a model node's immutable provenance hash. */
+export const modelProvenanceParentIds = (
+  node: Node,
+  continuationParentIds: readonly ULID[]
+): readonly ULID[] => {
+  const creationParentId = node.metadata.buffer?.creationParentId;
+  return creationParentId ? [creationParentId] : continuationParentIds;
+};

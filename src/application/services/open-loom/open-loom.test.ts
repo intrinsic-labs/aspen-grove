@@ -13,6 +13,8 @@ const makeNode = (input: {
   text: string;
   authorType: 'human' | 'model';
   bookmarked?: boolean;
+  contentHash?: string;
+  creationParentId?: string;
 }): Node => ({
   id: input.id as ULID,
   localId: input.id.slice(0, 6) as Node['localId'],
@@ -22,13 +24,19 @@ const makeNode = (input: {
     ? 'agent-human'
     : 'agent-model') as ULID,
   authorType: input.authorType,
-  contentHash:
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Node['contentHash'],
+  contentHash: (input.contentHash ?? 'a'.repeat(64)) as Node['contentHash'],
   createdAt: now,
   metadata: {
     bookmarked: input.bookmarked ?? false,
     pruned: false,
     excluded: false,
+    ...(input.creationParentId
+      ? {
+          buffer: {
+            creationParentId: input.creationParentId as ULID,
+          },
+        }
+      : {}),
   },
 });
 
@@ -67,6 +75,86 @@ const humanAgent: Agent = {
 };
 
 describe('open-loom export', () => {
+  it('exports only a buffer node’s signed creation-parent hash', async () => {
+    const first = makeNode({
+      id: 'parent-a',
+      text: 'First version',
+      authorType: 'human',
+      contentHash: '1'.repeat(64),
+    });
+    const second = makeNode({
+      id: 'parent-b',
+      text: 'Second version',
+      authorType: 'human',
+      contentHash: '2'.repeat(64),
+    });
+    const child = makeNode({
+      id: 'buffer-child',
+      text: 'Continuation',
+      authorType: 'model',
+      creationParentId: first.id,
+    });
+    const edge: Edge = {
+      ...makeEdge(first.id, child.id),
+      sources: [first, second].map((parent) => ({
+        nodeId: parent.id,
+        role: 'primary',
+      })),
+    };
+
+    const document = await buildOpenLoomDocument({
+      tree: { ...tree, mode: 'buffer' },
+      nodes: [first, second, child],
+      edges: [edge],
+      agentsById: new Map(),
+      rawResponsesByNodeId: new Map(),
+    });
+
+    expect(document.trees[0].nodes[child.id].generation?.parentHashes).toEqual([
+      `sha256:${first.contentHash}`,
+    ]);
+  });
+
+  it('still exports every incoming parent hash for a dialogue node', async () => {
+    const first = makeNode({
+      id: 'parent-a',
+      text: 'First source',
+      authorType: 'human',
+      contentHash: '1'.repeat(64),
+    });
+    const second = makeNode({
+      id: 'parent-b',
+      text: 'Second source',
+      authorType: 'human',
+      contentHash: '2'.repeat(64),
+    });
+    const child = makeNode({
+      id: 'dialogue-child',
+      text: 'Continuation',
+      authorType: 'model',
+    });
+    const edge: Edge = {
+      ...makeEdge(first.id, child.id),
+      sources: [first, second].map((parent) => ({
+        nodeId: parent.id,
+        role: 'primary',
+      })),
+    };
+
+    const document = await buildOpenLoomDocument({
+      tree,
+      nodes: [first, second, child],
+      edges: [edge],
+      agentsById: new Map(),
+      rawResponsesByNodeId: new Map(),
+    });
+
+    expect(document.trees[0].nodes[child.id].generation?.parentHashes).toEqual([
+      `sha256:${first.contentHash}`,
+      `sha256:${second.contentHash}`,
+    ]);
+  });
+
   it('round-trips through the v2 importer with structure intact', async () => {
     const nodes = [
       makeNode({ id: 'node-a', text: 'Hello', authorType: 'human' }),

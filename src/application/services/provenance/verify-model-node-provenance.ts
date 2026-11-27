@@ -8,6 +8,7 @@ import {
   computeSha256Hash,
 } from '@application/services/content-hash-service';
 import type { ContentHash, ULID } from '@domain/value-objects';
+import { modelProvenanceParentIds } from '@application/services/buffer/buffer-provenance-parents';
 
 export type ModelNodeProvenanceStatus =
   | 'valid'
@@ -104,11 +105,7 @@ export const verifyModelNodeProvenance = async (
       storedContentHash: node.contentHash,
     };
   }
-  // Buffer edges deliberately name every equivalent version as a source, but
-  // the immutable signature uses the one version selected at generation time.
-  const parentNodeIds = creationParentId
-    ? [creationParentId]
-    : edgeParentNodeIds;
+  const parentNodeIds = modelProvenanceParentIds(node, edgeParentNodeIds);
 
   const parentNodes = await Promise.all(
     parentNodeIds.map((parentNodeId) =>
