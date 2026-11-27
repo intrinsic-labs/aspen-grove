@@ -105,7 +105,7 @@ export const ModelBrowserList = ({
         ListHeaderComponent={
           header || custom ? (
             <>
-              {header}
+              {header ? <View style={styles.header}>{header}</View> : null}
               {custom ? (
                 <FormSection style={styles.customSection}>
                   <FormRow
@@ -160,6 +160,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: form.sectionInset,
     paddingTop: form.sectionGap / 2,
     paddingBottom: form.sectionGap,
+  },
+  header: {
+    marginBottom: form.sectionGap / 2,
   },
   customSection: {
     marginTop: 0,

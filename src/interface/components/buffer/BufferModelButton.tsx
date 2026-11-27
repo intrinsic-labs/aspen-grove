@@ -32,7 +32,8 @@ export const BufferModelButton = ({
 const styles = StyleSheet.create({
   button: {
     minHeight: 36,
-    maxWidth: 180,
+    // Narrow enough that the document's title keeps most of the header.
+    maxWidth: 128,
     paddingHorizontal: 8,
     justifyContent: 'center',
   },
