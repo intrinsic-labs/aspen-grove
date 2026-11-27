@@ -9,19 +9,29 @@ export type Usage = {
   readonly total_tokens: number;
 };
 
-const modelEntry = (key: string, loaded: boolean) => ({
-  type: 'llm',
-  publisher: 'mock',
-  key,
-  display_name: key,
-  architecture: 'mock',
-  quantization: null,
-  size_bytes: 0,
-  params_string: null,
-  loaded_instances: loaded ? [{ id: key }] : [],
-  max_context_length: 8192,
-  format: null,
-});
+/** How LM Studio's list shows the base-model fixture. */
+export const BASE_MODEL_NAME = 'Writing fixture (base)';
+
+/** A model's key, and the name LM Studio lists it under (the key when absent). */
+export type MockModel =
+  string | { readonly key: string; readonly name: string };
+
+const modelEntry = (model: MockModel, loaded: boolean) => {
+  const key = typeof model === 'string' ? model : model.key;
+  return {
+    type: 'llm',
+    publisher: 'mock',
+    key,
+    display_name: typeof model === 'string' ? key : model.name,
+    architecture: 'mock',
+    quantization: null,
+    size_bytes: 0,
+    params_string: null,
+    loaded_instances: loaded ? [{ id: key }] : [],
+    max_context_length: 8192,
+    format: null,
+  };
+};
 
 /**
  * `GET /api/v1/models`: LM Studio's native model list. The loaded models
@@ -29,8 +39,8 @@ const modelEntry = (key: string, loaded: boolean) => ({
  * JIT loading off answers with a 404.
  */
 export const modelsPayload = (
-  loadedIds: readonly string[],
-  notLoadedIds: readonly string[] = []
+  loadedIds: readonly MockModel[],
+  notLoadedIds: readonly MockModel[] = []
 ) => ({
   models: [
     ...loadedIds.map((key) => modelEntry(key, true)),
@@ -42,7 +52,10 @@ export const errorPayload = (message: string) => ({
   error: { message, type: 'mock_error' },
 });
 
-export const usageFor = (promptText: string, completionTokens: number): Usage => {
+export const usageFor = (
+  promptText: string,
+  completionTokens: number
+): Usage => {
   const promptTokens = promptText.split(/\s+/).filter(Boolean).length;
   return {
     prompt_tokens: promptTokens,

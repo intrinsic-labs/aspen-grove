@@ -3,10 +3,38 @@
  * the same tokens, and consecutive requests (parallel cards) differ.
  */
 const VOCABULARY = [
-  'the', 'loom', 'branch', 'river', 'quiet', 'signal', 'model', 'thread',
-  'aspen', 'grove', 'light', 'pattern', 'weaves', 'under', 'every', 'leaf',
-  'slowly', 'turns', 'toward', 'another', 'path', 'and', 'remembers', 'its',
-  'roots', 'while', 'wind', 'carries', 'small', 'words', 'across', 'water',
+  'the',
+  'loom',
+  'branch',
+  'river',
+  'quiet',
+  'signal',
+  'model',
+  'thread',
+  'aspen',
+  'grove',
+  'light',
+  'pattern',
+  'weaves',
+  'under',
+  'every',
+  'leaf',
+  'slowly',
+  'turns',
+  'toward',
+  'another',
+  'path',
+  'and',
+  'remembers',
+  'its',
+  'roots',
+  'while',
+  'wind',
+  'carries',
+  'small',
+  'words',
+  'across',
+  'water',
 ] as const;
 
 const HEAD_TOKENS = 3;
@@ -43,9 +71,10 @@ export const replyTokens = (input: {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
     const previous = words[words.length - 1];
     const lower = VOCABULARY[state % VOCABULARY.length];
-    const word = previous.endsWith('.') || previous.endsWith('\n')
-      ? lower[0].toUpperCase() + lower.slice(1)
-      : lower;
+    const word =
+      previous.endsWith('.') || previous.endsWith('\n')
+        ? lower[0].toUpperCase() + lower.slice(1)
+        : lower;
     const index = i - HEAD_TOKENS;
     const sentenceEnd = index % 12 === 11;
     const paragraphEnd = index % 48 === 47;
@@ -75,4 +104,30 @@ export const lastMessageText = (messages: unknown): string => {
       .join('');
   }
   return '';
+};
+
+/**
+ * A base model's continuation: `count` words, each with its leading space, so
+ * the text begins with a space the way a continuation of "The snow fell"
+ * does. The first word steps through the vocabulary with the request number,
+ * so parallel draws (one request per slot) never begin alike; the rest are
+ * seeded by that number and the prompt, so a rerun in the same order repeats.
+ */
+export const continuationTokens = (input: {
+  readonly requestNumber: number;
+  readonly prompt: string;
+  readonly count: number;
+}): string[] => {
+  const { requestNumber, prompt, count } = input;
+  let state = (hashText(prompt) ^ Math.imul(requestNumber, 2654435761)) >>> 0;
+  const tokens: string[] = [];
+  for (let i = 0; i < count; i++) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const index =
+      i === 0
+        ? (requestNumber - 1 + VOCABULARY.length) % VOCABULARY.length
+        : state % VOCABULARY.length;
+    tokens.push(` ${VOCABULARY[index]}${i % 12 === 11 ? '.' : ''}`);
+  }
+  return tokens;
 };

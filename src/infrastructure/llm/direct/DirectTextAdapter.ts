@@ -3,8 +3,10 @@ import {
   type ILlmProvider,
   type LlmProviderCredentials,
   type LlmProviderInitializeOptions,
+  isTextCompletionRequest,
   type CompletionRequest,
   type CompletionResponse,
+  type ProviderRequest,
   type StreamChunk,
   type OpenRouterCatalogModel,
 } from '@application/services/llm';
@@ -12,6 +14,7 @@ import type { StreamTimeouts } from '../shared/stream-timeouts';
 import { requestDirectCompletion } from './completion';
 import { streamDirectCompletion } from './streaming';
 import { fetchDirectCatalog } from './catalog';
+import { invalidDirectRequest } from './errors';
 import type { DirectConfig, DirectProtocol } from './types';
 
 /** Shared mobile transport lifecycle; each provider owns its wire protocol. */
@@ -65,7 +68,10 @@ export class DirectTextAdapter implements ILlmProvider {
     };
   }
 
-  generateCompletion(request: CompletionRequest): Promise<CompletionResponse> {
+  async generateCompletion(
+    request: ProviderRequest
+  ): Promise<CompletionResponse> {
+    this.rejectTextRequest(request);
     return requestDirectCompletion({
       config: this.requireConfig(),
       protocol: this.protocol,
@@ -75,8 +81,9 @@ export class DirectTextAdapter implements ILlmProvider {
   }
 
   async *generateStreamingCompletion(
-    request: CompletionRequest
+    request: ProviderRequest
   ): AsyncIterable<StreamChunk> {
+    this.rejectTextRequest(request);
     yield* streamDirectCompletion({
       config: this.requireConfig(),
       protocol: this.protocol,
@@ -102,6 +109,18 @@ export class DirectTextAdapter implements ILlmProvider {
 
   getCachedModels(): readonly OpenRouterCatalogModel[] {
     return this.cachedModels;
+  }
+
+  /** Hosted chat providers don't serve base models here. */
+  private rejectTextRequest(
+    request: ProviderRequest
+  ): asserts request is CompletionRequest {
+    if (isTextCompletionRequest(request)) {
+      throw invalidDirectRequest(
+        this.protocol.provider,
+        'This connection serves chat models only. Base models need OpenRouter or LM Studio.'
+      );
+    }
   }
 
   private requireConfig(): DirectConfig {

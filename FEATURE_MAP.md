@@ -513,7 +513,10 @@ stays until the user makes one.
   and Stop contract; their keys are stored in Settings → Connections
   (`settings.connections.anthropic`, `settings.connections.openai`). Writes WatermelonDB
   `nodes`, `edges`, `edge_sources`, `raw_api_responses`, `path_nodes` and `path_states`, and
-  updates `loom_trees.last_message_at`.
+  updates `loom_trees.last_message_at`. The adapters and `collectCompletion` also accept a
+  literal-prompt `TextCompletionRequest` (OpenRouter `/completions` beside the chat URL, LM
+  Studio `/v1/completions`; Anthropic and OpenAI reject it); no chat flow sends one, and the
+  chat paths above are unchanged.
 - **Status:** live
 - **Notes:** The field grows with its text up to five lines, text set from code included
   (an edit loading its message): `useRemeasureOnSetText` makes Fabric measure the input
@@ -734,7 +737,8 @@ stays until the user makes one.
 - **Selector:** working — `chat-continuation-generate` (control row), `chat-continuation-count-decrease`, `chat-continuation-count-value`, `chat-continuation-count-increase`, `chat-continuation-generate-button`, `chat-continuation-stop-all`, cards `chat-continuation-slot-<slot>` (slot 0 to 3), card state `chat-continuation-slot-state-<slot>-<state>` (state is `pending`, `streaming`, `stopping`, `done`, `stopped`, `interrupted` or `failed`), `chat-continuation-slot-stop-<slot>`, `chat-continuation-slot-error-<slot>` (the plain line), `chat-continuation-slot-error-toggle-<slot>` (the failed card's pressable), `chat-continuation-slot-error-detail-<slot>` (shown once tapped); once saved, the card's pressable is `chat-continuation-card-<nodeId>`
 - **Code:** `src/interface/components/chat/parallel/useParallelRail.ts`, `src/interface/components/chat/parallel/useParallelContinuations.ts`, `src/interface/components/chat/parallel/parallel-slots-state.ts`, `src/interface/components/chat/parallel/rail-cards.ts`, `src/interface/components/chat/parallel/slot-card-state.ts`, `src/interface/components/chat/parallel/useContinuationCount.ts`, `src/interface/components/chat/parallel/describe-slot-failure.ts`, `src/interface/components/chat/parallel/ContinuationGenerateControl.tsx`, `src/interface/components/chat/parallel/StreamingContinuationCard.tsx`, `src/application/services/text/strip-markdown.ts`, `src/interface/components/chat/parallel/FailedCardBody.tsx`, `src/interface/components/chat/parallel/continuation-rail-view.ts`, `src/interface/components/chat/useSavedLmStudioEndpoint.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/application/use-cases/GenerateParallelContinuationsUseCase.ts`, `src/application/services/llm/request-max-tokens.ts`, `src/infrastructure/llm/CatalogModelOutputLimits.ts`, `src/application/services/dialogue-continuation/`, `src/infrastructure/persistence/watermelon/repositories/WatermelonContinuationCountPreferenceRepository.ts`
 - **Backend:** N separate streaming requests to the provider call in `chat.composer` (OpenRouter,
-  LM Studio, Anthropic or OpenAI), one independent abort controller per card, not a provider `n`. Writes WatermelonDB `nodes`, `edges`,
+  LM Studio, Anthropic or OpenAI), one independent abort controller per card, not a provider `n`
+  (a base-model text request, not sent from here, is likewise one request per slot). Writes WatermelonDB `nodes`, `edges`,
   `edge_sources` and `raw_api_responses` per saved card and touches
   `loom_trees.last_message_at`; the active path changes only when a card is made current. The
   count is remembered app-wide in WatermelonDB local storage
@@ -1406,8 +1410,8 @@ dialogue.
 - **Selector:** working — `agent-editor-provider` and `agent-editor-model` (menu rows; LM Studio's model is a menu row too), `agent-editor-model-list-screen`, `agent-editor-model-list`, rows `agent-editor-model-option-<model id>`, `agent-editor-model-custom`, `agent-editor-model-error`; the search field is the native header search bar (tap its "Search models" placeholder); Provider and LM Studio model menu items none — native context menu item; reach via a tap on `agent-editor-provider` or `agent-editor-model`
 - **Code:** `src/interface/components/settings/agents/editor/AgentModelSection.tsx`, `src/interface/components/settings/agents/editor/AgentModelListScreen.tsx`, `src/interface/components/settings/agents/editor/AgentModelDetailScreen.tsx`, `src/interface/components/models/ProviderModelSection.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-option-filter.ts`, `src/interface/components/models/useModelPickerData.ts`, `src/interface/components/models/provider-default-model.ts`, `src/interface/components/settings/agents/editor/useAgentModelSelection.ts`, `src/interface/components/models/model-options.ts`, `src/interface/components/models/provider-options.ts`, `src/interface/components/models/useConnectedProviders.ts`, `src/interface/components/models/browsable-provider.ts`, `src/infrastructure/llm/OpenRouterModelCatalog.ts`, `src/infrastructure/llm/openrouter/catalog.ts`, `src/infrastructure/llm/lmstudio/models.ts`, `src/app/agent-editor/models.tsx`
 - **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` (cached for
-  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`.
-  Anthropic and OpenAI: their authenticated `GET /v1/models` through the adapter's
+  24 h under `openrouter_model_catalog_v3`); LM Studio `GET <endpoint>/api/v1/models`, its
+  models ordered loaded first, then by display name (`lmstudio/model-order.ts`). Anthropic and OpenAI: their authenticated `GET /v1/models` through the adapter's
   `fetchModels()` after `initialize` with the stored key, returning
   `OpenRouterCatalogModel[]`.
 - **Status:** live
@@ -1566,7 +1570,8 @@ dialogue.
 - **Selector:** working — `connections-provider-screen`, `connections-lmstudio`, `connections-lmstudio-endpoint-input`, `connections-lmstudio-status-dot`, `connections-lmstudio-token-input`, `connections-lmstudio-token-reveal`, `connections-lmstudio-auto-load`, `connections-lmstudio-status`, `connections-lmstudio-test`, `connections-lmstudio-error`, `connections-lmstudio-error-details-toggle`, `connections-lmstudio-error-detail`, `connections-lmstudio-hint`
 - **Code:** `src/interface/components/settings/connections/LmStudioFormSection.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/LmStudioTestFailureFooter.tsx`, `src/interface/ui/components/form/FormTextFieldRow.tsx`, `src/interface/ui/components/form/TrailingTextField.tsx`, `src/interface/components/settings/SettingsScreenScaffold.tsx`, `src/interface/components/settings/connections/lmstudio-hint.ts`, `src/interface/components/settings/connections/useConnectionsController.ts`, `src/interface/components/settings/connections/useLmStudioConnectionTest.ts`, `src/application/services/llm/describe-provider-error.ts`, `src/application/services/llm/lmstudio-unreachable-copy.ts`, `src/infrastructure/llm/LMStudioAdapter.ts`, `src/infrastructure/llm/lmstudio/`
 - **Backend:** Test: LM Studio `GET <endpoint>/api/v1/models` (`LMStudioAdapter#fetchModels`).
-  Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
+  Base-model text requests use `POST <endpoint>/v1/completions` (`lmstudio/text-transport.ts`;
+  no screen sends one yet). Settings go to WatermelonDB `user_preferences.lmstudio_settings`, and the token to
   `expo-secure-store`.
 - **Status:** live
 - **Notes:** The fields are Form rows (`LmStudioFormSection`), in Settings and on

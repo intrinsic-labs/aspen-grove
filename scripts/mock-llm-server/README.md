@@ -11,6 +11,23 @@ so adapters can be checked without a model or a real key:
 | `GET /api/v1/models` | Connections' "Test connection" and the agent editor's model list |
 | `POST /v1/chat/completions` with `"stream": true` (SSE) | send, regenerate, parallel continuations |
 | `POST /v1/chat/completions` with `"stream": false` | auto titles, and the fallback after a streaming `invalidRequest` |
+| `POST /v1/completions` (JSON or `"stream": true` SSE) | the base-model text route: OpenRouter's legacy route and LM Studio's, for buffer mode |
+
+**The base model.** `GET /api/v1/models` also lists `mock-base`, shown as "Writing fixture
+(base)", loaded, after `mock-model` (the app's LM Studio list orders loaded models by display
+name, so the first loaded model, and onboarding's default, stays `mock-model`). It answers
+only `POST /v1/completions`, which accepts a string `prompt` and that model; a body with
+`messages`, a non-string `prompt` or any model but `mock-base` is refused (400, 400, 404), and
+a chat request for `mock-base` gets 404. It is not in `GET /v1/models`, so it never appears
+under the Anthropic or OpenAI pickers. Replies are `choices[].text`, deterministic, always
+beginning with a space (`continuationTokens`, `reply-text.ts`), different for each request
+number (parallel slots), and capped by `max_tokens` (finish reason `length`). SSE sends one
+event per token, a finish event with empty text, a usage-only event when
+`stream_options.include_usage` is set, then `[DONE]`. Request numbering, pacing,
+`--fail-every`, `--fail-in-burst`, `--fail-mode` and `--drop-after` are shared with the chat
+routes (one count: a chat request and a text request are #1 and #2). To point OpenRouter's
+adapter at it, set the OpenRouter endpoint to `http://localhost:1235/v1/chat/completions`;
+the adapter derives `/v1/completions` beside it.
 
 Anything else answers 404 and is logged as "not mocked" (the adapter's
 `/api/v1/models/load` and `/unload` have no caller in the app).
@@ -62,6 +79,7 @@ model `mock-model`. Port 1234 is LM Studio's own default; keep clear of it.
 | `--slow` | off | pace 3 tokens/s |
 | `--words` | `60` | tokens per reply (a request's `max_tokens` caps it; finish reason `length`) |
 | `--model` | `mock-model` | the model it lists and answers for; any other id gets 404 |
+| `--base-model` | `mock-base` | the base model `POST /v1/completions` answers for |
 | `--missing-model` | `mock-missing` | listed as downloaded but not loaded; every completion on it answers 404 (LM Studio with JIT loading off) |
 | `--fail-every N` | `0` (never) | completion requests N, 2N, 3N... fail |
 | `--fail-in-burst N` | `0` (never) | in each burst of overlapping completion requests (one set of parallel cards), the Nth to arrive fails if it is streamed; a burst starts when a request arrives with none open, so single sends (always first) never fail with N ≥ 2. Positions are counted on arrival, so they follow the order the app opened the requests: with 3 cards and N = 2, the second card fails |
@@ -95,6 +113,8 @@ that moment (`active=N`), and a streamed one its place in the current burst
 really run at once log `burst=1`, `burst=2`, `burst=3`; three sent one after
 another would each log `burst=1`. A `--fail-in-burst` failure can only happen
 when streams overlap. A
+text completion's start line shows its route, the prompt's byte length (never the prompt),
+`max_tokens` and `active=N`. A chat
 completion's start line also shows the `max_tokens`, `temperature` and system
 message it was sent with, so a tree's Model Settings can be checked end to
 end.

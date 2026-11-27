@@ -7,7 +7,7 @@ import {
 import { createRequestAbort } from '../shared/request-abort';
 import { toAbortedRequestError } from '../shared/interruption';
 import { directProviderError, parseErrorBody } from './errors';
-import { createDirectRawCapture } from './raw-capture';
+import { createRawCapture } from '../shared/raw-capture';
 import type { DirectConfig, DirectProtocol } from './types';
 
 export const requestDirectCompletion = async (input: {
@@ -18,7 +18,7 @@ export const requestDirectCompletion = async (input: {
 }): Promise<CompletionResponse> => {
   const { config, protocol, request, timeoutMs } = input;
   const body = protocol.body(request, false);
-  const raw = createDirectRawCapture(new Date(), request.model);
+  const raw = createRawCapture(new Date(), request.model);
   const abort = createRequestAbort({ timeoutMs, external: request.signal });
   try {
     const response = await expoFetch(config.endpoint, {

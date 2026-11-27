@@ -2,6 +2,7 @@ import { LlmProviderError } from '@application/services/llm';
 import { fetch as expoFetch } from 'expo/fetch';
 import { toLlmProviderError } from './errors';
 import { toJsonString } from './helpers';
+import { compareLMStudioModels } from './model-order';
 import type {
   LMStudioApiModel,
   LMStudioConfig,
@@ -27,7 +28,7 @@ const DEFAULT_MODELS_TIMEOUT_MS = 10000;
 
 /**
  * Fetches available models from LM Studio server.
- * Returns models sorted by state (loaded first) then alphabetically.
+ * Returns models sorted by state (loaded first) then by display name.
  */
 export const fetchLMStudioModels = async (input: {
   readonly config: LMStudioConfig;
@@ -85,12 +86,7 @@ export const fetchLMStudioModels = async (input: {
       .filter((m) => m.type === 'llm')
       .map(normalizeModel);
 
-    // Sort: loaded models first, then alphabetically
-    return models.slice().sort((a, b) => {
-      if (a.state === 'loaded' && b.state !== 'loaded') return -1;
-      if (a.state !== 'loaded' && b.state === 'loaded') return 1;
-      return a.id.localeCompare(b.id);
-    });
+    return models.slice().sort(compareLMStudioModels);
   } catch (error) {
     if (error instanceof LlmProviderError) {
       throw error;

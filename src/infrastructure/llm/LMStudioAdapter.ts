@@ -1,11 +1,12 @@
 import {
-  CompletionRequest,
   CompletionResponse,
   ILlmProvider,
+  isTextCompletionRequest,
   LlmProviderCredentials,
   LlmProviderError,
   LlmProviderInitializeOptions,
   ProviderCapabilities,
+  ProviderRequest,
   StreamChunk,
 } from '@application/services/llm';
 import { requestLMStudioCompletion } from './lmstudio/completion';
@@ -16,6 +17,9 @@ import {
   unloadLMStudioModel,
 } from './lmstudio/models';
 import { streamLMStudioCompletion } from './lmstudio/streaming';
+import { toLMStudioTextTransport } from './lmstudio/text-transport';
+import { requestTextCompletion } from './shared/text-completion-request';
+import { streamTextCompletion } from './shared/text-completion-stream';
 import type { StreamTimeouts } from './shared/stream-timeouts';
 import {
   DEFAULT_LMSTUDIO_ENDPOINT,
@@ -35,6 +39,9 @@ export type LMStudioAdapterOptions = {
 
 /**
  * LM Studio implementation of `ILlmProvider`.
+ *
+ * Base-model text requests (`TextCompletionRequest`) go to `/v1/completions`
+ * through the shared text transport.
  *
  * Chat completions go through the OpenAI-compatible `/v1/chat/completions`
  * endpoint so we can include assistant messages in history (required for
@@ -153,15 +160,21 @@ export class LMStudioAdapter implements ILlmProvider {
   }
 
   async generateCompletion(
-    request: CompletionRequest
+    request: ProviderRequest
   ): Promise<CompletionResponse> {
     const config = this.requireConfig();
     try {
-      return await requestLMStudioCompletion({
-        config,
-        request,
-        timeoutMs: this.timeoutMs,
-      });
+      return await (isTextCompletionRequest(request)
+        ? requestTextCompletion({
+            transport: toLMStudioTextTransport(config),
+            request,
+            timeoutMs: this.timeoutMs,
+          })
+        : requestLMStudioCompletion({
+            config,
+            request,
+            timeoutMs: this.timeoutMs,
+          }));
     } catch (error) {
       if (error instanceof LlmProviderError) {
         throw error;
@@ -176,15 +189,21 @@ export class LMStudioAdapter implements ILlmProvider {
   }
 
   async *generateStreamingCompletion(
-    request: CompletionRequest
+    request: ProviderRequest
   ): AsyncIterable<StreamChunk> {
     const config = this.requireConfig();
     try {
-      yield* streamLMStudioCompletion({
-        config,
-        request,
-        timeouts: this.streamTimeouts,
-      });
+      yield* isTextCompletionRequest(request)
+        ? streamTextCompletion({
+            transport: toLMStudioTextTransport(config),
+            request,
+            timeouts: this.streamTimeouts,
+          })
+        : streamLMStudioCompletion({
+            config,
+            request,
+            timeouts: this.streamTimeouts,
+          });
     } catch (error) {
       if (error instanceof LlmProviderError) {
         throw error;

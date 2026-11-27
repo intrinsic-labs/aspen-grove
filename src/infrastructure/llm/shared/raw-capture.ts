@@ -1,12 +1,18 @@
 import { computeSha256Hash } from '@application/services/content-hash-service';
 import type { RawResponseCapture } from '@application/services/llm';
-import { headersToString } from '../openrouter/helpers';
+
+/** Headers exposed by fetch as sorted `name: value` lines. */
+export const headersToString = (headers: Headers): string => {
+  const lines: string[] = [];
+  headers.forEach((value, key) => {
+    lines.push(`${key}: ${value}`);
+  });
+  lines.sort((a, b) => a.localeCompare(b));
+  return lines.join('\n');
+};
 
 /** Same canonical headers + unmodified body representation as OpenRouter. */
-export const createDirectRawCapture = (
-  requestTimestamp: Date,
-  model: string
-) => {
+export const createRawCapture = (requestTimestamp: Date, model: string) => {
   let responseHeaders = '';
   let requestId: string | undefined;
   const chunks: string[] = [];

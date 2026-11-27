@@ -1,10 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { createRequestAbort } from './request-abort';
 
 describe('createRequestAbort', () => {
   it('reports a caller abort as cancelled', () => {
     const caller = new AbortController();
-    const abort = createRequestAbort({ timeoutMs: 60_000, external: caller.signal });
+    const abort = createRequestAbort({
+      timeoutMs: 60_000,
+      external: caller.signal,
+    });
 
     caller.abort();
 
@@ -16,7 +26,10 @@ describe('createRequestAbort', () => {
   it('reports the timer as timeout, and a later caller abort does not relabel it', () => {
     jest.useFakeTimers();
     const caller = new AbortController();
-    const abort = createRequestAbort({ timeoutMs: 10, external: caller.signal });
+    const abort = createRequestAbort({
+      timeoutMs: 10,
+      external: caller.signal,
+    });
 
     jest.advanceTimersByTime(10);
     caller.abort();

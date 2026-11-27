@@ -1,16 +1,20 @@
 import {
-  CompletionRequest,
   CompletionResponse,
   ILlmProvider,
+  isTextCompletionRequest,
   LlmProviderCredentials,
   LlmProviderError,
   LlmProviderInitializeOptions,
   ProviderCapabilities,
+  ProviderRequest,
   StreamChunk,
 } from '@application/services/llm';
 import { requestOpenRouterCompletion } from './openrouter/completion';
 import { toJsonString } from './openrouter/helpers';
 import { streamOpenRouterCompletion } from './openrouter/streaming';
+import { toOpenRouterTextTransport } from './openrouter/text-transport';
+import { requestTextCompletion } from './shared/text-completion-request';
+import { streamTextCompletion } from './shared/text-completion-stream';
 import type { StreamTimeouts } from './shared/stream-timeouts';
 import {
   DEFAULT_OPENROUTER_ENDPOINT,
@@ -65,14 +69,22 @@ export class OpenRouterAdapter implements ILlmProvider {
     };
   }
 
-  async generateCompletion(request: CompletionRequest): Promise<CompletionResponse> {
+  async generateCompletion(
+    request: ProviderRequest
+  ): Promise<CompletionResponse> {
     const config = this.requireConfig();
     try {
-      return await requestOpenRouterCompletion({
-        config,
-        request,
-        timeoutMs: this.timeoutMs,
-      });
+      return await (isTextCompletionRequest(request)
+        ? requestTextCompletion({
+            transport: toOpenRouterTextTransport(config),
+            request,
+            timeoutMs: this.timeoutMs,
+          })
+        : requestOpenRouterCompletion({
+            config,
+            request,
+            timeoutMs: this.timeoutMs,
+          }));
     } catch (error) {
       if (error instanceof LlmProviderError) {
         throw error;
@@ -87,15 +99,21 @@ export class OpenRouterAdapter implements ILlmProvider {
   }
 
   async *generateStreamingCompletion(
-    request: CompletionRequest
+    request: ProviderRequest
   ): AsyncIterable<StreamChunk> {
     const config = this.requireConfig();
     try {
-      yield* streamOpenRouterCompletion({
-        config,
-        request,
-        timeouts: this.streamTimeouts,
-      });
+      yield* isTextCompletionRequest(request)
+        ? streamTextCompletion({
+            transport: toOpenRouterTextTransport(config),
+            request,
+            timeouts: this.streamTimeouts,
+          })
+        : streamOpenRouterCompletion({
+            config,
+            request,
+            timeouts: this.streamTimeouts,
+          });
     } catch (error) {
       if (error instanceof LlmProviderError) {
         throw error;
@@ -122,4 +140,3 @@ export class OpenRouterAdapter implements ILlmProvider {
     return this.config;
   }
 }
-

@@ -54,6 +54,27 @@ export type CompletionRequest = {
   readonly signal?: AbortSignal;
 };
 
+/**
+ * A base-model request: one literal prompt, continued verbatim, with no chat
+ * roles, system prompt or template. Sent to an OpenAI-compatible
+ * `/v1/completions` route, and answered as raw text (`choices[].text`).
+ */
+export type TextCompletionRequest = Omit<
+  CompletionRequest,
+  'messages' | 'systemPrompt'
+> & {
+  readonly kind: 'text';
+  readonly prompt: string;
+};
+
+/** What a provider adapter accepts: a chat request or a literal-prompt one. */
+export type ProviderRequest = CompletionRequest | TextCompletionRequest;
+
+/** Narrows a request to the literal-prompt shape. */
+export const isTextCompletionRequest = (
+  request: ProviderRequest
+): request is TextCompletionRequest => 'prompt' in request;
+
 export type RawResponseCapture = {
   readonly rawBytes: string;
   readonly rawBytesHash: ContentHash;
@@ -144,8 +165,8 @@ export interface ILlmProvider {
     options?: LlmProviderInitializeOptions
   ): Promise<boolean>;
   getCapabilities(): ProviderCapabilities;
-  generateCompletion(request: CompletionRequest): Promise<CompletionResponse>;
+  generateCompletion(request: ProviderRequest): Promise<CompletionResponse>;
   generateStreamingCompletion(
-    request: CompletionRequest
+    request: ProviderRequest
   ): AsyncIterable<StreamChunk>;
 }
