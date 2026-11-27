@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     paddingBottom: form.sectionGap,
   },
   header: {
-    marginBottom: form.sectionGap / 2,
+    marginBottom: form.sectionGap,
   },
   customSection: {
     marginTop: 0,

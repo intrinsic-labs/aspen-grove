@@ -1,10 +1,12 @@
 import { useCallback } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ULID } from '@domain/value-objects';
 import {
   FormButtonRow,
   FormLinkRow,
   FormSection,
+  formText,
 } from '@/interface/ui/components/form';
 import { ModelBrowserList } from '../models/ModelBrowserList';
 import { PROVIDER_LABELS } from '../models/provider-options';
@@ -71,13 +73,18 @@ const BufferModelScreen = () => {
     </FormSection>
   );
 
-  const status = model.error ? (
-    <FormSection testID="buffer-model-error" footer={model.error} />
-  ) : !model.loading && model.options.length === 0 ? (
-    <FormSection
-      testID="buffer-model-empty"
-      footer="This provider lists no verified base models. You can keep writing, but you can’t generate yet."
-    />
+  const message = model.error
+    ? { testID: 'buffer-model-error', text: model.error }
+    : !model.loading && model.options.length === 0
+      ? {
+          testID: 'buffer-model-empty',
+          text: 'This provider lists no verified base models. You can keep writing, but you can’t generate yet.',
+        }
+      : null;
+  const status = message ? (
+    <View testID={message.testID} style={styles.status}>
+      <Text style={[formText.footer, styles.center]}>{message.text}</Text>
+    </View>
   ) : undefined;
 
   return (
@@ -98,3 +105,9 @@ const BufferModelScreen = () => {
 };
 
 export default BufferModelScreen;
+
+const styles = StyleSheet.create({
+  // As the shared list's own status line: centred footer text below the cards.
+  status: { marginTop: 24, paddingHorizontal: 16 },
+  center: { textAlign: 'center' },
+});
