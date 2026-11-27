@@ -17,8 +17,18 @@ env:
       id: buffer-screen
     timeout: 15000
 
-- tapOn:
-    id: buffer-model-button
+# The first tap after the buffer opens can be lost (iOS), so tap until the
+# screen shows.
+- waitForAnimationToEnd
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: buffer-model-screen
+    commands:
+      - tapOn:
+          id: buffer-model-button
+      - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
       id: buffer-model-screen
