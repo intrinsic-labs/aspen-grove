@@ -49,6 +49,12 @@ export type LoadMessage = {
   readonly style: WebEditorStyle;
 };
 
+/** Updates presentation without replacing the editor state. */
+export type StyleMessage = {
+  readonly type: 'style';
+  readonly style: WebEditorStyle;
+};
+
 /** The host applied everything up to `revision`; it carries no text. */
 export type AckMessage = {
   readonly type: 'ack';
@@ -91,6 +97,7 @@ export type HostMessage =
       readonly readOnly: boolean;
     }
   | LoadMessage
+  | StyleMessage
   | AckMessage
   | CheckpointRequestMessage
   | EndCompositionMessage;
