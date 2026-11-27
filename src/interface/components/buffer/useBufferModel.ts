@@ -133,14 +133,20 @@ export const useBufferModel = (treeId: ULID | undefined) => {
     void loadCatalog();
   }, [loadCatalog]);
 
-  const chooseProvider = useCallback((next: BufferModelProvider) => {
-    ++latestRequest.current;
-    setOptions(NO_OPTIONS);
-    setSettledFor(null);
-    setError(null);
-    setLoading(true);
-    setProviderState(next);
-  }, []);
+  const chooseProvider = useCallback(
+    (next: BufferModelProvider) => {
+      // Re-choosing the current provider must not cancel its load: the
+      // catalog effect only reruns when the provider changes.
+      if (next === provider) return;
+      ++latestRequest.current;
+      setOptions(NO_OPTIONS);
+      setSettledFor(null);
+      setError(null);
+      setLoading(true);
+      setProviderState(next);
+    },
+    [provider]
+  );
 
   const select = useCallback(
     async (modelId: string): Promise<boolean> => {

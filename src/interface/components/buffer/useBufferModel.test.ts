@@ -165,6 +165,18 @@ describe('useBufferModel', () => {
     await hook.unmount();
   });
 
+  it('re-choosing the current provider keeps its options', async () => {
+    const hook = renderHook((id: ULID) => useBufferModel(id), treeId);
+    await flush();
+    await act(() => hook.result.current.chooseProvider('lmstudio'));
+    await flush();
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.options.map((option) => option.id)).toEqual([
+      'mock-base',
+    ]);
+    await hook.unmount();
+  });
+
   it('keeps the current cap on a model switch', async () => {
     const hook = renderHook((id: ULID) => useBufferModel(id), treeId);
     await flush();
