@@ -138,6 +138,7 @@ stays until the user makes one.
   point the last two at a mock server: `direct-provider-endpoints.ts`). Schema v9 adds `user_preferences.onboarding_completed_at`, v10
   `user_preferences.tree_onboarding_completed_at`
 - **Status:** live
+- **Checked:** 2026-11-27
 - **Notes:** The gate wraps the root `Stack`, so no route mounts until bootstrap is `ready`.
   The smoke-tree seeding in the orchestrator is switched off (see the first-launch notes).
 
@@ -162,6 +163,7 @@ stays until the user makes one.
 - **Code:** `src/interface/components/home/HomeView.tsx`, `src/interface/components/home/DateHeader.tsx`, `src/interface/components/home/greeting.ts`, `src/interface/components/home/useDisplayName.ts`, `src/interface/components/home/HomeListHeader.tsx`, `src/interface/components/onboarding/useFirstRunRedirect.ts`, `src/app/index.tsx`, `src/app/_layout.tsx`
 - **Backend:** WatermelonDB `user_preferences.display_name` via `WatermelonUserPreferencesRepository#get`; setup status as in `setup.hints`
 - **Status:** live
+- **Checked:** 2026-11-27
 - **Notes:** The greeting hours are Latent Spaces': "Good Early Morning" before 5,
   "Good Morning" to 12, "Good Afternoon" to 17, "Good Evening" after; the time is re-read when
   Home comes back into view. No screen sets `displayName` yet, so the nameless greeting shows.
@@ -442,6 +444,7 @@ stays until the user makes one.
   via the Watermelon repositories; per-agent routing accepts `openrouter:`, `lmstudio:`,
   `anthropic:` and `openai:` modelRefs. Credential and failure helpers accept all four.
 - **Status:** live
+- **Checked:** 2026-11-27
 - **Notes:** Messages scroll under the transparent header. On iOS 26 the bar's automatic
   scroll-edge effect fades them out under the title; Android has none, so
   `HeaderScrollEdge` paints black behind the bar and fades it out 24 pt below.
@@ -953,6 +956,7 @@ stays until the user makes one.
   catalog (`GET https://openrouter.ai/api/v1/models`, no key, cached 24 h), Anthropic's or
   OpenAI's own `GET /v1/models` with the stored key, or LM Studio's `GET /api/v1/models`
 - **Status:** live
+- **Checked:** 2026-11-27
 - **Notes:** Per-tree settings on Aspen Grove's agents (`UpdateTreeModelSettingsUseCase`):
   the tree's own agent (owned by it, used by no other tree) is edited in place; a shared one
   (a library agent, or one another tree also uses) is copied first as a tree-owned agent,
@@ -992,7 +996,8 @@ stays until the user makes one.
   newer than the cached catalog or the provider's list. The same browser serves the agent editor
   (`settings.agents.model-picker`). OpenRouter catalog rows also retain route and checkpoint
   identity evidence for the later buffer-only base-model selector; that evidence does not filter
-  this dialogue list.
+  this dialogue list. These ordinary browsers still show the custom-id row; the buffer's
+  eligibility-filtered browser deliberately omits it.
 - **Where:** Pushed from Model Settings' Model row while the provider is OpenRouter,
   Anthropic or OpenAI; titled "Model".
 - **Reach:** P2 → `chat-menu-button` → "Model" → (Provider: OpenRouter, Anthropic or OpenAI)
@@ -1152,6 +1157,7 @@ dialogue.
   `default_model_agent_id`), `paths`, `path_nodes`, `path_states` (`mode: buffer`) via the
   Watermelon repositories
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Checked:** 2026-11-27
 - **Notes:** The buffer reopens on its real rows (see `buffer.editor`). Not ephemeral: an empty buffer stays in Recents. Titled "Untitled Buffer".
   Home lists buffer trees only in the preview. The dialogue chat adopts a default model agent
   on open, so `TreeModeScreen` never gives it a buffer tree.
@@ -1162,7 +1168,8 @@ dialogue.
   the usual foreground and model text in a muted blue, with text typed into a model passage
   reading as the human's. A buffer tree opens on its real passages (the owner's stored path), and
   typing is kept as a draft that survives a crash; an explicit commit or a version or branch switch
-  saves it as versions. A fixture link loads an in-memory review document instead.
+  saves it as versions. A fixture link loads an in-memory review document instead. Its header's
+  Model action shows the selected verified base model and opens `buffer.model`.
 - **Where:** Route `tree/[treeId]` for a buffer-mode tree (`TreeModeScreen`), under the
   transparent header titled with the tree's title. A natively scrolling multiline input fills
   the screen; a band under it, above the keyboard and safe area, holds the floating branch pill
@@ -1176,7 +1183,7 @@ dialogue.
   go back: the back key, swipe-back or header back button saves the typing as versions first
   (`.maestro/mock/buffer-edit.yaml`).
 - **Requires:** The buffer preview switch. No model, no key.
-- **Selector:** working — `buffer-screen`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-5k`, `buffer-load-10k`, `buffer-load-20k`, `buffer-load-stress` (the 30k one), `buffer-load-paragraphs` (the same 30k as real paragraphs), `buffer-variant`, `buffer-engine` (Android only: native input or the CodeMirror WebView; developer-preview speed experiment, default native), `buffer-doc-stats` (web engine only: a transparent receipt `len=<full length> head=<caret> rev=<last applied revision>`, for Maestro or adb), the last three only while the document is empty; on the web engine `buffer-document` is the editor's contenteditable and `buffer-web-editor` its WebView
+- **Selector:** working — `buffer-screen`, `buffer-model-button`, `buffer-document` (the input), `buffer-control-bar`, `buffer-load-sample`, `buffer-load-5k`, `buffer-load-10k`, `buffer-load-20k`, `buffer-load-stress` (the 30k one), `buffer-load-paragraphs` (the same 30k as real paragraphs), `buffer-variant`, `buffer-engine` (Android only: native input or the CodeMirror WebView; developer-preview speed experiment, default native), `buffer-doc-stats` (web engine only: a transparent receipt `len=<full length> head=<caret> rev=<last applied revision>`, for Maestro or adb), the last three only while the document is empty; on the web engine `buffer-document` is the editor's contenteditable and `buffer-web-editor` its WebView
 - **Code:** `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/BufferTextInput.tsx`, `src/interface/components/buffer/BufferFixtureLink.tsx`, `src/interface/components/buffer/BufferFixtureControls.tsx`, `src/interface/components/buffer/BufferEditorSurface.tsx`, `src/interface/components/buffer/ios/bind-native-composition.ts`, `src/interface/components/buffer/ios/useNativeComposition.ts`, `src/interface/components/buffer/ios/buffer-composition-native.ts`, `modules/buffer-composition/`, `src/interface/components/buffer/android/BufferWebEditor.android.tsx`, `src/interface/components/buffer/android/BufferWebEditor.tsx`, `src/interface/components/buffer/android/buffer-web-editor-props.ts`, `src/interface/components/buffer/android/web-editor-protocol.ts`, `src/interface/components/buffer/android/web-editor-session.ts`, `src/interface/components/buffer/android/useEditorSession.ts`, `src/interface/components/buffer/android/web-editor-style.ts`, `src/interface/components/buffer/BufferDocStats.tsx`, `src/interface/components/buffer/buffer-preview-restore.ts`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/buffer-preview-reconcile.ts`, `src/interface/components/buffer/buffer-preview-composition.ts`, `src/interface/components/buffer/buffer-preview-sample.ts`, `src/interface/components/buffer/useBufferPreview.ts`, `src/interface/components/buffer/useBufferEditorFeed.ts`, `src/interface/components/buffer/useBufferDocument.ts`, `src/interface/components/buffer/useBufferDraftLifecycle.ts`, `src/interface/components/buffer/useBufferLeaveGuard.ts`, `src/interface/components/buffer/buffer-leave-decision.ts`, `src/interface/components/buffer/buffer-document-session.ts`, `src/interface/components/buffer/buffer-draft-saver.ts`, `src/interface/components/buffer/buffer-passages-document.ts`, `src/interface/components/buffer/BufferDocumentNotice.tsx`, `src/application/use-cases/OpenBufferDocumentUseCase.ts`, `src/application/use-cases/StoreBufferDraftUseCase.ts`, `src/application/services/buffer/draft-from-document.ts`, `src/application/services/buffer/reserve-buffer-draft.ts`, `src/application/services/buffer/settle-stored-draft.ts`, `src/application/services/buffer/document-ranges.ts`, `src/application/services/buffer/apply-replacement.ts`, `src/application/services/buffer/owner-layout.ts`, `src/application/services/buffer/ancestor-authorship.ts`, `src/application/services/buffer/myers-diff.ts`, `src/application/services/buffer/text-tokens.ts`, `src/interface/components/buffer/composition-barrier.ts`, `src/interface/components/buffer/android/web-editor-html.generated.ts`, `tools/buffer-web-editor/main.ts`, `tools/buffer-web-editor/model-ranges.ts`, `tools/buffer-web-editor/marks.ts`, `tools/buffer-web-editor/report.ts`, `tools/buffer-web-editor/separators.ts`, `tools/buffer-web-editor/line-separators.ts`, `tools/buffer-web-editor/select-all.ts`, `tools/buffer-web-editor/bridge.ts` (page source; npm run build:buffer-editor regenerates the HTML), `src/interface/components/buffer/derive-replacement.ts`, `src/application/services/buffer/text-boundaries.ts`, `src/application/services/buffer/authorship-runs.ts`, `src/interface/components/buffer/native-change-tracker.ts`, `src/interface/components/buffer/buffer-preview-fixture.ts`, `src/interface/ui/value-objects/tokens/buffer.ts`, `src/interface/ui/value-objects/loom-ui-tokens.ts`
 - **Backend:** WatermelonDB, through `OpenBufferDocumentUseCase` (open), `CommitBufferChangesUseCase` and `SwitchBufferPathUseCase` (save) and `StoreBufferDraftUseCase` (the draft in `localStorage`). The fixtures (sample, stress) stay in memory on the document-range reducer and never touch the database.
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
@@ -1222,6 +1229,29 @@ dialogue.
   does not render on iOS (web engine only). The native input starts afresh on an explicit
   `fixtureEpoch`, not a first-character guess.
 
+### Buffer model
+- **ID:** `buffer.model`
+- **Purpose:** Chooses the buffer's generation model from exact, verified base checkpoints only,
+  preserving the tree's current output-token cap (or starting it at 50 tokens). The provider is
+  chosen explicitly; direct Anthropic and OpenAI adapters and arbitrary custom ids are never offered.
+- **Where:** Route `tree/[treeId]/buffer-model`, titled "Model", pushed from the buffer header's
+  trailing model-name action. A provider card precedes the shared searchable model list.
+- **Reach:** Preview build → open a buffer → `buffer-model-button` →
+  `buffer-model-provider-<provider>` → `buffer-model-option-<model id>`.
+- **Requires:** The buffer preview switch and a connected base-capable provider: an OpenRouter key
+  or a configured LM Studio server. The initial verified OpenRouter registry is empty; the local
+  mock fixture exposes `mock-base` only from a loopback LM Studio connection.
+- **Selector:** working — `buffer-model-button`, `buffer-model-screen`, providers `buffer-model-provider-<provider>`, `buffer-model-refresh`, rows `buffer-model-option-<model id>`, `buffer-model-empty`, `buffer-model-error`; the native header search field has no testID
+- **Code:** `src/app/tree/*/buffer-model.tsx`, `src/app/_layout.tsx`, `src/interface/components/buffer/BufferModelScreen.tsx`, `src/interface/components/buffer/BufferModelButton.tsx`, `src/interface/components/buffer/useBufferModel.ts`, `src/interface/components/buffer/buffer-model-providers.ts`, `src/interface/components/buffer/buffer-model-options.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/models/ModelBrowserList.tsx`, `src/interface/components/models/model-options.ts`, `src/application/services/llm/base-model-eligibility.ts`, `src/application/use-cases/UpdateTreeModelSettingsUseCase.ts`
+- **Backend:** OpenRouter `GET https://openrouter.ai/api/v1/models?limit=1000` through the v4
+  cached catalog, or LM Studio `GET <endpoint>/api/v1/models`; selection writes the tree-owned
+  `agents.model_ref` and max-token configuration plus `loom_trees.default_model_agent_id` through
+  `UpdateTreeModelSettingsUseCase`
+- **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Notes:** Missing checkpoint evidence is a normal empty list, not an error. A load failure has
+  Retry; no connected provider links to Settings → Connections. A tap selects directly and returns
+  to the buffer rather than opening a model detail page. Flow: `.maestro/mock/buffer-model.yaml`.
+
 ### Branch control
 - **ID:** `buffer.siblings`
 - **Purpose:** Switches between alternative endings at the buffer's branch point: previous and
@@ -1237,6 +1267,7 @@ dialogue.
 - **Code:** `src/interface/components/buffer/BufferSiblingControl.tsx`, `src/interface/components/buffer/branch-dots.ts`, `src/interface/components/buffer/BufferChoicePill.tsx`, `src/interface/components/buffer/buffer-choice-pill.ts`, `src/application/services/buffer/buffer-choices.ts`, `src/interface/components/buffer/BufferScreen.tsx`, `src/interface/components/buffer/buffer-preview-document.ts`, `src/interface/components/buffer/composition-barrier.ts`
 - **Backend:** WatermelonDB for a real document (`describeBufferChoices` lists the sibling families; tapping one calls `switchTo` with its `branch` action, which commits the typing and switches in one command); fixture siblings in memory for the sample
 - **Status:** restricted (developer preview, off unless `EXPO_PUBLIC_BUFFER_PREVIEW=1`)
+- **Checked:** 2026-11-27
 - **Notes:** Accessibility: one adjustable element, label "Branch", value "Branch 1 of 2", hint "Swipe up or down to switch to another ending of this text" (the chevrons are not separate stops).
   Look (mockup `03-branches-pill`): a 36 pt pill in the raised dark fill with a soft
   shadow, gold chevrons (grey when there is no previous or next), a JetBrains Mono "Branch 1 of 3"
@@ -1422,7 +1453,9 @@ dialogue.
 - **Notes:** Model ids contain `/` and `:`, so `<prefix>-model-option-<id>` ids do too. The
   browser lists every model (no cap); search to narrow. A failed LM Studio discovery reads
   "LM Studio isn't answering…" in `agent-editor-model-error`, not the raw fetch error.
-  Flow: `.maestro/model-browser.yaml`.
+  The agent browser continues to pass the custom-id action to `ModelBrowserList`, so the
+  buffer's omission of that optional action does not change this picker. Flow:
+  `.maestro/model-browser.yaml`.
 
 ### Connections list
 - **ID:** `settings.connections.list`
@@ -1462,6 +1495,7 @@ dialogue.
 - **Code:** `src/interface/components/settings/screens/ConnectionProviderScreen.tsx`, `src/interface/components/settings/connections/LmStudioConnectionScreen.tsx`, `src/interface/components/settings/connections/connection-provider.ts`, `src/app/settings/connections/*.tsx`, `src/app/_layout.tsx`
 - **Backend:** As the provider's own entry
 - **Status:** live
+- **Checked:** 2026-11-27
 - **Notes:** An unknown `provider` param shows an empty screen. The title comes from the
   route's param (`connectionProviderTitle`).
 
